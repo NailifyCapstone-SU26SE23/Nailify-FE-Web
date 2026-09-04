@@ -28,6 +28,7 @@ import {
   deleteAdminNailVariant,
   fetchAdminCategories,
   fetchAdminNailDesignDetail,
+  fetchAdminNailDesignSummary,
   fetchProceduresByVariant,
   updateAdminNailDesign,
   updateAdminNailVariant,
@@ -494,17 +495,16 @@ NailVariantHandPreview.propTypes = {
   }),
 };
 
-const VARIANT_LEVEL_OPTIONS = ["Basic", "Intermediate", "Advanced", "Expert", "Premium"];
-const SKILL_LEVEL_LABELS = {
-  1: "1★ Junior",
-  2: "2★ Developing",
-  3: "3★ Intermediate",
-  4: "4★ Advanced",
-  5: "5★ Expert",
-};
 const DETAIL_MODAL_STYLES = {
   body: { padding: 0 },
   content: { borderRadius: 24, overflow: "hidden" },
+};
+
+const EMPTY_SUMMARY = {
+  totalBookings: 0,
+  totalFavorites: 0,
+  averageRating: 0,
+  ratingCount: 0,
 };
 
 function InputLabel({ children }) {
@@ -629,6 +629,7 @@ export function NailDesignManagementDetailPage() {
   const [isLoadingVariantDetail, setIsLoadingVariantDetail] = useState(false);
   const [isLoadingVariantProcedures, setIsLoadingVariantProcedures] = useState(false);
   const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
 
@@ -641,9 +642,10 @@ export function NailDesignManagementDetailPage() {
       setIsNotFound(false);
 
       try {
-        const [detail, categoryResponse] = await Promise.all([
+        const [detail, categoryResponse, summaryResponse] = await Promise.all([
           fetchAdminNailDesignDetail(designId),
           fetchAdminCategories({ pageNumber: 1, pageSize: 100 }),
+          fetchAdminNailDesignSummary(designId).catch(() => EMPTY_SUMMARY),
         ]);
 
         if (!isMounted) {
@@ -653,6 +655,7 @@ export function NailDesignManagementDetailPage() {
         setInitialDesign(detail);
         setFormValues(detail);
         setCategoryRecords(categoryResponse.items);
+        setSummary(summaryResponse);
         setDesignImageFile(null);
       } catch (loadError) {
         if (!isMounted) {
@@ -661,6 +664,7 @@ export function NailDesignManagementDetailPage() {
 
         setInitialDesign(null);
         setFormValues(null);
+        setSummary(EMPTY_SUMMARY);
 
         const statusCode = loadError && typeof loadError === "object" ? loadError.response?.status : undefined;
 
@@ -748,22 +752,6 @@ export function NailDesignManagementDetailPage() {
         categories: categoryRecords.filter((category) => nextCategoryIds.includes(category.categoryId)),
       };
     });
-  };
-
-  const handleVariantFieldChange = (index, field) => (event) => {
-    const nextValue = event.target.value;
-
-    setFormValues((current) => ({
-      ...current,
-      variants: current.variants.map((variant, variantIndex) =>
-        variantIndex === index
-          ? {
-            ...variant,
-            [field]: nextValue,
-          }
-          : variant,
-      ),
-    }));
   };
 
   const handleStartEdit = () => {
@@ -1149,15 +1137,13 @@ export function NailDesignManagementDetailPage() {
                     ),
                   )}
               </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-5 grid grid-cols-4 gap-3">
                 {[
-                  [t("adminNailsDesignManagement.bookingRate"), formValues.bookingRate],
-                  [t("adminNailsDesignManagement.customerRating"), formValues.customerRating],
-                  [t("adminNailsDesignManagement.totalBookings"), formValues.totalBookings],
-                  [t("adminNailsDesignManagement.favorites"), formValues.favorites],
-                  [t("adminNailsDesignManagement.avgRating"), formValues.avgRating],
-                  [t("adminNailsDesignManagement.repeatRate"), formValues.repeatRate],
+                  [t("adminNailsDesignManagement.totalBookings"), summary.totalBookings],
+                  [t("adminNailsDesignManagement.favorites"), summary.totalFavorites],
+                  [t("adminNailsDesignManagement.avgRating"), `${summary.averageRating.toFixed(2)}★`],
+                  [t("adminNailsDesignManagement.ratingCount"), summary.ratingCount],
+
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
                     <p className="text-xs font-semibold text-[#c694af]">{label}</p>
@@ -1167,8 +1153,8 @@ export function NailDesignManagementDetailPage() {
               </div>
             </div>
 
-            <div className="space-y-3 lg:order-1">
-              <div className="aspect-square w-full overflow-hidden rounded-[18px] border border-[#f7d7e5] bg-[#f6edf2]">
+            <div className="flex flex-col items-center">
+              <div className="aspect-[4/3] overflow-hidden rounded-[18px] border border-[#f7d7e5] bg-[#f6edf2]">
                 <img
                   crossOrigin="anonymous"
                   src={designImagePreviewUrl || formValues.previewImage || DESIGN_PREVIEW_IMAGE}
@@ -1177,8 +1163,7 @@ export function NailDesignManagementDetailPage() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="flex items-center justify-between gap-3">
-
+              <div className="flex items-center justify-center gap-3">
                 {isEditing ? (
                   <button
                     type="button"

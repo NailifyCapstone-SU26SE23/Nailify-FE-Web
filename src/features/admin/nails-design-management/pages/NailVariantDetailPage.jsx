@@ -33,6 +33,7 @@ import {
   fetchAdminNailVariantDetail,
   fetchProceduresByVariant,
   fetchAdminNailVariantReferences,
+  fetchAdminNailVariantSummary,
   updateAdminNailVariant,
 } from "../services/nailDesignManagementService";
 import {
@@ -345,6 +346,13 @@ const DEFAULT_COORDINATES = {
     4: { left: 63.5, top: 11.2, width: 10.4, height: 22.5, rotation: 4 }, // Ring
     5: { left: 75.2, top: 23.6, width: 8.0, height: 17.4, rotation: 4 }, // Pinky
   }
+};
+
+const EMPTY_SUMMARY = {
+  totalBookings: 0,
+  totalFavorites: 0,
+  averageRating: 0,
+  ratingCount: 0,
 };
 
 function NailVariantHandPreview({ variantDetail }) {
@@ -823,6 +831,7 @@ export function NailVariantDetailPage() {
   const [showEditVariantModal, setShowEditVariantModal] = useState(false);
   const [variantDraft, setVariantDraft] = useState({ name: "", image: null });
   const [variantDraftImagePreviewUrl, setVariantDraftImagePreviewUrl] = useState("");
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
   const colors = extractVariantColors(variant?.colorJson);
@@ -838,10 +847,11 @@ export function NailVariantDetailPage() {
       setIsNotFound(false);
 
       try {
-        const [detail, loadedProcedures, availableProcsResp] = await Promise.all([
+        const [detail, loadedProcedures, availableProcsResp, summaryResponse] = await Promise.all([
           fetchAdminNailVariantDetail(variantId),
           fetchProceduresByVariant(variantId),
           fetchAdminProcedures({ pageSize: 100 }),
+          fetchAdminNailVariantSummary(variantId).catch(() => EMPTY_SUMMARY),
         ]);
 
         if (isMounted) {
@@ -852,6 +862,7 @@ export function NailVariantDetailPage() {
           });
           setProcedures(loadedProcedures);
           setAvailableProcedures(availableProcsResp?.items || []);
+          setSummary(summaryResponse);
           setError("");
         }
       } catch (loadError) {
@@ -1119,6 +1130,7 @@ export function NailVariantDetailPage() {
               <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
             </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -1136,10 +1148,26 @@ export function NailVariantDetailPage() {
               <ArrowLeft size={14} className="mr-1.5 inline" />
               {t("adminNailsDesignManagement.backToDesign")}
             </button>
-
           </div>
         </div>
       </div>
+
+      <DetailCard title="Summary">
+        <div className="mt-5 grid grid-cols-4 gap-3">
+          {[
+            [t("adminNailsDesignManagement.totalBookings"), summary.totalBookings],
+            [t("adminNailsDesignManagement.favorites"), summary.totalFavorites],
+            [t("adminNailsDesignManagement.avgRating"), `${summary.averageRating.toFixed(2)}★`],
+            [t("adminNailsDesignManagement.ratingCount"), summary.ratingCount],
+
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
+              <p className="text-xs font-semibold text-[#c694af]">{label}</p>
+              <p className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{value}</p>
+            </div>
+          ))}
+        </div>
+      </DetailCard>
 
       <DetailCard title={t("adminNailsDesignManagement.tryon")}>
         <div className="grid grid-cols-3 gap-3">
