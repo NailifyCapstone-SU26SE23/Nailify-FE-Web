@@ -1356,6 +1356,7 @@ export const translations = {
       totalBookings: "Total Bookings",
       favorites: "Favorites",
       avgRating: "Avg Rating",
+      ratingCount: "Rating Count",
       repeatRate: "Repeat Rate",
       quickActions: "Quick Actions",
       addVariant: "Add Variant",

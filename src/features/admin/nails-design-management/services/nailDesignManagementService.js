@@ -194,6 +194,15 @@ function normalizeVariantProcedure(procedure, index = 0) {
   };
 }
 
+function normalizeAdminSummary(summary) {
+  return {
+    totalBookings: Number(summary?.totalBookings || 0),
+    totalFavorites: Number(summary?.totalFavorites || 0),
+    averageRating: Number(summary?.averageRating || 0),
+    ratingCount: Number(summary?.ratingCount || 0),
+  };
+}
+
 const DEFAULT_NAIL_DESIGN_DETAIL = {
   breadcrumbsLabel: "Nail Design",
   heroTitle: "Nail Design",
@@ -549,6 +558,21 @@ export async function fetchAdminNailDesignDetail(designId) {
   });
 }
 
+export async function fetchAdminNailDesignSummary(designId) {
+  const normalizedDesignId = normalizeIntegerId(designId, -1);
+
+  if (normalizedDesignId <= 0) {
+    throw new Error("Design ID is required.");
+  }
+
+  const response = await axiosClient.get(`/NailDesigns/summary/${normalizedDesignId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail design summary.");
+  return normalizeAdminSummary(data);
+}
+
 export async function fetchAdminNailVariantReferences() {
   const shapesByName = new Map();
   const surfacesByName = new Map();
@@ -743,6 +767,21 @@ export async function fetchAdminNailVariantDetail(variantId) {
 
   const data = unwrapResponse(response, "Failed to load nail variant detail.");
   return normalizeAdminNailVariantDetail(data);
+}
+
+export async function fetchAdminNailVariantSummary(variantId) {
+  const normalizedVariantId = normalizeIntegerId(variantId, -1);
+
+  if (normalizedVariantId <= 0) {
+    throw new Error("Variant ID is required.");
+  }
+
+  const response = await axiosClient.get(`/NailVariants/summary/${normalizedVariantId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail variant summary.");
+  return normalizeAdminSummary(data);
 }
 
 export async function updateAdminNailDesign(designId, designFormValues) {
