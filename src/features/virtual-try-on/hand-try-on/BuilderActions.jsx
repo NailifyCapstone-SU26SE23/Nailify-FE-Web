@@ -10,15 +10,12 @@ export function BuilderActions({
   handGender = "woman",
   onHandGenderChange,
 }) {
-  const [saveStatus, setSaveStatus] = useState("idle");
   const [appliedStatus, setAppliedStatus] = useState(false);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!handLandmarkerTask) return;
 
-    setSaveStatus("saving");
     onSaveDraft?.();
-    setSaveStatus("saved");
   };
 
   const handleAddForAll = () => {
@@ -108,12 +105,12 @@ export function BuilderActions({
       <section className="builder-bottom-actions">
         <button
           className="action-btn green"
-          disabled={!handLandmarkerTask || saveStatus === "saving"}
-          onClick={() => void handleSave()}
+          disabled={!handLandmarkerTask}
+          onClick={handleSave}
           type="button"
         >
           <span className="material-icons">save</span>
-          {saveStatus === "saving" ? "Saving..." : "Save"}
+          Save
         </button>
         <button id="btn-image-flow" className="action-btn blue" type="button">
           <span className="material-icons">image</span>
@@ -132,12 +129,6 @@ export function BuilderActions({
           <span className="material-icons">arrow_back</span>
           Back
         </button>
-        {saveStatus === "saved" ? (
-          <div className="status-text">Saved to draft</div>
-        ) : null}
-        {saveStatus === "error" ? (
-          <div className="status-text">Save failed</div>
-        ) : null}
       </section>
     </div>
   );
