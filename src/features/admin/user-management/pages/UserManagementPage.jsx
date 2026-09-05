@@ -15,9 +15,9 @@ import {
   Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Select, Table } from "antd";
+import { Select, Table, Tooltip } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
@@ -28,7 +28,8 @@ import {
   USER_STATUS_STYLES,
   USER_ROLE_OPTIONS,
 } from "../services/mockUsers";
-import { fetchAdminUsers } from "../services/userManagementService";
+import { fetchAdminUsers, deleteAdminUser } from "../services/userManagementService";
+import { toast } from "react-hot-toast";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
@@ -168,6 +169,28 @@ export function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteAdminUser(userToDelete.id);
+      toast.success(language === "vi" ? "Đã xóa người dùng thành công" : "User deleted successfully");
+
+      // Reload users list
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+      setDebouncedQuery(query.trim() + " "); // force trigger reload by changing debouncedQuery slightly
+      setTimeout(() => setDebouncedQuery(query.trim()), 0); // reset it back
+    } catch (err) {
+      toast.error(err.message || (language === "vi" ? "Không thể xóa người dùng" : "Failed to delete user"));
+    } finally {
+      setIsDeleting(false);
+      setUserToDelete(null);
+    }
+  };
 
   const handleRoleChange = useCallback((value) => {
     setSelectedRole(value);
@@ -367,30 +390,6 @@ export function UserManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const getActionItems = useCallback((user) => {
-    const detailRoute = getAdminUserDetailRoute(user.id);
-    const viewLabel = language === "vi" ? "Xem" : "View";
-    const editLabel = language === "vi" ? "Chỉnh sửa" : "Edit";
-    const deleteLabel = language === "vi" ? "Xóa" : "Delete";
-    const userLabel = language === "vi" ? "Người dùng" : "User";
-
-    return [
-      { key: "view", label: `${viewLabel} ${userLabel}`, icon: Eye, onSelect: () => navigate(detailRoute) },
-      {
-        key: "edit",
-        label: `${editLabel} ${userLabel}`,
-        icon: PencilLine,
-        onSelect: () => navigate(detailRoute, { state: { requestEdit: true } }),
-      },
-      {
-        key: "delete",
-        label: `${deleteLabel} ${userLabel}`,
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
-      },
-    ];
-  }, [navigate, t]);
 
   const userColumns = useMemo(() => ([
     {
@@ -461,17 +460,63 @@ export function UserManagementPage() {
     {
       title: t("userManagement.table.actions"),
       key: "action",
-      render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
+      render: (_, user) => {
+        const detailRoute = getAdminUserDetailRoute(user.id);
+        const viewLabel = language === "vi" ? "Xem" : "View";
+        const editLabel = language === "vi" ? "Chỉnh sửa" : "Edit";
+        const deleteLabel = language === "vi" ? "Xóa" : "Delete";
+
+        return (
+          <div className="flex items-center justify-end gap-2 duration-300">
+            <Tooltip title={viewLabel} placement="top">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(detailRoute);
+                }}
+                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
+              >
+                <Eye size={15} />
+              </button>
+            </Tooltip>
+            <Tooltip title={editLabel} placement="top">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(detailRoute, { state: { requestEdit: true } });
+                }}
+                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
+              >
+                <PencilLine size={15} />
+              </button>
+            </Tooltip>
+            <Tooltip title={deleteLabel} placement="top">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUserToDelete(user);
+                }}
+                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#e53e3e] hover:shadow-[0_4px_12px_rgba(229,62,62,0.08)]"
+              >
+                <Trash2 size={15} />
+              </button>
+            </Tooltip>
+          </div>
+        );
+      },
     },
-  ]), [getActionItems, t]);
+  ]), [language, navigate, t]);
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-3 xl:grid-cols-5" />
 
       {/* <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]"> */}
       <div>
-        <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+        <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-[520px] xl:max-w-[560px]">
@@ -557,15 +602,7 @@ export function UserManagementPage() {
             </div>
           ) : null}
 
-          <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
-            <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-              <p className="text-sm font-extrabold text-[#462a45]">
-                {t("userManagement.table.allUsers")}
-              </p>
-              <p className="text-[11px] font-medium text-[#d197b0]">
-                {t("userManagement.table.showingRows", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
-              </p>
-            </div>
+          <div className="mt-4 overflow-hidden rounded-lg border border-[#f6dbe7]">
 
             <div className="hidden lg:block">
               <Table
@@ -576,6 +613,7 @@ export function UserManagementPage() {
                 pagination={false}
                 scroll={{ x: 1100 }}
                 locale={{ emptyText: t("userManagement.table.emptyText") }}
+                rowClassName="group"
                 className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
             </div>
@@ -620,8 +658,43 @@ export function UserManagementPage() {
                         >
                           {getStatusLabel(user.status || user.statusLabel, t)}
                         </span>
-                        <div className="mt-2 flex justify-end">
-                          <ActionDropdown items={getActionItems(user)} />
+                        <div className="mt-4 flex items-center justify-end gap-2">
+                          <Tooltip title={language === "vi" ? "Xem" : "View"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(getAdminUserDetailRoute(user.id));
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#ea4f93]"
+                            >
+                              <Eye size={15} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip title={language === "vi" ? "Chỉnh sửa" : "Edit"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(getAdminUserDetailRoute(user.id), { state: { requestEdit: true } });
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#ea4f93]"
+                            >
+                              <PencilLine size={15} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserToDelete(user);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#e53e3e]"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </Tooltip>
                         </div>
                       </div>
                     </div>
@@ -778,6 +851,26 @@ export function UserManagementPage() {
           </div>
         </aside> */}
       </div>
+
+      <ActionConfirmModal
+        open={Boolean(userToDelete)}
+        intent="danger"
+        title={t("userManagement.detail.deleteUserConfirmTitle")}
+        subtitle={t("userManagement.detail.deleteUserConfirmSubtitle")}
+        description={t("userManagement.detail.deleteUserConfirmDesc", { name: userToDelete?.name || "this user" })}
+        confirmText={t("userManagement.detail.deleteUser")}
+        cancelText={t("userManagement.detail.keepUser")}
+        confirmIcon={Trash2}
+        onConfirm={handleDeleteUser}
+        onCancel={() => setUserToDelete(null)}
+        loading={isDeleting}
+        item={userToDelete ? {
+          title: userToDelete.name || t("userManagement.detail.userProfile"),
+          meta: `${userToDelete.role || t("userManagement.detail.rolePending")} | ${userToDelete.salon || t("userManagement.detail.branchPending")}`,
+          note: userToDelete.email || t("userManagement.detail.noEmailEntered"),
+        } : null}
+        warnings={[t("userManagement.detail.softDeleteWarning")]}
+      />
     </section>
   );
 }

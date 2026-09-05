@@ -558,7 +558,7 @@ export function AdminDashboardPage() {
   const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+    <div className="flex min-h-screen flex-col text-slate-800 font-sans">
       {/* Header & Controls */}
       {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
       <div
@@ -603,12 +603,7 @@ export function AdminDashboardPage() {
       </div>
 
       <div
-        className="
-    mx-auto w-full space-y-6 p-8
-    bg-[#fff9fb]
-    bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-  "
-      >
+        className="mx-auto w-full space-y-6 p-8">
         {/* Top Metrics Row */}
         <TopMetricsRow metrics={metricCards} />
 

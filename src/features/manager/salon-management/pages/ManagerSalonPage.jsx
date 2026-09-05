@@ -48,7 +48,7 @@ function PremiumCard({ className = "", children, noHover = false, padded = true,
   );
 }
 
-function InfoItem({ icon: Icon, label, value }) {
+function InfoItem({ icon: Icon, label, value, valueClassName = "text-[#2d1b35]" }) {
   return (
     <motion.div
       variants={fadeInUp}
@@ -65,7 +65,7 @@ function InfoItem({ icon: Icon, label, value }) {
           {label}
         </span>
       </div>
-      <p className="text-[14px] font-medium text-[#2d1b35] break-all">{value}</p>
+      <p className={`text-[14px] font-medium break-all ${valueClassName}`}>{value}</p>
     </motion.div>
   );
 }
@@ -275,7 +275,12 @@ export function ManagerSalonPage() {
           <InfoItem icon={MapPin} label={isVi ? "Địa chỉ" : "Address"} value={salon?.address} />
           <InfoItem icon={Phone} label={isVi ? "Số điện thoại" : "Phone"} value={salon?.phone} />
           <InfoItem icon={Percent} label={isVi ? "Cấu hình cọc" : "Deposit Config"} value={`${(salon?.depositConfig * 100).toFixed(0)}%`} />
-          <InfoItem icon={Clock3} label={isVi ? "Trạng thái" : "Status"} value={salon?.status === "Open" ? (isVi ? "Hoạt động" : "Open") : (isVi ? "Đóng cửa" : "Closed")} />
+          <InfoItem
+            icon={Clock3}
+            label={isVi ? "Trạng thái" : "Status"}
+            value={salon?.status === "Open" ? (isVi ? "Hoạt động" : "Open") : (isVi ? "Đóng cửa" : "Closed")}
+            valueClassName={salon?.status === "Open" ? "text-green-600 border border-green-600 rounded-[16px] text-center w-fit px-2 bg-green-100" : "text-red-600 border border-red-600 rounded-[16px] text-center w-fit px-2 bg-red-100"}
+          />
         </motion.div>
       ) : (
         <PremiumCard>
@@ -310,28 +315,55 @@ export function ManagerSalonPage() {
                 placeholder={isVi ? "Nhập địa chỉ" : "Enter address"}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Cấu hình cọc (%)" : "Deposit Config (%)"}</label>
-              <input
-                name="depositConfig"
-                type="number"
-                value={formData.depositConfig}
-                onChange={handleInputChange}
-                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
-                placeholder="0"
-              />
+              <div className="flex flex-col gap-4 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-4">
+                <input
+                  name="depositConfig"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="1"
+                  value={formData.depositConfig}
+                  onChange={handleInputChange}
+                  className="w-full rounded-[12px] border border-[#f1e7ed] bg-white px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
+                  placeholder="0"
+                />
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] font-semibold text-[#a88a9f]">0%</span>
+                  <input
+                    name="depositConfig"
+                    type="range"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    value={formData.depositConfig}
+                    onChange={handleInputChange}
+                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-[#f1e7ed] accent-[#ea4f93]"
+                  />
+                  <span className="text-[12px] font-semibold text-[#ea4f93]">100%</span>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Trạng thái" : "Status"}</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
+              <div
+                className="mt-2 flex w-fit cursor-pointer items-center gap-4 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-3"
+                onClick={() => setFormData(prev => ({ ...prev, status: prev.status === 'Open' ? 'Closed' : 'Open' }))}
               >
-                <option value="Open">{isVi ? "Hoạt động" : "Open"}</option>
-                <option value="Closed">{isVi ? "Đóng cửa" : "Closed"}</option>
-              </select>
+                <div
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 ${formData.status === 'Open' ? 'bg-[#ea4f93]' : 'bg-[#e2d5db]'
+                    }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-300 ${formData.status === 'Open' ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                  />
+                </div>
+                <span className={`text-[14px] font-bold ${formData.status === 'Open' ? 'text-[#ea4f93]' : 'text-[#a88a9f]'}`}>
+                  {formData.status === "Open" ? (isVi ? "Hoạt động" : "Open") : (isVi ? "Đóng cửa" : "Closed")}
+                </span>
+              </div>
             </div>
           </div>
         </PremiumCard>

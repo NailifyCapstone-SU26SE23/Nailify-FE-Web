@@ -16,6 +16,7 @@ import {
   UserRound,
   ChevronRight,
   Eye,
+  Clock,
 } from "lucide-react";
 import { Spin, Input, Empty, Tag, Table, DatePicker, Button } from "antd";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -34,7 +35,7 @@ const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 function PremiumCard({ className = "", children, padded = true, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white ${padded ? "p-6" : ""
+      className={`relative overflow-hidden rounded-lg border border-[#f5e2ec] bg-white ${padded ? "p-6" : ""
         } shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""
         } ${className}`}
     >
@@ -297,13 +298,6 @@ export function AdminSalonBookingDetailPage() {
           </div>
         ),
       },
-      // {
-      //   title: isVi ? "Số điện thoại" : "Phone",
-      //   dataIndex: "customerPhone",
-      //   key: "customerPhone",
-      //   sorter: (a, b) => (a.customerPhone || "").localeCompare(b.customerPhone || ""),
-      //   render: (value) => <span className="text-sm text-[#5b4256]">{value}</span>,
-      // },
       {
         title: isVi ? "Ngày" : "Date",
         dataIndex: "bookingDate",
@@ -359,27 +353,7 @@ export function AdminSalonBookingDetailPage() {
           return <span className="text-[14px] font-bold text-[#2d1b35]">{formattedAmount}</span>;
         },
       },
-      // {
-      //   title: t("adminSalonBookings.services") || "Services",
-      //   key: "services",
-      //   filters: uniqueServices,
-      //   onFilter: (value, record) => {
-      //     const services = record?.services || record?.bookingItems?.map(item => item.nailVariantName || item.serviceName) || [];
-      //     return services.map(s => s?.name || s).includes(value);
-      //   },
-      //   render: (_, booking) => {
-      //     const services = booking?.services || booking?.bookingItems?.map(item => item.nailVariantName || item.serviceName) || [];
-      //     return (
-      //       <div className="flex flex-wrap gap-1">
-      //         {services.map((service, idx) => (
-      //           <Tag key={idx} color="pink" className="!bg-[#fff5fb] !text-[#ea4f93] !border-[#f0b7cf] !text-[10px]">
-      //             {service?.name || service}
-      //           </Tag>
-      //         ))}
-      //       </div>
-      //     );
-      //   },
-      // },
+
       {
         title: isVi ? "Trạng thái" : "Status",
         dataIndex: "status",
@@ -551,7 +525,7 @@ export function AdminSalonBookingDetailPage() {
 
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4">
-          <PremiumCard>
+          <PremiumCard className="rounded-lg">
             <SectionHeading
               title={t(`adminDashboard.widgets.revenueTrend`)}
               subtitle={t("adminSalonBookings.revenueFromCompletedBookingsOv")}
@@ -604,8 +578,8 @@ export function AdminSalonBookingDetailPage() {
             )}
           </PremiumCard>
 
-          <div>
-            <PremiumCard>
+          <div className="h-full">
+            <PremiumCard className="h-full rounded-lg">
               <SectionHeading
                 title={t("adminSalonBookings.quickStats")}
                 subtitle={t("adminSalonBookings.keyInformationAboutTheSalon")}
@@ -621,24 +595,24 @@ export function AdminSalonBookingDetailPage() {
                 ) : (
                   <>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.salonPhone")}
+                      <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
+                        <Phone size={12} /> {t("adminSalonBookings.salonPhone")}
                       </p>
                       <p className="text-[14px] font-bold text-[#2d1b35]">
                         {salon?.phone}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.operatingHours")}
+                      <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
+                        <Clock size={12} /> {t("adminSalonBookings.operatingHours")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
                         {salon?.hours}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
-                        {t("adminSalonBookings.location")}
+                      <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
+                        <MapPin size={12} /> {t("adminSalonBookings.location")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256] truncate">
                         {salon?.address}

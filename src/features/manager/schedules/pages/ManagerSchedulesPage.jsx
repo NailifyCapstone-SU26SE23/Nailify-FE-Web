@@ -172,10 +172,10 @@ export function ManagerSchedulesPage() {
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
-      className="flex min-h-screen flex-col gap-6 bg-[#FAF6F8] p-4 lg:p-8 font-sans"
+      className="flex min-h-screen flex-col gap-6 font-sans"
     >
       <motion.div variants={fadeInUp}>
-        <SchedulesHeader 
+        <SchedulesHeader
           staffCount={staffList.length}
           activeTodayCount={activeTodayCount}
           totalWeeklyHours={totalWeeklyHours}
@@ -189,7 +189,7 @@ export function ManagerSchedulesPage() {
       )}
 
       <motion.div variants={fadeInUp}>
-        <SchedulesFilterBar 
+        <SchedulesFilterBar
           selectedWeekStart={selectedWeekStart}
           setSelectedWeekStart={setSelectedWeekStart}
           showShiftTimes={showShiftTimes}
@@ -206,7 +206,7 @@ export function ManagerSchedulesPage() {
             <Spin size="large" tip="Loading staff schedules..." />
           </div>
         ) : (
-          <SchedulesTable 
+          <SchedulesTable
             staffList={filteredStaff}
             scheduleMatrix={scheduleMatrix}
             weekDays={weekDays}
@@ -220,7 +220,7 @@ export function ManagerSchedulesPage() {
         )}
       </motion.div>
 
-      <ScheduleModals 
+      <ScheduleModals
         staffList={staffList}
         isAddModalOpen={isAddModalOpen}
         setIsAddModalOpen={setIsAddModalOpen}

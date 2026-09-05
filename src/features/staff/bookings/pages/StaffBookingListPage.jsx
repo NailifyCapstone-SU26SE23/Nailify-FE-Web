@@ -608,7 +608,7 @@ export function StaffBookingListPage() {
   /* STREAMING_CHUNK: Render Application UI */
   return (
     <>
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+      <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
         <TopMetricsRow metrics={summaryItems} className="grid gap-4 md:grid-cols-2 xl:grid-cols-5" />
 
         <div className="">
