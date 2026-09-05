@@ -6,7 +6,7 @@ import {
   Search,
   Sparkles,
   Star,
-  Tag,
+  Tag, ListFilter, ArrowUpDown,
   WandSparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -388,11 +388,6 @@ export function NailDesignManagementPage() {
     onClick: ({ key }) => setSortBy(key),
   };
 
-  const toolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
-  const primaryToolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]";
-
   return (
     <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
@@ -403,7 +398,6 @@ export function NailDesignManagementPage() {
         <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
       </div>
 
-      <div className="grid gap-4">
       <div className="grid gap-4">
         <div>
           <div className="flex flex-col gap-3 border-b border-[#f1dce7] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -568,19 +562,6 @@ export function NailDesignManagementPage() {
             </div>
           ) : null}
 
-          <label className="relative mb-4 block max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t("adminNailsDesignManagement.searchDesignsCategoriesTags")}
-              className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-            />
-          </label>
-
           <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
               <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
@@ -721,7 +702,6 @@ export function NailDesignManagementPage() {
             </div>
           </div>
         </div>
-
       </div>
     </section>
   );
