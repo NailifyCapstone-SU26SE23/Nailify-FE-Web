@@ -631,7 +631,7 @@ export function ManagerBookingDetailPage() {
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
-      className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans bg-[#FAF6F8]"
+      className="flex min-h-[100dvh] flex-col gap-6 font-sans"
     >
       {/* Top Hero Banner */}
       <motion.div variants={fadeInUp}>
@@ -993,7 +993,7 @@ export function ManagerBookingDetailPage() {
                       render: (text, item) => (
                         <div className="flex items-start gap-4">
                           {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
-                            <div 
+                            <div
                               className="group relative w-[72px] h-[72px] rounded-xl border border-[#F3D6E5] overflow-hidden cursor-pointer hover:border-[#E84F93] transition-colors shrink-0 shadow-sm"
                               onClick={() => setActiveImageModalUrl((item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, ''))}
                             >

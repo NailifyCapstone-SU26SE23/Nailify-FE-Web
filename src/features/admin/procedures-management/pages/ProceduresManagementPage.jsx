@@ -341,7 +341,7 @@ export function ProceduresManagementPage() {
 
   return (
     <>
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         {flashMessage ? (
           <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
             {flashMessage}

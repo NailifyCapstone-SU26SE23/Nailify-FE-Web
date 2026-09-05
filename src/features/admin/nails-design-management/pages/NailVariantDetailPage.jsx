@@ -1027,7 +1027,7 @@ export function NailVariantDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[#fff7fb]">
+    <section className="flex min-h-full flex-col gap-4 ">
       <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>

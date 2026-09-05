@@ -13,7 +13,7 @@ import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[24px] border border-[#f8deea] bg-white/90 p-5 shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
+      className={`rounded-[24px] border border-[#f8deea] shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
     >
       {children}
     </article>
@@ -516,7 +516,7 @@ function CustomerNailCard({ nail }) {
             className="pointer-events-none h-full w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2"
           />
         ) : nail.nailShape?.imageUrl ? (
-          <div className="absolute inset-0 flex items-center justify-center p-5 transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2">
+          <div className="absolute inset-0 flex items-center justify-center p-5 transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2 border border-gray-200 border-1 rounded-t-[24px]">
             <div className="relative h-full w-full max-w-[130px]">
               {/* Base color layer */}
               <div className="absolute inset-0 h-full w-full" style={{ ...maskStyle, ...cardColorStyle }} />
@@ -666,7 +666,7 @@ export function CustomerNailPage() {
       }
 
       const response = await fetchCustomerNails(fetchParams);
-      
+
       let nextNails = [];
       let responseMetaData = null;
 

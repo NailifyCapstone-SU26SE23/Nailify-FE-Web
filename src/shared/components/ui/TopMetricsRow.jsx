@@ -38,7 +38,7 @@ export function TopMetricsRow({ metrics, className }) {
         return (
           <div
             key={i}
-            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+            className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl rounded-lg"
           >
             <div
               className="absolute inset-0 opacity-[0.06]"

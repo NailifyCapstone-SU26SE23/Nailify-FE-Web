@@ -201,7 +201,8 @@ export function DashboardLayout() {
 
           <section
             data-dashboard-scroll="desktop"
-            className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 min-h-0 overflow-auto"
+            className="flex-1 bg-[#fff9fb]
+    bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 min-h-0 overflow-auto"
           >
             <div className="flex min-h-full flex-col">
               <Outlet />

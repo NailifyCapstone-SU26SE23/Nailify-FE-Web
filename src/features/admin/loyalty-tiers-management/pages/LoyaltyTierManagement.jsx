@@ -29,6 +29,7 @@ import {
 import LoyaltyTierDetailModal from "../components/LoyaltyTierDetailModal";
 import { DeleteConfirmModal } from "../../quiz-management/components/DeleteConfirmModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 // Presentation-only helper: renders a tier's rank as a roman numeral stamp.
 // Purely derived from sortOrder at render time — does not touch any state.
@@ -379,7 +380,7 @@ export function LoyaltyTierManagement() {
     };
 
     return (
-        <div className="flex min-h-full flex-col gap-7 bg-[#fffbfc] text-[#4b3c46] pb-10">
+        <div className="flex min-h-full flex-col gap-7 text-[#4b3c46] pb-10">
 
             {/* Page Header + compact stat strip (replaces generic 4-box KPI grid) */}
             <div className="flex flex-col gap-5 border-b border-[#f5e3ed] pb-6">
@@ -405,35 +406,20 @@ export function LoyaltyTierManagement() {
                     </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl bg-white/70 px-5 py-3 border border-[#f5e3ed]">
-                    {[
-                        { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: totalMembers.toLocaleString(), icon: Users },
-                        { label: t("adminLoyaltyTiersManagement.activeTiers"), value: activeTiersCount, icon: Layers },
-                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${maxDiscount}%`, icon: Percent },
-                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${averageDiscount}%`, icon: TrendingUp }
-                    ].map((item, idx, arr) => {
-                        const Icon = item.icon;
-                        return (
-                            <div key={idx} className="flex items-center gap-3">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0f6] text-[#ea4f93]">
-                                    <Icon size={14} />
-                                </div>
-                                <div className="leading-tight">
-                                    <p className="nailify-mono text-lg font-bold text-[#3f2034]">{item.value}</p>
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#a6869a]">{item.label}</p>
-                                </div>
-                                {idx < arr.length - 1 && (
-                                    <span className="hidden h-8 w-px bg-[#f5e3ed] sm:block ml-5" />
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                <TopMetricsRow
+                    metrics={[
+                        { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: String(totalMembers.toLocaleString()), icon: Users, color: "#ea4f93" },
+                        { label: t("adminLoyaltyTiersManagement.activeTiers"), value: String(activeTiersCount), icon: Layers, color: "#ea4f93" },
+                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${maxDiscount}%`, icon: Percent, color: "#7c5cff" },
+                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${averageDiscount}%`, icon: TrendingUp, color: "#ff7a59" }
+                    ]}
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                />
             </div>
 
             {/* Control Bar: Search input, points filter, Status filter */}
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:max-w-2xl">
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row ">
                     <div className="relative flex-1">
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
@@ -483,7 +469,7 @@ export function LoyaltyTierManagement() {
                         initial={{ opacity: 0, height: 0, y: -10 }}
                         animate={{ opacity: 1, height: "auto", y: 0 }}
                         exit={{ opacity: 0, height: 0, y: -10 }}
-                        className="relative overflow-hidden rounded-3xl border border-[#f5cbdc] bg-[#fff6fa] p-5 pr-12 text-[#7e5570] shadow-sm"
+                        className="relative overflow-hidden rounded-lg border border-[#f5cbdc] bg-[#fff6fa] p-5 pr-12 text-[#7e5570] shadow-sm"
                     >
                         <button
                             onClick={() => setShowGuide(false)}

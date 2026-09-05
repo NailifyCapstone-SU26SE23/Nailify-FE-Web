@@ -15,7 +15,8 @@ import {
   AlertCircle,
   X,
   CreditCard,
-  Clock3
+  Clock3,
+  SlidersHorizontal, CircleX, CircleCheck, ListFilter
 } from "lucide-react";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { Pagination } from "../../../../shared/components/common/Pagination";
@@ -24,6 +25,7 @@ import { fetchAdminTransactions, fetchAdminTransactionById } from "../services/t
 import { fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -102,7 +104,7 @@ export function TransactionOverviewPage() {
       await Promise.all(
         salonsList.map(async (salon) => {
           try {
-            const data = await fetchAdminTransactions({ pageNumber: 1, pageSize: 100, salonId: salon.id });
+            const data = await fetchAdminTransactions({ pageNumber: 1, pageSize: 10, salonId: salon.id });
             const items = data.items || [];
             const paidItems = items.filter(t => t.status?.toLowerCase() === "paid");
             const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -133,7 +135,7 @@ export function TransactionOverviewPage() {
     setLoadingSalons(true);
     setSalonsError(null);
     try {
-      const response = await fetchAdminSalons({ pageIndex: 1, pageSize: 100 });
+      const response = await fetchAdminSalons({ pageIndex: 1, pageSize: 10 });
       const items = response.items || [];
       setSalons(items);
       loadSalonMetrics(items);
@@ -295,6 +297,30 @@ export function TransactionOverviewPage() {
 
     return items;
   }, [transactionsData.items, searchQuery, statusFilter]);
+
+  // Determine if server is returning paginated data or a flat array of all records
+  const isServerPaginated = useMemo(() => {
+    const totalPages = transactionsData.metaData?.totalPages || transactionsData.totalPages || 1;
+    const totalCount = transactionsData.metaData?.totalItems || transactionsData.totalCount || transactionsData.items?.length || 0;
+    return totalPages > 1;
+  }, [transactionsData]);
+
+  // Calculate actual total pages for client-side or server-side pagination
+  const totalPages = useMemo(() => {
+    if (isServerPaginated) {
+      return transactionsData.metaData?.totalPages || transactionsData.totalPages || 1;
+    }
+    return Math.max(1, Math.ceil(processedTransactions.length / pageSize));
+  }, [isServerPaginated, transactionsData, processedTransactions.length, pageSize]);
+
+  // Paginated/Sliced transactions for display
+  const displayedTransactions = useMemo(() => {
+    if (isServerPaginated) {
+      return processedTransactions;
+    }
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedTransactions.slice(startIndex, startIndex + pageSize);
+  }, [isServerPaginated, processedTransactions, currentPage, pageSize]);
 
   // Recalculate metrics for selected salon
   const metrics = useMemo(() => {
@@ -486,7 +512,7 @@ export function TransactionOverviewPage() {
   }, [language, t]);
 
   return (
-    <div className="min-h-[100dvh] bg-[#fafaf9] p-6 lg:p-8 font-sans relative overflow-hidden">
+    <div className="min-h-[100dvh] p-6 lg:p-8 font-sans relative overflow-hidden">
       {/* Background gradients */}
       <div className="absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#ea4f93]/7 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute top-[300px] left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
@@ -496,25 +522,7 @@ export function TransactionOverviewPage() {
         {/* Page Header */}
         {selectedSalon && (
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
-            {/* <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-xl bg-[#ea4f93]/10 text-[#ea4f93]">
-                <Wallet size={18} className="stroke-[2]" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {t("adminTransactions.adminAuditPortal")}
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold text-[#2d1b35] tracking-tight md:text-4xl">
-              {t("menus.admin-transactions") || "Transactions Overview"}
-            </h1>
-            <p className="text-xs md:text-sm text-[#a88a9f] max-w-[65ch] leading-relaxed">
-              {selectedSalon
-                ? (t("adminTransactions.auditingLogsFor", { name: selectedSalon.name }))
-                : (t("adminTransactions.selectSalonToAudit"))
-              }
-            </p>
-          </div> */}
+
 
             {selectedSalon && (
               <button
@@ -532,131 +540,171 @@ export function TransactionOverviewPage() {
           <div className="space-y-6">
             {/* Global Network Overview Stats */}
             {salons.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Total Salons */}
-                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-[#f1e7ed]/60 shadow-[0_10px_30px_rgba(0,0,0,0.01)] flex items-center gap-4">
-                  <span className="p-3.5 rounded-2xl bg-pink-50 text-[#ea4f93] shrink-0">
-                    <Store size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {t("adminTransactions.networkSalons")}
-                    </span>
-                    <span className="text-2xl font-bold text-[#2d1b35]">{salons.length}</span>
-                  </div>
-                </div>
-
-                {/* Total Audited Volume */}
-                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-[#f1e7ed]/60 shadow-[0_10px_30px_rgba(0,0,0,0.01)] flex items-center gap-4">
-                  <span className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600 shrink-0">
-                    <Wallet size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {t("adminTransactions.networkRevenue")}
-                    </span>
-                    <span className="text-2xl font-mono font-bold text-[#2d1b35]">
-                      {loadingMetrics ? (
-                        <Spin size="small" />
-                      ) : (
-                        formatCurrency(totalNetworkRevenue)
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Total Tx Logs */}
-                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-[#f1e7ed]/60 shadow-[0_10px_30px_rgba(0,0,0,0.01)] flex items-center gap-4">
-                  <span className="p-3.5 rounded-2xl bg-indigo-50 text-indigo-600 shrink-0">
-                    <CreditCard size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {t("adminTransactions.auditedLogs")}
-                    </span>
-                    <span className="text-2xl font-bold text-[#2d1b35]">
-                      {loadingMetrics ? (
-                        <Spin size="small" />
-                      ) : (
-                        t("adminTransactions.filesCount", { count: totalTxLogs })
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Network Success Rate */}
-                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-[#f1e7ed]/60 shadow-[0_10px_30px_rgba(0,0,0,0.01)] flex items-center gap-4">
-                  <span className="p-3.5 rounded-2xl bg-amber-50 text-amber-600 shrink-0">
-                    <AlertCircle size={20} />
-                  </span>
-                  <div>
-                    <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider block">
-                      {t("adminTransactions.avgSuccessRate")}
-                    </span>
-                    <span className="text-2xl font-mono font-bold text-[#2d1b35]">
-                      {loadingMetrics ? (
-                        <Spin size="small" />
-                      ) : (
-                        `${avgSuccessRate}%`
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <TopMetricsRow
+                metrics={[
+                  {
+                    label: t("adminTransactions.networkSalons"),
+                    value: salons.length,
+                    icon: Store,
+                    color: '#ea4f93', // pink
+                  },
+                  {
+                    label: t("adminTransactions.networkRevenue"),
+                    value: loadingMetrics ? <Spin size="small" /> : formatCurrency(totalNetworkRevenue),
+                    icon: Wallet,
+                    color: '#059669', // emerald
+                  },
+                  {
+                    label: t("adminTransactions.auditedLogs"),
+                    value: loadingMetrics ? <Spin size="small" /> : t("adminTransactions.filesCount", { count: totalTxLogs }),
+                    icon: CreditCard,
+                    color: '#4f46e5', // indigo
+                  },
+                  {
+                    label: t("adminTransactions.avgSuccessRate"),
+                    value: loadingMetrics ? <Spin size="small" /> : avgSuccessRate,
+                    unit: loadingMetrics ? '' : '%',
+                    icon: AlertCircle,
+                    color: '#d97706', // amber
+                  }
+                ]}
+                className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+              />
             )}
 
             {/* Salon Search & Filters Toolbar */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white/90 backdrop-blur-sm p-2 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
               {/* Search input */}
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
                   placeholder={t("adminTransactions.searchSalons")}
                   value={salonSearchQuery}
                   onChange={(e) => setSalonSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                  className="w-full pl-11 pr-4 py-2.5 rounded-full border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                 />
               </div>
 
               {/* Status pills and Sort drop-down */}
               <div className="flex flex-wrap items-center gap-4">
                 {/* Status pills */}
-                <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed] self-start md:self-auto">
-                  {["all", "active", "busy", "closed"].map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() => setSalonStatusFilter(st)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-200 ${salonStatusFilter === st
-                        ? "bg-[#ea4f93] text-white shadow-xs"
-                        : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
-                        }`}
-                    >
-                      {language === "vi"
-                        ? { all: "Tất cả", active: "Đang hoạt động", busy: "Bận", closed: "Đóng cửa" }[st] || st
-                        : st
-                      }
-                    </button>
-                  ))}
+                <div className="relative grid grid-cols-3 items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-xl border border-[#f1e7ed]">
+                  {/* Sliding active background */}
+                  <div
+                    className="
+                              absolute
+                              top-1
+                              bottom-1
+                              left-1
+                              w-[calc((100%-20px)/3)]
+                              rounded-lg
+                              bg-[#ea4f93]
+                              shadow-[0_3px_10px_rgba(234,79,147,0.18)]
+                              pointer-events-none
+                              transition-transform
+                              duration-300
+                              ease-[cubic-bezier(0.4,0,0.2,1)]
+                            "
+                    style={{
+                      transform:
+                        salonStatusFilter === "all"
+                          ? "translateX(0)"
+                          : salonStatusFilter === "open"
+                            ? "translateX(calc(100% + 6px))"
+                            : "translateX(calc((100% + 6px) * 2))",
+                    }}
+                  />
+
+                  {[
+                    {
+                      value: "all",
+                      labelVi: "Tất cả",
+                      labelEn: "All",
+                      icon: ListFilter,
+                    },
+                    {
+                      value: "open",
+                      labelVi: "Mở cửa",
+                      labelEn: "Open",
+                      icon: CircleCheck,
+                    },
+                    {
+                      value: "closed",
+                      labelVi: "Đóng cửa",
+                      labelEn: "Closed",
+                      icon: CircleX,
+                    },
+                  ].map(({ value, labelVi, labelEn, icon: Icon }) => {
+                    const isActive = salonStatusFilter === value;
+
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setSalonStatusFilter(value)}
+                        className={`
+                                  relative z-10
+                                  w-full
+                                  inline-flex items-center justify-center gap-1
+                                  px-2 py-1
+                                  rounded-xl
+                                  text-xs font-semibold
+                                  whitespace-nowrap
+                                  transition-colors duration-200
+                                  focus:outline-none
+                                  ${isActive
+                            ? "text-white"
+                            : "text-[#7f6478] hover:text-[#2d1b35]"
+                          }`}
+                      >
+                        <Icon
+                          size={14}
+                          strokeWidth={2}
+                          className={`
+                                    transition-all duration-300
+                                    ${isActive
+                              ? "text-white scale-105"
+                              : "text-[#a88a9f] scale-100"
+                            }`}
+                        />
+
+                        <span>
+                          {language === "vi" ? labelVi : labelEn}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Sort Option dropdown */}
                 <div className="flex items-center gap-2 self-end md:self-auto">
-                  <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
-                    {t("adminTransactions.sort")}
-                  </span>
                   <Select
                     value={salonSortOption}
                     onChange={(val) => setSalonSortOption(val)}
                     className="w-36 h-10 select-premium-antd"
                     popupClassName="select-premium-dropdown"
+                    prefix={
+                      <SlidersHorizontal
+                        size={15}
+                        strokeWidth={2}
+                        className="text-[#ea4f93]"
+                      />
+                    }
                     options={[
-                      { value: "name", label: t("adminTransactions.salonName") },
-                      { value: "rating", label: t("adminTransactions.rating") },
-                      { value: "revenue", label: t("adminTransactions.revenue") }
+                      {
+                        value: "name",
+                        label: t("adminTransactions.salonName"),
+                      },
+                      {
+                        value: "rating",
+                        label: t("adminTransactions.rating"),
+                      },
+                      {
+                        value: "revenue",
+                        label: t("adminTransactions.revenue"),
+                      },
                     ]}
-                    style={{ borderRadius: "0.875rem" }}
                   />
                 </div>
               </div>
@@ -736,8 +784,8 @@ export function TransactionOverviewPage() {
                               : "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
                             {language === "vi"
-                              ? ({ Active: "Hoạt động", Open: "Mở cửa", Busy: "Bận", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
-                              : (salon.status || "Active")
+                              ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
+                              : (salon.status)
                             }
                           </span>
 
@@ -833,83 +881,47 @@ export function TransactionOverviewPage() {
           <div className="space-y-8">
 
             {/* Bento Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Total Revenue */}
-              <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-emerald-500/80">
-                <span className="absolute top-4 right-4 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {t("adminTransactions.selectedSalonRevenue")}
-                  </span>
-                </div>
-                <div className="mt-5">
-                  <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                    {formatCurrency(metrics.totalRevenue)}
-                  </span>
-                  <p className="mt-2 text-xs text-[#a88a9f]">
-                    {t("adminTransactions.totalAuditedPaid")}
-                  </p>
-                </div>
-              </div>
-
-              {/* Success Rate */}
-              <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-indigo-500/80">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {t("adminTransactions.transactionSuccessRate")}
-                  </span>
-                  <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                    <CreditCard size={15} />
-                  </span>
-                </div>
-                <div className="mt-5">
-                  <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                    {metrics.successRate}%
-                  </span>
-                  <p className="mt-2 text-xs text-[#a88a9f]">
-                    {language === "vi"
-                      ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi`
-                      : `${metrics.paidCount} of ${metrics.totalCount} transaction logs`
-                    }
-                  </p>
-                </div>
-              </div>
-
-              {/* Pending Count */}
-              <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-amber-500/80">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">
-                    {t("adminTransactions.pendingPayments")}
-                  </span>
-                  <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                    <Clock3 size={15} />
-                  </span>
-                </div>
-                <div className="mt-5">
-                  <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                    {metrics.pendingCount}
-                  </span>
-                  <p className="mt-2 text-xs text-[#a88a9f]">
-                    {t("adminTransactions.unsettledRecords")}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <TopMetricsRow
+              metrics={[
+                {
+                  label: t("adminTransactions.selectedSalonRevenue"),
+                  value: formatCurrency(metrics.totalRevenue),
+                  icon: Wallet,
+                  color: '#10b981', // emerald
+                  note: t("adminTransactions.totalAuditedPaid")
+                },
+                {
+                  label: t("adminTransactions.transactionSuccessRate"),
+                  value: metrics.successRate,
+                  unit: '%',
+                  icon: CreditCard,
+                  color: '#6366f1', // indigo
+                  note: language === "vi"
+                    ? `${metrics.paidCount} trên tổng số ${metrics.totalCount} bản ghi`
+                    : `${metrics.paidCount} of ${metrics.totalCount} transaction logs`
+                },
+                {
+                  label: t("adminTransactions.pendingPayments"),
+                  value: metrics.pendingCount,
+                  icon: Clock3,
+                  color: '#f59e0b', // amber
+                  note: t("adminTransactions.unsettledRecords")
+                }
+              ]}
+              className="grid gap-6 grid-cols-1 md:grid-cols-3"
+            />
 
             {/* Filters Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-2 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
               {/* Search bar */}
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
                   placeholder={t("adminTransactions.searchTransactions")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                  className="w-full pl-11 pr-4 py-3 rounded-full border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
                 />
                 {searchQuery && (
                   <button
@@ -923,24 +935,40 @@ export function TransactionOverviewPage() {
 
               {/* Status Dropdown */}
               <div className="flex items-center gap-3 self-end sm:self-auto">
-                <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
-                  {t("adminTransactions.statusLabel")}
-                </span>
                 <Select
                   value={statusFilter}
                   onChange={(val) => setStatusFilter(val)}
                   className="w-40 h-11 select-premium-antd"
                   popupClassName="select-premium-dropdown"
+                  prefix={
+                    <ListFilter
+                      size={15}
+                      strokeWidth={2}
+                      className="text-[#ea4f93]"
+                    />
+                  }
                   options={[
-                    { value: "all", label: t("adminTransactions.allStatuses") },
-                    { value: "paid", label: t("adminTransactions.paid") },
-                    { value: "pending", label: t("adminTransactions.pending") },
-                    { value: "expired", label: t("adminTransactions.expired") },
-                    { value: "canceled", label: t("adminTransactions.canceled") }
+                    {
+                      value: "all",
+                      label: t("adminTransactions.allStatuses"),
+                    },
+                    {
+                      value: "paid",
+                      label: t("adminTransactions.paid"),
+                    },
+                    {
+                      value: "pending",
+                      label: t("adminTransactions.pending"),
+                    },
+                    {
+                      value: "expired",
+                      label: t("adminTransactions.expired"),
+                    },
+                    {
+                      value: "canceled",
+                      label: t("adminTransactions.canceled"),
+                    },
                   ]}
-                  style={{
-                    borderRadius: "1rem",
-                  }}
                 />
               </div>
             </div>
@@ -1007,13 +1035,13 @@ export function TransactionOverviewPage() {
                   variants={staggerContainer}
                   initial="hidden"
                   animate="visible"
-                  className="overflow-hidden bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
+                  className="overflow-hidden bg-white rounded-lg border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
                 >
                   <div className="overflow-x-auto">
                     <Table
                       rowKey="transactionId"
                       columns={transactionColumns}
-                      dataSource={processedTransactions}
+                      dataSource={displayedTransactions}
                       pagination={false}
                       onRow={(record) => ({
                         onClick: () => {
@@ -1029,17 +1057,17 @@ export function TransactionOverviewPage() {
                   </div>
 
                   {/* Pagination footer */}
-                  {transactionsData.totalPages > 1 && (
+                  {processedTransactions.length > 0 && (
                     <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                       <span className="text-xs text-[#a88a9f]">
                         {language === "vi"
-                          ? <span>Đang hiển thị <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> mục</span>
-                          : <span>Showing <span className="font-bold text-[#2d1b35]">{processedTransactions.length}</span> items</span>
+                          ? <span>Đang hiển thị <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> / <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> mục</span>
+                          : <span>Showing <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> of <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> items</span>
                         }
                       </span>
                       <Pagination
                         currentPage={currentPage}
-                        totalPages={transactionsData.totalPages}
+                        totalPages={totalPages}
                         onPageChange={(p) => setCurrentPage(p)}
                       />
                     </div>
