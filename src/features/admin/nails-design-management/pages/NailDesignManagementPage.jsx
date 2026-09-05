@@ -394,7 +394,7 @@ export function NailDesignManagementPage() {
     "inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]";
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
 
       </div>
@@ -404,20 +404,51 @@ export function NailDesignManagementPage() {
       </div>
 
       <div className="grid gap-4">
+      <div className="grid gap-4">
         <div>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-extrabold text-[#432744]">
-                {t("adminNailsDesignManagement.designGallery")}
-              </h3>
-              <p className="mt-1 text-[11px] text-[#c694ad]">
-                {language === "vi"
-                  ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} thiết kế`
-                  : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} designs`
-                }
-              </p>
-            </div>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-3 border-b border-[#f1dce7] p-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <label className="relative block w-full sm:min-w-0 sm:flex-1">
+              <Search
+                size={15}
+                strokeWidth={2}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b58da3]"
+              />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t(
+                  "adminNailsDesignManagement.searchDesignsCategoriesTags"
+                )}
+                className="
+        h-10
+        w-full
+        rounded-full
+        border
+        border-[#f1dce7]
+        bg-[#fff9fc]
+        pl-10
+        pr-4
+        text-xs
+        font-medium
+        text-[#432744]
+        outline-none
+        transition-all
+        duration-200
+        placeholder:text-[#c39caf]
+        hover:border-[#ea4f93]/40
+        focus:border-[#ea4f93]
+        focus:bg-white
+        focus:ring-2
+        focus:ring-[#ea4f93]/10
+      "
+              />
+            </label>
+
+            {/* Toolbar Actions */}
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              {/* Filter */}
               <Dropdown
                 menu={filterMenu}
                 trigger={["click"]}
@@ -426,61 +457,106 @@ export function NailDesignManagementPage() {
               >
                 <button
                   type="button"
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                  className={`
+                    w-[150px]
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${selectedCategoryIds.length > 0
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93] shadow-[0_3px_10px_rgba(234,79,147,0.08)]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
                 >
-                  {selectedCategoryIds.length > 0
-                    ? `${t("adminNailsDesignManagement.filter")}: ${
-                        selectedCategoryIds.length === 1
-                          ? (categoriesList.find((c) => c.categoryId === selectedCategoryIds[0])?.name || "")
-                          : language === "vi"
-                            ? `${selectedCategoryIds.length} danh mục`
-                            : `${selectedCategoryIds.length} categories`
-                      }`
-                    : t("adminNailsDesignManagement.filter")
-                  }
+                  <ListFilter size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {selectedCategoryIds.length > 0
+                      ? selectedCategoryIds.length === 1
+                        ? categoriesList.find(
+                          (c) => c.categoryId === selectedCategoryIds[0]
+                        )?.name || t("adminNailsDesignManagement.filter")
+                        : language === "vi"
+                          ? `${selectedCategoryIds.length} danh mục`
+                          : `${selectedCategoryIds.length} categories`
+                      : t("adminNailsDesignManagement.filter")}
+                  </span>
+
+                  {selectedCategoryIds.length > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ea4f93] px-1.5 text-[10px] font-bold text-white">
+                      {selectedCategoryIds.length}
+                    </span>
+                  )}
                 </button>
               </Dropdown>
+
+              {/* Sort */}
               <Dropdown menu={sortMenu} trigger={["click"]}>
                 <button
                   type="button"
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                  className={`
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${sortBy
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
                 >
-                  {sortBy
-                    ? `${t("adminNailsDesignManagement.sort")}: ${sortItems.find((s) => s.key === sortBy)?.label || ""}`
-                    : t("adminNailsDesignManagement.sort")
-                  }
+                  <ArrowUpDown size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {sortBy
+                      ? sortItems.find((s) => s.key === sortBy)?.label ||
+                      t("adminNailsDesignManagement.sort")
+                      : t("adminNailsDesignManagement.sort")}
+                  </span>
                 </button>
               </Dropdown>
-              <div className="flex flex-wrap gap-2">
-                {/* <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Tag size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.manageTags")}
-          </button> */}
-                {/* <Link
-            to={getAdminNailDesignCategoriesRoute()}
-            className={toolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.addCategory")}
-          </Link> */}
-                {/* <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Upload size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.uploadTryonAsset")}
-          </button> */}
-                <Link
-                  to={ROUTES.adminNailDesignsCreate}
-                  className={primaryToolbarButtonClassName}
-                >
-                  <Plus size={13} className="mr-1.5 shrink-0" />
-                  {t("adminNailsDesignManagement.addDesign")}
-                </Link>
-              </div>
+
+              {/* Add Design */}
+              <Link
+                to={ROUTES.adminNailDesignsCreate}
+                className="
+        inline-flex
+        h-10
+        items-center
+        gap-2
+        rounded-full
+        bg-gradient-to-r
+        from-[#ea4f93]
+        to-[#ff8ebb]
+        px-4
+        text-xs
+        font-semibold
+        text-white
+        shadow-[0_5px_14px_rgba(234,79,147,0.20)]
+        transition-all
+        duration-200
+        hover:-translate-y-0.5
+        hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
+      "
+              >
+                <Plus size={15} strokeWidth={2.5} />
+                <span>{t("adminNailsDesignManagement.addDesign")}</span>
+              </Link>
             </div>
           </div>
 

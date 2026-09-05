@@ -1134,7 +1134,7 @@ export function ManagerBookingListPage() {
   };
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#FAF6F8] p-4 lg:p-8 font-sans">
+    <section className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans">
       {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="relative overflow-hidden rounded-[28px] border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-6 lg:p-8 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">

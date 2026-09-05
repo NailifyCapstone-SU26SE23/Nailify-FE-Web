@@ -1272,11 +1272,8 @@ export function ReceptionistDashboardPage() {
 
 
   return (
-    <section className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
-      <div className="mx-auto w-full space-y-6 p-4 md:p-8
-                      bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-                    ">
+    <section className="flex min-h-screen flex-col text-slate-800 font-sans">
+      <div className="w-full space-y-6 p-4 md:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div>
             <h1 className="text-2xl font-black text-[#e14f91]">{t("receptionDesk") || "Receptionist Dashboard"}</h1>

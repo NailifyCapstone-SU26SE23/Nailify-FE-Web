@@ -705,7 +705,7 @@ export function NailDesignManagementDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+      <section className="flex min-h-full items-center justify-center flex min-h-full flex-col gap-4 px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("adminNailsDesignManagement.loadingNailDesignDetail")}
@@ -720,7 +720,7 @@ export function NailDesignManagementDetailPage() {
 
   if (!formValues) {
     return (
-      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+      <section className="flex min-h-full items-center justify-center flex min-h-full flex-col gap-4 px-4 py-10">
         <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           {error || "Failed to load nail design detail."}
         </div>
@@ -973,7 +973,7 @@ export function NailDesignManagementDetailPage() {
   };
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <style>
         {`
           .skill-level-slider::-webkit-slider-thumb {

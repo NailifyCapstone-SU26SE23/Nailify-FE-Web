@@ -52,7 +52,7 @@ const PINK_BUTTON_STYLE = { backgroundColor: "#ea4f93", borderColor: "#ea4f93" }
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""} ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-[#f5e2ec] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""} ${className}`}
     >
       {children}
     </article>
@@ -169,12 +169,6 @@ RightMetricCard.propTypes = {
   index: PropTypes.number,
 };
 
-/**
- * FIX: card now stretches full height (h-full) inside its fixed-width wrapper,
- * uses `truncate` + `min-w-0` on text so long content never pushes the card
- * wider, and pins the rating row to the bottom with `mt-auto` so every card
- * in the row ends up the same height regardless of how much text it holds.
- */
 function BranchCard({ branch, onClick }) {
 
   const { t, language } = useLanguage();
@@ -186,23 +180,27 @@ function BranchCard({ branch, onClick }) {
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white text-left shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all"
+      className="group relative flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white text-left shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all"
     >
-      <img
-        crossOrigin="anonymous"
-        src={branch.image}
-        alt={branch.name}
-        className="h-44 w-full shrink-0 object-cover"
-        referrerPolicy="no-referrer"
-      />
+      <div className="relative h-44 w-full shrink-0">
+        <img
+          crossOrigin="anonymous"
+          src={branch.image}
+          alt={branch.name}
+          className="h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute right-4 top-4 z-10">
+          <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md ${branch.statusColor}`}>
+            {branch.status}
+          </span>
+        </div>
+      </div>
       <div className="flex flex-1 flex-col space-y-4 p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-[16px] font-bold text-[#2d1b35]">{branch.name}</p>
           </div>
-          <span className={`shrink-0 rounded-full px-4 py-2 text-[11px] font-bold ${branch.statusColor}`}>
-            {branch.status}
-          </span>
         </div>
         <div className="space-y-3 text-[13px] text-[#5b4256]">
           <div className="flex items-center gap-2">
@@ -380,7 +378,7 @@ export function SalonManagementPage() {
   const [notificationModal, setNotificationModal] = useState({ open: false, success: false, title: "", message: "" });
   const CARD_WIDTH = 340;
   const GAP = 24;
-  const SALONS_PER_PAGE = 2;
+  const SALONS_PER_PAGE = 3;
   const BRANCH_CONTROLS_PER_PAGE = 5;
 
   useEffect(() => {
@@ -774,12 +772,12 @@ export function SalonManagementPage() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -20 }}
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                          className="flex gap-6"
+                          className="flex gap-4 xl:gap-6 w-full"
                         >
                           {visibleBranchSalons.map((branch) => (
                             <div
                               key={branch.id}
-                              className="w-[340px] shrink-0"
+                              className="flex-1 min-w-[200px] max-w-[340px]"
                             >
                               <BranchCard
                                 branch={branch}
@@ -855,9 +853,9 @@ export function SalonManagementPage() {
             </aside>
           </motion.div>
 
-            <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
-              {/* Branch Controls */}
-              <PremiumCard className="p-6">
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="mt-6">
+            {/* Branch Controls */}
+            <PremiumCard className="p-6">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <SectionHeading
@@ -922,7 +920,7 @@ export function SalonManagementPage() {
                   </div>
                 </div>
               </div>
-              <div className="overflow-hidden rounded-[28px] border border-[#f5e2ec]">
+              <div className="overflow-hidden rounded-lg border border-[#f5e2ec]">
                 <div className="bg-white overflow-x-auto">
                   <Table
                     rowKey="id"

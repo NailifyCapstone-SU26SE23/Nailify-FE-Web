@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import { AUTH_STATUS } from "../constants/authConstants";
 import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const loginSchema = z.object({
   email: z
@@ -24,14 +25,6 @@ const loginSchema = z.object({
     .min(6, "Password must be at least 6 characters.")
     .max(30, "Password must be at most 30 characters."),
 });
-
-const demoAccounts = [
-  "(admin) admin@nailify.com / 123456",
-  "(manager) tuedo4@gmail.com / 123456",
-  "(staff) tuedo2@gmail.com / 123456",
-  "(receptionist) recep@gmail.com / 123456",
-  "(staff) hieu@gmail.com / 123456",
-];
 
 const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 1}`);
 
@@ -51,6 +44,8 @@ export function LoginPage() {
       password: "123456",
     },
   });
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -60,7 +55,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (searchParams.get("reason") === "session_expired") {
-      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", { duration: 4000, id: "session_expired" });
+      toast.error(isVi ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." : "Session expired. Please login again.", { duration: 4000, id: "session_expired" });
       // Remove the reason param from URL so it doesn't show again on refresh
       setSearchParams(new URLSearchParams());
     }
@@ -135,16 +130,16 @@ export function LoginPage() {
           <div className="relative z-10 flex h-full flex-col justify-between gap-8">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur">
               <ShieldCheck size={16} />
-              Internal Access
+              {isVi ? "Truy cập nội bộ" : "Internal Access"}
             </div>
 
             <div className="max-w-md space-y-4 py-4 md:py-10">
               <h1 className="text-4xl font-semibold leading-tight md:text-5xl xl:text-6xl">
-                Welcome back!
+                {isVi ? "Chào mừng trở lại!" : "Welcome back!"}
               </h1>
               <p className="text-base leading-7 text-white/90 md:text-lg md:leading-8">
-                Sign in with your internal role account to access the Nailify
-                operations workspace.
+                {isVi ? "Đăng nhập với tài khoản vai trò nội bộ của bạn để truy cập không gian làm việc vận hành Nailify" :
+                  "Sign in with your internal role account to access the Nailify operations workspace."}
               </p>
             </div>
             <div className="rounded-[28px] h-full p-5" />
@@ -155,21 +150,21 @@ export function LoginPage() {
           <div className="mx-auto flex h-full max-w-md flex-col justify-center">
             <div className="mb-6 space-y-2.5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d85a9b]">
-                Sign In
+                {isVi ? "Đăng nhập" : "Sign In"}
               </p>
               <h2 className="text-3xl font-semibold text-[var(--color-ink)] md:text-4xl">
-                Internal Login
+                {isVi ? "Đăng nhập tài khoản nội bộ" : "Internal Login"}
               </h2>
               <p className="text-sm leading-6 text-[var(--color-muted)]">
-                This screen is for existing internal role accounts only. New
-                account creation is not available here.
+                {isVi ? "Đây là màn hình dành cho tài khoản có vai trò nội bộ đã có. Không thể tạo tài khoản mới tại đây." :
+                  "This screen is for existing internal role accounts only. New account creation is not available here."}
               </p>
             </div>
 
             <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                  Username or email
+                  Email
                 </span>
                 <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ef6bb4]">
                   <Mail size={18} className="mr-3 text-[#d38f6b]" />
@@ -188,7 +183,7 @@ export function LoginPage() {
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                  Password
+                  {isVi ? "Mật khẩu" : "Password"}
                 </span>
                 <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ffbf69]">
                   <LockKeyhole size={18} className="mr-3 text-[#d38f6b]" />
@@ -202,7 +197,7 @@ export function LoginPage() {
                     type="button"
                     onClick={() => setIsPasswordVisible((current) => !current)}
                     className="ml-3 text-[#d38f6b] transition hover:text-[#c76f46]"
-                    aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                    aria-label={isPasswordVisible ? (isVi ? "Ẩn mật khẩu" : "Hide password") : (isVi ? "Hiện mật khẩu" : "Show password")}
                   >
                     {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -221,10 +216,10 @@ export function LoginPage() {
                     defaultChecked
                     className="h-4 w-4 rounded border-[#efc9d8] accent-[#ef5db4]"
                   />
-                  <span>Remember me</span>
+                  {isVi ? "Nhớ tôi" : "Remember me"}
                 </label>
                 <Link to={ROUTES.forgotPassword} className="font-semibold text-[#d85a9b] hover:underline">
-                  Forgot password?
+                  {isVi ? "Quên mật khẩu?" : "Forgot password?"}
                 </Link>
               </div>
 
@@ -239,15 +234,16 @@ export function LoginPage() {
                 disabled={status === AUTH_STATUS.loading}
                 className="w-full rounded-full bg-[linear-gradient(90deg,#ef5db4_0%,#f59b6c_58%,#ffd95a_100%)] px-4 py-3 font-semibold text-white shadow-[0_18px_34px_rgba(239,93,180,0.32)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {status === AUTH_STATUS.loading ? "Signing in..." : "Sign In"}
+                {status === AUTH_STATUS.loading ? (isVi ? "Đang đăng nhập..." : "Signing in...") : (isVi ? "Đăng nhập" : "Sign In")}
               </button>
 
-              <div className="rounded-[24px] bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-[var(--color-muted)]">
-                <span className="flex items-center gap-2 font-semibold text-[var(--color-ink)]">
-                  <ShieldQuestionMark size={20} /> Access policy:
+              <div className="rounded-[24px] border border-gray-200 bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-gray-600">
+                <span className="inline-flex items-center align-middle gap-2 font-semibold text-black">
+                  <ShieldQuestionMark size={20} />
+                  {isVi ? "Chính sách truy cập: " : "Access policy: "}
                 </span>{" "}
-                only existing Staff, Manager, and Admin accounts can sign in on
-                this page.
+                {isVi ? "chỉ tài khoản Nhân viên, Quản lý và Quản trị viên hiện có mới có thể đăng nhập trên trang này." :
+                  "only existing Staff, Manager, and Admin accounts can sign in on this page."}
               </div>
             </form>
           </div>

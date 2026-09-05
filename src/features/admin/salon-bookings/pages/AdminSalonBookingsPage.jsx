@@ -351,21 +351,6 @@ export function AdminSalonBookingsPage() {
   return (
     <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 py-8">
       <motion.div key="salons-list" initial="hidden" animate="visible" variants={fadeInUp}>
-        {/* <Breadcrumb
-          items={[
-            { label: t("menus.admin-dashboard") || "Dashboard", link: ROUTES.adminDashboard, icon: Home },
-            { label: t("menus.admin-bookings") || "Salon Bookings" },
-          ]}
-        />
-
-        <div className="mb-8">
-          <h1 className="text-[32px] font-extrabold tracking-tight text-[#3d1f3f]">
-            {t("header.bookings.title") || "Salon Bookings Overview"}
-          </h1>
-          <p className="mt-2 text-[14px] text-[#9a5f7f]">
-            {isVi ? "Chọn chi nhánh để xem và quản lý lịch sử đặt lịch" : "Select a salon to view and manage its booking history"}
-          </p>
-        </div> */}
 
         {isLoadingSalons ? (
           <div className="flex flex-col items-center justify-center py-24">

@@ -355,7 +355,7 @@ export function RescheduleBooking() {
   const selectedSuggestedTime = Form.useWatch("suggestedTime", suggestForm);
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#f9fafb] p-4 lg:p-8">
+    <section className="flex min-h-[100dvh] flex-col gap-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <article className="relative overflow-hidden rounded-[28px] border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">

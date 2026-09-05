@@ -34,7 +34,7 @@ const ALL_ROLES_VALUE = "__all__";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-2xl border border-[#f0d9e8] bg-white p-6 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] md:p-7 ${className}`}
+      className={`rounded-lg border border-[#f0d9e8] shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] ${className}`}
     >
       {children}
     </article>
@@ -146,8 +146,6 @@ StaffCard.propTypes = {
   onClick: PropTypes.func,
 };
 
-// Helper: đọc field theo nhiều tên có thể có (giống style normalizeStaffMember
-// bên service) vì chưa biết chính xác field name BE trả về cho lịch làm việc.
 function pickField(entry, keys) {
   for (const key of keys) {
     if (entry?.[key] !== undefined && entry[key] !== null && entry[key] !== "") {
@@ -470,106 +468,182 @@ export function StaffManagementPage() {
         />
       )}
 
-      {/* <Card className="overflow-hidden border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-0 shadow-lg">
-        <div className="flex flex-col gap-6 p-7 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-xl">
-                <Users size={28} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-[#2d1b35]">
-                  {t("menus.admin-staff") || "Staff Management"}
-                </h1>
-                <p className="text-sm text-[#a6869a]">
-                  {t("adminStaffManagement.manageStaffDesc")}
-                </p>
-              </div>
-            </div>
-            <p className="mt-4 text-sm leading-relaxed text-[#8b7382]">
-              {t("adminStaffManagement.viewManageStaffDesc")}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
-            >
-              <Download size={16} />
-              {t("adminStaffManagement.export")}
-            </button>
-            <Link
-              to={ROUTES.adminStaffCreate}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
-            >
-              <Plus size={16} />
-              {t("adminStaffManagement.addStaff")}
-            </Link>
-          </div>
-        </div>
-      </Card> */}
-
       {!loadingSalons && (
         <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" />
       )}
 
       <div className="grid gap-4">
-        <Card className="p-0">
-          <div className="flex flex-col gap-4 border-b border-[#f0d9e8] bg-gradient-to-b from-[#fff9fb] to-[#fffafb] p-6 lg:flex-row lg:items-center lg:justify-between">
-            <SectionHeading
-              title={t("adminStaffManagement.salonStaff")}
-              subtitle={filteredStaff.length === 1 ? t("adminStaffManagement.staffCountSingle", { count: 1 }) : t("adminStaffManagement.staffCount", { count: filteredStaff.length })}
-            />
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-2">
-                <Building2 size={16} className="text-[#a88a9f]" />
-                <Select
-                  style={{ width: 250 }}
-                  placeholder={t("adminStaffManagement.selectSalon")}
-                  value={selectedSalonId}
-                  onChange={setSelectedSalonId}
-                  options={salons.map(s => ({ label: s.name, value: s.id }))}
-                  disabled={loadingSalons}
-                />
-              </div>
-              <Select
-                style={{ width: 180 }}
-                placeholder={t("adminStaffManagement.selectRole")}
-                value={selectedRole}
-                onChange={setSelectedRole}
-                options={roleOptions.map((option) => ({
-                  ...option,
-                  value: option.value ?? ALL_ROLES_VALUE,
-                }))}
-                disabled={loadingStaff}
+        <Card >
+          <div className="rounded-2xl border border-[#f1dce7] bg-white/90 shadow-[0_6px_24px_rgba(45,27,53,0.05)] backdrop-blur-sm">
+            {/* Header */}
+            <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
+              {/* Title */}
+              <SectionHeading
+                title={t("adminStaffManagement.salonStaff")}
+                subtitle={
+                  filteredStaff.length === 1
+                    ? t("adminStaffManagement.staffCountSingle", { count: 1 })
+                    : t("adminStaffManagement.staffCount", {
+                      count: filteredStaff.length,
+                    })
+                }
               />
-              <label className="relative block min-w-[220px]">
-                <Search
-                  size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a88a9f]"
+
+              {/* Controls */}
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+                {/* Salon */}
+                <div className="flex h-10 items-center gap-2 rounded-full border border-[#f1dce7] bg-[#fff9fc] px-1.5 shadow-[0_2px_8px_rgba(234,79,147,0.04)] transition-all duration-200 hover:border-[#ea4f93]/40 hover:bg-white">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff0f7] text-[#ea4f93]">
+                    <Building2 size={15} strokeWidth={2.2} />
+                  </div>
+
+                  <Select
+                    bordered={false}
+                    placeholder={t("adminStaffManagement.selectSalon")}
+                    value={selectedSalonId}
+                    onChange={setSelectedSalonId}
+                    options={salons.map((s) => ({
+                      label: s.name,
+                      value: s.id,
+                    }))}
+                    disabled={loadingSalons}
+                    className="
+            w-[215px]
+            font-semibold
+            [&_.ant-select-selector]:!bg-transparent
+            [&_.ant-select-selector]:!px-1
+            [&_.ant-select-selection-item]:!text-[#432744]
+            [&_.ant-select-selection-item]:!font-semibold
+            [&_.ant-select-selection-placeholder]:!text-[#a88a9f]
+            [&_.ant-select-arrow]:!text-[#a88a9f]
+          "
+                    popupClassName="select-premium-dropdown"
+                  />
+                </div>
+
+                {/* Role */}
+                <Select
+                  value={selectedRole}
+                  onChange={setSelectedRole}
+                  placeholder={t("adminStaffManagement.selectRole")}
+                  options={roleOptions.map((option) => ({
+                    ...option,
+                    value: option.value ?? ALL_ROLES_VALUE,
+                  }))}
+                  disabled={loadingStaff}
+                  className="
+          w-full
+          xl:w-[170px]
+          [&_.ant-select-selector]:!h-10
+          [&_.ant-select-selector]:!rounded-full
+          [&_.ant-select-selector]:!border-[#f1dce7]
+          [&_.ant-select-selector]:!bg-[#fff9fc]
+          [&_.ant-select-selection-item]:!text-[#432744]
+          [&_.ant-select-selection-item]:!font-semibold
+          [&_.ant-select-selection-placeholder]:!text-[#a88a9f]
+          [&_.ant-select-arrow]:!text-[#a88a9f]
+          hover:[&_.ant-select-selector]:!border-[#ea4f93]/40
+        "
+                  popupClassName="select-premium-dropdown"
                 />
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
-                  className="h-10 w-full rounded-full border border-[#f0d9e8] bg-white pl-9 pr-4 text-xs text-[#5c4158] outline-none transition placeholder:text-[#d198b0] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
-                />
-              </label>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[#f0d9e8] bg-white px-4 py-2.5 text-xs font-semibold text-[#ea4f93] shadow-md hover:shadow-lg hover:border-[#ea4f93] transition duration-200"
-                >
-                  <Download size={16} />
-                  {t("adminStaffManagement.export")}
-                </button>
-                <Link
-                  to={ROUTES.adminStaffCreate}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea4f93] to-[#ff8ebb] px-4 py-2.5 text-xs font-semibold text-white shadow-lg hover:shadow-xl transition duration-200"
-                >
-                  <Plus size={16} />
-                  {t("adminStaffManagement.addStaff")}
-                </Link>
+
+                {/* Search */}
+                <label className="relative block w-full xl:w-[220px]">
+                  <Search
+                    size={15}
+                    strokeWidth={2}
+                    className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#a88a9f]"
+                  />
+
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
+                    className="
+            h-10
+            w-full
+            rounded-full
+            border
+            border-[#f1dce7]
+            bg-[#fff9fc]
+            pl-10
+            pr-4
+            text-xs
+            font-medium
+            text-[#432744]
+            outline-none
+            transition-all
+            duration-200
+            placeholder:text-[#b99aaa]
+            hover:border-[#ea4f93]/40
+            focus:border-[#ea4f93]
+            focus:bg-white
+            focus:ring-2
+            focus:ring-[#ea4f93]/10
+          "
+                  />
+                </label>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  {/* Export */}
+                  <button
+                    type="button"
+                    className="
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            gap-2
+            rounded-full
+            border
+            border-[#f1dce7]
+            bg-white
+            px-4
+            text-xs
+            font-semibold
+            text-[#7f6478]
+            shadow-[0_2px_8px_rgba(45,27,53,0.04)]
+            transition-all
+            duration-200
+            hover:border-[#ea4f93]/40
+            hover:bg-[#fff8fb]
+            hover:text-[#ea4f93]
+            hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]
+          "
+                  >
+                    <Download size={15} strokeWidth={2.2} />
+                    <span>{t("adminStaffManagement.export")}</span>
+                  </button>
+
+                  {/* Add Staff */}
+                  <Link
+                    to={ROUTES.adminStaffCreate}
+                    className="
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            gap-2
+            rounded-full
+            bg-gradient-to-r
+            from-[#ea4f93]
+            to-[#ff8ebb]
+            px-4
+            text-xs
+            font-semibold
+            text-white
+            shadow-[0_5px_14px_rgba(234,79,147,0.20)]
+            transition-all
+            duration-200
+            hover:-translate-y-0.5
+            hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
+          "
+                  >
+                    <Plus size={15} strokeWidth={2.5} />
+                    <span>{t("adminStaffManagement.addStaff")}</span>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -596,7 +670,7 @@ export function StaffManagementPage() {
               </div>
             ) : (
               <>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {/* {filteredStaff.map((staff) => (
                     <StaffCard
                       key={staff.id}
