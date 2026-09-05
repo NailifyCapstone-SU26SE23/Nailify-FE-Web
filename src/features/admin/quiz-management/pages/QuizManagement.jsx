@@ -321,7 +321,7 @@ export function QuizManagement() {
     };
 
     return (
-        <div className="flex min-h-full flex-col gap-6 bg-[#fffbfc] text-[#4b3c46] pb-10">
+        <div className="flex min-h-full flex-col gap-6 text-[#4b3c46] pb-10">
             {/* TopMetricsRow */}
             <div className="mb-2">
                 <TopMetricsRow

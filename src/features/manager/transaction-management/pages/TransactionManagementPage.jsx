@@ -24,6 +24,7 @@ import dayjs from "dayjs";
 import { RefundConfirmModal } from "../components/RefundConfirmModal";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -74,7 +75,7 @@ export function TransactionManagementPage() {
     totalCount: 0,
     totalPages: 0,
   });
-  
+
   const [selectedSort, setSelectedSort] = useState("createdAt-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -225,16 +226,17 @@ export function TransactionManagementPage() {
 
   // Determine if server is returning paginated data or a flat array of all records
   const isServerPaginated = useMemo(() => {
-    return transactionsData.totalPages > 1 && transactionsData.items.length < transactionsData.totalCount;
+    const totalPages = transactionsData.metaData?.totalPages || transactionsData.totalPages || 1;
+    return totalPages > 1;
   }, [transactionsData]);
 
   // Calculate actual total pages for client-side or server-side pagination
   const totalPages = useMemo(() => {
     if (isServerPaginated) {
-      return transactionsData.totalPages;
+      return transactionsData.metaData?.totalPages || transactionsData.totalPages || 1;
     }
     return Math.max(1, Math.ceil(sortedTransactions.length / pageSize));
-  }, [isServerPaginated, transactionsData.totalPages, sortedTransactions.length, pageSize]);
+  }, [isServerPaginated, transactionsData, sortedTransactions.length, pageSize]);
 
   // Paginated/Sliced transactions for display
   const displayedTransactions = useMemo(() => {
@@ -326,7 +328,7 @@ export function TransactionManagementPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#fafaf9] p-6 lg:p-8 font-sans relative overflow-hidden">
+    <div className="min-h-[100dvh] font-sans relative overflow-hidden">
       {/* Premium background mesh gradients */}
       <div className="absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#ea4f93]/7 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute top-[300px] left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
@@ -360,61 +362,33 @@ export function TransactionManagementPage() {
         </div>
 
         {/* Bento Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Revenue Metric */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-emerald-500/80 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_50px_-15px_rgba(234,79,147,0.06)] group">
-            {/* <span className="absolute top-4 right-4 flex h-2 w-2"> */}
-
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Tổng doanh thu" : "Total Revenue"}</span>
-              <span className="p-2 rounded-xl bg-green-50 text-green-600 transition-colors group-hover:bg-green-100">
-                {/* <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span> */}
-                <CircleCheck size={20} color="#10b981" />
-              </span>
-            </div>
-            <div className="mt-5">
-              <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                {formatCurrency(metrics.totalRevenue)}
-              </span>
-              <p className="mt-2 text-xs text-[#a88a9f] group-hover:text-[#2d1b35]/70 transition-colors">{language === "vi" ? "Tính từ giao dịch thành công" : "Calculated from successful transactions"}</p>
-            </div>
-          </div>
-
-          {/* Success Rate */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-indigo-500/80 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_50px_-15px_rgba(234,79,147,0.06)] group">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Tỷ lệ thành công" : "Success Rate"}</span>
-              <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-100">
-                <CreditCard size={15} />
-              </span>
-            </div>
-            <div className="mt-5">
-              <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                {metrics.successRate}%
-              </span>
-              <p className="mt-2 text-xs text-[#a88a9f] group-hover:text-[#2d1b35]/70 transition-colors">
-                {metrics.paidCount} {language === "vi" ? "của" : "of"} {metrics.totalCount} {language === "vi" ? "giao dịch hoàn thành" : "transactions completed"}
-              </p>
-            </div>
-          </div>
-
-          {/* Pending Count */}
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[#f1e7ed]/60 bg-white/70 backdrop-blur-md p-8 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.02)] border-l-4 border-l-amber-500/80 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_50px_-15px_rgba(234,79,147,0.06)] group">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#a88a9f]">{language === "vi" ? "Thanh toán chờ xử lý" : "Pending Payments"}</span>
-              <span className="p-2 rounded-xl bg-amber-50 text-amber-600 transition-colors group-hover:bg-amber-100">
-                <Clock3 size={15} />
-              </span>
-            </div>
-            <div className="mt-5">
-              <span className="text-3xl md:text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
-                {metrics.pendingCount}
-              </span>
-              <p className="mt-2 text-xs text-[#a88a9f] group-hover:text-[#2d1b35]/70 transition-colors">{language === "vi" ? "Đang chờ quét hoặc hoàn tất thanh toán" : "Awaiting scan or checkout completion"}</p>
-            </div>
-          </div>
-        </div>
+        <TopMetricsRow
+          metrics={[
+            {
+              label: language === "vi" ? "Tổng doanh thu" : "Total Revenue",
+              value: formatCurrency(metrics.totalRevenue),
+              icon: CircleCheck,
+              color: '#10b981', // emerald
+              note: language === "vi" ? "Tính từ giao dịch thành công" : "Calculated from successful transactions"
+            },
+            {
+              label: language === "vi" ? "Tỷ lệ thành công" : "Success Rate",
+              value: metrics.successRate,
+              unit: '%',
+              icon: CreditCard,
+              color: '#6366f1', // indigo
+              note: `${metrics.paidCount} ${language === "vi" ? "của" : "of"} ${metrics.totalCount} ${language === "vi" ? "giao dịch hoàn thành" : "transactions completed"}`
+            },
+            {
+              label: language === "vi" ? "Thanh toán chờ xử lý" : "Pending Payments",
+              value: metrics.pendingCount,
+              icon: Clock3,
+              color: '#f59e0b', // amber
+              note: language === "vi" ? "Đang chờ quét hoặc hoàn tất thanh toán" : "Awaiting scan or checkout completion"
+            }
+          ]}
+          className="grid gap-6 grid-cols-1 md:grid-cols-3"
+        />
 
         {/* Filters Toolbar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
@@ -681,7 +655,10 @@ export function TransactionManagementPage() {
               {processedTransactions.length > 0 && (
                 <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                   <span className="text-xs text-[#a88a9f]">
-                    {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> {language === "vi" ? "kết quả" : "items"}
+                    {language === "vi" 
+                      ? <span>Hiển thị <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> / <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> kết quả</span>
+                      : <span>Showing <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> of <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> items</span>
+                    }
                   </span>
                   <Pagination
                     currentPage={currentPage}

@@ -30,7 +30,7 @@ import { fetchUserById } from "../../bookings/services/bookingsService";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[24px] border border-[#f8deea] bg-white/90 p-5 shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
+      className={`rounded-[24px] transition-all duration-300 ${className}`}
     >
       {children}
     </article>
@@ -1060,9 +1060,9 @@ export function CustomerNailDetailPage() {
   };
   return (
     <div className="flex min-h-full flex-col gap-6">
-      <Card className="p-0 border-none shadow-[0_20px_50px_rgba(236,72,153,0.06)] overflow-hidden rounded-[32px]">
+      <Card className="overflow-hidden rounded-lg">
         {/* Premium Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#fff2f7] via-[#fff9fc] to-[#FAF5F9] p-8 border-b border-[#f3e3ec]/50">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#fff2f7] via-[#fff9fc] to-[#FAF5F9] p-8 rounded-3xl border-b border-[#f3e3ec]/50">
           {/* Decorative background glow blobs */}
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-radial from-[#ffd4e4]/30 to-transparent blur-3xl pointer-events-none" />
           <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-gradient-radial from-[#f3e8ff]/30 to-transparent blur-3xl pointer-events-none" />
@@ -1217,14 +1217,7 @@ export function CustomerNailDetailPage() {
                       >
                         {language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}
                       </ActionButton>
-                      {/* <ActionButton
-                        onClick={() => setIsRejectModalOpen(true)}
-                        disabled={isSubmitting}
-                        icon={XCircle}
-                        className="flex-1 bg-[#e1447f] hover:bg-[#d63e75] shadow-md shadow-red-500/20 py-2.5 text-sm"
-                      >
-                        {language === "vi" ? "Từ chối báo giá" : "Reject Quote"}
-                      </ActionButton> */}
+
                     </>
                   )}
                 </div>
@@ -1234,7 +1227,7 @@ export function CustomerNailDetailPage() {
         </div>
 
         {/* Content */}
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 pt-6">
           {/* Custom Design Live Preview */}
           <div className="space-y-4">
             <SectionHeading
