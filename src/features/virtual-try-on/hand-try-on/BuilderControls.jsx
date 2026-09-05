@@ -211,10 +211,19 @@ export function BuilderControls() {
         <div className="section-title">Nail Shape</div>
         <div className="shape-selector">
           {nailShapes.length > 0 ? (
-            nailShapes.map((shape, index) => (
+            nailShapes.map((shape, index) => {
+              const hasDefaultShape = nailShapes.some(
+                (nailShape) => Number(nailShape.id) === 1,
+              );
+              const isDefaultShape = hasDefaultShape
+                ? Number(shape.id) === 1
+                : index === 0;
+
+              return (
               <button
-                className={`shape-btn ${index === 0 ? "active" : ""}`}
+                className={`shape-btn ${isDefaultShape ? "active" : ""}`}
                 data-shape={shape.name}
+                data-shape-key={`shape-${shape.id}`}
                 data-shape-image-url={shape.imageUrl ?? ""}
                 key={shape.id}
                 type="button"
@@ -224,7 +233,8 @@ export function BuilderControls() {
                 ) : null}
                 {shape.name}
               </button>
-            ))
+              );
+            })
           ) : (
             <div className="empty-layers">No nail shapes found</div>
           )}

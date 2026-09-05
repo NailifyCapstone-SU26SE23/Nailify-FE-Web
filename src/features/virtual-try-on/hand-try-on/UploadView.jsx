@@ -25,8 +25,8 @@ export function UploadView() {
         </div>
         <button
           id="btn-start-image-tryon"
-          className="action-btn blue"
-          style={{ display: "none", marginTop: 24, width: 240 }}
+          className="action-btn blue upload-tryon-btn"
+          style={{ display: "none" }}
         >
           START TRY-ON
         </button>

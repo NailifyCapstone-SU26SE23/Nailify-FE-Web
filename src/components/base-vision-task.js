@@ -37,6 +37,7 @@ export class BaseVisionTask extends BaseTask {
     switch (type) {
       case "DETECT_RESULT":
         const { mode, result, inferenceTime } = event.data;
+        this.updateStatus(`Done in ${Math.round(inferenceTime)}ms`);
         this.updateInferenceTime(inferenceTime);
 
         if (mode === "IMAGE") {

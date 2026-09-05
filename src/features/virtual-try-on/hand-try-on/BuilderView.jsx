@@ -8,6 +8,14 @@ import { ZoomIn, ZoomOut, Sliders } from "lucide-react";
 import womanHandImg from "@/shared/assets/images/womanHand.png";
 import manHandImg from "@/shared/assets/images/manHand.png";
 
+const HAND_VIEW_NAIL_SCALE = 1;
+
+function scalePercent(value, scale) {
+  const numeric = parseFloat(value);
+  if (!Number.isFinite(numeric)) return value;
+  return `${numeric * scale}%`;
+}
+
 function NailCanvas({ fingerIndex, task }) {
   const canvasRef = useRef(null);
 
@@ -157,7 +165,7 @@ export function BuilderView({
     style: {
       left: slot.left,
       top: slot.top,
-      width: slot.width,
+      width: scalePercent(slot.width, HAND_VIEW_NAIL_SCALE),
       height: slot.height || "auto",
       transform: `rotate(${slot.rotate})`,
     },
