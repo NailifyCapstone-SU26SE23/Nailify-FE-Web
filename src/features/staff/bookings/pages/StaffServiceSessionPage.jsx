@@ -2923,7 +2923,7 @@ export function StaffServiceSessionPage() {
                     {isVi ? "Bản xem trước" : "Uploaded Preview"}
                   </p>
                   {effectiveBeforePhoto ? (
-                    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
+                    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
@@ -3266,7 +3266,7 @@ export function StaffServiceSessionPage() {
                     {isVi ? "Xem trước kết quả" : "Preview - After Photo"}
                   </p>
                   {effectiveAfterPhoto ? (
-                    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
+                    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}

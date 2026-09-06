@@ -630,7 +630,7 @@ export function ReceptionistBookingListPage() {
       }}
     >
       <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-        <TopMetricsRow 
+        <TopMetricsRow
           metrics={[
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", color: "#d98b1d", icon: CalendarDays },
@@ -680,7 +680,7 @@ export function ReceptionistBookingListPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-[20px] border border-[#F7D8E6] bg-white p-4">
+          <div className="mt-4 rounded-lg border border-[#F7D8E6] bg-white p-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 
               <div>
@@ -841,14 +841,14 @@ export function ReceptionistBookingListPage() {
           ) : null}
 
           {isLoading ? (
-            <div className="mt-6 flex min-h-56 items-center justify-center rounded-[20px] border border-[#f7dce8] bg-[#fffafd]">
+            <div className="mt-6 flex min-h-56 items-center justify-center rounded-lg border border-[#f7dce8] bg-[#fffafd]">
               <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
                 <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
                 {t("receptionist.common.loading") || "Loading bookings..."}
               </div>
             </div>
           ) : (
-            <div className="mt-6 overflow-hidden rounded-[20px] border border-[#f7dce8]">
+            <div className="mt-6 overflow-hidden rounded-lg border border-[#f7dce8]">
               <div className="hidden lg:block">
                 <Table
                   rowKey="bookingId"
@@ -994,7 +994,7 @@ export function ReceptionistBookingListPage() {
               {language === "vi" ? "Đặt camera vào mã QR của khách hàng. Token đã quét sẽ được gửi đến backend `verify-qr` trước khi mở lịch hẹn." : "Point the webcam at the customer QR code. The scanned token will be sent to backend `verify-qr` before opening the booking."}
             </p>
 
-            <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+            <div className="overflow-hidden rounded-lg border border-[#f2d8e4] bg-[#fff7fb]">
               <div className="relative aspect-[4/3] bg-[#2a1d2b]">
                 <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
                 <canvas ref={scannerCanvasRef} className="hidden" />

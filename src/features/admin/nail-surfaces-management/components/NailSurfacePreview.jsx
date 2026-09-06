@@ -92,7 +92,7 @@ function NailMesh({ position, rotation, materialProps }) {
         canvas.height = 512;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         materialRef.current.roughnessMap = texture;
         materialRef.current.roughness = 1; // map multiplies base value
@@ -132,11 +132,10 @@ export function NailSurfacePreview({ surface, compact = false }) {
     <>
       <div className={compact ? "inline-flex items-center gap-3" : "rounded-[24px] border border-[#f7d7e5] bg-white p-4"}>
         <div
-          className={`group relative overflow-hidden ${
-            compact
+          className={`group relative overflow-hidden ${compact
               ? "rounded-[18px] bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff2f8_100%)] p-0 w-[60px] h-[80px]"
-              : "rounded-[20px] bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[240px]"
-          }`}
+              : "rounded-lg bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[240px]"
+            }`}
         >
           <button
             onClick={() => setIsZoomed(true)}
@@ -145,7 +144,7 @@ export function NailSurfacePreview({ surface, compact = false }) {
           >
             <span className="material-icons text-[18px]">zoom_out_map</span>
           </button>
-          
+
           <Canvas camera={{ position: [0, 0, compact ? 3.5 : 5], fov: 45 }}>
             <Environment preset="studio" />
             <ambientLight intensity={0.5} />

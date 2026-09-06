@@ -1103,7 +1103,7 @@ export function ReceptionistDashboardPage() {
                   <div
                     key={item.queueId || `${guestName}-${index}`}
                     onClick={() => { setSelectedQueueItem(item); setIsQueueDetailModalOpen(true); }}
-                    className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-[20px] border border-[#F3E2EC] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,79,147,0.12)] cursor-pointer"
+                    className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#F3E2EC] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,79,147,0.12)] cursor-pointer"
                   >
                     <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
                       {/* Position Badge */}
@@ -1166,7 +1166,7 @@ export function ReceptionistDashboardPage() {
               displayQueue.map(([name, service, wait], index) => (
                 <div
                   key={`${name}-${wait}`}
-                  className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-[20px] border border-[#f7e0ea] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(245,158,11,0.12)] cursor-pointer"
+                  className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#f7e0ea] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(245,158,11,0.12)] cursor-pointer"
                 >
                   <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
                     <div className="flex-shrink-0 mt-0.5">
@@ -1483,7 +1483,7 @@ export function ReceptionistDashboardPage() {
             `verify-qr` {language === "vi" ? "trước khi mở lịch hẹn" : "before opening the booking"}.
           </p>
 
-          <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+          <div className="overflow-hidden rounded-lg border border-[#f2d8e4] bg-[#fff7fb]">
             <div className="relative aspect-[4/3] bg-[#2a1d2b]">
               <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
               <canvas ref={scannerCanvasRef} className="hidden" />

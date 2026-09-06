@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -31,7 +31,7 @@ import {
   createEmptyService,
   formatVndCurrency,
 } from "../services/mockServicePricing";
-import { fetchAdminServices } from "../services/servicePricingService";
+import { fetchAdminServices, createAdminService, updateAdminService, deleteAdminService } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
@@ -182,6 +182,13 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             <input
               value={draft.name}
               onChange={(event) => onChange("name", event.target.value)}
+              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            />
+          </FormField>
+          <FormField label={language === "vi" ? "Mô tả" : "Description"}>
+            <input
+              value={draft.description || ""}
+              onChange={(event) => onChange("description", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
@@ -420,6 +427,7 @@ export function ServicePricingManagementPage() {
   });
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceLoadError, setServiceLoadError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -471,7 +479,7 @@ export function ServicePricingManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize]);
+  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize, refreshKey]);
 
   const serviceCategories = useMemo(() => {
     const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
@@ -549,6 +557,7 @@ export function ServicePricingManagementPage() {
   const openEditService = useCallback((service) => {
     setServiceDraft({
       name: service.name,
+      description: service.description || "",
       category: service.category,
       price: String(service.price),
       duration: String(service.duration),
@@ -586,8 +595,21 @@ export function ServicePricingManagementPage() {
     },
   ], [openEditService, t, language]);
 
-  const submitServiceForm = () => {
-    setServiceError("Service create/update API is not connected yet.");
+  const submitServiceForm = async () => {
+    setServiceError("");
+    try {
+      if (serviceModal.mode === "create") {
+        await createAdminService(serviceDraft);
+        setFlashMessage(language === "vi" ? "Thêm dịch vụ thành công!" : "Service created successfully!");
+      } else {
+        await updateAdminService(serviceModal.recordId, serviceDraft);
+        setFlashMessage(language === "vi" ? "Cập nhật dịch vụ thành công!" : "Service updated successfully!");
+      }
+      setServiceModal({ open: false, mode: "create", recordId: null });
+      setRefreshKey(k => k + 1);
+    } catch (error) {
+      setServiceError(error.message || (language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service."));
+    }
   };
 
   const serviceColumns = useMemo(() => ([
@@ -641,7 +663,24 @@ export function ServicePricingManagementPage() {
     {
       title: t("userManagement.table.actions"),
       key: "actions",
-      render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
+      render: (_, service) => (
+        <div className="flex items-center gap-2">
+          {getServiceActionItems(service).map((item) => {
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.key} title={item.label}>
+                <button
+                  type="button"
+                  onClick={item.onSelect}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a17a91] hover:bg-[#fff0f5] hover:text-[#e84d92] transition-colors shadow-sm border border-[#f4d5e3] ${item.className || ""}`}
+                >
+                  <Icon size={14} />
+                </button>
+              </Tooltip>
+            );
+          })}
+        </div>
+      ),
     },
   ]), [getServiceActionItems, t]);
 
@@ -658,7 +697,7 @@ export function ServicePricingManagementPage() {
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
           <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -716,8 +755,8 @@ export function ServicePricingManagementPage() {
 
         <div className="grid gap-4">
           <div className="space-y-4">
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="border-b border-[#f6dbe7] px-5 py-4">
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+              {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
                 <h2 className="text-sm font-extrabold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
                   {t("userManagement.table.actions") === "Thao tác"
@@ -725,7 +764,7 @@ export function ServicePricingManagementPage() {
                     : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`
                   }
                 </p>
-              </div>
+              </div> */}
 
               <Table
                 rowKey="id"
@@ -907,8 +946,14 @@ export function ServicePricingManagementPage() {
           label={deleteState.label}
           recordType="Service"
           onCancel={() => setDeleteState(null)}
-          onConfirm={() => {
-            setFlashMessage("Service delete API is not connected yet.");
+          onConfirm={async () => {
+            try {
+              await deleteAdminService(deleteState.recordId);
+              setFlashMessage(language === "vi" ? "Xóa dịch vụ thành công!" : "Service deleted successfully!");
+              setRefreshKey(k => k + 1);
+            } catch (error) {
+              setFlashMessage(error.message || (language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service."));
+            }
             setDeleteState(null);
           }}
         />

@@ -70,11 +70,9 @@ export function NailShapeDetailPage() {
         name: config.name,
         price: config.price,
         duration: config.duration,
-        status: config.status === "Active",
       });
     } else {
       configForm.resetFields();
-      configForm.setFieldsValue({ status: true });
     }
     setIsConfigModalVisible(true);
   };
@@ -85,20 +83,22 @@ export function NailShapeDetailPage() {
       setIsSavingConfig(true);
       const toastId = toast.loading(language === "vi" ? (editingConfig ? "Đang cập nhật cấu hình..." : "Đang tạo cấu hình...") : (editingConfig ? "Updating config..." : "Creating config..."));
 
-      const payload = {
+      const basePayload = {
         nailShapeId: Number(shapeId),
         name: values.name.trim(),
         price: Number(values.price),
         duration: Number(values.duration),
-        status: values.status ? "Active" : "Inactive",
       };
 
       if (editingConfig) {
-        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, payload);
+        const updatePayload = {
+          ...basePayload,
+        };
+        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, updatePayload);
         setConfigs((prev) => prev.map(c => c.shapeMethodConfigId === updatedConfig.shapeMethodConfigId ? updatedConfig : c));
         toast.success(t("adminNailShapesManagement.configUpdatedSuccessfully"), { id: toastId });
       } else {
-        const newConfig = await createAdminShapeMethodConfig(payload);
+        const newConfig = await createAdminShapeMethodConfig(basePayload);
         setConfigs((prev) => [...prev, newConfig]);
         toast.success(t("adminNailShapesManagement.configCreatedSuccessfully"), { id: toastId });
       }
@@ -633,14 +633,6 @@ export function NailShapeDetailPage() {
               />
             </Form.Item>
           </div>
-
-          <Form.Item
-            name="status"
-            label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.statusActive")}</span>}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
 
           <div className="mt-8 flex justify-end gap-3">
             <Button

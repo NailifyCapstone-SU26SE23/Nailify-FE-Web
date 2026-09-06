@@ -361,7 +361,7 @@ export function QuizManagement() {
 
             {/* Filter and Command section */}
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:max-w-xl">
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row ">
                     <div className="relative flex-1">
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input

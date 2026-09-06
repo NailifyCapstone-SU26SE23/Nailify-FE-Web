@@ -107,10 +107,11 @@ const cloneRecord = (record) => ({ ...record });
 
 export const createEmptyService = () => ({
   name: "",
-  category: SERVICE_CATEGORIES[0],
+  description: "",
+  category: "Basic Nail",
   price: "",
   duration: "",
-  hasAddOn: true,
+  hasAddOn: false,
   status: "Active",
 });
 

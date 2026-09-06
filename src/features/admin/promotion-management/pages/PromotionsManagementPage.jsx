@@ -402,7 +402,7 @@ export function PromotionsManagementPage() {
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
           <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
             <label className="relative flex-1">
               <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]" />
@@ -457,8 +457,8 @@ export function PromotionsManagementPage() {
           </Link>
         </div>
 
-        <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-          <div className="border-b border-[#f6dbe7] px-5 py-4">
+        <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+          {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
             <h2 className="text-sm font-extrabold text-[#432744]">{t("promotions.title")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
               {t("userManagement.table.actions") === "Thao tác"
@@ -466,7 +466,7 @@ export function PromotionsManagementPage() {
                 : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} promotions`
               }
             </p>
-          </div>
+          </div> */}
 
           <Table
             rowKey="promotionId"

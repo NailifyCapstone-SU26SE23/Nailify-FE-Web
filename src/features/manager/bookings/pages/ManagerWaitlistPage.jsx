@@ -752,7 +752,7 @@ export function ManagerWaitlistPage() {
       >
         {selectedEntry && (
           <div className="space-y-6">
-            <div className="rounded-[20px] bg-gradient-to-br from-[#fff7fb] to-[#fffbfc] p-5 border border-[#fcd5e6]/50 space-y-4">
+            <div className="rounded-lg bg-gradient-to-br from-[#fff7fb] to-[#fffbfc] p-5 border border-[#fcd5e6]/50 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-sm font-extrabold text-white">
                   {(selectedEntry.customerName || "??")

@@ -614,7 +614,7 @@ export function StaffDashboardPage() {
                 className="border border-[#f6d3e3] bg-[#fff1f6] text-[#b48aa0]"
               />
             </div>
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_26px_rgba(236,72,153,0.06)]">
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_26px_rgba(236,72,153,0.06)]">
               {isLoading ? (
                 <div className="flex min-h-[300px] items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
@@ -728,7 +728,7 @@ export function StaffDashboardPage() {
                 const currentBg = iconBgColors[i % iconBgColors.length];
 
                 return (
-                  <div key={i} className={`relative flex min-w-[250px] max-w-[350px] shrink-0 snap-center flex-col justify-between rounded-[20px] border border-slate-200 border-b-8 border-r-8 bg-white p-6 shadow-sm ${currentBorder}`}>
+                  <div key={i} className={`relative flex min-w-[250px] max-w-[350px] shrink-0 snap-center flex-col justify-between rounded-lg border border-slate-200 border-b-8 border-r-8 bg-white p-6 shadow-sm ${currentBorder}`}>
                     <div className={`absolute -top-4 -right-4 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white text-white shadow-md ${currentBg}`}>
                       <User size={20} />
                     </div>
@@ -762,7 +762,7 @@ export function StaffDashboardPage() {
         const uniqueDates = Array.from(new Set(dashboardData.mySchedule.map(item => dayjs(item.date).format("YYYY-MM-DD")))).sort();
 
         return (
-          <div className="flex flex-col h-[600px] w-full bg-white rounded-[20px] p-2">
+          <div className="flex flex-col h-[600px] w-full bg-white rounded-lg p-2">
             <div className="w-full h-full overflow-auto custom-scrollbar">
               <div style={{ minWidth: `${Math.max(uniqueDates.length * 150 + 64, 100)}%` }}>
 

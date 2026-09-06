@@ -511,7 +511,7 @@ export function StaffUpdateBookingDesignPage() {
                 badge={isVi ? "Bước 1 trên 4" : "Step 1 of 4"}
               />
               <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)]">
-                <div className="rounded-[20px] border border-[#f4dbe7] bg-[#fffafb] p-3">
+                <div className="rounded-lg border border-[#f4dbe7] bg-[#fffafb] p-3">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                     {isVi ? "Thiết kế trước" : "Previous Design"}
                   </p>
@@ -531,7 +531,7 @@ export function StaffUpdateBookingDesignPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center gap-2 rounded-[20px] bg-[linear-gradient(180deg,#fff6fa_0%,#fffdfd_100%)]">
+                <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[linear-gradient(180deg,#fff6fa_0%,#fffdfd_100%)]">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.24)]">
                     <ArrowRight size={18} />
                   </div>
@@ -540,7 +540,7 @@ export function StaffUpdateBookingDesignPage() {
                   </p>
                 </div>
 
-                <div className="rounded-[20px] border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-3">
+                <div className="rounded-lg border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-3">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
                     {isVi ? "Thiết kế mới" : "New Design"}
                   </p>

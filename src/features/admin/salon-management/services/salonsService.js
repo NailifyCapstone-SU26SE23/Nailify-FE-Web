@@ -40,6 +40,25 @@ export async function fetchSalons(params = {}) {
   }
 }
 
+export async function fetchSalonsPaginated(params = {}) {
+  try {
+    const response = await axiosClient.get(`/Salons`, {
+      headers: getAuthHeaders(),
+      params,
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load salons.");
+    }
+    
+    return payload.data; // Returns { items, metaData }
+  } catch (error) {
+    console.error("Error fetching salons paginated:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to load salons.");
+  }
+}
+
 export async function fetchSalonById(salonId) {
   const normalizedId = String(salonId || "").trim();
 

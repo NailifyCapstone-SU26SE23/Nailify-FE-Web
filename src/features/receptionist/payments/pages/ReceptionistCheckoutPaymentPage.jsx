@@ -437,10 +437,10 @@ export function ReceptionistCheckoutPaymentPage() {
                   <img crossOrigin="anonymous"
                     src={customerProfile.avatarUrl}
                     alt={customerDisplayName}
-                    className="h-16 w-16 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
+                    className="h-16 w-16 rounded-lg border-2 border-[#f4d6e2] object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-bold text-white">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-bold text-white">
                     {customerInitials}
                   </div>
                 )}
@@ -478,7 +478,7 @@ export function ReceptionistCheckoutPaymentPage() {
           </SummaryCard>
 
           <SummaryCard title={t("receptionist.payments.summaryTitle") || "Bill Details"}>
-            <div className="overflow-hidden rounded-[20px] border border-[#f5d7e4]">
+            <div className="overflow-hidden rounded-lg border border-[#f5d7e4]">
               <Table
                 dataSource={billItems}
                 pagination={false}
@@ -627,7 +627,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
 
             {paymentMethod === 'cod' && (
-              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-[20px] bg-[#fffafb] mt-4">
+              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-lg bg-[#fffafb] mt-4">
                 <CircleDollarSign size={48} className="text-[#ea4f93] mb-4" />
                 <p className="text-lg font-bold text-[#412643] mb-4">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
 

@@ -37,7 +37,7 @@ const inputClassName =
 function StaffUpdateLoadingState() {
   const { t, language } = useLanguage();
   return (
-    <div className="flex min-h-[320px] items-center justify-center rounded-[20px] bg-white/65 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+    <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/65 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
       <div className="text-center">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-rose-500" />
         <p className="mt-4 text-sm text-slate-600">

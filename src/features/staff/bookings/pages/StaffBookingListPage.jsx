@@ -613,7 +613,7 @@ export function StaffBookingListPage() {
 
         <div className="">
           <div className="space-y-4">
-            <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+            <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 <label className="space-y-2">
                   <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
@@ -697,7 +697,7 @@ export function StaffBookingListPage() {
               </div>
             </article>
 
-            <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+            <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-extrabold text-[#462a45]">
