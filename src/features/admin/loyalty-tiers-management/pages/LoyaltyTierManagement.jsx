@@ -504,7 +504,7 @@ export function LoyaltyTierManagement() {
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {[1, 2, 3].map((i) => (
                             <div key={i} className="rounded-[28px] border border-[#f5e3ed] bg-white p-4">
-                                <div className="aspect-[85.6/54] w-full animate-pulse rounded-[20px] bg-[#f5e3ed]" />
+                                <div className="aspect-[85.6/54] w-full animate-pulse rounded-lg bg-[#f5e3ed]" />
                                 <div className="mt-4 h-3 w-1/3 animate-pulse rounded bg-[#f5e3ed]" />
                             </div>
                         ))}
@@ -542,12 +542,12 @@ export function LoyaltyTierManagement() {
                                                 background: `linear-gradient(135deg, ${startColor}, ${endColor})`,
                                                 color: tier.textColor
                                             }}
-                                            className="relative aspect-[85.6/54] w-full cursor-pointer overflow-hidden rounded-[20px] p-5 shadow-md"
+                                            className="relative aspect-[85.6/54] w-full cursor-pointer overflow-hidden rounded-lg p-5 shadow-md"
                                         >
                                             {/* foil sheen */}
                                             <div className="pointer-events-none absolute -inset-x-10 -top-16 h-32 rotate-12 bg-white/15 blur-xl transition-transform duration-500 group-hover:translate-x-6" />
                                             {/* inner border glint */}
-                                            <div className="absolute inset-0 rounded-[20px] border border-white/10 pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]" />
+                                            <div className="absolute inset-0 rounded-lg border border-white/10 pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]" />
                                             {/* die-cut punch hole */}
                                             <div
                                                 className="absolute left-4 top-4 h-3 w-3 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"

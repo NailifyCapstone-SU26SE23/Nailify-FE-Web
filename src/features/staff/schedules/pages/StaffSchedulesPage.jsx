@@ -119,7 +119,7 @@ function SideNavItem({ active, icon: Icon, label, meta }) {
 
 function EventCard({ schedule, paletteClass }) {
   return (
-    <div className={`rounded-[20px] px-4 py-4 shadow-[0_12px_24px_rgba(26,32,60,0.06)] ${paletteClass}`}>
+    <div className={`rounded-lg px-4 py-4 shadow-[0_12px_24px_rgba(26,32,60,0.06)] ${paletteClass}`}>
       <p className="text-[13px] font-semibold">{formatTimeLabel(schedule.shiftStart)} - {formatTimeLabel(schedule.shiftEnd)}</p>
       <p className="mt-2 text-[15px] font-bold">{schedule.status || "Shift"}</p>
       <p className="mt-2 text-[13px] opacity-70">{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd)}</p>
@@ -361,10 +361,10 @@ export function StaffSchedulesPage() {
                                 {isToday ? <span className="h-2 w-2 rounded-full bg-[#f57c67]" /> : null}
                               </div>
                               <p className="mt-2 text-xs text-[#8f97aa] lg:text-sm">
-                                 {group.schedules.length > 0
-                                   ? (language === "vi" ? `${group.schedules.length} ca làm` : `${group.schedules.length} shift${group.schedules.length > 1 ? "s" : ""}`)
-                                   : (language === "vi" ? "Không có ca" : "No shifts")}
-                               </p>
+                                {group.schedules.length > 0
+                                  ? (language === "vi" ? `${group.schedules.length} ca làm` : `${group.schedules.length} shift${group.schedules.length > 1 ? "s" : ""}`)
+                                  : (language === "vi" ? "Không có ca" : "No shifts")}
+                              </p>
                             </div>
 
                             {HOUR_MARKERS.map((hour) => (

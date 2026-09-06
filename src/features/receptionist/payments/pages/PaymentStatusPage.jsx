@@ -72,7 +72,7 @@ function PaymentResultPage({ isSuccess, orderCode }) {
   const [bookingId, setBookingId] = useState("");
   const [isBookingIdLoading, setIsBookingIdLoading] = useState(false);
   const [bookingIdError, setBookingIdError] = useState("");
-  const currentDate = language === "vi" 
+  const currentDate = language === "vi"
     ? new Date().toLocaleDateString('vi-VN', { month: 'long', day: 'numeric', year: 'numeric' })
     : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -111,7 +111,7 @@ function PaymentResultPage({ isSuccess, orderCode }) {
     <div className={`flex min-h-screen items-center justify-center 
       ${isSuccess ? "bg-[#dcfce7]" : "bg-[#fee2e2]"
       } p-4 font-sans`}>
-      <div className="w-full max-w-md overflow-hidden rounded-[20px] bg-white border border-gray-100 p-8 text-center relative">
+      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white border border-gray-100 p-8 text-center relative">
         <div className="flex flex-col items-center justify-center mt-2">
           {/* Status Icon */}
           <div className={`mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-full ${isSuccess ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fee2e2] text-[#ef4444]"
@@ -128,26 +128,26 @@ function PaymentResultPage({ isSuccess, orderCode }) {
               ? (language === "vi" ? "Thanh toán của bạn đã được xử lý thành công." : "Your payment has been processed successfully.")
               : (language === "vi" ? "Bạn đã hủy thanh toán lịch hẹn này." : "You have cancelled the payment.")}
           </p>
-          
+
           {isSuccess && (
-          <div className="w-full rounded-[16px] bg-[#f9fafb] p-5 mb-6 text-left">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
-                <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[14px] font-bold tracking-wider text-[#111827]">
-                  {orderCode}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">{t("receptionist.payments.payMethod") || "Payment Method"}</span>
-                <span className="text-[14px] font-bold text-[#111827]">VietQR (QR)</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-medium text-[#6b7280]">{language === "vi" ? "Ngày" : "Date"}</span>
-                <span className="text-[14px] font-bold text-[#111827]">{currentDate}</span>
+            <div className="w-full rounded-[16px] bg-[#f9fafb] p-5 mb-6 text-left">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-medium text-[#6b7280]">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
+                  <span className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[14px] font-bold tracking-wider text-[#111827]">
+                    {orderCode}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-medium text-[#6b7280]">{t("receptionist.payments.payMethod") || "Payment Method"}</span>
+                  <span className="text-[14px] font-bold text-[#111827]">VietQR (QR)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-medium text-[#6b7280]">{language === "vi" ? "Ngày" : "Date"}</span>
+                  <span className="text-[14px] font-bold text-[#111827]">{currentDate}</span>
+                </div>
               </div>
             </div>
-          </div>
           )}
 
           {bookingIdError && (

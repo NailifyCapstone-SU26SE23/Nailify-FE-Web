@@ -763,7 +763,7 @@ export function UserManagementPage() {
           </div>
         </article>
 
-        {/* <aside className="rounded-[20px] border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+        {/* <aside className="rounded-lg border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
           <h3 className="text-sm font-extrabold text-[#412643]">Quick Info Panel</h3>
 
           <div className="mt-5 space-y-6">

@@ -415,7 +415,7 @@ export function ReceptionistWalkInBookingCreatePage() {
           </DashboardCard>
 
           <DashboardCard title={language === "vi" ? "Lịch Hẹn Dịch Vụ" : "Booking Schedule"} description={language === "vi" ? "Chọn ngày làm móng, khung giờ và thợ nail" : "Select date, time, and staff"} icon={CalendarDays}>
-            <div className="rounded-[20px] border border-[#f7dce8] bg-white p-4">
+            <div className="rounded-lg border border-[#f7dce8] bg-white p-4">
               <div className="mt-2">
                 <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "1. Chọn Ngày (Mặc định hôm nay)" : "1. Select Date (Walk-in defaults to today)"}</p>
                 <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="mt-2 h-10 rounded-xl border border-[#f2d7e3] px-3 text-sm text-[#5c4559] outline-none focus:border-[#ee6cb5]" />

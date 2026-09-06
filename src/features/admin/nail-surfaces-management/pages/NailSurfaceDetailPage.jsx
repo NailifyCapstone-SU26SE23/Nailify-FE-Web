@@ -373,7 +373,7 @@ export function NailSurfaceDetailPage() {
                 />
               )}
 
-              <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
+              <div className="rounded-lg border border-rose-100 bg-[#fff8fb] p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
                   {t("adminNailSurfacesManagement.surfaceSummary")}
                 </p>

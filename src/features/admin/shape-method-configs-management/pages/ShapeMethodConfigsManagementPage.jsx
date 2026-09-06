@@ -358,7 +358,7 @@ export function ShapeMethodConfigsManagementPage() {
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-[24px] border border-[#f8dce8] bg-white shadow-[0_12px_32px_rgba(236,72,153,0.05)]">
+      <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_32px_rgba(236,72,153,0.05)]">
         <div className="overflow-x-auto">
           <Table
             columns={columns}
@@ -399,8 +399,8 @@ export function ShapeMethodConfigsManagementPage() {
                     type="button"
                     onClick={() => handlePageChange(item)}
                     className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${item === metaData.currentPage
-                        ? "bg-[#ea4f93] text-white shadow-md"
-                        : "text-[#5f4a5c] hover:bg-[#ffe8f2] hover:text-[#ea4f93]"
+                      ? "bg-[#ea4f93] text-white shadow-md"
+                      : "text-[#5f4a5c] hover:bg-[#ffe8f2] hover:text-[#ea4f93]"
                       }`}
                   >
                     {item}

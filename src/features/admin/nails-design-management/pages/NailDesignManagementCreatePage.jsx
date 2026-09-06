@@ -176,7 +176,7 @@ function LivePreview({ variant, title }) {
 
   return (
     <div className="rounded-[22px] border border-[#f6dbe8] bg-white p-4">
-      <div className="rounded-[20px] bg-[radial-gradient(circle_at_top,#ffe2ef_0%,#fff8fb_42%,#fff_100%)] p-5">
+      <div className="rounded-lg bg-[radial-gradient(circle_at_top,#ffe2ef_0%,#fff8fb_42%,#fff_100%)] p-5">
         <div className="mx-auto grid max-w-[220px] grid-cols-5 gap-2">
           {Array.from({ length: 5 }).map((_, index) => (
             <div

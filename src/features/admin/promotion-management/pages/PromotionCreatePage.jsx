@@ -487,7 +487,7 @@ export function PromotionCreatePage() {
           </PanelCard>
 
           <PanelCard title={t("promotionDetail.promotionImage")} icon={ImagePlus}>
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
               {imagePreview ? (
                 <img
                   src={imagePreview}

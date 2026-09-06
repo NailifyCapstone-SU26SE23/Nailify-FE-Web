@@ -244,7 +244,7 @@ export function NailShapesManagementPage() {
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
           <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -285,8 +285,8 @@ export function NailShapesManagementPage() {
           </Link>
         </div>
 
-        <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-          <div className="border-b border-[#f6dbe7] px-5 py-4">
+        <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+          {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
             <h2 className="text-sm font-extrabold text-[#432744]">{t("adminNailShapesManagement.nailShapes")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
               {language === "vi"
@@ -294,7 +294,7 @@ export function NailShapesManagementPage() {
                 : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail shapes`
               }
             </p>
-          </div>
+          </div> */}
 
           <div className="bg-[#fff9fc] p-6">
             {isLoading ? (
@@ -308,7 +308,7 @@ export function NailShapesManagementPage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {shapes.map((shape) => (
-                  <div key={shape.nailShapeId} className="group relative flex flex-col overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-sm transition-all duration-300 hover:shadow-[0_12px_28px_rgba(236,72,153,0.12)] hover:-translate-y-1">
+                  <div key={shape.nailShapeId} className="group relative flex flex-col overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-sm transition-all duration-300 hover:shadow-[0_12px_28px_rgba(236,72,153,0.12)] hover:-translate-y-1">
                     <div className="relative aspect-square w-full overflow-hidden bg-[#fffafc]">
                       <NailShapePreview shape={shape} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
 

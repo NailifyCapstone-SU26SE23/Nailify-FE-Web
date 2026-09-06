@@ -158,7 +158,7 @@ function Pill({ children, tone = "default" }) {
 
 function DetailCard({ title, children }) {
   return (
-    <article className="rounded-[20px] border border-[#f7d7e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+    <article className="rounded-lg border border-[#f7d7e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
       <h2 className="font-extrabold text-[#432744]">{title}</h2>
       <div className="mt-4">{children}</div>
     </article>
@@ -616,7 +616,7 @@ function NailVariantHandPreview({ variantDetail }) {
         <div className="space-y-4">
           <div
             ref={handContainerRef}
-            className={`relative h-[520px] w-full overflow-hidden rounded-[20px] border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : 'cursor-grab bg-[#ffeef5]/35'}`}
+            className={`relative h-[520px] w-full overflow-hidden rounded-lg border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : 'cursor-grab bg-[#ffeef5]/35'}`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -735,7 +735,7 @@ function NailVariantHandPreview({ variantDetail }) {
 
           {/* Calibration Panel */}
           {showCalibration && (
-            <div className="rounded-[20px] border border-[#f7d7e5] bg-white p-5 space-y-4 shadow-sm">
+            <div className="rounded-lg border border-[#f7d7e5] bg-white p-5 space-y-4 shadow-sm">
               {/* Header */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
@@ -1123,7 +1123,7 @@ export function NailVariantDetailPage() {
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
                   <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
                   <div className="mt-4 space-y-3">
                     {[
@@ -1139,7 +1139,7 @@ export function NailVariantDetailPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-5">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
                   <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
                   <div className="mt-4 space-y-3">
                     {[

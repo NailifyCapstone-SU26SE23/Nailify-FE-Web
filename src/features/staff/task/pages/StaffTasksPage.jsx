@@ -252,7 +252,7 @@ function SectionHeading({ title, subtitle }) {
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
   return (
-    <div className="rounded-[20px] border border-white/70 bg-white/90 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
+    <div className="rounded-lg border border-white/70 bg-white/90 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{title}</p>

@@ -287,7 +287,7 @@ export default function SetOperatingHoursModal({
         </div>
 
         <div className="space-y-3 px-5 py-4">
-          <div className="rounded-[20px] border border-rose-100 bg-[#fff7fb] p-3">
+          <div className="rounded-lg border border-rose-100 bg-[#fff7fb] p-3">
             <Form layout="vertical">
               <Form.Item label="Select Salon" className="mb-3">
                 <Select
