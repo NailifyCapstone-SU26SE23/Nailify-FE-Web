@@ -2,7 +2,6 @@ import { Navigate } from "react-router-dom";
 import { ManagerLayout } from "../layouts/ManagerLayout";
 import { ProfilePage } from "../../features/core/auth/pages/profilePage";
 import { ManagerDashboardPage } from "../../features/core/dashboard/pages/ManagerDashboardPage";
-import { BookingCreatePage } from "../../shared/bookings/pages/BookingCreatePage";
 import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/ManagerBookingDetailPage";
 import { ManagerBookingListPage } from "../../features/manager/bookings/pages/ManagerBookingListPage";
 import { RescheduleBooking } from "../../features/manager/bookings/pages/RescheduleBooking";
@@ -20,6 +19,7 @@ import { TransactionManagementPage } from "../../features/manager/transaction-ma
 import { ManagerSchedulesPage } from "../../features/manager/schedules/pages/ManagerSchedulesPage";
 import { ManagerArtistBreakPage } from "../../features/manager/breaks/pages/ManagerArtistBreakPage";
 import { ChairsPage } from "../../features/core/chairs/pages/ChairsPage";
+import { ManagerSalonPage } from "../../features/manager/salon-management/pages/ManagerSalonPage";
 
 export const managerRoutes = [
   {
@@ -85,10 +85,6 @@ export const managerRoutes = [
         element: <StaffUpdatePage />,
       },
       {
-        path: ROUTES.managerBookingsCreate,
-        element: <BookingCreatePage />,
-      },
-      {
         path: ROUTES.managerBookingDetail,
         element: <ManagerBookingDetailPage />,
       },
@@ -99,6 +95,10 @@ export const managerRoutes = [
       {
         path: ROUTES.managerChairs,
         element: <ChairsPage />,
+      },
+      {
+        path: ROUTES.managerSalon,
+        element: <ManagerSalonPage />,
       },
     ],
   },

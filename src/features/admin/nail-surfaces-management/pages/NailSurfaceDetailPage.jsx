@@ -373,7 +373,7 @@ export function NailSurfaceDetailPage() {
                 />
               )}
 
-              <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
+              <div className="rounded-lg border border-rose-100 bg-[#fff8fb] p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
                   {t("adminNailSurfacesManagement.surfaceSummary")}
                 </p>
@@ -383,7 +383,7 @@ export function NailSurfaceDetailPage() {
                       {t("adminNailSurfacesManagement.surfaceType")}
                     </p>
                     <p className="mt-2 text-sm font-bold capitalize text-[#432744]">
-                      {draft?.surfacePreset || "--"}
+                      {draft?.surfacePreset}
                     </p>
                   </div>
                   <div className="rounded-[16px] border border-rose-100 bg-white p-3">
@@ -439,7 +439,7 @@ export function NailSurfaceDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || surface?.name || (t("adminNailSurfacesManagement.nailSurface"))]}
         details={[
-          { label: t("adminNailSurfacesManagement.surfaceType"), value: draft?.surfacePreset || "--" },
+          { label: t("adminNailSurfacesManagement.surfaceType"), value: draft?.surfacePreset },
           { label: t("adminNailSurfacesManagement.price"), value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
         ]}
       />

@@ -95,7 +95,7 @@ export function StaffUpdatePage() {
           const mockData = {
             id: staffId,
             name: "Artist " + staffId.slice(-4),
-            role: "Nail Artist",
+            role: "Staff Artist",
             status: "Active",
             skillRatings: {},
           };
@@ -132,7 +132,7 @@ export function StaffUpdatePage() {
           throw new Error("Không tìm thấy thông tin nhân viên.");
         }
 
-        // 2. Resolve the real Users-table id from the nail artist record.
+        // 2. Resolve the real Users-table id from the Staff Artist record.
         const realUserId =
           artistData.userId ||
           artistData.userID ||
@@ -167,7 +167,7 @@ export function StaffUpdatePage() {
         const nailArtistId = artistData?.nailArtistId || artistData?.staffId || artistData?.id || staffId;
         console.log("Manager StaffUpdatePage: using nailArtistId:", nailArtistId);
 
-        // Load existing skills for this nail artist
+        // Load existing skills for this Staff Artist
         try {
           const existingSkills = await fetchNailArtistSkills(nailArtistId);
           const skillArr = Array.isArray(existingSkills?.items)
@@ -283,7 +283,7 @@ export function StaffUpdatePage() {
       console.log("Updating user with data:", updatePayload, "userId:", formData.userId);
       // await updateUser(formData.userId, updatePayload);
 
-      // 2. Update skill assignments if nail artist ID available
+      // 2. Update skill assignments if Staff Artist ID available
       if (formData.nailArtistId) {
         const skills = skillTypes
           .filter((s) => Number(formData.skillRatings[s.id] ?? 0) > 0)
@@ -292,7 +292,7 @@ export function StaffUpdatePage() {
             level: Math.floor(Number(formData.skillRatings[s.id])),
           }));
 
-        console.log("Updating skills for nail artist (nailArtistId):", formData.nailArtistId);
+        console.log("Updating skills for Staff Artist (nailArtistId):", formData.nailArtistId);
         console.log("Skills payload:", skills);
 
         if (skills.length > 0) {
@@ -343,7 +343,7 @@ export function StaffUpdatePage() {
   if (isLoading) {
     return (
       <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-        <div className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
           <div className="h-8 w-48 rounded-full bg-rose-100 animate-pulse" />
         </div>
         <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
@@ -371,13 +371,13 @@ export function StaffUpdatePage() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             {language === "vi" ? "Cập nhật thông tin nhân viên" : "Update Artist"}
           </h1>
           <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
-            {language === "vi" ? "Cập nhật thông tin cá nhân và đánh giá kỹ năng cho" : "Update nail artist profile and skill ratings for"}{" "}
+            {language === "vi" ? "Cập nhật thông tin cá nhân và đánh giá kỹ năng cho" : "Update Staff Artist profile and skill ratings for"}{" "}
             <span className="font-bold text-[#eb5b92]">
               {[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
             </span>
@@ -488,7 +488,7 @@ export function StaffUpdatePage() {
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Nail Artist"
+                    value="Staff Artist"
                     readOnly
                     className={inputClassName}
                   />
@@ -576,7 +576,7 @@ export function StaffUpdatePage() {
                     {[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist"}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    {language === "vi" ? "Nhân viên làm móng" : "Nail Artist"}
+                    {language === "vi" ? "Nhân viên làm móng" : "Staff Artist"}
                   </p>
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {specialties.slice(0, 3).map((item) => (
@@ -629,7 +629,7 @@ export function StaffUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist", "Nail Artist"].filter(Boolean)}
+        highlights={[[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist", "Staff Artist"].filter(Boolean)}
       />
 
       <StaffSaveResultModal

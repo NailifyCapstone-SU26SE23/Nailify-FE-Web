@@ -204,7 +204,7 @@ export function ReceptionistBookingDetail({ booking }) {
       ),
     },
     {
-      title: t("receptionist.bookings.artist") || "Nail Artist",
+      title: t("receptionist.bookings.artist") || "Staff Artist",
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2.5">
@@ -270,7 +270,7 @@ export function ReceptionistBookingDetail({ booking }) {
                   <img crossOrigin="anonymous"
                     src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80"
                     alt={booking.customerName}
-                    className="h-20 w-20 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
+                    className="h-20 w-20 rounded-lg border-2 border-[#f4d6e2] object-cover"
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
@@ -557,7 +557,7 @@ export function ReceptionistBookingDetail({ booking }) {
           </SectionCard>
 
           {/* <SectionCard title="Next Appointment">
-            <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
+            <div className="rounded-lg border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
               <p className="text-xs font-extrabold text-[#eb5b92]">Tomorrow - 2:30 PM</p>
               <p className="mt-2 text-sm font-bold text-[#4a3741]">Gel Manicure + Nail Art</p>
               <p className="mt-2 text-[11px] text-[#8f7b88]">with Luna Park - Chair #02</p>

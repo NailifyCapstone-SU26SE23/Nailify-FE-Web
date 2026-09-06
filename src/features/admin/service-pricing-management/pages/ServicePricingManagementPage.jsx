@@ -11,11 +11,12 @@ import {
   Sparkles,
   Trash2,
   X,
+  Eye,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -30,33 +31,11 @@ import {
   createEmptyService,
   formatVndCurrency,
 } from "../services/mockServicePricing";
-import { fetchAdminServices } from "../services/servicePricingService";
+import { fetchAdminServices, createAdminService, updateAdminService, deleteAdminService } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-1 text-xs font-medium text-[#a98097]">{item.label}</p>
-      <p className="mt-2 text-[11px] font-bold text-[#20ab77]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function Pill({ children, active = false, className = "" }) {
   return (
@@ -184,10 +163,11 @@ ModalShell.propTypes = {
 };
 
 function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessage }) {
+  const { language } = useLanguage();
   return (
     <ModalShell
-      title={mode === "create" ? "Create Service" : "Edit Service"}
-      subtitle="Manage mock service pricing, duration, and availability."
+      title={mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service"}
+      subtitle={language === "vi" ? "Quản lý giá, thời lượng và tình trạng khả dụng của các dịch vụ giả lập." : "Manage mock service pricing, duration, and availability."}
       onClose={onClose}
     >
       <form
@@ -198,14 +178,21 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
         }}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Service Name">
+          <FormField label={language === "vi" ? "Tên dịch vụ" : "Service Name"}>
             <input
               value={draft.name}
               onChange={(event) => onChange("name", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Category">
+          <FormField label={language === "vi" ? "Mô tả" : "Description"}>
+            <input
+              value={draft.description || ""}
+              onChange={(event) => onChange("description", event.target.value)}
+              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            />
+          </FormField>
+          <FormField label={language === "vi" ? "Danh mục" : "Category"}>
             <select
               value={draft.category}
               onChange={(event) => onChange("category", event.target.value)}
@@ -218,7 +205,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               ))}
             </select>
           </FormField>
-          <FormField label="Base Price">
+          <FormField label={language === "vi" ? "Giá cơ bản" : "Base Price"}>
             <input
               type="number"
               min="0"
@@ -228,7 +215,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Duration (Min)">
+          <FormField label={language === "vi" ? "Thời lượng (phút)" : "Duration (Min)"}>
             <input
               type="number"
               min="5"
@@ -238,7 +225,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Status">
+          <FormField label={language === "vi" ? "Trạng thái" : "Status"}>
             <select
               value={draft.status}
               onChange={(event) => onChange("status", event.target.value)}
@@ -265,13 +252,13 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             onClick={onClose}
             className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
           >
-            Cancel
+            {language === "vi" ? "Hủy" : "Cancel"}
           </button>
           <button
             type="submit"
             className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white"
           >
-            {mode === "create" ? "Create Service" : "Save Changes"}
+            {mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Lưu thay đổi" : "Save Changes"}
           </button>
         </div>
       </form>
@@ -288,27 +275,106 @@ ServiceFormModal.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 
+function ServiceDetailModal({ service, onClose }) {
+  const { language } = useLanguage();
+  if (!service) return null;
+
+  return (
+    <ModalShell
+      title={language === "vi" ? "Chi tiết dịch vụ" : "Service Details"}
+      subtitle={language === "vi" ? "Thông tin chi tiết về dịch vụ cấu hình giá và thời gian." : "Detailed service specifications, pricing, and timing configurations."}
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Tên dịch vụ" : "Service Name"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.name}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Danh mục" : "Category"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.category}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Giá cơ bản" : "Base Price"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#2fa06c]">
+              {Number(service.price).toLocaleString("vi-VN")} VND
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Thời lượng" : "Duration"}
+            </p>
+            <p className="mt-1 text-sm font-extrabold text-[#8b5cf6]">
+              {service.duration} {language === "vi" ? "phút" : "min"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Trạng thái" : "Status"}
+            </p>
+            <span
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
+                }`}
+            >
+              {service.status}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
+          >
+            {language === "vi" ? "Đóng" : "Close"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+ServiceDetailModal.propTypes = {
+  service: PropTypes.shape({
+    name: PropTypes.string,
+    category: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    duration: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    status: PropTypes.string,
+  }),
+  onClose: PropTypes.func.isRequired,
+};
+
 function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
+  const { language } = useLanguage();
   return (
     <ActionConfirmModal
       open
       intent="danger"
       title={title}
-      subtitle="This will update the current mock pricing state."
+      subtitle={language === "vi" ? "Hành động này sẽ cập nhật trạng thái giá giả lập hiện tại." : "This will update the current mock pricing state."}
       description={body}
-      confirmText="Delete"
-      cancelText="Keep Record"
+      confirmText={language === "vi" ? "Xóa" : "Delete"}
+      cancelText={language === "vi" ? "Giữ bản ghi" : "Keep Record"}
       confirmIcon={Trash2}
       onConfirm={onConfirm}
       onCancel={onCancel}
       item={{
         title: label,
-        meta: `Pricing record • ${recordType}`,
-        note: "This entry will be removed from the current admin UI state.",
+        meta: language === "vi" ? `Bản ghi giá • ${recordType}` : `Pricing record • ${recordType}`,
+        note: language === "vi" ? "Mục này sẽ bị xóa khỏi trạng thái UI giả lập hiện tại." : "This entry will be removed from the current admin UI state.",
       }}
       warnings={[
-        "This delete is mock-only and affects the current UI state.",
-        "Any screens depending on this record should be reviewed after deletion.",
+        language === "vi" ? "Xóa này chỉ là giả lập và ảnh hưởng đến trạng thái UI hiện tại." : "This delete is mock-only and affects the current UI state.",
+        language === "vi" ? "Bất kỳ màn hình nào phụ thuộc vào bản ghi này nên được xem xét sau khi xóa." : "Any screens depending on this record should be reviewed after deletion.",
       ]}
     />
   );
@@ -336,54 +402,6 @@ function getAlertTone(tone) {
   }
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortServices(items, sortValue) {
-  const [sortKey = "service", sortDirection = "asc"] = String(sortValue || "service-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "category":
-          return item.category || "";
-        case "price":
-          return Number(item.price || 0);
-        case "duration":
-          return Number(item.duration || 0);
-        case "status":
-          return item.status || "";
-        case "service":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
 
 export function ServicePricingManagementPage() {
   const { t, language } = useLanguage();
@@ -391,12 +409,12 @@ export function ServicePricingManagementPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedSort, setSelectedSort] = useState("service-asc");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
   const [serviceDraft, setServiceDraft] = useState(createEmptyService);
   const [serviceError, setServiceError] = useState("");
+  const [detailService, setDetailService] = useState(null);
   const [serviceMetaData, setServiceMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -409,6 +427,7 @@ export function ServicePricingManagementPage() {
   });
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceLoadError, setServiceLoadError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -460,7 +479,7 @@ export function ServicePricingManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize]);
+  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize, refreshKey]);
 
   const serviceCategories = useMemo(() => {
     const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
@@ -473,11 +492,6 @@ export function ServicePricingManagementPage() {
       return matchesCategory;
     });
   }, [activeCategory, services]);
-
-  const sortedServices = useMemo(
-    () => sortServices(filteredServices, selectedSort),
-    [filteredServices, selectedSort],
-  );
 
   const summaryCards = useMemo(
     () => {
@@ -543,6 +557,7 @@ export function ServicePricingManagementPage() {
   const openEditService = useCallback((service) => {
     setServiceDraft({
       name: service.name,
+      description: service.description || "",
       category: service.category,
       price: String(service.price),
       duration: String(service.duration),
@@ -554,6 +569,12 @@ export function ServicePricingManagementPage() {
   }, []);
 
   const getServiceActionItems = useCallback((service) => [
+    {
+      key: "view-service",
+      label: language === "vi" ? "Xem chi tiết" : "View Details",
+      icon: Eye,
+      onSelect: () => setDetailService(service),
+    },
     {
       key: "edit-service",
       label: `${t("promotionDetail.editTitle") || "Edit"} ${t("servicePricing.table.service")}`,
@@ -572,34 +593,31 @@ export function ServicePricingManagementPage() {
           label: service.name,
         }),
     },
-  ], [openEditService, t]);
+  ], [openEditService, t, language]);
 
-  const submitServiceForm = () => {
-    setServiceError("Service create/update API is not connected yet.");
-  };
-
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
+  const submitServiceForm = async () => {
+    setServiceError("");
+    try {
+      if (serviceModal.mode === "create") {
+        await createAdminService(serviceDraft);
+        setFlashMessage(language === "vi" ? "Thêm dịch vụ thành công!" : "Service created successfully!");
+      } else {
+        await updateAdminService(serviceModal.recordId, serviceDraft);
+        setFlashMessage(language === "vi" ? "Cập nhật dịch vụ thành công!" : "Service updated successfully!");
       }
-
-      return `${sortKey}-asc`;
-    });
+      setServiceModal({ open: false, mode: "create", recordId: null });
+      setRefreshKey(k => k + 1);
+    } catch (error) {
+      setServiceError(error.message || (language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service."));
+    }
   };
 
   const serviceColumns = useMemo(() => ([
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.service")}
-          sortKey="service"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.service"),
       dataIndex: "name",
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (value) => (
         <Tooltip title={value} placement="topLeft">
           <div className="max-w-[200px] truncate text-sm font-bold text-[#432744]">
@@ -609,16 +627,10 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.category")}
-          sortKey="category"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.category"),
       dataIndex: "category",
       key: "category",
+      sorter: (a, b) => (a.category || "").localeCompare(b.category || ""),
       render: (value) => (
         <Pill
           className={SERVICE_CATEGORY_TONES[value] ?? "border border-[#f4d5e3] bg-white text-[#8a7082]"}
@@ -628,67 +640,64 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.price")}
-          sortKey="price"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.price"),
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.duration")}
-          sortKey="duration"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.duration"),
       dataIndex: "duration",
       key: "duration",
+      sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.status")}
-          sortKey="status"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.status"),
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (value) => <StatusBadge status={value} />,
     },
     {
       title: t("userManagement.table.actions"),
       key: "actions",
-      render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
+      render: (_, service) => (
+        <div className="flex items-center gap-2">
+          {getServiceActionItems(service).map((item) => {
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.key} title={item.label}>
+                <button
+                  type="button"
+                  onClick={item.onSelect}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a17a91] hover:bg-[#fff0f5] hover:text-[#e84d92] transition-colors shadow-sm border border-[#f4d5e3] ${item.className || ""}`}
+                >
+                  <Icon size={14} />
+                </button>
+              </Tooltip>
+            );
+          })}
+        </div>
+      ),
     },
-  ]), [getServiceActionItems, selectedSort, t]);
+  ]), [getServiceActionItems, t]);
 
   return (
     <>
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         {flashMessage ? (
           <div className="rounded-[18px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
             {flashMessage}
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
           <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -736,7 +745,7 @@ export function ServicePricingManagementPage() {
             <button
               type="button"
               onClick={openCreateService}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-35"
+              className="whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
               <Plus size={13} className="mr-1.5 inline" />
               {t("userManagement.table.actions") === "Thao tác" ? "Thêm dịch vụ" : "Add Service"}
@@ -744,10 +753,10 @@ export function ServicePricingManagementPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_310px]">
+        <div className="grid gap-4">
           <div className="space-y-4">
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="border-b border-[#f6dbe7] px-5 py-4">
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+              {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
                 <h2 className="text-sm font-extrabold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
                   {t("userManagement.table.actions") === "Thao tác"
@@ -755,22 +764,23 @@ export function ServicePricingManagementPage() {
                     : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`
                   }
                 </p>
-              </div>
+              </div> */}
 
               <Table
                 rowKey="id"
                 columns={serviceColumns}
-                dataSource={sortedServices}
+                dataSource={filteredServices}
                 loading={isLoadingServices}
                 pagination={false}
                 scroll={{ x: 800 }}
                 locale={{ emptyText: serviceLoadError || "No services found." }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-[#c694ad]">
-                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
-                  {serviceMetaData.totalItems} services
+                  {language === "vi" ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`
+                    : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
@@ -824,11 +834,11 @@ export function ServicePricingManagementPage() {
             </section>
           </div>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <SidePanel title="Insights">
               <div className="space-y-4">
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Most Booked Services</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ được đặt nhiều nhất" : "Most Booked Services"}</p>
                   <div className="mt-3 space-y-3">
                     {MOST_BOOKED_SERVICES.map(([name, value], index) => (
                       <div key={name} className="flex items-center justify-between gap-3">
@@ -845,7 +855,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Highest Revenue Services</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ có doanh thu cao nhất" : "Highest Revenue Services"}</p>
                   <div className="mt-3 space-y-3">
                     {HIGHEST_REVENUE_SERVICES.map(([name, value, progress]) => (
                       <div key={name}>
@@ -865,7 +875,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Pricing Alerts</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Cảnh báo giá" : "Pricing Alerts"}</p>
                   <div className="mt-3 space-y-3">
                     {PRICING_ALERTS.map((alert) => {
                       const tone = getAlertTone(alert.tone);
@@ -887,7 +897,7 @@ export function ServicePricingManagementPage() {
                 </div>
 
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Category Breakdown</p>
+                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Phân loại dịch vụ" : "Category Breakdown"}</p>
                   <div className="mt-3 space-y-3">
                     {categoryBreakdown.map(([name, count]) => (
                       <div key={name}>
@@ -907,7 +917,7 @@ export function ServicePricingManagementPage() {
                 </div>
               </div>
             </SidePanel>
-          </aside>
+          </aside> */}
         </div>
       </section>
 
@@ -922,6 +932,13 @@ export function ServicePricingManagementPage() {
         />
       ) : null}
 
+      {detailService ? (
+        <ServiceDetailModal
+          service={detailService}
+          onClose={() => setDetailService(null)}
+        />
+      ) : null}
+
       {deleteState ? (
         <ConfirmModal
           title="Delete Service"
@@ -929,8 +946,14 @@ export function ServicePricingManagementPage() {
           label={deleteState.label}
           recordType="Service"
           onCancel={() => setDeleteState(null)}
-          onConfirm={() => {
-            setFlashMessage("Service delete API is not connected yet.");
+          onConfirm={async () => {
+            try {
+              await deleteAdminService(deleteState.recordId);
+              setFlashMessage(language === "vi" ? "Xóa dịch vụ thành công!" : "Service deleted successfully!");
+              setRefreshKey(k => k + 1);
+            } catch (error) {
+              setFlashMessage(error.message || (language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service."));
+            }
             setDeleteState(null);
           }}
         />

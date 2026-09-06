@@ -215,15 +215,16 @@ export function ReceptionistWalkInBookingCreatePage() {
       try {
         await receptionistWalkInBookingService.createWalkInQueue(payload);
         toast.success(language === "vi" ? `Đã thêm ${selectedCustomer?.firstName || "khách vãng lai"} vào Sảnh chờ Walk-In thành công!` : `Added ${selectedCustomer?.firstName || "guest"} to Lobby Queue successfully!`);
+        setShowCreateConfirm(false);
+        navigate(ROUTES.receptionistCustomers, {
+          state: { activeTab: "lobby" },
+        });
       } catch (apiErr) {
-        console.warn("Backend API WalkInQueue failed, fallback to local Queue state:", apiErr);
-        toast.success(language === "vi" ? `Đã đăng ký sảnh chờ Walk-In cho ${selectedCustomer?.firstName || "khách vãng lai"}!` : `Registered Walk-in Lobby Queue for ${selectedCustomer?.firstName || "guest"}!`);
+        console.error("Backend API WalkInQueue failed:", apiErr);
+        const errorMsg = apiErr.response?.data?.message || apiErr.message || (language === "vi" ? "Có lỗi xảy ra khi đưa khách vào sảnh chờ." : "An error occurred while placing guest in lobby.");
+        toast.error(errorMsg);
+        setShowCreateConfirm(false);
       }
-
-      setShowCreateConfirm(false);
-      navigate(ROUTES.receptionistCustomers, {
-        state: { activeTab: "lobby" },
-      });
     } catch (err) {
       console.error(err);
       toast.error(language === "vi" ? "Có lỗi xảy ra khi đưa khách vào sảnh chờ." : "An error occurred while placing guest in lobby.");
@@ -414,7 +415,7 @@ export function ReceptionistWalkInBookingCreatePage() {
           </DashboardCard>
 
           <DashboardCard title={language === "vi" ? "Lịch Hẹn Dịch Vụ" : "Booking Schedule"} description={language === "vi" ? "Chọn ngày làm móng, khung giờ và thợ nail" : "Select date, time, and staff"} icon={CalendarDays}>
-            <div className="rounded-[20px] border border-[#f7dce8] bg-white p-4">
+            <div className="rounded-lg border border-[#f7dce8] bg-white p-4">
               <div className="mt-2">
                 <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "1. Chọn Ngày (Mặc định hôm nay)" : "1. Select Date (Walk-in defaults to today)"}</p>
                 <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="mt-2 h-10 rounded-xl border border-[#f2d7e3] px-3 text-sm text-[#5c4559] outline-none focus:border-[#ee6cb5]" />
@@ -438,7 +439,7 @@ export function ReceptionistWalkInBookingCreatePage() {
               </div>
 
               <div className="mt-5">
-                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "3. Chọn Thợ Nail Phụ Trách" : "3. Select Nail Artist"}</p>
+                <p className="text-sm font-bold text-[#432744]">{language === "vi" ? "3. Chọn Thợ Nail Phụ Trách" : "3. Select Staff Artist"}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     type="button"

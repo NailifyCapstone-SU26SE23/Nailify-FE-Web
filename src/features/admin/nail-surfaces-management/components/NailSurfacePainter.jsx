@@ -6,12 +6,12 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 
 function applyCoffinShape(geometry) {
   const positions = geometry.attributes.position;
-  
+
   for (let i = 0; i < positions.count; i++) {
     let x = positions.getX(i);
     let y = positions.getY(i);
     let z = positions.getZ(i);
-    
+
     // Taper towards the tip (coffin shape)
     if (y > 0) {
       const taper = 1.0 - y * 0.15;
@@ -25,12 +25,12 @@ function applyCoffinShape(geometry) {
     // Stronger arch near the tip
     const archStrength = 2.0 + (y > 0 ? y * 1.5 : 0);
     z -= Math.pow(x, 2) * archStrength;
-    
+
     positions.setX(i, x);
     positions.setY(i, y);
     positions.setZ(i, z);
   }
-  
+
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
 }
@@ -38,18 +38,18 @@ function applyCoffinShape(geometry) {
 function PainterMesh({ brushType, brushSize, onCanvasChange, initialMaskDataUrl }) {
   const geoRef = useRef();
   const materialRef = useRef();
-  
+
   const canvasRef = useRef(document.createElement('canvas'));
   const textureRef = useRef(null);
-  
+
   const [isPainting, setIsPainting] = useState(false);
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     canvas.width = 512;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
-    
+
     if (initialMaskDataUrl) {
       const img = new Image();
       img.onload = () => {
@@ -61,10 +61,10 @@ function PainterMesh({ brushType, brushSize, onCanvasChange, initialMaskDataUrl 
       ctx.fillStyle = "white"; // default matte
       ctx.fillRect(0, 0, 512, 512);
     }
-    
+
     const texture = new THREE.CanvasTexture(canvas);
     textureRef.current = texture;
-    
+
     if (materialRef.current) {
       materialRef.current.roughnessMap = texture;
       materialRef.current.needsUpdate = true;
@@ -79,31 +79,31 @@ function PainterMesh({ brushType, brushSize, onCanvasChange, initialMaskDataUrl 
 
   const paint = useCallback((uv) => {
     if (!uv || !canvasRef.current) return;
-    
+
     const ctx = canvasRef.current.getContext('2d');
     const x = uv.x * 512;
     const y = (1 - uv.y) * 512;
-    
+
     ctx.beginPath();
     ctx.arc(x, y, brushSize, 0, Math.PI * 2);
     // Matte = white (roughness 1), Glossy = black (roughness 0)
     ctx.fillStyle = brushType === 'matte' ? 'white' : 'black';
     ctx.fill();
-    
+
     if (textureRef.current) {
       textureRef.current.needsUpdate = true;
     }
   }, [brushType, brushSize]);
 
   return (
-    <mesh 
-      castShadow 
+    <mesh
+      castShadow
       receiveShadow
       scale={[1.1, 1.4, 0.25]}
       onPointerDown={(e) => { e.stopPropagation(); setIsPainting(true); paint(e.uv); }}
-      onPointerUp={(e) => { 
-        e.stopPropagation(); 
-        setIsPainting(false); 
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        setIsPainting(false);
         if (onCanvasChange) {
           onCanvasChange(canvasRef.current.toDataURL());
         }
@@ -116,18 +116,18 @@ function PainterMesh({ brushType, brushSize, onCanvasChange, initialMaskDataUrl 
           }
         }
       }}
-      onPointerMove={(e) => { 
+      onPointerMove={(e) => {
         if (isPainting) {
-          e.stopPropagation(); 
-          paint(e.uv); 
+          e.stopPropagation();
+          paint(e.uv);
         }
       }}
     >
       <capsuleGeometry ref={geoRef} args={[0.35, 1.4, 64, 64]} />
-      <meshPhysicalMaterial 
+      <meshPhysicalMaterial
         ref={materialRef}
         color={new THREE.Color("#ffb1c8")}
-        roughness={1} 
+        roughness={1}
         metalness={0.2}
       />
     </mesh>
@@ -143,27 +143,27 @@ PainterMesh.propTypes = {
 
 export function NailSurfacePainter({ brushType = 'glossy', brushSize = 20, onSave, initialMaskDataUrl }) {
   return (
-    <div className="relative rounded-[20px] bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[300px] overflow-hidden cursor-crosshair">
+    <div className="relative rounded-lg bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[300px] overflow-hidden cursor-crosshair">
       <Canvas camera={{ position: [0, 0, 3.5], fov: 35 }}>
         <ambientLight intensity={0.2} />
         <directionalLight position={[5, 10, 5]} intensity={2} />
         <directionalLight position={[-5, -5, -5]} intensity={0.5} />
         <Environment preset="city" />
         <ContactShadows position={[0, -1.2, 0]} opacity={0.6} scale={5} blur={2.4} />
-        
-        <OrbitControls 
-          enableZoom={true} 
-          enablePan={false} 
+
+        <OrbitControls
+          enableZoom={true}
+          enablePan={false}
           mouseButtons={{
             LEFT: null,
             MIDDLE: THREE.MOUSE.DOLLY,
             RIGHT: THREE.MOUSE.ROTATE
           }}
         />
-        
-        <PainterMesh 
-          brushType={brushType} 
-          brushSize={brushSize} 
+
+        <PainterMesh
+          brushType={brushType}
+          brushSize={brushSize}
           onCanvasChange={onSave}
           initialMaskDataUrl={initialMaskDataUrl}
         />

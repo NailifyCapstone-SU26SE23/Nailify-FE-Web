@@ -777,7 +777,7 @@ export function NailDesignManagementDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+      <section className="flex min-h-full items-center justify-center flex min-h-full flex-col gap-4 px-4 py-10">
         <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("adminNailsDesignManagement.loadingNailDesignDetail")}
@@ -792,7 +792,7 @@ export function NailDesignManagementDetailPage() {
 
   if (!formValues) {
     return (
-      <section className="flex min-h-full items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)] px-4 py-10">
+      <section className="flex min-h-full items-center justify-center flex min-h-full flex-col gap-4 px-4 py-10">
         <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84] shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           {error || "Failed to load nail design detail."}
         </div>
@@ -987,7 +987,7 @@ export function NailDesignManagementDetailPage() {
       const refreshedDetail = await fetchAdminNailDesignDetail(designId);
       setInitialDesign(refreshedDetail);
       setFormValues(refreshedDetail);
-      
+
       setIsEditing(false);
     } catch (saveError) {
       setError(
@@ -1110,7 +1110,7 @@ export function NailDesignManagementDetailPage() {
   const apiCategoryRows = Array.isArray(formValues.categories) ? formValues.categories : [];
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <style>
         {`
           .skill-level-slider::-webkit-slider-thumb {
@@ -1473,7 +1473,7 @@ export function NailDesignManagementDetailPage() {
               {formValues.variants.map((variant, index) => (
                 <div
                   key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
-                  className="rounded-[20px] border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]"
+                  className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]"
                 >
                   <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
                     <NailVariantHandPreview
@@ -1589,7 +1589,7 @@ export function NailDesignManagementDetailPage() {
             highlighted={highlightedSection === "pricing"}
           >
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
-              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.materialCosts")}</p>
@@ -1617,7 +1617,7 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.summary")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.summary.map(([label, value], index) => (
@@ -1632,7 +1632,7 @@ export function NailDesignManagementDetailPage() {
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.priceComparison")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     {formValues.pricing.comparison.map(([label, value]) => (
@@ -1965,7 +1965,7 @@ export function NailDesignManagementDetailPage() {
           ) : (
             <div className="space-y-5 px-6 py-5">
               <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-                <div className="overflow-hidden rounded-[20px] bg-[#f6edf2] lg:col-span-2">
+                <div className="overflow-hidden rounded-lg bg-[#f6edf2] lg:col-span-2">
                   <NailVariantHandPreview
                     variantDetail={selectedVariantDetail}
                     showShapeOverlay={false}
@@ -1999,7 +1999,7 @@ export function NailDesignManagementDetailPage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailShape")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
@@ -2024,7 +2024,7 @@ export function NailDesignManagementDetailPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                   <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailSurface")}</p>
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
@@ -2050,7 +2050,7 @@ export function NailDesignManagementDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.colorPreview")}</p>
                 {extractVariantColors(selectedVariantDetail?.colorJson).length > 0 ? (
                   <div className="mt-4 flex flex-wrap gap-3">
@@ -2085,7 +2085,7 @@ export function NailDesignManagementDetailPage() {
                 )}
               </div>
 
-              <div className="rounded-[20px] border border-[#f7d7e5] bg-[#fffafb] p-4">
+              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.procedureSteps")}</p>
@@ -2149,15 +2149,15 @@ export function NailDesignManagementDetailPage() {
                         <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.name")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.name || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.name}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.durationLabel}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.status || "--"}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{item.status}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>

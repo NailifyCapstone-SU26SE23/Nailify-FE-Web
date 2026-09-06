@@ -193,11 +193,11 @@ export async function fetchServiceCatalog(filters = {}) {
   return {
     items: Array.isArray(data?.items) ? data.items.map((item) => ({
       serviceId: String(item?.serviceId || "").trim(),
-      name: String(item?.name || "").trim() || "--",
+      name: String(item?.name || "").trim(),
       description: String(item?.description || "").trim(),
       price: Number(item?.price || 0),
       duration: Number(item?.duration || 0),
-      status: String(item?.status || "").trim() || "--",
+      status: String(item?.status || "").trim(),
       createAt: String(item?.createAt || "").trim(),
     })) : [],
     metaData: data?.metaData ?? {
@@ -228,11 +228,11 @@ export async function fetchStaffServiceDetail(serviceId) {
 
   return {
     serviceId: String(data?.serviceId || "").trim(),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
     description: String(data?.description || "").trim(),
     price: Number(data?.price || 0),
     duration: Number(data?.duration || 0),
-    status: String(data?.status || "").trim() || "--",
+    status: String(data?.status || "").trim(),
     createAt: String(data?.createAt || "").trim(),
   };
 }
@@ -258,7 +258,7 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
   return Array.isArray(data?.items)
     ? data.items.map((item) => ({
       nailShapeId: Number(item?.nailShapeId || 0),
-      name: String(item?.name || "").trim() || "--",
+      name: String(item?.name || "").trim(),
       imageUrl: String(item?.imageUrl || "").trim(),
       price: Number(item?.price || 0),
       duration: Number(item?.duration || 0),
@@ -287,7 +287,7 @@ export async function fetchStaffBuilderNailSurfaces(filters = {}) {
   return Array.isArray(data?.items)
     ? data.items.map((item) => ({
       nailSurfaceId: Number(item?.nailSurfaceId || 0),
-      name: String(item?.name || "").trim() || "--",
+      name: String(item?.name || "").trim(),
       shaderParam: String(item?.shaderParam || "").trim(),
       lightnessOffset: Number(item?.lightnessOffset || 0),
       saturationOffset: Number(item?.saturationOffset || 0),
@@ -326,9 +326,9 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
 
       uniqueComponents.set(componentId, {
         componentId,
-        name: String(component?.name || "").trim() || "--",
+        name: String(component?.name || "").trim(),
         imageUrl: String(component?.imageUrl || "").trim(),
-        componentType: String(component?.componentType || "").trim() || "--",
+        componentType: String(component?.componentType || "").trim(),
         price: Number(component?.price || 0),
         duration: Number(component?.duration || 0),
       });
@@ -584,9 +584,9 @@ export async function fetchStaffCustomerComponentDetail(customerComponentId) {
   return {
     customerComponentId: Number(data?.customerComponentId || 0),
     userId: String(data?.userId || "").trim(),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
     imageUrl: String(data?.imageUrl || "").trim(),
-    componentType: String(data?.componentType || "").trim() || "--",
+    componentType: String(data?.componentType || "").trim(),
     createdAt: String(data?.createdAt || "").trim(),
     isPublic: Boolean(data?.isPublic),
   };
@@ -607,7 +607,7 @@ export async function fetchStaffNailVariantDetail(variantId) {
 
   return {
     nailVariantId: Number(data?.nailVariantId || 0),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
     nailShapeId: Number(data?.nailShapeId || 0),
     nailSurfaceId: Number(data?.nailSurfaceId || 0),
     nailDesignId: Number(data?.nailDesignId || 0),
@@ -620,7 +620,7 @@ export async function fetchStaffNailVariantDetail(variantId) {
     nailShape: data?.nailShape
       ? {
         nailShapeId: Number(data.nailShape.nailShapeId || 0),
-        name: String(data.nailShape.name || "").trim() || "--",
+        name: String(data.nailShape.name || "").trim(),
         imageUrl: String(data.nailShape.imageUrl || "").trim(),
         price: Number(data.nailShape.price || 0),
         duration: Number(data.nailShape.duration || 0),
@@ -629,7 +629,7 @@ export async function fetchStaffNailVariantDetail(variantId) {
     nailSurface: data?.nailSurface
       ? {
         nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
-        name: String(data.nailSurface.name || "").trim() || "--",
+        name: String(data.nailSurface.name || "").trim(),
         shaderParam: String(data.nailSurface.shaderParam || "").trim(),
         price: Number(data.nailSurface.price || 0),
         duration: Number(data.nailSurface.duration || 0),
@@ -646,9 +646,9 @@ export async function fetchStaffNailVariantDetail(variantId) {
         component: item?.component
           ? {
             componentId: Number(item.component.componentId || 0),
-            name: String(item.component.name || "").trim() || "--",
+            name: String(item.component.name || "").trim(),
             imageUrl: String(item.component.imageUrl || "").trim(),
-            componentType: String(item.component.componentType || "").trim() || "--",
+            componentType: String(item.component.componentType || "").trim(),
             price: Number(item.component.price || 0),
             duration: Number(item.component.duration || 0),
           }
@@ -677,9 +677,9 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
         ? {
           customerComponentId: Number(item.customerComponent.customerComponentId || 0),
           userId: String(item.customerComponent.userId || "").trim(),
-          name: String(item.customerComponent.name || "").trim() || "--",
+          name: String(item.customerComponent.name || "").trim(),
           imageUrl: String(item.customerComponent.imageUrl || "").trim(),
-          componentType: String(item.customerComponent.componentType || "").trim() || "--",
+          componentType: String(item.customerComponent.componentType || "").trim(),
           createdAt: String(item.customerComponent.createdAt || "").trim(),
           isPublic: Boolean(item.customerComponent.isPublic),
         }
@@ -700,9 +700,9 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
         component: item?.component
           ? {
             componentId: Number(item.component.componentId || 0),
-            name: String(item.component.name || "").trim() || "--",
+            name: String(item.component.name || "").trim(),
             imageUrl: String(item.component.imageUrl || "").trim(),
-            componentType: String(item.component.componentType || "").trim() || "--",
+            componentType: String(item.component.componentType || "").trim(),
             price: Number(item.component.price || 0),
             duration: Number(item.component.duration || 0),
           }
@@ -727,7 +727,7 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
     nailVariantId: Number(data?.basedOnNailVariant?.nailVariantId || data?.basedOnNailVariantId || data?.customerNailId || 0),
     nailDesignId: Number(data?.basedOnNailVariant?.nailDesignId || 0),
     userId: String(data?.userId || "").trim(),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
     imageUrl: String(data?.imageUrl || "").trim(),
     nailShapeId: Number(data?.nailShapeId || 0),
     nailSurfaceId: Number(data?.nailSurfaceId || 0),
@@ -740,11 +740,11 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
     createdAt: String(data?.createdAt || "").trim(),
     isPublic: Boolean(data?.isPublic),
     basedOnNailVariantId: Number(data?.basedOnNailVariantId || 0),
-    status: String(data?.status || "").trim() || "--",
+    status: String(data?.status || "").trim(),
     nailShape: data?.nailShape
       ? {
         nailShapeId: Number(data.nailShape.nailShapeId || 0),
-        name: String(data.nailShape.name || "").trim() || "--",
+        name: String(data.nailShape.name || "").trim(),
         imageUrl: String(data.nailShape.imageUrl || "").trim(),
         price: Number(data.nailShape.price || 0),
         duration: Number(data.nailShape.duration || 0),
@@ -753,7 +753,7 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
     nailSurface: data?.nailSurface
       ? {
         nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
-        name: String(data.nailSurface.name || "").trim() || "--",
+        name: String(data.nailSurface.name || "").trim(),
         shaderParam: String(data.nailSurface.shaderParam || "").trim(),
         price: Number(data.nailSurface.price || 0),
         duration: Number(data.nailSurface.duration || 0),
@@ -762,7 +762,7 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
     basedOnNailVariant: data?.basedOnNailVariant
       ? {
         nailVariantId: Number(data.basedOnNailVariant.nailVariantId || 0),
-        name: String(data.basedOnNailVariant.name || "").trim() || "--",
+        name: String(data.basedOnNailVariant.name || "").trim(),
         nailShapeId: Number(data.basedOnNailVariant.nailShapeId || 0),
         nailSurfaceId: Number(data.basedOnNailVariant.nailSurfaceId || 0),
         nailDesignId: Number(data.basedOnNailVariant.nailDesignId || 0),
@@ -773,7 +773,7 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
         nailShape: data.basedOnNailVariant.nailShape
           ? {
             nailShapeId: Number(data.basedOnNailVariant.nailShape.nailShapeId || 0),
-            name: String(data.basedOnNailVariant.nailShape.name || "").trim() || "--",
+            name: String(data.basedOnNailVariant.nailShape.name || "").trim(),
             imageUrl: String(data.basedOnNailVariant.nailShape.imageUrl || "").trim(),
             price: Number(data.basedOnNailVariant.nailShape.price || 0),
             duration: Number(data.basedOnNailVariant.nailShape.duration || 0),
@@ -782,7 +782,7 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
         nailSurface: data.basedOnNailVariant.nailSurface
           ? {
             nailSurfaceId: Number(data.basedOnNailVariant.nailSurface.nailSurfaceId || 0),
-            name: String(data.basedOnNailVariant.nailSurface.name || "").trim() || "--",
+            name: String(data.basedOnNailVariant.nailSurface.name || "").trim(),
             shaderParam: String(data.basedOnNailVariant.nailSurface.shaderParam || "").trim(),
             price: Number(data.basedOnNailVariant.nailSurface.price || 0),
             duration: Number(data.basedOnNailVariant.nailSurface.duration || 0),
@@ -799,9 +799,9 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
             component: item?.component
               ? {
                 componentId: Number(item.component.componentId || 0),
-                name: String(item.component.name || "").trim() || "--",
+                name: String(item.component.name || "").trim(),
                 imageUrl: String(item.component.imageUrl || "").trim(),
-                componentType: String(item.component.componentType || "").trim() || "--",
+                componentType: String(item.component.componentType || "").trim(),
                 price: Number(item.component.price || 0),
                 duration: Number(item.component.duration || 0),
               }
@@ -1096,31 +1096,36 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
         resolvedService?.duration ?? item?.serviceDuration ?? item?.duration ?? item?.estimatedDuration ?? 0,
       );
 
+      const price = resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0;
+
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
-        name: resolvedServiceName || "--",
+        name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
         duration,
         durationLabel: formatDurationMinutes(duration),
-        priceLabel: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
       });
     }
 
     if (resolvedNailName || customerNailId > 0 || nailVariantId > 0) {
       const duration = parseDurationMinutes(resolvedNailDetail?.duration);
+      const price = item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0;
 
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
         bookingItemId,
-        name: resolvedNailName || "--",
+        name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? "Customer Nail" : "Nail Variant",
         quantity,
         duration,
         durationLabel: formatDurationMinutes(duration),
-        priceLabel: formatCurrency(resolvedNailDetail?.price ?? 0),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
         canViewProcedures: Boolean(bookingItemId),
       });
     }
@@ -1135,10 +1140,13 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
     const key = `${row.detailLabel}_${row.name}_${row.priceLabel}_${row.durationLabel}`;
     if (!map.has(key)) {
       const copy = { ...row };
+      copy.subtotalLabel = formatCurrency((copy.rawPrice || 0) * copy.quantity);
       map.set(key, copy);
       groupedRows.push(copy);
     } else {
-      map.get(key).quantity += row.quantity;
+      const existing = map.get(key);
+      existing.quantity += row.quantity;
+      existing.subtotalLabel = formatCurrency((existing.rawPrice || 0) * existing.quantity);
     }
   });
 
@@ -1193,43 +1201,73 @@ function buildPriceSummaryRows(items = [], discounts = []) {
   const normalizedItems = Array.isArray(items) ? items : [];
   const normalizedDiscounts = Array.isArray(discounts) ? discounts : [];
 
+  const serviceMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.serviceName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (serviceMap.has(key)) {
+      serviceMap.get(key).quantity += quantity;
+    } else {
+      serviceMap.set(key, {
+        id: `service-${item?.bookingItemId || item?.id || index}`,
+        category: "Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const serviceRows = Array.from(serviceMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
+  const nailMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (nailMap.has(key)) {
+      nailMap.get(key).quantity += quantity;
+    } else {
+      nailMap.set(key, {
+        id: `nail-${item?.bookingItemId || item?.id || index}`,
+        category: "Nail Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const nailRows = Array.from(nailMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
   return {
-    serviceRows: normalizedItems
-      .map((item, index) => {
-        const name = String(item?.serviceName || "").trim();
-
-        if (!name) {
-          return null;
-        }
-
-        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-        return {
-          id: `service-${item?.bookingItemId || item?.id || index}`,
-          category: "Service",
-          label: name,
-          amount: formatCurrency(item?.price || item?.finalPrice || 0),
-        };
-      })
-      .filter(Boolean),
-    nailRows: normalizedItems
-      .map((item, index) => {
-        const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
-
-        if (!name) {
-          return null;
-        }
-
-        const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-        return {
-          id: `nail-${item?.bookingItemId || item?.id || index}`,
-          category: "Nail Service",
-          label: name,
-          amount: formatCurrency(item?.price || item?.finalPrice || 0),
-        };
-      })
-      .filter(Boolean),
+    serviceRows,
+    nailRows,
     discountRows: normalizedDiscounts
       .map((item, index) => ({
         id: `discount-${index}`,
@@ -1265,7 +1303,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
   const currentProcessLabel = [
     serviceNames.length ? serviceNames.join(" | ") : "",
     variantNames[0] || "",
-  ].filter(Boolean).join(" | ") || "--";
+  ].filter(Boolean).join(" | ");
   const estimatedDuration =
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
@@ -1278,6 +1316,13 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.totalPriceLabel ||
     booking?.total ||
     formatCurrency(booking?.totalPrice);
+    
+  const originalServicePriceVal = Number(booking?.price || booking?.totalPrice || 0);
+  const discountAmountVal = Math.abs(Number(booking?.discount || 0));
+  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0 
+    ? booking.discounts.map(d => d.name || d.type).join(", ") 
+    : "Discount";
+  const discountValue = discountAmountVal > 0 ? `-${formatCurrency(discountAmountVal)}` : "0 VND";
 
   return {
     bookingCode: formatBookingCode(booking?.bookingId),
@@ -1305,19 +1350,21 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     serviceBreakdown,
     nailServiceBreakdown,
     priceSummary,
-    staffArtist: booking?.artistName || booking?.staffName || "--",
+    staffArtist: booking?.artistName || booking?.staffName,
     chair: "--",
     appointmentTime: appointmentStartTime,
     estimatedDuration: estimatedFinishTime,
     estimatedFinishTime,
     completedAt: "--",
-    designName: variantNames[0] || "--",
+    designName: variantNames[0],
     totalPrice: totalPriceLabel,
+    amountDue: booking?.amountDue != null ? formatCurrency(booking.amountDue) : null,
+    amountPaid: booking?.amountPaid != null ? formatCurrency(booking.amountPaid) : null,
     totalAmount: totalPriceLabel,
-    originalServicePrice: totalPriceLabel,
+    originalServicePrice: formatCurrency(originalServicePriceVal),
     extraServiceFee: "0 VND",
-    discountLabel: "Discount",
-    discountValue: "0 VND",
+    discountLabel: discountLabel,
+    discountValue: discountValue,
     remainingBalance: totalPriceLabel,
     beforePhotoTimestamp: "--",
     currentProcess: currentProcessLabel,
@@ -1352,11 +1399,11 @@ export function normalizeStaffBooking(booking) {
     uiId: formatBookingCode(booking?.bookingId),
     customerName: booking?.customerName || "Unknown customer",
     customerPhone: "--",
-    branch: booking?.salonName || "--",
-    uiBranch: booking?.salonName || "--",
-    staffName: booking?.artistName || "--",
-    service: services[0] || "--",
-    uiService: services[0] || "--",
+    branch: booking?.salonName,
+    uiBranch: booking?.salonName,
+    staffName: booking?.artistName,
+    service: services[0],
+    uiService: services[0],
     services,
     bookingDate: toDateInputValue(booking?.bookingDate),
     bookingDateValue: toDateInputValue(booking?.bookingDate),

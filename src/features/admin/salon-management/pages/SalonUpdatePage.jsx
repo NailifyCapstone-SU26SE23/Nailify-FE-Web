@@ -6,7 +6,6 @@ import {
   Phone,
   Save,
   UserRound,
-  Users,
   X,
   Upload,
 } from "lucide-react";
@@ -26,15 +25,13 @@ import {
   getSalonStatusStyle,
   validateSalonForm,
 } from "../services/mockSalon";
-import { updateSalon, uploadSalonImage } from "../services/salonsService";
+import { updateSalon } from "../services/salonsService";
 import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
 
 const inputWrapperClassName =
   "flex items-center gap-2 rounded-[16px] border border-[#f5cbdc] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#eba2c6] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.2)]";
 const inputClassName =
   "w-full min-w-0 bg-transparent text-[14px] text-[#3f2034] outline-none placeholder:text-[#c8b0bf] font-medium";
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-[#c8b0bf] bg-[#fff5f9]`;
-
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
@@ -49,6 +46,24 @@ const staggerContainer = {
       delayChildren: 0.1,
     },
   },
+};
+
+const normalizeSalonStatusValue = (status) => {
+  const normalizedStatus = String(status || "").trim().toUpperCase();
+
+  if (normalizedStatus === "CLOSED" || normalizedStatus === "INACTIVE" || normalizedStatus === "MAINTENANCE" || normalizedStatus === "UNDER MAINTENANCE") {
+    return "Closed";
+  }
+
+  return "Open";
+};
+
+const getSalonStatusLabel = (status, language) => {
+  if (language !== "vi") {
+    return status;
+  }
+
+  return { Open: "Mở cửa", Closed: "Đóng cửa" }[status] || status;
 };
 
 function PremiumCard({ className = "", children, noHover = false, padded = true }) {
@@ -121,8 +136,9 @@ export function SalonUpdatePage() {
           manager: "",
           phone: salon.phone || "",
           staffAmount: "",
-          status: salon.status || "ACTIVE",
+          status: normalizeSalonStatusValue(salon.status),
           operatingHours: mapSalonOperatingHours(salon.operatingHours),
+          depositConfig: salon.depositConfig || "",
         });
         // Set image preview if available
         if (salon.image) {
@@ -375,6 +391,25 @@ export function SalonUpdatePage() {
                     </div>
                   </label>
 
+                  <label className="space-y-2.5">
+                    <span className="text-[13px] font-semibold text-[#2d1b35]">
+                      {language === "vi" ? "Phần trăm cọc" : "Deposit Config"} <span className="text-[#ea4f93]">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fecdd3] text-[10px] font-bold text-[#ea4f93]">%</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.depositConfig}
+                        onChange={(event) => handleInputChange("depositConfig", event.target.value)}
+                        placeholder="e.g. 20"
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </label>
+
                   <label className="space-y-2 md:col-span-2">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
                       {t("adminSalonManagement.salonImage")}
@@ -425,7 +460,6 @@ export function SalonUpdatePage() {
                     </span>
                     <div className="grid grid-cols-2 gap-2.5">
                       {SALON_STATUS_OPTIONS.map((option) => {
-                        const labelMap = { ACTIVE: "Hoạt động", INACTIVE: "Ngừng hoạt động" };
                         return (
                           <motion.button
                             key={option.value}
@@ -438,7 +472,7 @@ export function SalonUpdatePage() {
                               : "bg-[#fff8fb] text-[#a88a9f] hover:text-[#2d1b35] hover:bg-[#fff5fb] border border-[#f1e7ed]"
                               }`}
                           >
-                            {language === "vi" ? labelMap[option.value] || option.label : option.label}
+                            {getSalonStatusLabel(option.value, language)}
                           </motion.button>
                         );
                       })}
@@ -550,7 +584,7 @@ export function SalonUpdatePage() {
                       <span
                         className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
                       >
-                        {language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status}
+                        {getSalonStatusLabel(formData.status, language)}
                       </span>
                     </div>
 
@@ -558,6 +592,10 @@ export function SalonUpdatePage() {
                       <div className="flex justify-between gap-3">
                         <span className="font-semibold text-[#2d1b35]">{t("adminSalonManagement.name")}</span>
                         <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || (t("adminSalonManagement.notSet"))}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Phần trăm cọc" : "Deposit Config"}</span>
+                        <span className="text-right font-medium text-[#2d1b35]">{formData.depositConfig ? `${formData.depositConfig}%` : (t("adminSalonManagement.notSet"))}</span>
                       </div>
                     </div>
                   </div>
@@ -622,7 +660,7 @@ export function SalonUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.salonName || (t("adminSalonManagement.salonRecord")), language === "vi" && formData.status === "ACTIVE" ? "Hoạt động" : formData.status]}
+        highlights={[formData.salonName || (t("adminSalonManagement.salonRecord")), getSalonStatusLabel(formData.status, language)]}
         details={[
           { label: t("adminSalonManagement.address"), value: formData.address || (t("adminSalonManagement.noAddressEntered")) },
         ]}

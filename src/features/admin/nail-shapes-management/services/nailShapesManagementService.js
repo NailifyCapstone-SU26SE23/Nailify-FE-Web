@@ -35,12 +35,6 @@ function normalizeMetaData(metaData, defaults) {
   };
 }
 
-export function formatNailShapeCurrency(value) {
-  return `${new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0))} VND`;
-}
-
 export function formatNailShapeDuration(value) {
   const duration = Number(value || 0);
 
@@ -55,12 +49,10 @@ export function normalizeAdminNailShape(shape) {
   return {
     id: Number(shape?.nailShapeId || 0),
     nailShapeId: Number(shape?.nailShapeId || 0),
-    name: String(shape?.name || "").trim() || "--",
+    name: String(shape?.name || "").trim(),
     imageUrl: String(shape?.imageUrl || "").trim(),
-    price: Number(shape?.price || 0),
-    duration: Number(shape?.duration || 0),
-    priceLabel: formatNailShapeCurrency(shape?.price || 0),
-    durationLabel: formatNailShapeDuration(shape?.duration || 0),
+    duration: shape?.duration != null ? Number(shape.duration) : null,
+    durationLabel: formatNailShapeDuration(shape?.duration),
     initials: String(shape?.name || "")
       .trim()
       .split(/\s+/)
@@ -113,8 +105,12 @@ export async function fetchAdminNailShapeDetail(shapeId) {
 function buildNailShapeFormData(formValues) {
   const formData = new FormData();
   formData.append("Name", String(formValues?.name || "").trim());
-  formData.append("Price", String(Number(formValues?.price || 0)));
-  formData.append("Duration", String(Number(formValues?.duration || 0)));
+  // Price is accepted by BE (POST/PUT) but not returned in responses; send 0 as default
+  formData.append("Price", "0");
+
+  if (formValues?.duration != null && String(formValues.duration).trim() !== "") {
+    formData.append("Duration", String(Number(formValues.duration)));
+  }
 
   if (formValues?.image instanceof File) {
     formData.append("image", formValues.image);

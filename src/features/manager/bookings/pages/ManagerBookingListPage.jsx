@@ -27,10 +27,13 @@ import {
   Plus,
   Image as ImageIcon,
   Edit3,
+  ArrowUpDown,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
+import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip, Table } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -48,6 +51,7 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -129,6 +133,38 @@ SectionHeading.propTypes = {
   actionButton: PropTypes.node,
 };
 
+
+
+function sortAppointments(items, sortValue) {
+  const [sortKey = "time", sortDirection = "asc"] = String(sortValue || "time-asc").split("-");
+  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
+
+  return [...items].sort((left, right) => {
+    const getSortValue = (item) => {
+      switch (sortKey) {
+        case "customer":
+          return item.customer || "";
+        case "artist":
+          return item.artist || "";
+        case "status":
+          return item.status || "";
+        case "time":
+        default:
+          return new Date(`${item.parsedDateStr || "1970-01-01"}T${item.startTime || "00:00:00"}`).getTime();
+      }
+    };
+
+    const leftValue = getSortValue(left);
+    const rightValue = getSortValue(right);
+
+    if (typeof leftValue === "number" && typeof rightValue === "number") {
+      return (leftValue - rightValue) * directionMultiplier;
+    }
+
+    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
+  });
+}
+
 function InfoItem({ label, children }) {
   return (
     <div className="min-w-0">
@@ -145,6 +181,7 @@ InfoItem.propTypes = {
 
 function StatusPill({ status, compact = false }) {
   const { t, language } = useLanguage();
+
   const getStyle = () => {
     switch (status) {
       case "Checked In":
@@ -159,6 +196,7 @@ function StatusPill({ status, compact = false }) {
       case "Approved":
         return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
       case "Completed":
+        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "ServiceCompleted":
         return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "Rejected":
@@ -169,6 +207,11 @@ function StatusPill({ status, compact = false }) {
         return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
       case "RescheduleSuggested":
         return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
+      case "Cancelled":
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
+      case "Repaired":
+        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+
       default:
         return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
     }
@@ -178,43 +221,44 @@ function StatusPill({ status, compact = false }) {
     switch (s) {
       case "Checked In":
       case "CheckedIn":
-        return t("manager.dashboard.statusCalled") || "At Counter";
+        return language === "vi" ? "Đã check in" : "Checked In";
       case "In Progress":
       case "InProgress":
-        return t("manager.dashboard.statusInService") || "In Progress";
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
       case "Pending":
-        return t("manager.dashboard.statusWaiting") || "Pending";
+        return language === "vi" ? "Đang chờ" : "Pending";
       case "Confirmed":
       case "Approved":
-        return t("manager.bookings.ready") || "Confirmed";
+        return language === "vi" ? "Đã xác nhận" : "Confirmed";
       case "Completed":
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
       case "ServiceCompleted":
-        return t("manager.dashboard.statusDone") || "Completed";
+        return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
       case "Rejected":
-        return t("manager.breaks.statusRejected") || "Rejected";
+        return language === "vi" ? "Đã từ chối" : "Rejected";
       case "Cancelled":
       case "Canceled":
-        return t("manager.bookings.cancelBooking") || "Cancelled";
-      case "RescheduleReq":
-      case "Reschedule Req":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
       case "ReschedulePending":
-        return t("manager.bookings.rescheduleTime") || "Reschedule Req";
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
       case "RescheduleSuggested":
-        return t("manager.bookings.moveSchedule") || "Reschedule Proposed";
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
       default:
         return s;
     }
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all max-w-full truncate ${getStyle()}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${getStyle()}`}>
       {(status === "InProgress" || status === "In Progress") && (
         <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
         </span>
       )}
-      <span className="truncate">{formatDisplay(status)}</span>
+      <span>{formatDisplay(status)}</span>
     </span>
   );
 }
@@ -459,19 +503,20 @@ function formatHourLabel(hour) {
   if (hour > 12) return `${hour - 12}:00 PM`;
   return `${hour}:00 AM`;
 }
-
 const appointmentFilters = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
-  { value: "Confirmed", label: "Confirmed" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Cancelled", label: "Cancelled" },
   { value: "CheckedIn", label: "Checked In" },
   { value: "InProgress", label: "In Progress" },
+  { value: "ServiceCompleted", label: "Service Completed" },
   { value: "Completed", label: "Completed" },
-  { value: "Rejected", label: "Rejected" },
-  { value: "Reschedule", label: "Reschedule" },
-];
-
-const KNOWN_STAFF_LIST = ["Luna Park", "Aria Nguyen", "Chloe Davis", "Mel Santos", "Unassigned"];
+  { value: "Repaired", label: "Repaired" },
+  { value: "ReschedulePending", label: "Reschedule Pending" },
+  { value: "RescheduleSuggested", label: "Reschedule Suggested" }
+]
 
 function getCalendarCardStyle(status) {
   switch (status) {
@@ -492,10 +537,15 @@ function getCalendarCardStyle(status) {
     case "Rejected":
       return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
     case "RescheduleReq":
-    case "Reschedule Req":
+    case "RescheduleReq":
     case "ReschedulePending":
       return "border-[#FDBA74] bg-[#FFF7ED] text-[#C2410C]";
     case "RescheduleSuggested":
+      return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
+    case "Cancelled":
+    case "Canceled":
+      return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
+    case "Repaired":
       return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
     default:
       return "border-[#E5E7EB] bg-[#F9FAFB] text-[#4B5563]";
@@ -503,46 +553,34 @@ function getCalendarCardStyle(status) {
 }
 
 
-function getBookingStatusLabel(status, t) {
+function getBookingStatusLabel(status, language) {
   switch (status) {
+    case "Checked In":
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "In Progress":
+    case "InProgress":
+      return language === "vi" ? "Đang làm" : "In Progress";
     case "Pending":
-      return t("manager.dashboard.statusWaiting") || "Pending";
-
+      return language === "vi" ? "Đang chờ" : "Pending";
     case "Confirmed":
     case "Approved":
-      return t("manager.bookings.ready") || "Confirmed";
-
-    case "CheckedIn":
-    case "Checked In":
-      return t("manager.dashboard.statusCalled") || "Checked In";
-
-    case "InProgress":
-    case "In Progress":
-      return t("manager.dashboard.statusInService") || "In Progress";
-
+      return language === "vi" ? "Đã xác nhận" : "Approved";
     case "Completed":
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
     case "ServiceCompleted":
-      return t("manager.dashboard.statusDone") || "Completed";
-
+      return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
     case "Rejected":
-      return t("manager.breaks.statusRejected") || "Rejected";
-
+      return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
     case "Canceled":
-      return t("manager.bookings.cancelBooking") || "Cancelled";
-
-    case "Reschedule":
-    case "RescheduleReq":
-    case "Reschedule Req":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
     case "ReschedulePending":
-      return t("manager.bookings.rescheduleTime") || "Reschedule";
-
+      return language === "vi" ? "Yêu cầu dời lịch" : "Reschedule Requested";
     case "RescheduleSuggested":
-      return (
-        t("manager.bookings.moveSchedule") ||
-        "Reschedule Proposed"
-      );
-
+      return language === "vi" ? "Đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa" : "Repaired";
     default:
       return status;
   }
@@ -556,8 +594,31 @@ export function ManagerBookingListPage() {
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const tableContainerRef = useRef(null);
 
-  // View Mode: 'table' | 'day' | 'week' | 'month'
-  const [viewMode, setViewMode] = useState("table");
+  const dispatch = useDispatch();
+
+  // Core state from Redux
+  const { bookings: rawBookings, salonStaffList, isLoading, error, filters, hasLoadedOnce } = useSelector((state) => state.managerBookings);
+  const { query, activeFilter, dateFrom: dateFromISO, dateTo: dateToISO, viewMode, currentPage } = filters;
+
+  const dateFrom = useMemo(() => dayjs(dateFromISO), [dateFromISO]);
+  const dateTo = useMemo(() => dayjs(dateToISO), [dateToISO]);
+
+  // Compute UI bookings from raw Redux bookings
+  const bookings = useMemo(() => {
+    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
+  }, [rawBookings]);
+
+  // Set viewMode via Redux
+  const setViewMode = (mode) => dispatch(setFilter({ key: "viewMode", value: mode }));
+  const setQuery = (val) => dispatch(setFilter({ key: "query", value: val }));
+  const setActiveFilter = (val) => dispatch(setFilter({ key: "activeFilter", value: val }));
+  const setDateFrom = (val) => dispatch(setFilter({ key: "dateFrom", value: val ? val.toISOString() : null }));
+  const setDateTo = (val) => dispatch(setFilter({ key: "dateTo", value: val ? val.toISOString() : null }));
+  const setCurrentPage = (val) => dispatch(setFilter({ key: "currentPage", value: val }));
+
+  // Keep some local UI state
+  const [anchorDate, setAnchorDate] = useState(() => dayjs());
+  const [selectedSort, setSelectedSort] = useState("time-asc");
 
   // Drag & Drop State
   const [draggedBooking, setDraggedBooking] = useState(null);
@@ -580,18 +641,6 @@ export function ManagerBookingListPage() {
     { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
   ];
 
-  // Core state
-  const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState(() => dayjs());
-  const [dateTo, setDateTo] = useState(() => dayjs());
-  const [anchorDate, setAnchorDate] = useState(() => dayjs());
-  const [bookings, setBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
   // Modal states
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
   const [selectedBookingForAssign, setSelectedBookingForAssign] = useState(null);
@@ -610,28 +659,10 @@ export function ManagerBookingListPage() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
-  const [salonStaffList, setSalonStaffList] = useState([]);
-
   // Fetch salon staff once on mount or when salonId changes
   useEffect(() => {
-    let active = true;
-    const loadStaff = async () => {
-      const salonId = (await getSalonIdAsync()) || getSalonId();
-      if (!salonId) return;
-      try {
-        const staffMembers = await fetchSalonStaff(salonId);
-        if (active) {
-          setSalonStaffList(Array.isArray(staffMembers) ? staffMembers : staffMembers?.items || []);
-        }
-      } catch (staffErr) {
-        console.warn("Failed to fetch salon staff:", staffErr);
-      }
-    };
-    loadStaff();
-    return () => {
-      active = false;
-    };
-  }, []);
+    dispatch(fetchManagerSalonStaffThunk());
+  }, [dispatch]);
 
   const dayViewStaffList = useMemo(() => {
     if (!salonStaffList || salonStaffList.length === 0) {
@@ -659,38 +690,10 @@ export function ManagerBookingListPage() {
   }, [salonStaffList]);
 
   const loadBookings = useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      const salonId = (await getSalonIdAsync()) || getSalonId();
-      if (!salonId) {
-        setError("No salon ID found in session. Please log in as a salon manager.");
-        setIsLoading(false);
-        return;
-      }
-
-      const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
-      const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
-      const result = await fetchBookingsBySalonId(salonId, {
-        pageNumber: 1,
-        pageSize: 1000,
-        startDate: startParam,
-        endDate: endParam
-      });
-      let apiBookings = [];
-      if (result?.items) apiBookings = result.items;
-      else if (Array.isArray(result)) apiBookings = result;
-      let uiBookings = apiBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
-
-      setBookings(uiBookings);
-      setHasLoadedOnce(true);
-    } catch (err) {
-      console.error("Failed to load bookings:", err);
-      setError(err.message || "Failed to load bookings. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [dateFrom, dateTo]);
+    const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
+    const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
+    dispatch(fetchManagerBookingsThunk({ startDate: startParam, endDate: endParam }));
+  }, [dateFrom, dateTo, dispatch]);
 
   useEffect(() => {
     loadBookings();
@@ -729,22 +732,16 @@ export function ManagerBookingListPage() {
     const isUnassigned = typeof artistItem === "object" ? artistItem.isUnassigned : (artistItem === "Unassigned");
 
     // Optimistically update UI
-    setBookings((prevBookings) =>
-      prevBookings.map((b) => {
-        if (b.id === draggedBooking.id) {
-          return {
-            ...b,
-            startTime: formattedTime,
-            time: formattedRange,
-            artist: targetArtistName || b.artist,
-            nailArtistName: targetArtistName || b.nailArtistName,
-            artistId: staffArtistId || b.artistId,
-            nailArtistId: staffArtistId || b.nailArtistId,
-          };
-        }
-        return b;
-      })
-    );
+    dispatch(updateBookingLocally({
+      id: bookingIdToAssign,
+      updates: {
+        startTime: formattedTime,
+        artist: targetArtistName,
+        nailArtistName: targetArtistName,
+        artistId: staffArtistId,
+        nailArtistId: staffArtistId,
+      }
+    }));
 
     const activeDragged = draggedBooking;
     setDraggedBooking(null);
@@ -819,42 +816,35 @@ export function ManagerBookingListPage() {
     const confirmed = bookings.filter(b => b.status === "Confirmed" || b.status === "Approved").length;
     const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
+
     return [
       {
         label: t("manager.dashboard.statusWaiting"),
         value: pending,
-        subtext: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
+        note: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
         icon: Clock3,
-        accentBg: "bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7]",
-        accentText: "text-[#D97706]",
-        badgeBorder: "border-[#FCD34D]",
+        color: "#D97706",
       },
       {
         label: t("manager.bookings.ready") || "Confirmed",
         value: confirmed,
-        subtext: t("manager.bookings.lockedReady") || "Locked & ready",
+        note: t("manager.bookings.lockedReady") || "Locked & ready",
         icon: CheckCircle2,
-        accentBg: "bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5]",
-        accentText: "text-[#059669]",
-        badgeBorder: "border-[#6EE7B7]",
+        color: "#059669",
       },
       {
         label: t("manager.dashboard.statusCalled") || "Checked In",
         value: checkedIn,
-        subtext: t("manager.bookings.inSalon") || "In salon",
+        note: t("manager.bookings.inSalon") || "In salon",
         icon: UserCheck,
-        accentBg: "bg-gradient-to-br from-[#EEF2FF] to-[#E0E7FF]",
-        accentText: "text-[#4F46E5]",
-        badgeBorder: "border-[#A5B4FC]",
+        color: "#4F46E5",
       },
       {
         label: t("manager.dashboard.statusDone") || "Completed",
         value: completed,
-        subtext: t("manager.bookings.finishedToday") || "Finished today",
+        note: t("manager.bookings.finishedToday") || "Finished today",
         icon: Sparkles,
-        accentBg: "bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE]",
-        accentText: "text-[#E84F93]",
-        badgeBorder: "border-[#FBCFE8]",
+        color: "#E84F93",
       },
     ];
   }, [bookings, t]);
@@ -884,10 +874,15 @@ export function ManagerBookingListPage() {
     });
   }, [activeFilter, query, bookings, dateFrom, dateTo]);
 
+  const sortedAppointments = useMemo(
+    () => sortAppointments(filteredAppointments, selectedSort),
+    [filteredAppointments, selectedSort]
+  );
+
   const paginatedAppointments = useMemo(() => {
     const startIndex = (currentPage - 1) * BOOKING_PAGE_SIZE;
-    return filteredAppointments.slice(startIndex, startIndex + BOOKING_PAGE_SIZE);
-  }, [filteredAppointments, currentPage]);
+    return sortedAppointments.slice(startIndex, startIndex + BOOKING_PAGE_SIZE);
+  }, [sortedAppointments, currentPage]);
 
   const filteredTotalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filteredAppointments.length / BOOKING_PAGE_SIZE));
@@ -949,7 +944,109 @@ export function ManagerBookingListPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, activeFilter, dateFrom, dateTo]);
+  }, [query, activeFilter, dateFrom, dateTo, selectedSort]);
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    if (sorter && sorter.field) {
+      if (sorter.order) {
+        setSelectedSort(`${sorter.field}-${sorter.order === "ascend" ? "asc" : "desc"}`);
+      } else {
+        setSelectedSort("time-asc");
+      }
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      title: t("manager.bookings.time"),
+      dataIndex: "time",
+      key: "time",
+      sorter: true,
+      sortOrder: selectedSort === "time-asc" ? "ascend" : selectedSort === "time-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div>
+          <p className="text-xs font-bold text-[#2B182B] truncate" title={row.date}>{row.date}</p>
+          <p className="text-[11px] font-medium text-[#9E8497] truncate" title={row.time}>{row.time}</p>
+          <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
+            <Clock3 size={11} className="text-[#E84F93]" />
+            <span>{row.duration}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.customer"),
+      dataIndex: "customer",
+      key: "customer",
+      sorter: true,
+      sortOrder: selectedSort === "customer-asc" ? "ascend" : selectedSort === "customer-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
+            {row.initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
+              {row.customer}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.artist"),
+      dataIndex: "artist",
+      key: "artist",
+      sorter: true,
+      sortOrder: selectedSort === "artist-asc" ? "ascend" : selectedSort === "artist-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+            {row.artist === "Unassigned" ? "!" : (row.artist || "").split(" ").map(p => p[0]).join("")}
+          </div>
+          <div className="min-w-0">
+            <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
+              {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.common.status"),
+      dataIndex: "status",
+      key: "status",
+      sorter: true,
+      sortOrder: selectedSort === "status-asc" ? "ascend" : selectedSort === "status-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusPill status={row.status} />
+          {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-extrabold text-[#E11D48] shadow-2xs whitespace-nowrap">
+              {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: t("manager.common.actions"),
+      key: "actions",
+      align: "center",
+      render: (_, row) => (
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Tooltip title={t("manager.common.view")}>
+            <button
+              onClick={() => handleViewBooking(row.id)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
+            >
+              <Eye size={14} />
+            </button>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ], [language, selectedSort, t]);
 
   // --- Handlers ---
   const handleViewModeChange = (mode) => {
@@ -1037,7 +1134,7 @@ export function ManagerBookingListPage() {
   };
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 bg-[#FAF6F8] p-4 lg:p-8 font-sans">
+    <section className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans">
       {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="relative overflow-hidden rounded-[28px] border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-6 lg:p-8 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
@@ -1122,42 +1219,16 @@ export function ManagerBookingListPage() {
             {/* Main Content Area */}
             <div className="space-y-6">
               {/* KPI Summary Stats Grid */}
-              <motion.div variants={fadeInUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {summaryStats.map((stat) => (
-                  <motion.div
-                    key={stat.label}
-                    whileHover={{ y: -3 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 15 }}
-                  >
-                    <div className="relative overflow-hidden rounded-[22px] border border-[#F3E2EC] bg-white p-4 shadow-[0_10px_28px_-6px_rgba(219,70,117,0.06)] hover:border-[#E8C5D8] transition-all">
-                      <div className="flex items-center justify-between">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.accentBg} ${stat.accentText} border ${stat.badgeBorder} shadow-xs`}>
-                          <stat.icon size={20} />
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] px-2 py-0.5 rounded-full bg-[#FAF0F5]">
-                          {stat.subtext}
-                        </span>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-2xl font-bold text-[#2B182B] tracking-tight">{stat.value}</p>
-                        <p className="text-xs font-semibold text-[#9E8497] mt-0.5">{stat.label}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+              <motion.div variants={fadeInUp} className="mb-4">
+                <TopMetricsRow metrics={summaryStats} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
               </motion.div>
 
               {/* Booking Board Card */}
               <motion.div variants={fadeInUp}>
-                <PremiumCard className="p-0 overflow-hidden border-[#F3E2EC]">
+                <PremiumCard className="!p-0 overflow-hidden border-[#F3E2EC]">
                   {/* Header, View Switcher & Filter Controls */}
                   <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <SectionHeading
-                        title={t("manager.bookings.title")}
-                        subtitle={t("manager.bookings.desc")}
-                        icon={Filter}
-                      />
 
                     </div>
                     <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -1298,165 +1369,39 @@ export function ManagerBookingListPage() {
                       </motion.div>
                     ) : viewMode === "table" ? (
                       /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
-                      <table className="w-full min-w-[700px] table-fixed text-left">
-                        <colgroup>
-                          <col className="w-[140px]" />
-                          <col className="w-[170px]" />
-                          <col className="w-[150px]" />
-                          <col className="w-[110px]" />
-                          <col className="w-[130px]" />
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-[#F3E2EC] bg-[#FFF5F8] text-[11px] font-bold uppercase tracking-wider text-[#9E8497]">
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.time")}</th>
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.customer")}</th>
-                            {/* <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.serviceDesign") || "Service & Nail Design"}</th> */}
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.bookings.artist")}</th>
-                            <th className="px-3.5 py-3.5 text-left">{t("manager.common.status")}</th>
-                            <th className="px-3.5 py-3.5 text-center">{t("manager.common.actions")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <AnimatePresence>
-                            {paginatedAppointments.map((row) => (
+                      <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={paginatedAppointments}
+                        pagination={false}
+                        onChange={handleTableChange}
+                        components={{
+                          body: {
+                            wrapper: ({ children, ...props }) => (
+                              <tbody {...props}>
+                                <AnimatePresence>{children}</AnimatePresence>
+                              </tbody>
+                            ),
+                            row: ({ children, className, style, ...props }) => (
                               <motion.tr
-                                key={row.id}
                                 initial={{ opacity: 0, y: 4 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -4 }}
-                                className="group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0"
-                                onClick={() => handleOpenDrawer(row.id)}
+                                className={`group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0 ${className || ""}`}
+                                style={style}
+                                {...props}
                               >
-                                <td className="px-4 py-3.5 align-middle">
-                                  <p className="text-xs font-bold text-[#2B182B] truncate" title={row.time}>{row.time}</p>
-                                  <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
-                                    <Clock3 size={11} className="text-[#E84F93]" />
-                                    <span>{row.duration}</span>
-                                  </div>
-                                </td>
-
-                                <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex min-w-0 items-center gap-2.5">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
-                                      {row.initials}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
-                                        {row.customer}
-                                      </p>
-                                      {/* <p className="mt-0.5 truncate text-[11px] text-[#9E8497] font-medium flex items-center gap-1">
-                                        <Phone size={10} className="shrink-0 text-[#C8B0BF]" />
-                                        {row.phone || "No phone"}
-                                      </p> */}
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {/* Service & Try-On Nail Design Thumbnail Preview */}
-                                {/* <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex items-center gap-2.5 min-w-0">
-                                    {row.thumbnailUrl && (
-                                      <Tooltip title={t("manager.bookings.zoomThumbnail") || "Click to enlarge Nail Design"}>
-                                        <div
-                                          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] cursor-pointer hover:border-[#E84F93] transition group/img"
-                                          onClick={(e) => { e.stopPropagation(); setActiveImageModalUrl(row.thumbnailUrl); }}
-                                        >
-                                          <img src={row.thumbnailUrl} alt="Try-On Design" className="h-full w-full object-cover group-hover/img:scale-110 transition duration-200" />
-                                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 flex items-center justify-center text-white transition">
-                                            <Maximize2 size={12} />
-                                          </div>
-                                        </div>
-                                      </Tooltip>
-                                    )}
-                                    <div className="min-w-0">
-                                      <p className="truncate text-xs font-bold text-[#2B182B]">{row.service}</p>
-                                      {row.totalPrice && (
-                                        <p className="mt-0.5 text-[11px] font-bold text-[#E84F93]">
-                                          {formatVND(row.totalPrice)}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </td> */}
-
-                                <td className="px-4 py-3.5 align-middle">
-                                  <div className="flex min-w-0 items-center gap-2">
-                                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
-                                      {row.artist === "Unassigned" ? "!" : row.artist.split(" ").map(p => p[0]).join("")}
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
-                                        {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                <td className="px-3 py-3.5 align-middle">
-                                  <StatusPill status={row.status} />
-                                </td>
-
-                                <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <Tooltip title={t("manager.common.view")}>
-                                      <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.9 }}
-                                        onClick={() => handleViewBooking(row.id)}
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
-                                      >
-                                        <Eye size={14} />
-                                      </motion.button>
-                                    </Tooltip>
-
-                                    {!(
-                                      (row.nailArtistId || row.staffId || row.staffArtistId || row.artistId) &&
-                                      (row.status === "CheckedIn" || row.status === "Checked In")
-                                    ) && (!isFinalStatus(row.status) || row.status === "Approved") && (
-                                        <Tooltip title={t("manager.bookings.assignArtistTitle") || "Assign staff artist"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAssign(row); setIsAssignArtistModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <UserCheck size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-                                      )}
-
-                                    {!isFinalStatus(row.status) && !(row.status === "CheckedIn" || row.status === "Checked In" || row.status === "InProgress" || row.status === "In Progress") && (
-                                      <>
-                                        <Tooltip title={t("manager.bookings.confirmBooking") || "Confirm booking"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAction(row); setIsConfirmModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ECFDF5] text-[#059669] hover:bg-[#059669] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <CheckCircle2 size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-
-                                        <Tooltip title={t("manager.bookings.cancelBooking") || "Cancel booking"}>
-                                          <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => { setSelectedBookingForAction(row); setIsCancelModalOpen(true); }}
-                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FEF2F2] text-[#E11D48] hover:bg-[#E11D48] hover:text-white transition-all shadow-2xs"
-                                          >
-                                            <XCircle size={14} />
-                                          </motion.button>
-                                        </Tooltip>
-                                      </>
-                                    )}
-                                  </div>
-                                </td>
+                                {children}
                               </motion.tr>
-                            ))}
-                          </AnimatePresence>
-                        </tbody>
-                      </table>
+                            )
+                          }
+                        }}
+                        onRow={(record) => ({
+                          onClick: () => handleOpenDrawer(record.id)
+                        })}
+                        scroll={{ x: 720 }}
+                        className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                      />
                     ) : viewMode === "day" ? (
                       /* --- 2. DAY VIEW SCHEDULER (ARTISTS x HOURS MATRIX WITH DRAG & DROP) --- */
                       <div className="p-4 space-y-4">
@@ -1481,7 +1426,7 @@ export function ManagerBookingListPage() {
                                   const displayName = artistItem.name;
                                   const initials = isUnassigned
                                     ? "!"
-                                    : displayName.split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+                                    : (displayName || "").split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
 
                                   return (
                                     <th key={artistItem.id || displayName} className="min-w-[175px] p-3 text-center border-r border-[#F3E2EC] last:border-r-0">
@@ -1539,7 +1484,7 @@ export function ManagerBookingListPage() {
                                               className={`group relative rounded-xl border p-2.5 cursor-grab active:cursor-grabbing shadow-2xs hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
                                             >
                                               <div className="flex items-center justify-between mb-1 min-w-0">
-                                                <span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
+                                                <span className="font-semibold">{getBookingStatusLabel(b.status, language)}</span><span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
                                                 <GripVertical size={14} className="opacity-40 group-hover:opacity-100 transition shrink-0 ml-1" />
                                               </div>
                                               <p className="text-[10px] opacity-80 truncate mb-1" title={b.service}>{b.service}</p>
@@ -1720,7 +1665,7 @@ export function ManagerBookingListPage() {
                                         onClick={() => handleOpenDrawer(b.id)}
                                         className={`rounded-lg border px-1.5 py-1 text-[9px] font-bold cursor-grab active:cursor-grabbing truncate ${getCalendarCardStyle(b.status)}`}
                                       >
-                                        {b.customer} ({b.time.split("-")[0].trim()})
+                                        {b.customer} ({(b.time || "").split("-")[0]?.trim() || ""})
                                       </div>
                                     ))}
                                     {dayBookings.length > 2 && (
@@ -1769,7 +1714,7 @@ export function ManagerBookingListPage() {
                   {capacityData.map((period, i) => (
                     <div key={i}>
                       <div className="flex items-center justify-between text-xs text-[#9E8497]">
-                        <span className="font-bold text-[#2B182B]">{period.label}</span>
+                        <span className="font-semibold">{period.label}</span>
                         <span className="font-bold text-[#E84F93]">{period.value}%</span>
                       </div>
                       <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
@@ -1806,7 +1751,7 @@ export function ManagerBookingListPage() {
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
-                    <span className="font-bold">{language === "vi" ? "Ngày" : "Date"}</span>
+                    <span className="font-semibold">{language === "vi" ? "Ngày" : "Date"}</span>
                     <span className="font-bold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
                   </div>
 
@@ -1901,7 +1846,7 @@ export function ManagerBookingListPage() {
                   {staffWorkloadData.map((staff, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-bold text-white shadow-xs`}>
-                        {staff.name.split(" ").map((p) => p[0]).join("")}
+                        {(staff.name || "").split(" ").map((p) => p[0]).join("")}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between text-xs">

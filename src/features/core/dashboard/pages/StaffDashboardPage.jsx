@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
-import { StaffBookingNotesModal } from "../../../../shared/bookings/components/StaffBookingNotesModal";
+import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
   getStaffBookingDesignStudioRoute,
@@ -47,6 +47,7 @@ import {
 } from "../../../staff/bookings/services/staffBookingService";
 import { useStaffDashboard, useStaffSkills } from "../hooks/useAdminDashboard";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const DEFAULT_BOOKING_PAGE_SIZE = 10;
 
@@ -202,55 +203,7 @@ function getStatusTone(status) {
   }
 }
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
-  const color = item.color || '#10b981';
 
-  const safeStr = (val) => {
-    if (val === null || val === undefined) return '';
-    if (typeof val === 'object') return val.customerName || JSON.stringify(val);
-    return String(val);
-  };
-
-  return (
-    <div
-      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-    >
-      <div
-        className="absolute inset-0 opacity-[0.06]"
-        style={{
-          background: `linear-gradient(135deg, ${color}, transparent 75%)`,
-        }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {item.label}
-          </p>
-          <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
-            {safeStr(item.value)} <span className="text-[14px] text-slate-400 font-semibold">{item.unit || ''}</span>
-          </h2>
-          <p className="mt-1 text-[11px] font-medium text-slate-400">{safeStr(item.note)}</p>
-        </div>
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
-          style={{
-            backgroundColor: `${color}18`,
-            color: color,
-          }}
-        >
-          <Icon size={24} strokeWidth={2.4} />
-        </div>
-      </div>
-      <div
-        className="mt-6 h-1.5 rounded-full"
-        style={{
-          background: `linear-gradient(to right, ${color}, transparent)`,
-        }}
-      />
-    </div>
-  );
-}
 
 function StatusChip({ label, className }) {
   return (
@@ -290,8 +243,8 @@ function MobileBookingCard({ booking, actions }) {
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="break-words text-xs font-bold text-[#432744]">{booking.services.join(", ") || "--"}</p>
-          <p className="mt-1 break-words text-[11px] text-[#8a7082]">{booking.uiBranch || "--"}</p>
+          <p className="break-words text-xs font-bold text-[#432744]">{booking.services.join(", ")}</p>
+          <p className="mt-1 break-words text-[11px] text-[#8a7082]">{booking.uiBranch}</p>
         </div>
 
         <div className="shrink-0">
@@ -455,8 +408,8 @@ export function StaffDashboardPage() {
       {
         label: language === 'vi' ? 'Kế tiếp' : 'Next',
         value: typeof dashboardData?.nextCustomer === "object" && dashboardData?.nextCustomer !== null
-          ? (dashboardData.nextCustomer.customerName || "--")
-          : (dashboardData?.nextCustomer || "--"),
+          ? (dashboardData.nextCustomer.customerName)
+          : (dashboardData?.nextCustomer),
         note: language === 'vi' ? 'Khách sắp tới' : 'Upcoming customer',
         icon: AlarmClock,
         color: "#8b5cf6",
@@ -661,7 +614,7 @@ export function StaffDashboardPage() {
                 className="border border-[#f6d3e3] bg-[#fff1f6] text-[#b48aa0]"
               />
             </div>
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_26px_rgba(236,72,153,0.06)]">
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_26px_rgba(236,72,153,0.06)]">
               {isLoading ? (
                 <div className="flex min-h-[300px] items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
@@ -775,7 +728,7 @@ export function StaffDashboardPage() {
                 const currentBg = iconBgColors[i % iconBgColors.length];
 
                 return (
-                  <div key={i} className={`relative flex min-w-[250px] max-w-[350px] shrink-0 snap-center flex-col justify-between rounded-[20px] border border-slate-200 border-b-8 border-r-8 bg-white p-6 shadow-sm ${currentBorder}`}>
+                  <div key={i} className={`relative flex min-w-[250px] max-w-[350px] shrink-0 snap-center flex-col justify-between rounded-lg border border-slate-200 border-b-8 border-r-8 bg-white p-6 shadow-sm ${currentBorder}`}>
                     <div className={`absolute -top-4 -right-4 flex h-12 w-12 items-center justify-center rounded-full border-4 border-white text-white shadow-md ${currentBg}`}>
                       <User size={20} />
                     </div>
@@ -809,7 +762,7 @@ export function StaffDashboardPage() {
         const uniqueDates = Array.from(new Set(dashboardData.mySchedule.map(item => dayjs(item.date).format("YYYY-MM-DD")))).sort();
 
         return (
-          <div className="flex flex-col h-[600px] w-full bg-white rounded-[20px] p-2">
+          <div className="flex flex-col h-[600px] w-full bg-white rounded-lg p-2">
             <div className="w-full h-full overflow-auto custom-scrollbar">
               <div style={{ minWidth: `${Math.max(uniqueDates.length * 150 + 64, 100)}%` }}>
 
@@ -1030,6 +983,7 @@ export function StaffDashboardPage() {
     {
       title: language === "vi" ? "Ngày & Giờ" : "Date & Time",
       key: "time",
+      sorter: (a, b) => (a.bookingTime || "").localeCompare(b.bookingTime || ""),
       render: (_, booking) => (
         <div className="flex flex-col">
           <span className="text-xs font-semibold text-[#8a7082]">{formatDate(booking.bookingDateTime || booking.startTimeValue)}</span>
@@ -1040,6 +994,7 @@ export function StaffDashboardPage() {
     {
       title: language === "vi" ? "Khách hàng" : "Customer",
       key: "customer",
+      sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
       render: (_, booking) => (
         <div className="flex items-center gap-3">
           <img
@@ -1055,12 +1010,14 @@ export function StaffDashboardPage() {
     {
       title: language === "vi" ? "Giá" : "Price",
       key: "price",
-      render: (_, booking) => <span className="font-bold text-[#ea4f93]">{booking.totalPriceLabel || "--"}</span>,
+      sorter: (a, b) => (a.totalPriceValue || 0) - (b.totalPriceValue || 0),
+      render: (_, booking) => <span className="font-bold text-[#ea4f93]">{booking.totalPriceLabel}</span>,
     },
     {
       title: language === "vi" ? "Trạng thái" : "Status",
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (value) => <StatusChip label={value} className={getStatusTone(value)} />,
     },
     {
@@ -1171,11 +1128,7 @@ export function StaffDashboardPage() {
             </div>
           ) : null}
 
-          <div className="grid w-full min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {metrics.map((item) => (
-              <MetricCard key={item.label} item={item} />
-            ))}
-          </div>
+          <TopMetricsRow metrics={metrics} />
 
           {/* Pinned Widgets Section */}
           {pinnedWidgets.length > 0 && (

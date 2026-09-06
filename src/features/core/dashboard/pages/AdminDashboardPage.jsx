@@ -20,6 +20,7 @@ import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, use
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 // Technical Light Theme Palette
 const TECH_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16"];
@@ -31,7 +32,7 @@ const GRID_COLOR = "#f1f5f9";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`bg-white border border-slate-200 p-5 shadow-sm ${className}`}
+      className={`bg-white border border-slate-200 p-5 shadow-sm rounded-lg ${className}`}
     >
       {children}
     </article>
@@ -261,6 +262,7 @@ export function AdminDashboardPage() {
     {
       title: t("adminDashboard.table.salon").toUpperCase(),
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, salon) => (
         <div>
           <p className="font-bold text-slate-800 text-sm">{salon.name}</p>
@@ -271,12 +273,14 @@ export function AdminDashboardPage() {
       title: t("adminDashboard.table.manager").toUpperCase(),
       dataIndex: "manager",
       key: "manager",
+      sorter: (a, b) => (a.manager || "").localeCompare(b.manager || ""),
       render: (value) => <span className="text-sm font-bold text-slate-800">{value}</span>,
     },
     {
       title: t("adminDashboard.table.revenue").toUpperCase(),
       dataIndex: "revenue",
       key: "revenue",
+      sorter: (a, b) => (a.revenue || 0) - (b.revenue || 0),
       render: (value) => <span className="text-sm font-mono text-emerald-600">{value ? value.toLocaleString("vi-VN") + " ₫" : "0 ₫"}</span>,
     },
     {
@@ -554,7 +558,7 @@ export function AdminDashboardPage() {
   const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+    <div className="flex min-h-screen flex-col text-slate-800 font-sans">
       {/* Header & Controls */}
       {/* <div className="flex flex-col gap-4 bg-white px-8 py-5 shadow-sm border-b border-slate-200 md:flex-row md:items-center md:justify-between z-50 sticky top-0"> */}
       <div
@@ -599,58 +603,9 @@ export function AdminDashboardPage() {
       </div>
 
       <div
-        className="
-    mx-auto w-full space-y-6 p-8
-    bg-[#fff9fb]
-    bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-  "
-      >
+        className="mx-auto w-full space-y-6 p-8">
         {/* Top Metrics Row */}
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {metricCards.map((metric, i) => {
-            const Icon = metric.icon || Activity;
-            const color = metric.color || '#10b981';
-
-            return (
-              <div
-                key={i}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div
-                  className="absolute inset-0 opacity-[0.06]"
-                  style={{
-                    background: `linear-gradient(135deg, ${color}, transparent 75%)`,
-                  }}
-                />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {metric.label}
-                    </p>
-                    <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
-                      {metric.value} <span className="text-[14px] text-slate-400 font-semibold">{metric.unit !== "VND" ? "" : "₫"}</span>
-                    </h2>
-                  </div>
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
-                    style={{
-                      backgroundColor: `${color}18`,
-                      color: color,
-                    }}
-                  >
-                    <Icon size={24} strokeWidth={2.4} />
-                  </div>
-                </div>
-                <div
-                  className="mt-6 h-1.5 rounded-full"
-                  style={{
-                    background: `linear-gradient(to right, ${color}, transparent)`,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
+        <TopMetricsRow metrics={metricCards} />
 
         {/* Pinned Widgets Section */}
         {pinnedWidgets.length > 0 && (

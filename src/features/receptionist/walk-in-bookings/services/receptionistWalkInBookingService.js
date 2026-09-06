@@ -135,6 +135,16 @@ export const receptionistWalkInBookingService = {
     }
   },
 
+  assignChairToQueue: async (queueId, chairId) => {
+    try {
+      const response = await axiosClient.post(`/WalkInQueues/${queueId}/assign-chair`, { chairId });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning chair to queue:", error);
+      throw error;
+    }
+  },
+
   convertQueueToBooking: async (queueId, payload = {}) => {
     try {
       const response = await axiosClient.post(`/WalkInQueues/${queueId}/convert-to-booking`, payload);

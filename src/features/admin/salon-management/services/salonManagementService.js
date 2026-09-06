@@ -47,7 +47,7 @@ function formatOperatingHours(operatingHours) {
   const firstDay = sortedDays[0];
   const lastDay = sortedDays[sortedDays.length - 1];
 
-  return `${firstDay?.dayName?.slice(0, 3) || "--"}-${lastDay?.dayName?.slice(0, 3) || "--"} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
+  return `${firstDay?.dayName?.slice(0, 3)}-${lastDay?.dayName?.slice(0, 3)} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
 }
 
 export function mapSalonOperatingHours(operatingHours) {
@@ -94,21 +94,21 @@ function normalizeSalonStatus(status) {
   switch (normalizedStatus) {
     case "active":
     case "open":
-      return "Active";
+      return "Open";
     case "busy":
       return "Busy";
-    case "closed":
     case "inactive":
+    case "closed":
       return "Closed";
     default:
-      return status ? `${status}` : "Active";
+      return status ? `${status}` : "Open";
   }
 }
 
 function getSalonStatusColor(status) {
   switch (status) {
-    case "Active":
-      return "bg-emerald-100 text-emerald-600";
+    case "Open":
+      return "bg-[#eaf9ee] text-[#238a55]";
     case "Busy":
       return "bg-amber-100 text-amber-600";
     case "Closed":
@@ -143,20 +143,21 @@ export function normalizeAdminSalon(salon) {
   return {
     id: realId,
     salonId: realId,
-    name: String(salon?.name || "").trim() || "--",
-    address: String(salon?.address || "").trim() || "--",
+    name: String(salon?.name || "").trim(),
+    address: String(salon?.address || "").trim(),
     manager: salon?.manager || "Unassigned",
     staffCount: salon?.staffCount || 0,
     hours: formatOperatingHours(salon?.operatingHours),
     status,
     statusColor: getSalonStatusColor(status),
     image: getSalonImage(imageUrl, salon?.name || realId),
-    phone: String(salon?.phone || "").trim() || "--",
+    phone: String(salon?.phone || "").trim(),
     rating: salon?.rating || "—",
     reviews: salon?.reviewCount || "0",
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
     operatingHours: Array.isArray(salon?.operatingHours) ? salon.operatingHours : [],
+    depositConfig: salon?.depositConfig != null ? Math.round(Number(salon.depositConfig) * 100) : "",
   };
 }
 
@@ -216,19 +217,24 @@ export async function fetchAdminSalons({
 }
 
 export async function fetchSalonStaffCount(salonId, role) {
-  const response = await axiosClient.get(
-    `/Users/salon/${salonId}/staff`,
-    {
-      headers: getAuthHeaders(),
-      params: {
-        role,
-        pageNumber: 1,
-        pageSize: 1,
-      },
-    }
-  );
+  try {
+    const response = await axiosClient.get(
+      `/Users/salon/${salonId}/staff`,
+      {
+        headers: getAuthHeaders(),
+        params: {
+          role,
+          pageNumber: 1,
+          pageSize: 1,
+        },
+      }
+    );
 
-  return response.data.data.metaData.totalItems;
+    return response?.data?.data?.metaData?.totalItems || 0;
+  } catch (error) {
+    console.warn(`Failed to fetch staff count for salon ${salonId} role ${role}:`, error?.message);
+    return 0;
+  }
 }
 
 export async function fetchAdminSalonDetail(salonId) {

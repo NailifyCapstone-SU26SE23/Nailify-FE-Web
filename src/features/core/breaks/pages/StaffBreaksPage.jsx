@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { DatePicker, Spin } from "antd";
+import { DatePicker, Spin, Table, ConfigProvider } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import {
@@ -228,6 +228,92 @@ export function StaffBreaksPage() {
     }
   };
 
+  const columns = [
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
+      key: "date",
+      sorter: (a, b) => dayjs(a.breakDate).unix() - dayjs(b.breakDate).unix(),
+      render: (_, item) => <span className="px-2 font-semibold">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thời gian" : "Time"}</span>,
+      key: "time",
+      sorter: (a, b) => {
+        const timeA = a.startTime ? a.startTime.substring(0, 5) : "";
+        const timeB = b.startTime ? b.startTime.substring(0, 5) : "";
+        return timeA.localeCompare(timeB);
+      },
+      render: (_, item) => (
+        <div className="flex items-center gap-1.5 text-slate-700 px-2">
+          <Clock3 size={14} className="text-[#a88a9d]" />
+          <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Lý do" : "Reason"}</span>,
+      key: "reason",
+      sorter: (a, b) => (a.reason || "").localeCompare(b.reason || ""),
+      render: (_, item) => (
+        <div className="max-w-[200px] truncate text-[var(--color-muted)] px-2" title={item.reason}>
+          {item.reason}
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</span>,
+      key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+      render: (_, item) => <div className="px-2">{getStatusBadge(item.status)}</div>
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Phản hồi từ chối" : "Rejection Reason"}</span>,
+      key: "rejectReason",
+      sorter: (a, b) => (a.rejectReason || "").localeCompare(b.rejectReason || ""),
+      render: (_, item) => (
+        <div className="max-w-[200px] truncate text-xs text-rose-500 italic px-2" title={item.rejectReason}>
+          {item.rejectReason || "-"}
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thao tác" : "Action"}</span>,
+      key: "action",
+      align: 'right',
+      render: (_, item) => (
+        <div className="flex justify-end gap-2 px-2">
+          <button
+            onClick={() => openDetailModal(item)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+            title={language === "vi" ? "Chi tiết" : "Details"}
+          >
+            <Eye size={13} />
+          </button>
+          {String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt" ? (
+            <>
+              <button
+                onClick={() => openEditModal(item)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
+                title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
+              >
+                <Edit2 size={13} />
+              </button>
+              <button
+                onClick={() => openDeleteModal(item)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
+              >
+                <Trash2 size={13} />
+              </button>
+            </>
+          ) : (
+            <span className="text-xs text-slate-400 self-center">{language === "vi" ? "Không thể sửa/hủy" : "Cannot edit/cancel"}</span>
+          )}
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -300,80 +386,25 @@ export function StaffBreaksPage() {
       ) : (
         <div className="space-y-4">
           {/* Table for desktop */}
-          <div className="hidden overflow-hidden rounded-[22px] border border-[#f4e4d7] bg-white md:block">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-[#f4e4d7]">
-                <thead className="bg-[#fff8f2]">
-                  <tr className="text-left text-xs uppercase tracking-[0.16em] text-[#b38769]">
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</th>
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Thời gian" : "Time"}</th>
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Lý do" : "Reason"}</th>
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</th>
-                    <th className="px-5 py-4 font-semibold">{language === "vi" ? "Phản hồi từ chối" : "Rejection Reason"}</th>
-                    <th className="px-5 py-4 font-semibold text-right">{language === "vi" ? "Thao tác" : "Action"}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f7ebdf] bg-white">
-                  {breaks.map((item) => (
-                    <tr key={item.nailArtistBreakId} className="align-middle text-sm text-[var(--color-ink)]">
-                      <td className="px-5 py-4 font-semibold">
-                        {dayjs(item.breakDate).format("DD/MM/YYYY")}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5 text-slate-700">
-                          <Clock3 size={14} className="text-[#a88a9d]" />
-                          <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="max-w-[200px] truncate text-[var(--color-muted)]" title={item.reason}>
-                          {item.reason}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        {getStatusBadge(item.status)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="max-w-[200px] truncate text-xs text-rose-500 italic" title={item.rejectReason}>
-                          {item.rejectReason || "-"}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openDetailModal(item)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
-                            title={language === "vi" ? "Chi tiết" : "Details"}
-                          >
-                            <Eye size={13} />
-                          </button>
-                          {String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt" ? (
-                            <>
-                              <button
-                                onClick={() => openEditModal(item)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-                                title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button
-                                onClick={() => openDeleteModal(item)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                                title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-slate-400">{language === "vi" ? "Không thể sửa/hủy" : "Cannot edit/cancel"}</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="hidden md:block">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Table: {
+                    headerBg: "#fff8f2",
+                    headerColor: "#b38769",
+                  },
+                },
+              }}
+            >
+              <Table
+                dataSource={breaks}
+                columns={columns}
+                rowKey="nailArtistBreakId"
+                pagination={false}
+                className="rounded-[22px] border border-[#f4e4d7] bg-white overflow-hidden"
+              />
+            </ConfigProvider>
           </div>
 
           {/* List for mobile */}

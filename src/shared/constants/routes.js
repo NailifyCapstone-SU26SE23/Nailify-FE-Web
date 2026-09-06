@@ -44,7 +44,6 @@ export const ROUTES = {
   managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
   managerReschedule: "/manager/reschedule",
-  managerBookingsCreate: "/manager/bookings/create",
   managerBookingDetail: "/manager/bookings/:bookingId",
   managerStaffArtists: "/manager/staff-artists",
   managerStaffArtistsCreate: "/manager/staff-artists/create",
@@ -58,6 +57,7 @@ export const ROUTES = {
   managerQueue: "/manager/queue",
   managerBreaks: "/manager/breaks",
   managerChairs: "/manager/chairs",
+  managerSalon: "/manager/salon",
   receptionistQueue: "/receptionist/queue",
   receptionistWaitlist: "/receptionist/waitlist",
 
@@ -67,7 +67,7 @@ export const ROUTES = {
   adminProfile: "/admin/profile",
   adminBookings: "/admin/bookings",
   adminBookingsCreate: "/admin/bookings/create",
-  adminBookingDetail: "/admin/bookings/:bookingId",
+  adminBookingDetail: "/admin/bookings/detail/:bookingId",
   adminSalons: "/admin/salons",
   adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
@@ -80,7 +80,7 @@ export const ROUTES = {
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
   adminLoyaltyTiers: "/admin/loyalty-tiers",
-  adminServicePricing: "/admin/service-pricing",
+  adminServicePricing: "/admin/services",
   adminQuiz: "/admin/quiz",
   adminQuizCreate: "/admin/quiz/create",
   adminNailShapes: "/admin/nail-shapes",
@@ -144,7 +144,7 @@ export const getManagerStaffUpdateRoute = (staffId) =>
   `/manager/staff-artists/${staffId}`;
 
 export const getAdminBookingDetailRoute = (bookingId) =>
-  `/admin/bookings/${bookingId}`;
+  `/admin/bookings/detail/${bookingId}`;
 export const getAdminSalonDetailRoute = (salonId) =>
   `/admin/salons/${salonId}`;
 export const getAdminSalonUpdateRoute = (salonId) =>
@@ -156,7 +156,7 @@ export const getAdminUserDetailRoute = (userId) =>
 export const getAdminLoyaltyTiersRoute = () =>
   "/admin/loyalty-tiers";
 export const getAdminServicePricingRoute = () =>
-  "/admin/service-pricing";
+  "/admin/services";
 export const getAdminQuizRoute = () =>
   "/admin/quiz";
 export const getAdminQuizCreateRoute = () =>

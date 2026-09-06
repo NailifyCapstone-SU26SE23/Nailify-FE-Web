@@ -61,7 +61,7 @@ export function ExtraServiceModal({
   const isVi = language === "vi";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
@@ -98,7 +98,7 @@ export function ExtraServiceModal({
 
           <div className="mt-5 space-y-3 pr-1">
             {isLoading ? (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+              <div className="rounded-lg border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
                 {isVi ? "Đang tải dịch vụ..." : "Loading services..."}
               </div>
             ) : normalizedServices.length ? (
@@ -160,7 +160,7 @@ export function ExtraServiceModal({
                 );
               })
             ) : (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+              <div className="rounded-lg border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
                 {isVi ? "Không tìm thấy dịch vụ" : "No services found"}
               </div>
             )}

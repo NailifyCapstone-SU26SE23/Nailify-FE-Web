@@ -191,9 +191,9 @@ export function PromotionCreatePage() {
 
   const summaryItems = useMemo(
     () => [
-      [t("promotionDetail.promotionName"), formValues.name || "--"],
-      [t("promotionDetail.scope"), formValues.scope || "--"],
-      [t("promotionDetail.discountValue"), formValues.discountValue ? `${formValues.discountValue} (${formValues.discountType || "--"})` : "--"],
+      [t("promotionDetail.promotionName"), formValues.name],
+      [t("promotionDetail.scope"), formValues.scope],
+      [t("promotionDetail.discountValue"), formValues.discountValue ? `${formValues.discountValue} (${formValues.discountType})` : "--"],
       [t("promotionDetail.startDate"), formValues.startDate && formValues.endDate ? `${formValues.startDate} → ${formValues.endDate}` : "--"],
     ],
     [formValues.discountType, formValues.discountValue, formValues.endDate, formValues.name, formValues.scope, formValues.startDate],
@@ -487,7 +487,7 @@ export function PromotionCreatePage() {
           </PanelCard>
 
           <PanelCard title={t("promotionDetail.promotionImage")} icon={ImagePlus}>
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
               {imagePreview ? (
                 <img
                   src={imagePreview}
@@ -539,9 +539,9 @@ export function PromotionCreatePage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || "New promotion"]}
         details={[
-          { label: "Scope", value: formValues.scope || "--" },
-          { label: "Type", value: formValues.type || "--" },
-          { label: "Discount", value: formValues.discountValue || "--" },
+          { label: "Scope", value: formValues.scope },
+          { label: "Type", value: formValues.type },
+          { label: "Discount", value: formValues.discountValue },
           { label: "Period", value: formValues.startDate && formValues.endDate ? `${toInputDateTime(formValues.startDate)} → ${toInputDateTime(formValues.endDate)}` : "--" },
         ]}
       />

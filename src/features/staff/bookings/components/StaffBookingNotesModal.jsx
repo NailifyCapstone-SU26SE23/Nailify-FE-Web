@@ -1,5 +1,5 @@
 import { FileText, Sparkles, UserRound, X } from "lucide-react";
-import { PropTypes } from "../../utils/propTypes";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 
 function normalizeBookingText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -51,7 +51,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
               {booking?.customerName || "Booking Notes"}
             </h3>
             <p className="mt-1 text-sm text-[#a88a9d]">
-              {booking?.uiId || `Booking #${booking?.id || "--"}`} • {booking?.uiStatus || booking?.status || "--"}
+              {booking?.uiId || `Booking #${booking?.id}`} • {booking?.uiStatus || booking?.status}
             </p>
           </div>
           <button
@@ -71,7 +71,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <UserRound size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Customer</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.customerName || "--"}</p>
+              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.customerName}</p>
             </article>
 
             <article className="rounded-[18px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
@@ -79,7 +79,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <FileText size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.uiService || "--"}</p>
+              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.uiService}</p>
             </article>
 
             <article className="rounded-[18px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
@@ -87,7 +87,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <Sparkles size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Staff Artist</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.staffName || "--"}</p>
+              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.staffName}</p>
             </article>
           </div>
 
@@ -95,13 +95,13 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
             {notesSections.map((section) => (
               <article
                 key={section.label}
-                className="rounded-[20px] border border-[#f3d5e2] bg-[#fffafd] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)]"
+                className="rounded-lg border border-[#f3d5e2] bg-[#fffafd] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)]"
               >
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                   {section.label}
                 </p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f4a5c]">
-                  {section.value || "--"}
+                  {section.value}
                 </p>
               </article>
             ))}

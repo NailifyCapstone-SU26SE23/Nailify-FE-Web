@@ -431,7 +431,7 @@ export function PromotionDetailPage() {
               {isEditing ? t("promotionDetail.editTitle") : t("promotionDetail.title")}
             </h1>
             <p className="text-xs font-medium text-slate-400">
-              {isEditing 
+              {isEditing
                 ? (t("adminPromotionManagement.editThePromotionDetailsBelow"))
                 : (t("adminPromotionManagement.reviewEditAndDeleteThisPromoti"))
               }
@@ -695,7 +695,7 @@ export function PromotionDetailPage() {
 
             <PanelCard title={t("promotionDetail.promotionImage")} icon={ImagePlus}>
               {isEditing ? (
-                <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-rose-200 bg-[#fff8fb] px-4 py-8 transition hover:border-[#cf3d74]">
                   {imagePreview ? (
                     <img
                       src={imagePreview}
@@ -720,7 +720,7 @@ export function PromotionDetailPage() {
                   className="h-52 w-full rounded-[18px] border border-rose-100 object-cover"
                 />
               ) : (
-                <div className="rounded-[20px] border border-dashed border-rose-200 bg-[#fff8fb] px-4 py-10 text-center text-sm font-semibold text-slate-500">
+                <div className="rounded-lg border border-dashed border-rose-200 bg-[#fff8fb] px-4 py-10 text-center text-sm font-semibold text-slate-500">
                   {t("promotionDetail.noImageUploaded")}
                 </div>
               )}
@@ -767,9 +767,9 @@ export function PromotionDetailPage() {
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || promotion?.name || "Promotion"]}
         details={[
-          { label: "Scope", value: draft?.scope || "--" },
-          { label: "Type", value: draft?.type || "--" },
-          { label: "Discount", value: draft?.discountValue || "--" },
+          { label: "Scope", value: draft?.scope },
+          { label: "Type", value: draft?.type },
+          { label: "Discount", value: draft?.discountValue },
         ]}
       />
 

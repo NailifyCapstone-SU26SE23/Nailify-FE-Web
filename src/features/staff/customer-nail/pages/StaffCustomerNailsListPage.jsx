@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getStaffArtistId } from "../../bookings/services/staffBookingService";
 import { fetchCustomerNailRequests, fetchStaffCustomerNailRequests } from "../../../manager/customer-nail/services/customerNailsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 function Card({ className = "", children }) {
   return (
@@ -228,32 +229,32 @@ export function StaffCustomerNailsListPage() {
 
     return [
       {
-        title: language === "vi" ? "Tổng được phân công" : "Total Assigned",
+        label: language === "vi" ? "Tổng được phân công" : "Total Assigned",
         value: total,
         note: language === "vi" ? "Tất cả nhiệm vụ được giao cho bạn" : "All tasks assigned to you",
         icon: Sparkles,
-        toneClassName: "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        title: language === "vi" ? "Chờ đánh giá" : "Pending Review",
+        label: language === "vi" ? "Chờ đánh giá" : "Pending Review",
         value: pending,
         note: language === "vi" ? "Cần báo giá / ước tính của bạn" : "Needs your quote/estimation",
         icon: Clock3,
-        toneClassName: "bg-gradient-to-br from-[#f5b455] to-[#db8520]",
+        color: "#f5b455",
       },
       {
-        title: language === "vi" ? "Đã xét / Báo giá" : "Reviewed / Quoted",
+        label: language === "vi" ? "Đã xét / Báo giá" : "Reviewed / Quoted",
         value: reviewed,
         note: language === "vi" ? "Ước tính đã gửi cho quản lý" : "Estimate submitted to manager",
         icon: Eye,
-        toneClassName: "bg-gradient-to-br from-[#7c8cff] to-[#4755b8]",
+        color: "#7c8cff",
       },
       {
-        title: language === "vi" ? "Được duyệt / Hoàn thành" : "Approved / Completed",
+        label: language === "vi" ? "Được duyệt / Hoàn thành" : "Approved / Completed",
         value: approved,
         note: language === "vi" ? "Được quản lý & khách hàng duyệt" : "Approved by manager & customer",
         icon: CheckCircle2,
-        toneClassName: "bg-gradient-to-br from-[#5dd18d] to-[#2fa25f]",
+        color: "#5dd18d",
       },
     ];
   }, [requests, language]);
@@ -339,10 +340,8 @@ export function StaffCustomerNailsListPage() {
               </div>
             </div>
           </div>
-          <div className="grid gap-4 border-t border-white/70 bg-white/45 p-6 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map((item) => (
-              <StatCard key={item.title} {...item} />
-            ))}
+          <div className="border-t border-white/70 bg-white/45 p-6">
+            <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" />
           </div>
         </Card>
 

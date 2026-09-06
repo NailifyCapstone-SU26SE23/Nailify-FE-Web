@@ -68,6 +68,24 @@ const DEFAULT_CUSTOMER_AVATAR =
 
 const STICKY_HEADER_OFFSET_PX = -20;
 
+function addMinutesToTimeStr(timeStr, minutes) {
+  if (!timeStr) return null;
+  const parts = timeStr.split(":");
+  const h = parts[0];
+  const m = parts[1];
+  const s = parts[2] || "00";
+  if (h === undefined || m === undefined) return timeStr;
+
+  const date = new Date(1970, 0, 1, parseInt(h, 10), parseInt(m, 10), parseInt(s, 10));
+  date.setMinutes(date.getMinutes() + minutes);
+
+  const newH = String(date.getHours()).padStart(2, "0");
+  const newM = String(date.getMinutes()).padStart(2, "0");
+  const newS = String(date.getSeconds()).padStart(2, "0");
+
+  return `${newH}:${newM}:${newS}`;
+}
+
 function SectionTitle({ icon: Icon, title, subtitle, action }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -264,13 +282,14 @@ SummaryValue.propTypes = {
 };
 
 function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedures = null }) {
+  const { language } = useLanguage();
   const hasServices = Array.isArray(services) && services.length > 0;
   const hasProcedureAction = typeof onOpenProcedures === "function";
 
   if (!hasServices) {
     return (
       <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4 shadow-xs">
-        <p className="break-words text-sm font-semibold text-slate-500">{fallbackValue || "--"}</p>
+        <p className="break-words text-sm font-semibold text-slate-500">{fallbackValue}</p>
       </div>
     );
   }
@@ -278,13 +297,14 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
   return (
     <div className="overflow-hidden rounded-2xl border border-[#f4cfdd] bg-white shadow-[0_8px_24px_rgba(236,72,153,0.06)]">
       <div className="overflow-x-auto">
-        <div className={`hidden min-w-[620px] items-center gap-3 border-b border-[#f6d5e3] bg-[linear-gradient(180deg,#fff8fb_0%,#fff0f6_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Service</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Qty</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Price</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Duration</p>
+        <div className={`hidden min-w-[700px] items-center gap-3 border-b border-[#f6d5e3] bg-[linear-gradient(180deg,#fff8fb_0%,#fff0f6_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(200px,1.4fr)_90px_110px_120px_100px_120px]" : "grid-cols-[minmax(200px,1.6fr)_90px_110px_120px_100px]"}`}>
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Số lượng" : "Quantity"}</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Đơn giá" : "Unit Price"}</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thành tiền" : "Subtotal"}</p>
+          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thời gian" : "Duration"}</p>
           {hasProcedureAction ? (
-            <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">Action</p>
+            <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thao tác" : "Action"}</p>
           ) : null}
         </div>
 
@@ -292,38 +312,45 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
           {services.map((service, index) => (
             <div
               key={service.id || `${service.name}-${index}`}
-              className={`px-4 py-3.5 transition-colors hover:bg-[#fff7fa]/70 md:grid md:min-w-[620px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(220px,1.6fr)_90px_140px_110px_120px]" : "md:grid-cols-[minmax(220px,1.8fr)_90px_140px_110px]"}`}
+              className={`px-4 py-3.5 transition-colors hover:bg-[#fff7fa]/70 md:grid md:min-w-[700px] md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(200px,1.4fr)_90px_110px_120px_100px_120px]" : "md:grid-cols-[minmax(200px,1.6fr)_90px_110px_120px_100px]"}`}
             >
               <div className="min-w-0">
                 <span className="inline-block rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ea4f93] border border-[#f9cbe0]/60">
-                  {service.detailLabel || `Service ${index + 1}`}
+                  {language === "vi" ? `Dịch vụ ${index + 1}` : `Service ${index + 1}`}
                 </span>
-                <p className="mt-1 text-sm font-extrabold text-slate-800 md:break-words">{service.name || "--"}</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800 md:break-words">{service.name}</p>
                 {service.nailServiceName ? (
                   <p className="mt-0.5 text-xs font-semibold text-slate-500 md:break-words">
-                    Nail service: {service.nailServiceName}
+                    {language === "vi" ? "Dịch vụ Nail: " : "Nail service: "} {service.nailServiceName}
                   </p>
                 ) : null}
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-slate-400 md:hidden">Qty</p>
+                <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Số lượng" : "Qty"}</p>
                 <span className="inline-flex items-center justify-center min-w-[28px] rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-xs font-black text-amber-700 shadow-xs">
                   {service.quantity || 1}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-slate-400 md:hidden">Price</p>
+                <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Đơn giá" : "Unit Price"}</p>
                 <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-extrabold text-emerald-700 shadow-xs">
-                  {service.priceLabel || "--"}
+                  {service.priceLabel}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                <p className="text-xs font-semibold text-slate-400 md:hidden">Duration</p>
+                <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Thành tiền" : "Subtotal"}</p>
+                <span className="inline-flex rounded-full bg-pink-50 border border-pink-200/80 px-3 py-1 text-xs font-extrabold text-[#ea4f93] shadow-xs">
+                  {service.subtotalLabel || service.priceLabel}
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Thời gian" : "Duration"}</p>
                 <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-xs font-extrabold text-indigo-700 shadow-xs">
-                  {service.durationLabel || "--"}
+                  {service.durationLabel}
                 </span>
               </div>
 
@@ -334,7 +361,7 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
                     onClick={() => onOpenProcedures(service)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-[#f4b8d3] bg-gradient-to-r from-[#fff0f6] to-[#ffe4ef] px-3.5 py-1.5 text-xs font-extrabold text-[#d82a76] shadow-xs hover:from-[#ffe0ed] hover:to-[#ffd5e5] hover:border-[#e979a9] transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    Procedures
+                    {language === "vi" ? "Quy trình" : "Procedures"}
                   </button>
                 </div>
               ) : null}
@@ -456,7 +483,7 @@ function SessionSummaryPanel({
                 />
                 <div className="min-w-0">
                   <p className="truncate text-xl font-extrabold text-slate-800">{data.customerName}</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone || "--"}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone}</p>
                 </div>
               </div>
 
@@ -468,9 +495,9 @@ function SessionSummaryPanel({
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <SessionChip icon={UserRound} label={data.staffArtist || "--"} />
-              <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime || "--"}`} />
-              <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime || "--"}`} />
+              <SessionChip icon={UserRound} label={data.staffArtist} />
+              <SessionChip icon={Clock3} label={`Start: ${data.appointmentTime}`} />
+              <SessionChip icon={Clock3} label={`Est. Finish: ${data.estimatedFinishTime}`} />
             </div>
           </div>
 
@@ -486,19 +513,19 @@ function SessionSummaryPanel({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Nhân viên thực hiện" : "Staff Artist"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist || "--"}</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian bắt đầu" : "Appointment Time"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime || "--"}</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến hoàn thành" : "Estimated Finish"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime || "--"}</p>
+                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến" : "Estimated Duration"}</p>
-                <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration || "--"}</p>
+                <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration}</p>
               </div>
             </div>
 
@@ -722,8 +749,8 @@ function isServiceSessionFinalizedStatus(status) {
 function buildProcedureStepMeta(procedure, language = "en") {
   const isVi = language === "vi";
   const assignedArtistName = String(procedure?.assignedArtistName || "").trim() || (isVi ? "Chưa phân công" : "Unassigned");
-  const estimatedStartTime = formatTimeValue(procedure?.estimatedStartTime) || "--";
-  const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime) || "--";
+  const estimatedStartTime = formatTimeValue(procedure?.estimatedStartTime);
+  const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime);
   const duration = Number(procedure?.duration || 0);
 
   return `${isVi ? "Thợ:" : "Artist:"} ${assignedArtistName} | ${isVi ? "Thời lượng:" : "Duration:"} ${duration} ${isVi ? "phút" : "min"} | ${isVi ? "Thời gian:" : "Time:"} ${estimatedStartTime} - ${estimatedEndTime}`;
@@ -939,11 +966,13 @@ export function StaffServiceSessionPage() {
               const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
               const priceValue = Number(item?.price || item?.finalPrice || 0);
 
+              const resolvedId = String(item?.bookingItemId || item?.id || `${name}-${index}`).trim();
               return {
-                id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+                id: resolvedId,
+                bookingItemId: resolvedId,
                 name,
                 duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-                durationLabel: durationValue || "--",
+                durationLabel: durationValue,
                 quantity,
                 priceLabel: formatCurrency(priceValue),
               };
@@ -983,7 +1012,7 @@ export function StaffServiceSessionPage() {
                 id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
                 name,
                 duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-                durationLabel: durationValue || "--",
+                durationLabel: durationValue,
                 quantity,
                 priceLabel: formatCurrency(priceValue),
               };
@@ -1062,7 +1091,7 @@ export function StaffServiceSessionPage() {
       estimatedDuration: appointmentEndTime,
       estimatedFinishTime: appointmentEndTime,
       completedAt: "11:25 AM",
-      designName: booking.bookingItems?.find((item) => item?.nailVariantName)?.nailVariantName || "--",
+      designName: booking.bookingItems?.find((item) => item?.nailVariantName)?.nailVariantName,
       totalPrice: booking.total,
       totalAmount: "$94.50",
       originalServicePrice: "$85.00",
@@ -1074,7 +1103,7 @@ export function StaffServiceSessionPage() {
       currentProcess: [
         Array.isArray(booking.services) && booking.services.length ? booking.services.join(" | ") : booking.service,
         booking.bookingItems?.find((item) => item?.nailVariantName)?.nailVariantName || "",
-      ].filter(Boolean).join(" | ") || "--",
+      ].filter(Boolean).join(" | "),
       remainingTime: "35 minutes",
       materialsUsed: ["Gel Polish", "Chrome Powder", "Top Coat"],
       stepNote: "Customer requested softer chrome finish.",
@@ -1085,6 +1114,8 @@ export function StaffServiceSessionPage() {
       ],
       backRoute: getStaffBookingDetailRoute(bookingId),
       designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
+      amountDue: booking?.amountDue !== undefined ? formatCurrency(booking.amountDue) : null,
+      amountPaid: booking?.amountPaid !== undefined ? formatCurrency(booking.amountPaid) : null,
       confirmations: [
         "Customer identity confirmed",
         "Service design confirmed",
@@ -1094,40 +1125,52 @@ export function StaffServiceSessionPage() {
     };
   }, [booking, bookingDetail, bookingId, customerDetail, serviceDetailMap, bookingNailVariantDetailMap, bookingCustomerNailDetailMap]);
 
+  const [bookingProcedures, setBookingProcedures] = useState(
+    () => persistedSession?.bookingProcedures ?? [],
+  );
+
   const data = useMemo(() => {
     if (!fallbackData && !payload) {
       return null;
     }
 
-    const resolvedServiceBreakdown =
+    const baseServiceBreakdown =
       Array.isArray(fallbackData?.serviceBreakdown) && fallbackData.serviceBreakdown.length
         ? fallbackData.serviceBreakdown
         : Array.isArray(payload?.serviceBreakdown)
           ? payload.serviceBreakdown
           : [];
+
+    const resolvedServiceBreakdown = baseServiceBreakdown;
+
     const resolvedNailServiceBreakdown =
       Array.isArray(fallbackData?.nailServiceBreakdown) && fallbackData.nailServiceBreakdown.length
         ? fallbackData.nailServiceBreakdown
         : Array.isArray(payload?.nailServiceBreakdown)
           ? payload.nailServiceBreakdown
           : [];
+
     const resolvedPriceSummary =
       fallbackData?.priceSummary ||
       payload?.priceSummary ||
       { serviceRows: [], nailRows: [], discountRows: [] };
     const payloadBookingItemId = String(payload?.bookingItemId || "").trim();
-    const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime || "--";
-    const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration || "--";
-    const summaryCustomerName = fallbackData?.customerName || payload?.customerName || "--";
-    const summaryCustomerPhone = fallbackData?.customerPhone || payload?.customerPhone || "--";
+    const summaryAppointmentTime = fallbackData?.appointmentTime || payload?.appointmentTime;
+    const summaryEstimatedDuration = fallbackData?.estimatedDuration || payload?.estimatedDuration;
+
+    const summaryCustomerName = fallbackData?.customerName || payload?.customerName;
+    const summaryCustomerPhone = fallbackData?.customerPhone || payload?.customerPhone;
     const summaryCustomerAvatar =
       fallbackData?.customerAvatar ||
       payload?.customerAvatar ||
       DEFAULT_CUSTOMER_AVATAR;
-    const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice || "--";
+    const summaryTotalPrice = fallbackData?.totalPrice || payload?.totalPrice;
     const summaryTotalAmount = fallbackData?.totalAmount || payload?.totalAmount || summaryTotalPrice;
     const summaryDiscountValue = fallbackData?.discountValue || payload?.discountValue || "0 VND";
     const summaryRemainingBalance = fallbackData?.remainingBalance || payload?.remainingBalance || summaryTotalPrice;
+    const summaryAmountDue = fallbackData?.amountDue || payload?.amountDue;
+    const summaryAmountPaid = fallbackData?.amountPaid || payload?.amountPaid;
+    const summaryOriginalServicePrice = fallbackData?.originalServicePrice || payload?.originalServicePrice;
 
     return {
       ...fallbackData,
@@ -1146,6 +1189,9 @@ export function StaffServiceSessionPage() {
       totalAmount: summaryTotalAmount,
       discountValue: summaryDiscountValue,
       remainingBalance: summaryRemainingBalance,
+      amountDue: summaryAmountDue,
+      amountPaid: summaryAmountPaid,
+      originalServicePrice: summaryOriginalServicePrice,
       serviceBreakdown: resolvedServiceBreakdown,
       nailServiceBreakdown: resolvedNailServiceBreakdown,
       priceSummary: resolvedPriceSummary,
@@ -1247,10 +1293,9 @@ export function StaffServiceSessionPage() {
     () => persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null,
   );
   const [sessionNote, setSessionNote] = useState(() => persistedSession?.sessionNote ?? payload?.sessionNote ?? "");
-  const [bookingProcedures, setBookingProcedures] = useState(
-    () => persistedSession?.bookingProcedures ?? [],
-  );
+
   const [isLoadingProcedures, setIsLoadingProcedures] = useState(false);
+
   const [procedureLoadError, setProcedureLoadError] = useState("");
   const [procedureStatusUpdates, setProcedureStatusUpdates] = useState({});
   const [claimingProcedureId, setClaimingProcedureId] = useState("");
@@ -1321,16 +1366,37 @@ export function StaffServiceSessionPage() {
 
     const sortedProcedures = [...bookingProcedures]
       .sort((left, right) => {
-        const idCompare = String(left.bookingItemId || "").localeCompare(String(right.bookingItemId || ""));
-        if (idCompare !== 0) return idCompare;
+        const leftTime = left.estimatedStartTime || "";
+        const rightTime = right.estimatedStartTime || "";
+        if (leftTime && rightTime) {
+          const timeCompare = leftTime.localeCompare(rightTime);
+          if (timeCompare !== 0) return timeCompare;
+        } else if (leftTime) {
+          return -1;
+        } else if (rightTime) {
+          return 1;
+        }
         return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
       });
 
+    let lastEndTime = null;
+
     return sortedProcedures
-      .map((procedure) => {
+      .map((procedure, index) => {
+        let estStart = procedure.estimatedStartTime;
+        let estEnd = procedure.estimatedEndTime;
+
+        if (!estStart && lastEndTime) {
+          estStart = lastEndTime;
+          estEnd = addMinutesToTimeStr(estStart, Number(procedure.duration || 15));
+        }
+
+        if (estEnd) {
+          lastEndTime = estEnd;
+        }
+
         const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
-        const procedureName = String(procedure.procedureName || "").trim() || "--";
-        const hasStepOrder = Number.isFinite(procedure.stepOrder);
+        const procedureName = String(procedure.procedureName || "").trim();
         const assignedArtistId = String(procedure.assignedArtistId || "").trim();
         const isAssignedToAnyone = hasAssignedArtist(procedure);
         const isTerminalStatus = ["completed", "done", "skipped"].includes(normalizedStatus);
@@ -1338,20 +1404,14 @@ export function StaffServiceSessionPage() {
         const isPendingStatus = ["pending", "waiting"].includes(normalizedStatus);
         const isAssignedToCurrentArtist =
           !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
-        const isBlocked = sortedProcedures.some((item) => {
-          const itemStepOrder = Number(item?.stepOrder ?? 0);
-          const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+        const isBlocked = sortedProcedures.some((item, itemIndex) => {
+          if (itemIndex >= index) {
+            return false;
+          }
+
           const itemStatus = String(item?.status || "").trim().toLowerCase();
 
-          if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
-            return false;
-          }
-
-          if (itemStepOrder >= procedureStepOrder) {
-            return false;
-          }
-
-          if (!item?.isRequired || item?.canOverlap) {
+          if (item?.canOverlap) {
             return false;
           }
 
@@ -1360,26 +1420,57 @@ export function StaffServiceSessionPage() {
 
         return {
           ...procedure,
+          estimatedStartTime: estStart,
+          estimatedEndTime: estEnd,
+          stepOrder: index + 1,
           checked: ["completed", "done"].includes(normalizedStatus),
-          label: hasStepOrder ? `${isVi ? "Bước" : "Step"} ${procedure.stepOrder}: ${procedureName}` : procedureName,
-          statusLabel: String(procedure.status || "").trim() || "--",
+          label: `${isVi ? "Bước" : "Step"} ${index + 1}: ${procedureName}`,
+          statusLabel: String(procedure.status || "").trim(),
           canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
-          canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
+          canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+          canComplete: isInProgressStatus && isAssignedToCurrentArtist && !isBlocked,
           canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
           isBlocked,
           isAssignedToCurrentArtist,
         };
       });
   }, [bookingProcedures, currentStaffArtistId, isVi]);
+
   const modalProcedureList = useMemo(() => {
     if (serviceProcedureList.length === 0) {
       return [];
     }
 
     const sortedProcedures = [...serviceProcedureList]
-      .sort((left, right) => (left.stepOrder ?? 0) - (right.stepOrder ?? 0));
+      .sort((left, right) => {
+        const leftTime = left.estimatedStartTime || "";
+        const rightTime = right.estimatedStartTime || "";
+        if (leftTime && rightTime) {
+          const timeCompare = leftTime.localeCompare(rightTime);
+          if (timeCompare !== 0) return timeCompare;
+        } else if (leftTime) {
+          return -1;
+        } else if (rightTime) {
+          return 1;
+        }
+        return (left.stepOrder ?? 0) - (right.stepOrder ?? 0);
+      });
 
-    return sortedProcedures.map((procedure) => {
+    let lastEndTime = null;
+
+    return sortedProcedures.map((procedure, index) => {
+      let estStart = procedure.estimatedStartTime;
+      let estEnd = procedure.estimatedEndTime;
+
+      if (!estStart && lastEndTime) {
+        estStart = lastEndTime;
+        estEnd = addMinutesToTimeStr(estStart, Number(procedure.duration || 15));
+      }
+
+      if (estEnd) {
+        lastEndTime = estEnd;
+      }
+
       const normalizedStatus = String(procedure.status || "").trim().toLowerCase();
       const assignedArtistId = String(procedure.assignedArtistId || "").trim();
       const isAssignedToAnyone = hasAssignedArtist(procedure);
@@ -1388,20 +1479,14 @@ export function StaffServiceSessionPage() {
       const isInProgressStatus = ["inprogress", "in progress"].includes(normalizedStatus);
       const isAssignedToCurrentArtist =
         !assignedArtistId || !currentStaffArtistId || assignedArtistId === currentStaffArtistId;
-      const isBlocked = sortedProcedures.some((item) => {
-        const itemStepOrder = Number(item?.stepOrder ?? 0);
-        const procedureStepOrder = Number(procedure?.stepOrder ?? 0);
+      const isBlocked = sortedProcedures.some((item, itemIndex) => {
+        if (itemIndex >= index) {
+          return false;
+        }
+
         const itemStatus = String(item?.status || "").trim().toLowerCase();
 
-        if (!Number.isFinite(itemStepOrder) || !Number.isFinite(procedureStepOrder)) {
-          return false;
-        }
-
-        if (itemStepOrder >= procedureStepOrder) {
-          return false;
-        }
-
-        if (!item?.isRequired || item?.canOverlap) {
+        if (item?.canOverlap) {
           return false;
         }
 
@@ -1410,8 +1495,12 @@ export function StaffServiceSessionPage() {
 
       return {
         ...procedure,
+        estimatedStartTime: estStart,
+        estimatedEndTime: estEnd,
+        stepOrder: index + 1,
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
-        canComplete: (isInProgressStatus || (isPendingStatus && assignedArtistId === currentStaffArtistId)) && isAssignedToCurrentArtist && !isBlocked,
+        canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
+        canComplete: isInProgressStatus && isAssignedToCurrentArtist && !isBlocked,
         canSkip: !isTerminalStatus && isAssignedToCurrentArtist,
         isBlocked,
       };
@@ -1808,7 +1897,7 @@ export function StaffServiceSessionPage() {
 
   // eslint-disable-next-line no-unused-vars
   const currentProcedureNote = useMemo(() => {
-    const fallbackNote = String(data?.stepNote || "").trim() || "--";
+    const fallbackNote = String(data?.stepNote || "").trim();
 
     if (bookingProcedures.length === 0) {
       return fallbackNote;
@@ -1846,17 +1935,18 @@ export function StaffServiceSessionPage() {
       return procedureChecklist.map((procedure, index) => ({
         id: procedure.bookingProcedureId,
         bookingProcedureId: procedure.bookingProcedureId,
+        canStart: Boolean(procedure.canStart),
         canTick: Boolean(procedure.canComplete),
         isUpdating: Boolean(procedureStatusUpdates[procedure.bookingProcedureId]),
         label: procedure.label,
         artist: String(procedure.assignedArtistName || "").trim() || (isVi ? "Chưa phân công" : "Unassigned"),
         duration: Number(procedure.duration || 0),
-        time: `${formatTimeValue(procedure.estimatedStartTime) || "--"} - ${formatTimeValue(procedure.estimatedEndTime) || "--"}`,
-        actualTime: `${formatTimeValue(procedure.actualStartTime) || "--"} - ${formatTimeValue(procedure.actualEndTime) || "--"}`,
+        time: `${formatTimeValue(procedure.estimatedStartTime)} - ${formatTimeValue(procedure.estimatedEndTime)}`,
+        actualTime: `${formatTimeValue(procedure.actualStartTime)} - ${formatTimeValue(procedure.actualEndTime)}`,
         note: buildProcedureStepMeta(procedure, language),
         stepNumber: Number.isFinite(procedure.stepOrder) ? procedure.stepOrder : index + 1,
         status: String(procedure.status || "").trim(),
-        statusLabel: String(procedure.statusLabel || procedure.status || "").trim() || "--",
+        statusLabel: String(procedure.statusLabel || procedure.status || "").trim(),
         state:
           procedure.checked
             ? "complete"
@@ -2353,52 +2443,103 @@ export function StaffServiceSessionPage() {
       ));
 
       // Run real-time simulation check (BR-03.1)
-      try {
-        const simResult = await simulateOnsiteAddon({
-          bookingId: normalizedBookingId,
-          addonItems,
-        });
-
-        if (simResult?.hasConflict && simResult?.canSplitMultiArtist) {
-          toast.success(`Đã tự động tìm Thợ phụ ${simResult.suggestedSecondaryArtistName || "F"} hỗ trợ công đoạn tiếp theo!`, { icon: <Zap size={12} /> });
-        }
-      } catch (simErr) {
-        console.warn("On-site addon simulation warning:", simErr?.message);
-      }
-
-      const bookingItems = Array.isArray(bookingDetail.bookingItems) ? bookingDetail.bookingItems : [];
-      const payloadBookingItems = buildStaffBookingItemsForUpdate(
-        bookingItems,
-        selectedExtraServiceQuantities,
-      );
-
-      const updatedBooking = await updateStaffBooking(normalizedBookingId, {
-        bookingDate: bookingDetail.bookingDate,
-        startTime: bookingDetail.startTime,
-        nailArtistId: toNullableBookingUuid(
-          bookingDetail.nailArtistId || bookingDetail.artistId,
-        ),
-        bookingItems: payloadBookingItems,
+      const simResult = await simulateOnsiteAddon({
+        bookingId: normalizedBookingId,
+        addonItems,
       });
 
-      setBookingDetail(updatedBooking);
+      let assignedArtistId = null;
+
+      if (simResult?.hasConflict) {
+        if (simResult?.canMultiArtistSplit) {
+          // Can split
+          const userConfirmed = await new Promise((resolve) => {
+            Modal.confirm({
+              title: isVi ? "Xung đột lịch làm việc" : "Schedule Conflict",
+              content: (
+                <div>
+                  <p className="font-semibold text-red-600">{simResult.warningMessage}</p>
+                  <p className="mt-2 text-gray-700">
+                    {isVi ? "Hệ thống gợi ý Thợ phụ " : "System suggests secondary artist "}
+                    <span className="font-bold text-[#ea4f93]">{simResult.suggestedSecondaryArtistName}</span>
+                    {isVi ? " hỗ trợ công đoạn này. Bạn có đồng ý bàn giao không?" : " to support this task. Do you agree?"}
+                  </p>
+                </div>
+              ),
+              okText: isVi ? "Đồng ý phân công 2 thợ" : "Agree to split",
+              cancelText: isVi ? "Hủy" : "Cancel",
+              okButtonProps: { className: "bg-[#ea4f93] border-none" },
+              onOk: () => resolve(true),
+              onCancel: () => resolve(false),
+            });
+          });
+
+          if (!userConfirmed) {
+            setIsSavingExtraService(false);
+            return;
+          }
+
+          assignedArtistId = simResult.suggestedSecondaryArtistId || simResult.primaryArtistId;
+        } else {
+          // Cannot split
+          Modal.warning({
+            title: isVi ? "Không thể thêm dịch vụ" : "Cannot add extra service",
+            content: (
+              <div>
+                <p className="font-semibold text-red-600">{simResult.warningMessage}</p>
+                <p className="mt-2 text-gray-700">
+                  {isVi ? "Gợi ý: " : "Recommendation: "}
+                  <span className="font-medium text-[#bd8517]">
+                    {simResult.recommendationMessage}
+                  </span>
+                </p>
+              </div>
+            ),
+            okText: isVi ? "Đã hiểu" : "Got it",
+          });
+          setIsSavingExtraService(false);
+          return;
+        }
+      }
+
+      // BR-03.2: Confirm Onsite Addon
+      await confirmOnsiteAddon({
+        bookingId: normalizedBookingId,
+        addonItems,
+        assignedArtistId: assignedArtistId
+      });
+
+      // Refresh Data
+      const refreshedBookingDetail = await fetchStaffBookingDetail(normalizedBookingId).catch(() => null);
+      if (refreshedBookingDetail) {
+        setBookingDetail(refreshedBookingDetail);
+
+        await reloadBookingProcedures(
+          getSessionBookingItemIds(
+            refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
+          ).length
+            ? getSessionBookingItemIds(
+              refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
+            )
+            : data?.bookingItemIds,
+        );
+      }
+
       setShowExtraServiceModal(false);
       setSelectedExtraServiceQuantities({});
 
       const selectedServiceNames = normalizedSelectedServices
         .map(([serviceId, quantity]) => {
           const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
-
-          if (!matchedService?.name) {
-            return "";
-          }
-
+          if (!matchedService?.name) return "";
           return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
         })
         .filter(Boolean);
+
       setFlashMessage(selectedServiceNames.length
         ? (isVi ? `Đã thêm dịch vụ: ${selectedServiceNames.join(", ")}.` : `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`)
         : (isVi ? "Đã thêm dịch vụ vào lịch hẹn." : "Extra services have been added to this booking."));
+
       toast.success(normalizedSelectedServices.length
         ? (isVi ? `Đã thêm ${normalizedSelectedServices.length} loại dịch vụ.` : `Added ${normalizedSelectedServices.length} service type${normalizedSelectedServices.length > 1 ? "s" : ""} to the booking.`)
         : (isVi ? "Thêm dịch vụ thành công." : "Extra services added successfully."));
@@ -2420,10 +2561,10 @@ export function StaffServiceSessionPage() {
     setFlashMessage("");
   };
 
-  const handleRequestCustomerReview = () => {
-    toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
-    setFlashMessage("");
-  };
+  // const handleRequestCustomerReview = () => {
+  //   toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
+  //   setFlashMessage("");
+  // };
 
   const comparisonModal = showComparisonView ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
@@ -2541,7 +2682,7 @@ export function StaffServiceSessionPage() {
             >
               {isVi ? "Đóng" : "Close"}
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={() =>
                 navigate(data.backRoute, {
@@ -2554,7 +2695,7 @@ export function StaffServiceSessionPage() {
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
             >
               {isVi ? "Chuyển tới thanh toán" : "Go to Checkout"}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -2614,7 +2755,7 @@ export function StaffServiceSessionPage() {
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <button
+            {/* <button
               type="button"
               onClick={() =>
                 navigate(data.backRoute, {
@@ -2633,9 +2774,9 @@ export function StaffServiceSessionPage() {
                 <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
               </span>
-            </button>
+            </button> */}
 
-            <button
+            {/* <button
               type="button"
               onClick={handleRequestCustomerReview}
               className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
@@ -2647,7 +2788,7 @@ export function StaffServiceSessionPage() {
                 <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
               </span>
-            </button>
+            </button> */}
 
             <button
               type="button"
@@ -2782,7 +2923,7 @@ export function StaffServiceSessionPage() {
                     {isVi ? "Bản xem trước" : "Uploaded Preview"}
                   </p>
                   {effectiveBeforePhoto ? (
-                    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
+                    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveBeforePhoto.previewUrl}
                         alt={effectiveBeforePhoto.fileName}
@@ -2978,7 +3119,21 @@ export function StaffServiceSessionPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-4 text-center">
-                                  {procedure.canTick ? (
+                                  {procedure.canStart ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateProcedureStatus(procedure, "InProgress")}
+                                      disabled={procedure.isUpdating}
+                                      title={isVi ? "Bắt đầu bước này" : "Start this procedure"}
+                                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f4cfdd] bg-[#fff0f8] text-[#ea4f93] shadow-[0_4px_10px_rgba(236,72,153,0.12)] transition hover:bg-[#fcebf4] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      {procedure.isUpdating ? (
+                                        <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-[#ea4f93]/30 border-t-[#ea4f93]" />
+                                      ) : (
+                                        <Play size={16} strokeWidth={3} className="ml-0.5" />
+                                      )}
+                                    </button>
+                                  ) : procedure.canTick ? (
                                     <button
                                       type="button"
                                       onClick={() => void handleUpdateProcedureStatus(procedure, "Completed")}
@@ -3111,7 +3266,7 @@ export function StaffServiceSessionPage() {
                     {isVi ? "Xem trước kết quả" : "Preview - After Photo"}
                   </p>
                   {effectiveAfterPhoto ? (
-                    <div className="mt-4 flex items-center gap-4 rounded-[20px] border border-[#f2bfd4] bg-[#fff8fb] p-4">
+                    <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff8fb] p-4">
                       <Image crossOrigin="anonymous"
                         src={effectiveAfterPhoto.previewUrl}
                         alt={effectiveAfterPhoto.fileName}
@@ -3229,7 +3384,7 @@ export function StaffServiceSessionPage() {
                         ))
                       ) : (
                         <div className="rounded-[18px] border border-[#f4dbe7] bg-white px-4 py-4 text-sm text-[#a88a9d]">
-                          {resolvedProcedureLoadError || "--"}
+                          {resolvedProcedureLoadError}
                         </div>
                       )}
                     </div>
@@ -3245,18 +3400,19 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 overflow-hidden rounded-[18px] border border-[#f4dbe7] bg-[#fffafb]">
-                  <div className="hidden grid-cols-[120px_minmax(0,1fr)_88px_140px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
+                  <div className="hidden grid-cols-[120px_minmax(0,1fr)_88px_110px_140px] items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Loại" : "Type"}</p>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Mục" : "Item"}</p>
                     <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "SL" : "Qty"}</p>
-                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Thành tiền" : "Amount"}</p>
+                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Đơn giá" : "Unit Price"}</p>
+                    <p className="text-right text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{isVi ? "Thành tiền" : "Subtotal"}</p>
                   </div>
 
                   <div className="divide-y divide-[#f9dfeb] text-sm">
                     {buildFinalSummaryTableRows(data.priceSummary).map((item) => (
                       <div
                         key={item.id}
-                        className="px-4 py-4 md:grid md:grid-cols-[120px_minmax(0,1fr)_88px_140px] md:items-center md:gap-3 md:px-5"
+                        className="px-4 py-4 md:grid md:grid-cols-[120px_minmax(0,1fr)_88px_110px_140px] md:items-center md:gap-3 md:px-5"
                       >
                         <div className="flex items-center justify-between gap-3 md:block">
                           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Loại" : "Type"}</p>
@@ -3287,9 +3443,16 @@ export function StaffServiceSessionPage() {
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Thành tiền" : "Amount"}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Đơn giá" : "Unit Price"}</p>
                           <span className={`font-bold ${item.type === "Discount" ? "text-red-600" : "text-green-700"}`}>
-                            {item.amount}
+                            {item.unitPriceLabel || item.amount}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab] md:hidden">{isVi ? "Thành tiền" : "Subtotal"}</p>
+                          <span className={`font-bold ${item.type === "Discount" ? "text-red-600" : "text-[#ea4f93]"}`}>
+                            {item.subtotalLabel || item.amount}
                           </span>
                         </div>
                       </div>
@@ -3302,6 +3465,18 @@ export function StaffServiceSessionPage() {
                   <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tổng tiền" : "Total Price"}</span>
                   <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                 </div>
+                {data.amountPaid ? (
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                    <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                  </div>
+                ) : null}
+                {data.amountDue ? (
+                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
+                    <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
+                    <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                  </div>
+                ) : null}
 
 
                 <button
@@ -3326,7 +3501,7 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() =>
                       navigate(data.backRoute, {
@@ -3345,9 +3520,9 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
                     </span>
-                  </button>
+                  </button> */}
 
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleRequestCustomerReview}
                     className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
@@ -3359,7 +3534,7 @@ export function StaffServiceSessionPage() {
                       <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
                     </span>
-                  </button>
+                  </button> */}
 
                   <button
                     type="button"
@@ -3396,9 +3571,31 @@ export function StaffServiceSessionPage() {
                   <span className="font-extrabold text-[#ea4f93]">{data.designName}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
-                  <span className="font-extrabold text-[#3f2b3f]">{data.totalPrice}</span>
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thành tiền (trước giảm)" : "Subtotal"}</span>
+                  <span className="font-extrabold text-[#3f2b3f]">{data.originalServicePrice}</span>
                 </div>
+                {data.discountValue && data.discountValue !== "0 VND" ? (
+                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <span className="text-[11px] text-[#a88a9d]">{data.discountLabel || (isVi ? "Giảm giá" : "Discount")}</span>
+                    <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
+                  <span className="font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
+                </div>
+                {data.amountPaid ? (
+                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                    <span className="font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                  </div>
+                ) : null}
+                {data.amountDue ? (
+                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
+                    <span className="font-extrabold text-[#ea4f93]">{data.amountDue}</span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái ảnh" : "Photo Status"}</span>
                   <span
@@ -3429,10 +3626,32 @@ export function StaffServiceSessionPage() {
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thời gian" : "Duration"}</span>
                     <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
                   </div>
+                  {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thành tiền (trước giảm)" : "Subtotal"}</span>
+                    <span className="font-extrabold text-[#3f2b3f]">{data.originalServicePrice}</span>
+                  </div> */}
+                  {data.discountValue && data.discountValue !== "0 VND" ? (
+                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                      <span className="text-[11px] text-[#a88a9d]">{data.discountLabel || (isVi ? "Giảm giá" : "Discount")}</span>
+                      <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
-                    <span className="font-extrabold text-[#3f2b3f]">{data.totalPrice}</span>
+                    <span className="font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
                   </div>
+                  {data.amountPaid ? (
+                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                      <span className="font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                    </div>
+                  ) : null}
+                  {data.amountDue ? (
+                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
+                      <span className="font-extrabold text-[#ea4f93]">{data.amountDue}</span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái" : "Status"}</span>
                     <span className="rounded-full border border-rose-200 bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#d65b92]">
@@ -3578,9 +3797,10 @@ export function StaffServiceSessionPage() {
         isLoading={isServiceProcedureModalLoading}
         error={serviceProcedureModalError}
         onClaimProcedure={handleClaimProcedureFromModal}
-        onCompleteProcedure={(procedure) => handleUpdateProcedureStatus(procedure, "Completed")}
+        onCompleteProcedure={(procedure, status = "Completed") => handleUpdateProcedureStatus(procedure, status)}
         claimingProcedureId={claimingProcedureId}
         procedureStatusUpdates={procedureStatusUpdates}
+        showActions={phase === "progress"}
       />
     </section>
   );
