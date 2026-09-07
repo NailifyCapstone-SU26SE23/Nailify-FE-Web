@@ -1469,93 +1469,89 @@ export function NailDesignManagementDetailPage() {
                 {t("adminNailsDesignManagement.addNailVariant")}
               </button>
             </div>
-          }
-          subtitle={t("adminNailsDesignManagement.designVariationsHaveDifferentA")}
-          icon={null}
-          sectionId="design-variants-section"
-          sectionRef={designVariantsRef}
-          highlighted={highlightedSection === "design-variants"}
-        >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {formValues.variants.map((variant, index) => (
-              <div
-                key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
-                className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)] cursor-pointer transition-all duration-200 hover:shadow-[0_16px_32px_rgba(236,72,153,0.12)] hover:border-[#ea4f93]"
-                onClick={() => handleViewVariant(variant)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleViewVariant(variant);
-                  }
-                }}
-              >
-                <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
-                  <NailVariantHandPreview
-                    variantDetail={variant}
-                    compact
-                  />
-                </div>
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.tryonReady")}</InputLabel>
-                  <select
-                    value={String(formValues.tryOnReady)}
-                    onChange={handleBooleanChange("tryOnReady")}
-                    className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {formValues.variants.length ? (
+                formValues.variants.map((variant, index) => (
+                  <div
+                    key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
+                    className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)] cursor-pointer transition-all duration-200 hover:shadow-[0_16px_32px_rgba(236,72,153,0.12)] hover:border-[#ea4f93]"
+                    onClick={() => handleViewVariant(variant)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleViewVariant(variant);
+                      }
+                    }}
                   >
-                    <option value="true">{t("adminNailsDesignManagement.yes")}</option>
-                    <option value="false">{t("adminNailsDesignManagement.no")}</option>
-                  </select>
-                </div>
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.complexity")}</InputLabel>
-                  <EditSelect
-                    value={formValues.complexity}
-                    onChange={handleChange("complexity")}
-                    options={DESIGN_COMPONENT_OPTIONS.Complexity}
-                  />
-                </div>
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.estDuration")}</InputLabel>
-                  <EditSelect
-                    value={formValues.estimatedDuration}
-                    onChange={handleChange("estimatedDuration")}
-                    options={DESIGN_COMPONENT_OPTIONS["Est. Duration"]}
-                  />
-                </div>
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.nailShape")}</InputLabel>
-                  <EditSelect
-                    value={formValues.nailShape}
-                    onChange={handleChange("nailShape")}
-                    options={DESIGN_COMPONENT_OPTIONS["Nail Shape"]}
-                  />
-                </div>
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.nailLength")}</InputLabel>
-                  <EditSelect
-                    value={formValues.nailLength}
-                    onChange={handleChange("nailLength")}
-                    options={DESIGN_COMPONENT_OPTIONS["Nail Length"]}
-                  />
-                </div>
-                <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3 text-xs text-[#8c7085]">
-                  {t("adminNailsDesignManagement.suggestedPriceRemainsLockedInE")}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3 text-sm">
-                {summaryRows.map(([label, value], index) => (
-                  <div key={label} className="flex items-center justify-between gap-3">
-                    <span className="text-[#8c7085]">{label}</span>
-                    <span className={`font-semibold ${index === 6 ? "text-[#ea4f93]" : "text-[#432744]"}`}>
-                      {value}
-                    </span>
+                    <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
+                      <NailVariantHandPreview
+                        variantDetail={variant}
+                        compact
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>{t("adminNailsDesignManagement.tryonReady")}</InputLabel>
+                      <select
+                        value={String(formValues.tryOnReady)}
+                        onChange={handleBooleanChange("tryOnReady")}
+                        className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+                      >
+                        <option value="true">{t("adminNailsDesignManagement.yes")}</option>
+                        <option value="false">{t("adminNailsDesignManagement.no")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <InputLabel>{t("adminNailsDesignManagement.complexity")}</InputLabel>
+                      <EditSelect
+                        value={formValues.complexity}
+                        onChange={handleChange("complexity")}
+                        options={DESIGN_COMPONENT_OPTIONS.Complexity}
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>{t("adminNailsDesignManagement.estDuration")}</InputLabel>
+                      <EditSelect
+                        value={formValues.estimatedDuration}
+                        onChange={handleChange("estimatedDuration")}
+                        options={DESIGN_COMPONENT_OPTIONS["Est. Duration"]}
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>{t("adminNailsDesignManagement.nailShape")}</InputLabel>
+                      <EditSelect
+                        value={formValues.nailShape}
+                        onChange={handleChange("nailShape")}
+                        options={DESIGN_COMPONENT_OPTIONS["Nail Shape"]}
+                      />
+                    </div>
+                    <div>
+                      <InputLabel>{t("adminNailsDesignManagement.nailLength")}</InputLabel>
+                      <EditSelect
+                        value={formValues.nailLength}
+                        onChange={handleChange("nailLength")}
+                        options={DESIGN_COMPONENT_OPTIONS["Nail Length"]}
+                      />
+                    </div>
+                    <div className="rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3 text-xs text-[#8c7085]">
+                      {t("adminNailsDesignManagement.suggestedPriceRemainsLockedInE")}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <div className="space-y-3 text-sm">
+                  {summaryRows.map(([label, value], index) => (
+                    <div key={label} className="flex items-center justify-between gap-3">
+                      <span className="text-[#8c7085]">{label}</span>
+                      <span className={`font-semibold ${index === 6 ? "text-[#ea4f93]" : "text-[#432744]"}`}>
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </SectionCard>
 
           <SectionCard title={t("adminNailsDesignManagement.performance")} subtitle="" icon={<BarChart3 size={18} />}>
@@ -1642,7 +1638,9 @@ export function NailDesignManagementDetailPage() {
               </button>
             </div>
           </SectionCard>
+        </div>
 
+        <aside className="space-y-4">
           <SectionCard
             title={t("adminNailsDesignManagement.customerPreview")}
             subtitle={t("adminNailsDesignManagement.howCustomersSeeThisDesign")}

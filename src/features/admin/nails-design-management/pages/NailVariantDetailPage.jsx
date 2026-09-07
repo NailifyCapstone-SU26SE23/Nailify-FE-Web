@@ -1139,50 +1139,26 @@ export function NailVariantDetailPage() {
                   </div>
                 </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
-                <div className="mt-4 space-y-3">
-                  {[
-                    [t("adminNailsDesignManagement.name"), variant.nailShape?.name],
-                    [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel],
-                    [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
-                    </div>
-                  ))}
+                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
+                  <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
+                  <div className="mt-4 space-y-3">
+                    {[
+                      [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
+                      [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
+                      [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
+                        <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
+            </div>
+          </DetailCard>
 
-              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
-                <div className="mt-4 space-y-3">
-                  {[
-                    [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
-                    [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
-                    [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
-                    </div>
-                    <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
-                      <span>Finger: <b>{item.fingerIndex}</b></span>
-                      <span>Pos X: <b>{item.posX}</b></span>
-                      <span>Pos Y: <b>{item.posY}</b></span>
-                      <span className="break-all">Config: <b>{item.configJson }</b></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-[#8c7085]">This variant has no accessory components.</p>
-            )}
-          </DetailCard> */}
-
-        {/* <DetailCard title="Accessories / Components">
+          {/* <DetailCard title="Accessories / Components">
             {variant.nailComponents?.length ? (
               <div className="space-y-3">
                 {variant.nailComponents.map((item) => (
@@ -1206,28 +1182,29 @@ export function NailVariantDetailPage() {
             )}
           </DetailCard> */}
 
-        <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={addProcedureDraft}
-                disabled={isSavingProcedures}
-                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
-              >
-                <Plus size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addStep")}
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveProcedureSteps()}
-                disabled={isSavingProcedures}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
-              >
-                <Save size={13} className="mr-1.5 inline" />
-                {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
-              </button>
+          <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addProcedureDraft}
+                  disabled={isSavingProcedures}
+                  className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                >
+                  <Plus size={13} className="mr-1.5 inline" />
+                  {t("adminNailsDesignManagement.addStep")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveProcedureSteps()}
+                  disabled={isSavingProcedures}
+                  className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
+                >
+                  <Save size={13} className="mr-1.5 inline" />
+                  {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
+                </button>
+              </div>
             </div>
 
             {procedures.length ? (
