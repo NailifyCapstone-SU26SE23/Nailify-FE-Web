@@ -1249,12 +1249,14 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
+  gap: 24px;
 }
 
 .upload-area {
   width: 100%;
   max-width: 640px;
-  min-height: 360px;
+  height: min(420px, 52vh);
+  min-height: 320px;
   border: 2px dashed var(--tryon-accent);
   border-radius: var(--tryon-radius-lg);
   display: flex;
@@ -1269,7 +1271,8 @@
   padding: 24px;
 }
 
-.upload-area:hover {
+.upload-area:hover,
+.upload-area.drag-active {
   border-color: var(--tryon-primary);
   background: #faf5f8;
   transform: scale(1.01);
@@ -1306,9 +1309,15 @@
 }
 
 .hand-preview-container img {
-  max-width: 100%;
-  max-height: 600px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+}
+
+.upload-tryon-btn {
+  flex: 0 0 auto;
+  width: 240px;
+  margin-top: 0;
 }
 
 /* Try-On View webcam / results */
@@ -1617,43 +1626,6 @@
   border-width: 0 4px 4px 0;
 }
 
-.scanner-grid-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
-  opacity: 0.4;
-  animation: scanline 4s linear infinite;
-}
-
-/* Center Hand Silhouette Guide */
-.hud-hand-guide-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  animation: fadeInGuide 1s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.hud-hand-guide-svg {
-  width: 170px;
-  height: auto;
-  opacity: 0.85;
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
-}
-
-.hud-center-tip {
-  color: #ffffff;
-  font-size: 1.2rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
-  animation: breathingText 2.5s infinite ease-in-out;
-}
-
 /* Right Actions Column (mimics reference pink actions) */
 .hud-right-actions {
   position: absolute;
@@ -1835,38 +1807,6 @@
   to {
     opacity: 0.85;
     transform: scale(1);
-  }
-}
-
-@keyframes breathingText {
-  0% {
-    transform: scale(0.97);
-    opacity: 0.85;
-  }
-
-  50% {
-    transform: scale(1.03);
-    opacity: 1;
-    text-shadow: 0 4px 15px rgba(255, 255, 255, 0.25);
-  }
-
-  100% {
-    transform: scale(0.97);
-    opacity: 0.85;
-  }
-}
-
-@keyframes scanline {
-  0% {
-    top: 60px;
-  }
-
-  50% {
-    top: calc(100% - 140px);
-  }
-
-  100% {
-    top: 60px;
   }
 }
 
@@ -2321,8 +2261,8 @@
 
 .hand-image-wrapper {
   position: relative;
-  width: 380px;
-  height: 460px;
+  width: 420px;
+  height: 508px;
   display: flex;
   align-items: center;
   justify-content: center;

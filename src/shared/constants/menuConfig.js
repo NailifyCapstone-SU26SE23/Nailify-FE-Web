@@ -380,6 +380,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-loyalty-transactions",
+      label: "Loyalty Transactions",
+      to: ROUTES.adminLoyaltyTransactions,
+      icon: "award",
+      section: "Main",
+    },
+    {
       key: "admin-quiz",
       label: "Quiz",
       to: ROUTES.adminQuiz,
@@ -405,13 +412,6 @@ export const MENU_CONFIG = {
       label: "Nail Shapes",
       to: ROUTES.adminNailShapes,
       icon: "shapes",
-      section: "Main",
-    },
-    {
-      key: "admin-shape-method-configs",
-      label: "Shape Method Configs",
-      to: ROUTES.adminShapeMethodConfigs,
-      icon: "sliders",
       section: "Main",
     },
     {

@@ -172,6 +172,7 @@ export const translations = {
       "admin-skill-types": "Skill Types",
       "admin-categories": "Categories",
       "admin-promotions": "Promotions",
+      "admin-loyalty-transactions": "Loyalty Transactions",
       "admin-nail-designs": "Nail Designs",
       "admin-analytics": "Analytics",
       "admin-reviews": "Reviews",
@@ -350,6 +351,21 @@ export const translations = {
       selectCategory: "Select category",
       selectCategoryType: "Select category type",
       selectNailDesign: "Select nail design",
+      promotionTypeOptions: {
+        Discount: "Discount",
+        Voucher: "Voucher",
+      },
+      promotionDiscountTypeOptions: {
+        Percentage: "Percentage discount",
+        FixedAmount: "Fixed amount discount",
+      },
+      promotionScopeOptions: {
+        All: "All",
+        Category: "Category",
+        CategoryType: "Category Type",
+        NailDesign: "Nail Design",
+        FirstTimeUser: "First-time User",
+      },
       promotionIdLabel: "Promotion ID",
       title: "Promotion Detail",
       editTitle: "Edit Promotion",
@@ -397,6 +413,24 @@ export const translations = {
         yesDelete: "Yes, delete it",
         cancel: "Cancel"
       }
+    },
+
+    // Loyalty Transactions (EN)
+    loyaltyTransactions: {
+      title: "Loyalty Transactions",
+      searchPlaceholder: "Search...",
+      transactionId: "Transaction ID",
+      customer: "Customer",
+      bookingId: "Booking ID",
+      points: "Points",
+      type: "Type",
+      createdAt: "Created At",
+      viewDetails: "View Details",
+      transactionDetails: "Transaction Details",
+      loading: "Loading transactions...",
+      failedToLoad: "Failed to load loyalty transactions.",
+      emptyText: "No transactions found.",
+      actions: "Actions",
     },
 
     // Admin Dashboard (EN)
@@ -1324,6 +1358,7 @@ export const translations = {
       designVariants: "Design Variants",
       designVariationsHaveDifferentA: "Design variations have different accessories",
       addNailVariant: "Add Nail Variant",
+      editNailVariant: "Edit Nail Variant",
       descriptionIsDerivedFromSurfac: "Description is derived from surface and accessories, not persisted by this API.",
       level: "Level",
       duration: "Duration",
@@ -1340,6 +1375,7 @@ export const translations = {
       totalBookings: "Total Bookings",
       favorites: "Favorites",
       avgRating: "Avg Rating",
+      ratingCount: "Rating Count",
       repeatRate: "Repeat Rate",
       quickActions: "Quick Actions",
       addVariant: "Add Variant",
@@ -2672,11 +2708,30 @@ export const translations = {
       "admin-skill-types": "Loại kỹ năng",
       "admin-categories": "Danh mục dịch vụ",
       "admin-promotions": "Khuyến mãi",
+      "admin-loyalty-transactions": "Lịch sử điểm",
       "admin-nail-designs": "Mẫu móng",
       "admin-analytics": "Thống kê hệ thống",
       "admin-reviews": "Quản lý Đánh giá",
       "admin-complaints": "Khiếu nại",
       "admin-profile": "Hồ sơ cá nhân"
+    },
+
+    // Loyalty Transactions (VI)
+    loyaltyTransactions: {
+      title: "Lịch sử điểm",
+      searchPlaceholder: "Tìm kiếm...",
+      transactionId: "Mã giao dịch",
+      customer: "Khách hàng",
+      bookingId: "Mã lịch hẹn",
+      points: "Điểm",
+      type: "Loại giao dịch",
+      createdAt: "Ngày tạo",
+      viewDetails: "Xem chi tiết",
+      transactionDetails: "Chi tiết giao dịch",
+      loading: "Đang tải dữ liệu...",
+      failedToLoad: "Tải dữ liệu điểm thất bại.",
+      emptyText: "Không tìm thấy giao dịch nào.",
+      actions: "Hành động",
     },
 
     // Header Content Titles & Descriptions (VI)
@@ -2850,6 +2905,21 @@ export const translations = {
       selectCategory: "Chọn danh mục",
       selectCategoryType: "Chọn loại danh mục",
       selectNailDesign: "Chọn mẫu móng thiết kế",
+      promotionTypeOptions: {
+        Discount: "Giảm giá",
+        Voucher: "Voucher",
+      },
+      promotionDiscountTypeOptions: {
+        Percentage: "Giảm giá phần trăm",
+        FixedAmount: "Số tiền giảm",
+      },
+      promotionScopeOptions: {
+        All: "Tất cả",
+        Category: "Danh mục",
+        CategoryType: "Loại danh mục",
+        NailDesign: "Mẫu móng thiết kế",
+        FirstTimeUser: "Khách lần đầu",
+      },
       promotionIdLabel: "Mã khuyến mãi",
       title: "Chi tiết khuyến mãi",
       editTitle: "Chỉnh sửa",

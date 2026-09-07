@@ -62,7 +62,7 @@ export async function getPlacedNailComponents(nailVariantId) {
   return (detail.nailComponents ?? []).map((item, index) => ({
     id: String(item.id || index + 1),
     componentId: String(item.componentId || item.component?.componentId || ""),
-    fingerIndex: Number(item.fingerIndex || 0),
+    fingerIndex: Number(item.fingerIndex ?? item.FingerIndex ?? -1),
     posX: Number(item.posX || 0),
     posY: Number(item.posY || 0),
     configJson: String(item.configJson || ""),
