@@ -70,8 +70,12 @@ function inferComplexity(nailVariants) {
   return "Basic";
 }
 
-function getVariantLevel(price) {
-  const normalizedPrice = Number(price || 0);
+function getVariantPrice(variant) {
+  return Number(variant?.estimatedPrice ?? variant?.price ?? 0);
+}
+
+function getVariantLevel(variant) {
+  const normalizedPrice = getVariantPrice(variant);
 
   if (normalizedPrice >= 300000) {
     return "Expert";
@@ -108,7 +112,7 @@ function buildVariantDescription(variant) {
 }
 
 function normalizeAdminNailVariantDetail(variant) {
-  const normalizedPrice = Number(variant?.price || 0);
+  const normalizedPrice = getVariantPrice(variant);
   const normalizedDuration = Number(variant?.duration || 0);
   const nailComponents = Array.isArray(variant?.nailComponents) ? variant.nailComponents : [];
 
@@ -120,6 +124,7 @@ function normalizeAdminNailVariantDetail(variant) {
     nailSurfaceId: normalizeIntegerId(variant?.nailSurfaceId),
     nailDesignId: normalizeIntegerId(variant?.nailDesignId),
     price: normalizedPrice,
+    estimatedPrice: normalizedPrice,
     priceLabel: formatVnd(normalizedPrice),
     duration: normalizedDuration,
     durationLabel: formatDurationMinutes(normalizedDuration),
@@ -186,6 +191,15 @@ function normalizeVariantProcedure(procedure, index = 0) {
     isRequired: Boolean(procedure?.isRequired),
     // Inference: assign order is initialized from API response position because GET schema does not expose stepOrder.
     stepOrder: index + 1,
+  };
+}
+
+function normalizeAdminSummary(summary) {
+  return {
+    totalBookings: Number(summary?.totalBookings || 0),
+    totalFavorites: Number(summary?.totalFavorites || 0),
+    averageRating: Number(summary?.averageRating || 0),
+    ratingCount: Number(summary?.ratingCount || 0),
   };
 }
 
@@ -324,7 +338,7 @@ export function normalizeAdminNailDesignDetail(design) {
     .filter(Boolean);
   const uniqueDecorations = [...new Set(decorationNames)];
   const categoryNames = normalized.categoryNames.length ? normalized.categoryNames : ["Signature"];
-  const variantLevels = normalized.nailVariants.filter((variant) => Number(variant?.price || 0) > 0);
+  const variantLevels = normalized.nailVariants.filter((variant) => getVariantPrice(variant) > 0);
 
   return {
     ...DEFAULT_NAIL_DESIGN_DETAIL,
@@ -359,6 +373,17 @@ export function normalizeAdminNailDesignDetail(design) {
       ["Pattern", categoryNames.join(", ") || "Signature"],
     ],
     variants: normalized.nailVariants.map((variant, index) => ({
+      ...(() => {
+        const variantPrice = getVariantPrice(variant);
+        return {
+          materialDelta: formatVnd(Math.round(variantPrice * 0.25)),
+          priceDelta: formatVnd(variantPrice),
+          level: getVariantLevel(variant),
+          price: variantPrice,
+          estimatedPrice: variantPrice,
+          priceLabel: formatVnd(variantPrice),
+        };
+      })(),
       id: String(variant?.nailVariantId || index + 1),
       nailVariantId: Number(variant?.nailVariantId || 0),
       nailShapeId: normalizeIntegerId(variant?.nailShapeId),
@@ -366,12 +391,8 @@ export function normalizeAdminNailDesignDetail(design) {
       nailDesignId: normalizeIntegerId(variant?.nailDesignId, normalized.nailDesignId),
       name: String(variant?.name || "").trim() || `Variant ${index + 1}`,
       description: buildVariantDescription(variant),
-      materialDelta: formatVnd(Math.round(Number(variant?.price || 0) * 0.25)),
-      priceDelta: formatVnd(Number(variant?.price || 0)),
-      level: getVariantLevel(variant?.price),
       duration: formatDurationMinutes(Number(variant?.duration || 0) || maxDuration || 90),
       rawDuration: Number(variant?.duration || 0) || maxDuration || 90,
-      price: Number(variant?.price || 0),
       imageUrl: String(variant?.imageUrl || normalized.previewImage || "").trim(),
       colorJson: String(variant?.colorJson || "").trim(),
       nailShape: variant?.nailShape || null,
@@ -418,8 +439,8 @@ export function normalizeAdminNailDesignDetail(design) {
       ["Material", "Material Handling", 3, "3★ Intermediate"],
     ],
     eligibleArtists: String(Math.max(1, 12 - normalized.variantCount)),
-    expertLevel: String(normalized.nailVariants.filter((variant) => Number(variant?.price || 0) >= 300000).length),
-    advancedLevel: String(normalized.nailVariants.filter((variant) => Number(variant?.price || 0) >= 200000).length),
+    expertLevel: String(normalized.nailVariants.filter((variant) => getVariantPrice(variant) >= 300000).length),
+    advancedLevel: String(normalized.nailVariants.filter((variant) => getVariantPrice(variant) >= 200000).length),
     previewImage: normalized.previewImage,
   };
 }
@@ -537,6 +558,21 @@ export async function fetchAdminNailDesignDetail(designId) {
   });
 }
 
+export async function fetchAdminNailDesignSummary(designId) {
+  const normalizedDesignId = normalizeIntegerId(designId, -1);
+
+  if (normalizedDesignId <= 0) {
+    throw new Error("Design ID is required.");
+  }
+
+  const response = await axiosClient.get(`/NailDesigns/summary/${normalizedDesignId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail design summary.");
+  return normalizeAdminSummary(data);
+}
+
 export async function fetchAdminNailVariantReferences() {
   const shapesByName = new Map();
   const surfacesByName = new Map();
@@ -632,6 +668,9 @@ export async function createAdminNailDesign(designFormValues) {
   categoryIds.forEach((value) => {
     formData.append("CategoryIds", String(value));
   });
+  if (designFormValues?.image instanceof File) {
+    formData.append("image", designFormValues.image);
+  }
   if (Array.isArray(designFormValues?.images)) {
     designFormValues.images.forEach((file) => {
       if (file instanceof File) {
@@ -684,7 +723,11 @@ export async function updateAdminNailVariant(variantId, variantFormValues) {
   formData.append("NailShapeId", String(normalizeIntegerId(variantFormValues?.nailShapeId)));
   formData.append("NailSurfaceId", String(normalizeIntegerId(variantFormValues?.nailSurfaceId)));
   formData.append("NailDesignId", String(normalizeIntegerId(variantFormValues?.nailDesignId)));
-  formData.append("ImageUrl", String(variantFormValues?.imageUrl || "").trim());
+  if (variantFormValues?.image instanceof File) {
+    formData.append("imageUrl", variantFormValues.image);
+  } else {
+    formData.append("ImageUrl", String(variantFormValues?.imageUrl || "").trim());
+  }
   formData.append("ColorJson", String(variantFormValues?.colorJson || "").trim());
 
   const response = await axiosClient.put(`/NailVariants/${normalizedVariantId}`, formData, {
@@ -726,6 +769,21 @@ export async function fetchAdminNailVariantDetail(variantId) {
   return normalizeAdminNailVariantDetail(data);
 }
 
+export async function fetchAdminNailVariantSummary(variantId) {
+  const normalizedVariantId = normalizeIntegerId(variantId, -1);
+
+  if (normalizedVariantId <= 0) {
+    throw new Error("Variant ID is required.");
+  }
+
+  const response = await axiosClient.get(`/NailVariants/summary/${normalizedVariantId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail variant summary.");
+  return normalizeAdminSummary(data);
+}
+
 export async function updateAdminNailDesign(designId, designFormValues) {
   const normalizedDesignId = normalizeIntegerId(designId, -1);
 
@@ -760,6 +818,16 @@ export async function updateAdminNailDesign(designId, designFormValues) {
   existingImageUrls.forEach((value) => {
     formData.append("ExistingImageUrls", value);
   });
+  if (designFormValues?.image instanceof File) {
+    formData.append("image", designFormValues.image);
+  }
+  if (Array.isArray(designFormValues?.images)) {
+    designFormValues.images.forEach((file) => {
+      if (file instanceof File) {
+        formData.append("images", file);
+      }
+    });
+  }
 
   const response = await axiosClient.put(`/NailDesigns/${normalizedDesignId}`, formData, {
     headers: {

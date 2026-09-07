@@ -716,6 +716,7 @@ function TimelineSchedule({
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const { language } = useLanguage();
+  const isVi = language === "vi";
   const weekDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < 7; i++) {
@@ -925,6 +926,7 @@ TimelineSchedule.propTypes = {
 
 export function StaffManagementPage() {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const [activeFilter, setActiveFilter] = useState("All");
   const [viewingStaff, setViewingStaff] = useState(null);
   const [viewingStaffDetail, setViewingStaffDetail] = useState(null);
@@ -1164,12 +1166,12 @@ export function StaffManagementPage() {
     );
 
     if (daysToCreate.length === 0) {
-      toast.error("Please select at least one available day.");
+      toast.error(isVi ? "Vui lòng chọn ít nhất một ngày có sẵn" : "Please select at least one available day.");
       return;
     }
 
     if (isShiftTimeInvalid) {
-      toast.error("Please select at least one time slot.");
+      toast.error(isVi ? "Vui lòng chọn ít nhất một khung giờ" : "Please select at least one time slot.");
       return;
     }
 
@@ -2129,7 +2131,7 @@ export function StaffManagementPage() {
                     shiftDurationHours > 0 && (
                       <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#2fa25f]">
                         <CheckCircle2 size={12} />
-                        {shiftDurationHours.toFixed(1)}h total working duration
+                        {shiftDurationHours.toFixed(1)}h {isVi ? "tổng thời gian làm việc" : "total working duration"}
                       </p>
                     )
                   )}
@@ -2156,7 +2158,7 @@ export function StaffManagementPage() {
               disabled={isCreatingShift || isShiftTimeInvalid}
               className="flex min-w-[140px] items-center justify-center gap-2 rounded-xl bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
             >
-              {isCreatingShift ? <Spin size="small" className="brightness-200" /> : "Create Schedule"}
+              {isCreatingShift ? <Spin size="small" className="brightness-200" /> : isVi ? "Tạo lịch hẹn" : "Create Schedule"}
             </button>
           </div>
         </div>

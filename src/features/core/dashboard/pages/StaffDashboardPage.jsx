@@ -1053,7 +1053,7 @@ export function StaffDashboardPage() {
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
         {/* Header & Controls */}
         <div
-          className="
+          className="rounded-lg
                   sticky top-[-20px] z-50
                   flex flex-col gap-4
                   border-b border-white/30
