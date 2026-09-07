@@ -166,3 +166,37 @@ export async function deleteAdminNailShape(shapeId) {
 
   return unwrapResponse(response, "Failed to delete nail shape.");
 }
+
+export async function fetchAdminShapeMethodConfigsByNailShape(shapeId) {
+  const response = await axiosClient.get("/ShapeMethodConfigs", {
+    headers: getAuthHeaders(),
+    params: { nailShapeId: shapeId, pageSize: 100 },
+  });
+
+  const data = unwrapResponse(response, "Failed to load shape method configs.");
+  return Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+}
+
+export async function createAdminShapeMethodConfig(formValues) {
+  const response = await axiosClient.post("/ShapeMethodConfigs", formValues, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to create shape method config.");
+}
+
+export async function updateAdminShapeMethodConfig(configId, formValues) {
+  const response = await axiosClient.put(`/ShapeMethodConfigs/${configId}`, formValues, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to update shape method config.");
+}
+
+export async function deleteAdminShapeMethodConfig(configId) {
+  const response = await axiosClient.delete(`/ShapeMethodConfigs/${configId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to delete shape method config.");
+}

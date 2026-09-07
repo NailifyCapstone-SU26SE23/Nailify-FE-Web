@@ -332,7 +332,7 @@ export function StaffManagementPage() {
     }
   }, []);
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 8;
 
   const roleOptions = [
     { value: ALL_ROLES_VALUE, label: t("adminStaffManagement.allRoles") },
@@ -671,13 +671,7 @@ export function StaffManagementPage() {
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  {/* {filteredStaff.map((staff) => (
-                    <StaffCard
-                      key={staff.id}
-                      staff={staff}
-                      onClick={() => handleOpenDrawer(staff.userId || staff.id)}
-                    />
-                  ))} */}
+
                   {filteredStaff.map((staff) => (
                     <StaffCard
                       key={staff.id}

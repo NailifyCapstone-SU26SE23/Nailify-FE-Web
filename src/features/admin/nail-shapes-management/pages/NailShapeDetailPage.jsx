@@ -20,13 +20,11 @@ import {
   fetchAdminNailShapeDetail,
   formatNailShapeDuration,
   updateAdminNailShape,
-} from "../services/nailShapesManagementService";
-import {
   fetchAdminShapeMethodConfigsByNailShape,
   createAdminShapeMethodConfig,
   updateAdminShapeMethodConfig,
   deleteAdminShapeMethodConfig,
-} from "../../shape-method-configs-management/services/shapeMethodConfigsManagementService";
+} from "../services/nailShapesManagementService";
 import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm } from "antd";
 
 function validateForm(formValues, language) {
@@ -634,7 +632,7 @@ export function NailShapeDetailPage() {
             </Form.Item>
           </div>
 
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="mt-4 flex justify-end gap-2">
             <Button
               onClick={() => setIsConfigModalVisible(false)}
               disabled={isSavingConfig}

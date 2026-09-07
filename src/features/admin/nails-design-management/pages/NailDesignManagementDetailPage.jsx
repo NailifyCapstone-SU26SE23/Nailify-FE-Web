@@ -1469,204 +1469,32 @@ export function NailDesignManagementDetailPage() {
                 {t("adminNailsDesignManagement.addNailVariant")}
               </button>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {formValues.variants.map((variant, index) => (
-                <div
-                  key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
-                  className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)]"
-                >
-                  <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
-                    <NailVariantHandPreview
-                      variantDetail={variant}
-                      compact
-                    />
-                  </div>
-                  {isEditing ? (
-                    <div className="mt-3 space-y-3">
-                      <div>
-                        <InputLabel>{t("adminNailsDesignManagement.variantName")}</InputLabel>
-                        <EditInput
-                          value={variant.name}
-                          onChange={handleVariantFieldChange(index, "name")}
-                        />
-                      </div>
-                      <div>
-                        <InputLabel>{t("adminNailsDesignManagement.description")}</InputLabel>
-                        <EditTextarea
-                          disabled
-                          value={variant.description}
-                          onChange={handleVariantFieldChange(index, "description")}
-                          rows={3}
-                        />
-                        <p className="mt-1 text-[11px] text-[#b2879f]">
-                          {t("adminNailsDesignManagement.descriptionIsDerivedFromSurfac")
-                          }
-                        </p>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <InputLabel>{t("adminNailsDesignManagement.level")}</InputLabel>
-                          <EditSelect
-                            disabled
-                            value={variant.level}
-                            onChange={handleVariantFieldChange(index, "level")}
-                            options={VARIANT_LEVEL_OPTIONS}
-                          />
-                        </div>
-                        <div>
-                          <InputLabel>{t("adminNailsDesignManagement.duration")}</InputLabel>
-                          <EditInput
-                            className="disabled:cursor-not-allowed disabled:bg-[#f9f1f5] disabled:text-[#b2879f]"
-                            disabled
-                            value={variant.duration}
-                            onChange={handleVariantFieldChange(index, "duration")}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <InputLabel>{t("adminNailsDesignManagement.imageUrl")}</InputLabel>
-                        <EditInput
-                          value={variant.imageUrl}
-                          onChange={handleVariantFieldChange(index, "imageUrl")}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
-                      <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
-                    </>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone="pink">{variant.materialDelta}</Pill>
-                    <Pill tone="yellow">{variant.priceDelta}</Pill>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Pill tone="blue">{variant.level}</Pill>
-                    <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void handleViewVariant(variant)}
-                      className="flex-1 rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-2 text-xs font-bold text-[#ea4f93]"
-                    >
-                      {t("adminNailsDesignManagement.view")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isEditing) {
-                          setPendingDeleteVariant(variant);
-                          return;
-                        }
-
-                        scrollToSection(designVariantsRef, {
-                          startEdit: true,
-                          sectionKey: "design-variants",
-                        });
-                      }}
-                      disabled={isSavingVariants || isDeletingVariant}
-                      className={`flex-1 rounded-full border px-3 py-2 text-xs font-bold ${isEditing
-                        ? "border-[#f3b1c7] bg-[#fff2f6] text-[#d14c84]"
-                        : "border-[#f4c6da] bg-white text-[#8c7085]"
-                        }`}
-                    >
-                      {isEditing ? (t("adminNailsDesignManagement.delete")) : (t("adminNailsDesignManagement.edit"))}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title={t("adminNailsDesignManagement.pricingCostBreakdown")}
-            subtitle=""
-            icon={<CircleDollarSign size={18} />}
-            sectionId="pricing-section"
-            sectionRef={pricingRef}
-            highlighted={highlightedSection === "pricing"}
-          >
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
-              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.materialCosts")}</p>
-                    <div className="mt-4 space-y-3">
-                      {formValues.pricing.materialCosts.map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
-                          <span className="font-semibold text-[#432744]">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.servicePricing")}</p>
-                    <div className="mt-4 space-y-3">
-                      {formValues.pricing.servicePricing.map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
-                          <span className="font-semibold text-[#432744]">{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.summary")}</p>
-                  <div className="mt-4 space-y-3 text-sm">
-                    {formValues.pricing.summary.map(([label, value], index) => (
-                      <div key={label} className="flex items-center justify-between gap-3">
-                        <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
-                        <span
-                          className={`font-semibold ${index >= 3 ? "text-[#ea4f93]" : "text-[#432744]"}`}
-                        >
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.priceComparison")}</p>
-                  <div className="mt-4 space-y-3 text-sm">
-                    {formValues.pricing.comparison.map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between gap-3">
-                        <span className="text-[#8c7085]">{language === "vi" ? (PRICING_DICT[label] || label) : label}</span>
-                        <span className={`font-semibold ${getComparisonValueTone(label)}`}>
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-        </div>
-
-        <aside className="space-y-4">
-          <SectionCard
-            title={t("adminNailsDesignManagement.quickSummary")}
-            subtitle=""
-            icon={<Sparkles size={18} />}
-            sectionId="quick-summary-section"
-            sectionRef={quickSummaryRef}
-            highlighted={highlightedSection === "quick-summary"}
-          >
-            {isEditing ? (
-              <div className="space-y-3">
-                <div>
-                  <InputLabel>{t("adminNailsDesignManagement.designStatus")}</InputLabel>
-                  <EditSelect
-                    value={formValues.designStatus}
-                    onChange={handleChange("designStatus")}
-                    options={DESIGN_COMPONENT_OPTIONS["Design Status"]}
+          }
+          subtitle={t("adminNailsDesignManagement.designVariationsHaveDifferentA")}
+          icon={null}
+          sectionId="design-variants-section"
+          sectionRef={designVariantsRef}
+          highlighted={highlightedSection === "design-variants"}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {formValues.variants.map((variant, index) => (
+              <div
+                key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
+                className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)] cursor-pointer transition-all duration-200 hover:shadow-[0_16px_32px_rgba(236,72,153,0.12)] hover:border-[#ea4f93]"
+                onClick={() => handleViewVariant(variant)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleViewVariant(variant);
+                  }
+                }}
+              >
+                <div className="overflow-hidden rounded-[16px] bg-[#f6edf2]">
+                  <NailVariantHandPreview
+                    variantDetail={variant}
+                    compact
                   />
                 </div>
                 <div>

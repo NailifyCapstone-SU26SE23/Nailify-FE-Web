@@ -80,6 +80,7 @@ export const ROUTES = {
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
   adminLoyaltyTiers: "/admin/loyalty-tiers",
+  adminLoyaltyTransactions: "/admin/loyalty-transactions",
   adminServicePricing: "/admin/services",
   adminQuiz: "/admin/quiz",
   adminQuizCreate: "/admin/quiz/create",

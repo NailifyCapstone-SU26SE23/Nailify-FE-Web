@@ -380,6 +380,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-loyalty-transactions",
+      label: "Loyalty Transactions",
+      to: ROUTES.adminLoyaltyTransactions,
+      icon: "award",
+      section: "Main",
+    },
+    {
       key: "admin-quiz",
       label: "Quiz",
       to: ROUTES.adminQuiz,

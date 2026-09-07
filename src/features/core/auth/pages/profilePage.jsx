@@ -97,7 +97,7 @@ function getDashboardRouteByRole(role) {
 }
 
 const cardStyle = {
-  borderRadius: 24,
+  borderRadius: 10,
   border: "1px solid rgba(255,255,255,0.7)",
   boxShadow: "0 12px 40px rgba(236,72,153,0.08)",
   background: "rgba(255,255,255,0.75)",
@@ -112,9 +112,9 @@ function ProfileField({
   children,
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/50 bg-white/50 p-4 transition-all duration-300 hover:bg-white/70 hover:shadow-[0_8px_24px_rgba(236,72,153,0.1)]">
+    <div className="group relative overflow-hidden rounded-xl border border-white/50 bg-white/50 p-4 transition-all duration-300 hover:bg-white/70 hover:shadow-[0_8px_24px_rgba(236,72,153,0.1)]">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-white to-[#fff0f6] text-[#ea4f93] shadow-sm">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-white to-[#fff0f6] text-[#ea4f93] shadow-sm">
           <Icon size={18} strokeWidth={2.5} />
         </div>
         <div className="min-w-0 pt-0.5">
