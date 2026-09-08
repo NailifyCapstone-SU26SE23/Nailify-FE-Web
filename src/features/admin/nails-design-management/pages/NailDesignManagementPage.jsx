@@ -370,15 +370,7 @@ export function NailDesignManagementPage() {
     {
       key: "name-desc",
       label: language === "vi" ? "Tên (Z - A)" : "Name (Z - A)",
-    },
-    {
-      key: "price-asc",
-      label: language === "vi" ? "Giá (Thấp đến Cao)" : "Price (Low to High)",
-    },
-    {
-      key: "price-desc",
-      label: language === "vi" ? "Giá (Cao đến Thấp)" : "Price (High to Low)",
-    },
+    }
   ];
 
   const sortMenu = {
@@ -589,46 +581,6 @@ export function NailDesignManagementPage() {
                             className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
                           >
                             {design.uiTitle}
-                          </Link>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {design.uiTags.map((tag, index) => (
-                          <SmallTag
-                            key={`${design.id}-${tag}`}
-                            className={
-                              [
-                                "bg-[#ffe7ef] text-[#ea4f93]",
-                                "bg-[#f5ecff] text-[#8b5cf6]",
-                                "bg-[#fff4df] text-[#d9871c]",
-                              ][index % 3]
-                            }
-                          >
-                            {tag}
-                          </SmallTag>
-                        ))}
-                        {design.uiTones.map((tag) => (
-                          <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
-                            {tag}
-                          </SmallTag>
-                        ))}
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between gap-3">
-                        <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
-                        <div className="flex gap-2">
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
-                          >
-                            {t("adminNailsDesignManagement.view")}
-                          </Link>
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                          >
-                            {t("adminNailsDesignManagement.edit")}
                           </Link>
                         </div>
                       </div>

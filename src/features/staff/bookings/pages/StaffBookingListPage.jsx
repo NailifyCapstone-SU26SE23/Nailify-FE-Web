@@ -47,16 +47,6 @@ const STAFF_BOOKING_SCOPES = {
   salon: "salon",
 };
 
-const SUMMARY_BY_ROLE = {
-  [ROLES.staff]: [
-    { label: "Assigned Today", value: "18", note: "+2 vs yesterday", icon: CalendarDays, iconClassName: "bg-[#ffe8f2] text-[#ea4f93]" },
-    { label: "Pending", value: "4", note: "Awaiting check-in", icon: Clock3, iconClassName: "bg-[#fff4e8] text-[#f59e0b]" },
-    { label: "Completed", value: "53", note: "+7 this week", icon: DollarSign, iconClassName: "bg-[#eaf9ee] text-[#2fa25f]" },
-    { label: "Cancelled", value: "3", note: "Low this week", icon: XCircle, iconClassName: "bg-[#fff0f5] text-[#e1447f]" },
-    { label: "No-shows", value: "2", note: "Stable", icon: AlertTriangle, iconClassName: "bg-[#f5ecff] text-[#8b5cf6]" },
-  ],
-};
-
 const SALON_OPTIONS = ["All salons", "Downtown Luxe", "Westside Glow", "Northpark Studio", "Eastview Nails"];
 const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "CheckedIn", "InProgress", "ServiceCompleted", "Completed", "Repaired", "ReschedulePending", "RescheduleSuggested"];
 
@@ -614,7 +604,7 @@ export function StaffBookingListPage() {
         <div className="">
           <div className="space-y-4">
             <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <div className="grid gap-3 md:grid-cols-3">
                 <label className="space-y-2">
                   <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Từ ngày" : "Date From"}
@@ -652,11 +642,11 @@ export function StaffBookingListPage() {
                     ))}
                   </select>
                 </label>
+
               </div>
 
-              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end">
-
-                <label className="relative block flex-1">
+              <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <label className="relative block">
                   <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Tìm kiếm" : "Search"}
                   </span>
@@ -671,29 +661,6 @@ export function StaffBookingListPage() {
                     className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
                   />
                 </label>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                  >
-                    {language === "vi" ? "Áp dụng" : "Apply"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDateFrom(todayDate);
-                      setDateTo(todayDate);
-                      setSalonFilter(SALON_OPTIONS[0]);
-                      setStatusFilter(STATUS_OPTIONS[0]);
-                      setStaffFilter("All staff");
-                      setQuery("");
-                    }}
-                    className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2.5 text-xs font-bold text-[#ea4f93]"
-                  >
-                    {language === "vi" ? "Đặt lại" : "Reset"}
-                  </button>
-                </div>
               </div>
             </article>
 

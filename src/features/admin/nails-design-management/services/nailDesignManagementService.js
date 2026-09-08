@@ -839,6 +839,20 @@ export async function updateAdminNailDesign(designId, designFormValues) {
   return unwrapResponse(response, "Failed to update nail design.");
 }
 
+export async function deleteAdminNailDesign(designId) {
+  const normalizedDesignId = normalizeIntegerId(designId, -1);
+
+  if (normalizedDesignId <= 0) {
+    throw new Error("Design ID is required.");
+  }
+
+  const response = await axiosClient.delete(`/NailDesigns/${normalizedDesignId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to delete nail design.");
+}
+
 export async function fetchProceduresByVariant(nailVariantId) {
   const normalizedVariantId = normalizeIntegerId(nailVariantId, -1);
 
