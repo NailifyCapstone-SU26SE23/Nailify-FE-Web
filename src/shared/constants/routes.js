@@ -57,6 +57,7 @@ export const ROUTES = {
   managerQueue: "/manager/queue",
   managerBreaks: "/manager/breaks",
   managerChairs: "/manager/chairs",
+  managerSalon: "/manager/salon",
   receptionistQueue: "/receptionist/queue",
   receptionistWaitlist: "/receptionist/waitlist",
 
@@ -66,7 +67,7 @@ export const ROUTES = {
   adminProfile: "/admin/profile",
   adminBookings: "/admin/bookings",
   adminBookingsCreate: "/admin/bookings/create",
-  adminBookingDetail: "/admin/bookings/:bookingId",
+  adminBookingDetail: "/admin/bookings/detail/:bookingId",
   adminSalons: "/admin/salons",
   adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
@@ -79,15 +80,13 @@ export const ROUTES = {
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
   adminLoyaltyTiers: "/admin/loyalty-tiers",
-  adminServicePricing: "/admin/service-pricing",
+  adminLoyaltyTransactions: "/admin/loyalty-transactions",
+  adminServicePricing: "/admin/services",
   adminQuiz: "/admin/quiz",
   adminQuizCreate: "/admin/quiz/create",
   adminNailShapes: "/admin/nail-shapes",
   adminNailShapesCreate: "/admin/nail-shapes/create",
   adminNailShapeDetail: "/admin/nail-shapes/:shapeId",
-  adminShapeMethodConfigs: "/admin/shape-method-configs",
-  adminShapeMethodConfigsCreate: "/admin/shape-method-configs/create",
-  adminShapeMethodConfigDetail: "/admin/shape-method-configs/:configId",
   adminNailSurfaces: "/admin/nail-surfaces",
   adminNailSurfacesCreate: "/admin/nail-surfaces/create",
   adminNailSurfaceDetail: "/admin/nail-surfaces/:surfaceId",
@@ -143,7 +142,7 @@ export const getManagerStaffUpdateRoute = (staffId) =>
   `/manager/staff-artists/${staffId}`;
 
 export const getAdminBookingDetailRoute = (bookingId) =>
-  `/admin/bookings/${bookingId}`;
+  `/admin/bookings/detail/${bookingId}`;
 export const getAdminSalonDetailRoute = (salonId) =>
   `/admin/salons/${salonId}`;
 export const getAdminSalonUpdateRoute = (salonId) =>
@@ -155,7 +154,7 @@ export const getAdminUserDetailRoute = (userId) =>
 export const getAdminLoyaltyTiersRoute = () =>
   "/admin/loyalty-tiers";
 export const getAdminServicePricingRoute = () =>
-  "/admin/service-pricing";
+  "/admin/services";
 export const getAdminQuizRoute = () =>
   "/admin/quiz";
 export const getAdminQuizCreateRoute = () =>

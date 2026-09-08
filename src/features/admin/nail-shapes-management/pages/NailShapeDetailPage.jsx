@@ -20,13 +20,11 @@ import {
   fetchAdminNailShapeDetail,
   formatNailShapeDuration,
   updateAdminNailShape,
-} from "../services/nailShapesManagementService";
-import {
   fetchAdminShapeMethodConfigsByNailShape,
   createAdminShapeMethodConfig,
   updateAdminShapeMethodConfig,
   deleteAdminShapeMethodConfig,
-} from "../../shape-method-configs-management/services/shapeMethodConfigsManagementService";
+} from "../services/nailShapesManagementService";
 import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm } from "antd";
 
 function validateForm(formValues, language) {
@@ -70,11 +68,9 @@ export function NailShapeDetailPage() {
         name: config.name,
         price: config.price,
         duration: config.duration,
-        status: config.status === "Active",
       });
     } else {
       configForm.resetFields();
-      configForm.setFieldsValue({ status: true });
     }
     setIsConfigModalVisible(true);
   };
@@ -85,20 +81,22 @@ export function NailShapeDetailPage() {
       setIsSavingConfig(true);
       const toastId = toast.loading(language === "vi" ? (editingConfig ? "Đang cập nhật cấu hình..." : "Đang tạo cấu hình...") : (editingConfig ? "Updating config..." : "Creating config..."));
 
-      const payload = {
+      const basePayload = {
         nailShapeId: Number(shapeId),
         name: values.name.trim(),
         price: Number(values.price),
         duration: Number(values.duration),
-        status: values.status ? "Active" : "Inactive",
       };
 
       if (editingConfig) {
-        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, payload);
+        const updatePayload = {
+          ...basePayload,
+        };
+        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, updatePayload);
         setConfigs((prev) => prev.map(c => c.shapeMethodConfigId === updatedConfig.shapeMethodConfigId ? updatedConfig : c));
         toast.success(t("adminNailShapesManagement.configUpdatedSuccessfully"), { id: toastId });
       } else {
-        const newConfig = await createAdminShapeMethodConfig(payload);
+        const newConfig = await createAdminShapeMethodConfig(basePayload);
         setConfigs((prev) => [...prev, newConfig]);
         toast.success(t("adminNailShapesManagement.configCreatedSuccessfully"), { id: toastId });
       }
@@ -391,14 +389,14 @@ export function NailShapeDetailPage() {
           <div className="text-center text-sm text-slate-600">{t("adminNailShapesManagement.loadingNailShapeDetails")}</div>
         </div>
       ) : (
-        <div className="grid gap-4">
-          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {t("adminNailShapesManagement.nailShapeInformation")}
             </h2>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-5">
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.shapeName")}</span>
                 <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
@@ -413,10 +411,10 @@ export function NailShapeDetailPage() {
                 </div>
               </label>
 
-              <label className="space-y-2.5 md:col-span-2">
+              <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
                 <label
-                  className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 px-6 py-8 ${isEditing
+                  className={`flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 p-3 ${isEditing
                     ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
                     : "bg-gradient-to-br from-[#fffafc] to-[#fff5f9]"
                     }`}
@@ -426,7 +424,7 @@ export function NailShapeDetailPage() {
                       crossOrigin="anonymous"
                       src={imagePreview}
                       alt="Nail shape preview"
-                      className="h-48 w-full rounded-2xl object-cover shadow-lg"
+                      className="h-full w-full rounded-2xl object-cover shadow-lg"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
@@ -455,7 +453,7 @@ export function NailShapeDetailPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100 md:p-8">
+          <section className="min-w-0 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">{t("adminNailShapesManagement.shapeMethodConfigs")}</h2>
               <Button
@@ -477,24 +475,28 @@ export function NailShapeDetailPage() {
                   title: t("adminNailShapesManagement.name"),
                   dataIndex: 'name',
                   key: 'name',
+                  sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
                   render: (text) => <span className="font-semibold text-slate-700">{text}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.price"),
                   dataIndex: 'price',
                   key: 'price',
+                  sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
                   render: (val) => <span className="text-emerald-600 font-medium">{`${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(val || 0))} VND`}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.duration"),
                   dataIndex: 'duration',
                   key: 'duration',
+                  sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
                   render: (val) => <span className="text-blue-600 font-medium">{formatNailShapeDuration(val)}</span>
                 },
                 {
                   title: t("adminNailShapesManagement.status"),
                   dataIndex: 'status',
                   key: 'status',
+                  sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                       {val}
@@ -527,7 +529,7 @@ export function NailShapeDetailPage() {
                   )
                 }
               ]}
-              className="border border-slate-100 rounded-xl overflow-hidden"
+              className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
             />
           </section>
 
@@ -578,39 +580,57 @@ export function NailShapeDetailPage() {
       />
 
       <Modal
-        title={
-          <h3 className="text-lg font-bold text-slate-800">
-            {editingConfig ? (t("adminNailShapesManagement.editShapeMethodConfig")) : (t("adminNailShapesManagement.addShapeMethodConfig"))}
-          </h3>
-        }
+        title={null}
         open={isConfigModalVisible}
         onCancel={() => !isSavingConfig && setIsConfigModalVisible(false)}
         footer={null}
         destroyOnClose
-        className="rounded-2xl"
+        centered
+        width={520}
+        styles={{
+          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
       >
+        <div className="bg-[linear-gradient(135deg,#fff1f7_0%,#fffafc_100%)] px-6 pb-8 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.25)]">
+              {editingConfig ? <Pencil size={18} /> : <Plus size={18} />}
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-[#432744]">
+                {editingConfig ? (t("adminNailShapesManagement.editShapeMethodConfig")) : (t("adminNailShapesManagement.addShapeMethodConfig"))}
+              </h3>
+              <p className="mt-1 text-xs font-medium text-[#b58a9f]">
+                {shape?.name || t("adminNailShapesManagement.nailShape")}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Form
           form={configForm}
           layout="vertical"
           onFinish={handleSaveConfig}
-          className="mt-6"
+          className="-mt-4 rounded-t-[24px] bg-white px-6 pb-6 pt-5"
         >
           <Form.Item
             name="name"
-            label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.name")}</span>}
+            label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.name")}</span>}
             rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterAName") }]}
           >
-            <Input className="rounded-xl border-slate-200 py-2 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100" />
+            <Input className="h-10 rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93]" />
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Form.Item
               name="price"
-              label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.priceVnd")}</span>}
+              label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.priceVnd")}</span>}
               rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterPrice") }]}
             >
               <InputNumber
-                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
+                className="w-full [&_.ant-input-number-input]:!h-10"
                 min={0}
                 step={1000}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -620,29 +640,21 @@ export function NailShapeDetailPage() {
 
             <Form.Item
               name="duration"
-              label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.durationMins")}</span>}
+              label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.durationMins")}</span>}
               rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterDuration") }]}
             >
               <InputNumber
-                className="w-full rounded-xl border-slate-200 hover:border-rose-300 focus:border-rose-400 focus:ring-rose-100"
+                className="w-full [&_.ant-input-number-input]:!h-10"
                 min={1}
               />
             </Form.Item>
           </div>
 
-          <Form.Item
-            name="status"
-            label={<span className="text-sm font-semibold text-slate-700">{t("adminNailShapesManagement.statusActive")}</span>}
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="mt-4 flex justify-end gap-2">
             <Button
               onClick={() => setIsConfigModalVisible(false)}
               disabled={isSavingConfig}
-              className="rounded-full px-6 font-semibold"
+              className="h-10 rounded-full px-5 font-bold"
             >
               {t("adminNailShapesManagement.cancel")}
             </Button>
@@ -650,7 +662,7 @@ export function NailShapeDetailPage() {
               type="primary"
               htmlType="submit"
               loading={isSavingConfig}
-              className="rounded-full bg-rose-500 px-6 font-semibold shadow-md shadow-rose-200 hover:bg-rose-600"
+              className="h-10 rounded-full bg-[#ea4f93] px-5 font-bold shadow-[0_10px_20px_rgba(234,79,147,0.2)]"
             >
               {t("adminNailShapesManagement.saveConfig")}
             </Button>

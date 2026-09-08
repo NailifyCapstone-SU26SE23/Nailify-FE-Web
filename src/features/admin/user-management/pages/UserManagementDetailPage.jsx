@@ -16,10 +16,10 @@ import {
   updateAdminUser,
 } from "../services/userManagementService";
 import {
-  fetchArtistSchedules,
   fetchNailArtistById,
   fetchNailArtistSkills,
 } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { fetchArtistSchedules } from "../../../manager/schedules/services/scheduleService";
 
 function formatWorkDate(value) {
   if (!value) {
@@ -436,7 +436,7 @@ export function UserManagementDetailPage() {
                     <img
                       src={salonDetail.imageUrl}
                       alt={salonDetail.name || "Salon"}
-                      className="h-40 w-full rounded-[20px] border border-[#f6dbe7] object-cover"
+                      className="h-40 w-full rounded-lg border border-[#f6dbe7] object-cover"
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"
                     />
@@ -498,7 +498,7 @@ export function UserManagementDetailPage() {
               <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
                 {formValues.staffId ? (
                   sortedSchedules.length ? (
-                    <div className="overflow-hidden rounded-[20px] border border-[#f6dbe7] bg-white">
+                    <div className="overflow-hidden rounded-lg border border-[#f6dbe7] bg-white">
                       <Table
                         rowKey={(schedule) => schedule.scheduleId || `${schedule.workDate}-${schedule.shiftStart}-${schedule.shiftEnd}`}
                         columns={scheduleColumns}

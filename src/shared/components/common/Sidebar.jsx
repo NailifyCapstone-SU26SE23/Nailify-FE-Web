@@ -94,7 +94,7 @@ function SidebarItem({ item, collapsed }) {
   }
 
   return (
-    <NavLink to={item.to} end>
+    <NavLink to={item.to}>
       {({ isActive }) => content({ isActive })}
     </NavLink>
   );

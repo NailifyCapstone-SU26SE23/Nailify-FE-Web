@@ -98,7 +98,7 @@ export function ExtraServiceModal({
 
           <div className="mt-5 space-y-3 pr-1">
             {isLoading ? (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+              <div className="rounded-lg border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
                 {isVi ? "Đang tải dịch vụ..." : "Loading services..."}
               </div>
             ) : normalizedServices.length ? (
@@ -160,7 +160,7 @@ export function ExtraServiceModal({
                 );
               })
             ) : (
-              <div className="rounded-[20px] border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
+              <div className="rounded-lg border border-dashed border-[#f1cade] bg-[#fff8fb] px-4 py-10 text-center text-sm font-medium text-[#a88a9d]">
                 {isVi ? "Không tìm thấy dịch vụ" : "No services found"}
               </div>
             )}

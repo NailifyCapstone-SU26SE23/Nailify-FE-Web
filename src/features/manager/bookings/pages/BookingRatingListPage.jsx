@@ -380,12 +380,12 @@ export function BookingRatingListPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#fafaf9] p-6 lg:p-8 font-sans relative overflow-hidden">
+    <div className="min-h-[100dvh] font-sans relative overflow-hidden">
       {/* Background gradients */}
       <div className="absolute top-0 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#ea4f93]/6 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 left-[-100px] -z-10 h-[450px] w-[450px] rounded-full bg-gradient-to-tr from-[#ffa26f]/4 to-transparent blur-3xl pointer-events-none" />
 
-      <div className="max-w-[1400px] mx-auto space-y-8">
+      <div className="w-full mx-auto space-y-8">
 
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
@@ -498,14 +498,14 @@ export function BookingRatingListPage() {
                   />
                 </div>
               </div>
-              <div className="relative flex-1 w-full bg-white">
+              <div className="relative flex-1 w-full bg-white rounded-3xl">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
                   placeholder={language === "vi" ? "Tìm kiếm theo tên khách hàng hoặc mã đơn..." : "Search by customer name or order code..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 rounded-3xl"
                 />
               </div>
 
@@ -786,13 +786,19 @@ export function BookingRatingListPage() {
               </div>
 
               {/* Performance insight quote */}
-              <div className="bg-gradient-to-br from-[#2d1b35] to-[#1a0e22] rounded-[2.25rem] p-6 text-white shadow-lg space-y-4">
-                <div className="p-2 rounded-xl bg-white/10 text-[#ea4f93] w-fit">
-                  <TrendingUp size={16} />
-                </div>
+              <div className="bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                       rounded-[2.25rem] p-6 text-white shadow-lg space-y-4 border border-[#ea4f93]">
+
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">{language === "vi" ? "Thông tin quản lý" : "Manager Insights"}</h4>
-                  <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-white border border-[#ea4f93] text-[#ea4f93] w-fit">
+                      <TrendingUp size={16} />
+                    </div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">{language === "vi" ? "Thông tin quản lý" : "Manager Insights"}</h4>
+                  </div>
+
+                  <p className="text-xs text-slate-800 leading-relaxed font-medium">
                     {stats.average >= 4.5
                       ? language === "vi" ? "Hiệu suất xuất sắc! Salon của bạn đang mang lại các tiêu chuẩn hài lòng vượt trội — hãy tiếp tục phát huy." : "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
                       : stats.average >= 3.5

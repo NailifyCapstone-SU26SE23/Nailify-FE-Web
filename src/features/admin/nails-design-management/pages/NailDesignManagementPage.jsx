@@ -6,11 +6,8 @@ import {
   Search,
   Sparkles,
   Star,
-  Tag,
-  Upload,
+  Tag, ListFilter, ArrowUpDown,
   WandSparkles,
-  Filter,
-  ArrowUpDown,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -24,70 +21,24 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories } from "../services/nailDesignManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const DESIGN_CARD_PRESETS = [
   {
     title: "Nude Minimalist",
     tags: ["Minimalist", "Everyday", "Clean"],
     tones: ["Nude"],
-    price: "28,000 VND",
-    status: "No Try-On",
-    accent: "bg-[#fff0f5] text-[#eb5a99]",
   },
   {
     title: "French Ombré Bliss",
     tags: ["Ombré", "Bridal", "Elegant"],
     tones: ["Pastel"],
-    price: "48,000 VND",
-    status: "Try-On Ready",
-    accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
   {
     title: "Chrome Glitter Storm",
     tags: ["Glitter", "Party", "Bold"],
     tones: ["Chrome"],
-    price: "65,000 VND",
-    status: "Try-On Ready",
-    accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
-];
-
-const TRENDING_DESIGNS = [
-  ["French Ombré Bliss", "4,821 saves · 2.3k views"],
-  ["Rose Petal Garden", "3,854 saves · 1.9k views"],
-  ["Pastel Rainbow Swirl", "2,987 saves · 7.4k views"],
-  ["Chrome Glitter Storm", "2,438 saves · 6.1k views"],
-];
-
-const MISSING_TRY_ON = [
-  "Nude Minimalist",
-  "Velvet Noir",
-  "Sakura Dream",
-  "Midnight Marble",
-  "Coral Sunset",
-];
-
-const POPULAR_TAGS = [
-  ["Bridal", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Elegant", "bg-[#eef2ff] text-[#566ce8]"],
-  ["Spring", "bg-[#eaf9ee] text-[#2fa25f]"],
-  ["Summer", "bg-[#fff4df] text-[#d9871c]"],
-  ["Bold", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Minimalist", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Pastel", "bg-[#f5ecff] text-[#8b5cf6]"],
-  ["Everyday", "bg-[#eaf9ee] text-[#2fa25f]"],
-  ["Glam", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Autumn", "bg-[#fff4df] text-[#d9871c]"],
-  ["Chrome", "bg-[#f5ecff] text-[#8b5cf6]"],
-  ["Romantic", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["3D Art", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Party", "bg-[#fff4df] text-[#d9871c]"],
-];
-
-const SEASONAL_SUGGESTIONS = [
-  ["Cherry Blossom", "Spring Collection", "Trending", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Tropical Brights", "Summer Collection", "Upcoming", "bg-[#fff4df] text-[#d9871c]"],
-  ["Harvest Warmth", "Autumn Collection", "Plan Now", "bg-[#ffe7ef] text-[#ea4f93]"],
 ];
 
 function getPreviewMeta(index) {
@@ -98,14 +49,17 @@ function formatPriceVND(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
+function getDesignEstimatedPrice(design) {
+  const variants = Array.isArray(design?.nailVariants) ? design.nailVariants : [];
+  const firstPricedVariant = variants.find((variant) => variant?.estimatedPrice ?? variant?.price);
+  return Number(firstPricedVariant?.estimatedPrice ?? firstPricedVariant?.price ?? 0);
+}
+
 function normalizeDesign(design, index, t) {
   const preview = getPreviewMeta(index);
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
-  const price =
-    design.minPrice && design.maxPrice && design.minPrice !== design.maxPrice
-      ? `${formatPriceVND(design.minPrice)} - ${formatPriceVND(design.maxPrice)}`
-      : formatPriceVND(design.maxPrice || design.minPrice || 0);
+  const estimatedPrice = getDesignEstimatedPrice(design);
 
   return {
     ...design,
@@ -116,7 +70,8 @@ function normalizeDesign(design, index, t) {
         ? (t("adminNailsDesignManagement.active"))
         : (t("adminNailsDesignManagement.inactive"))
     ],
-    uiPrice: price,
+    uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
+    uiEstimatedPrice: estimatedPrice,
     uiStatus: hasTryOnAsset
       ? (t("adminNailsDesignManagement.tryonReady"))
       : (t("adminNailsDesignManagement.noTryon")),
@@ -132,34 +87,7 @@ function normalizeDesign(design, index, t) {
   };
 }
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
-        {item.label}
-      </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
-        {item.value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-[#21b07b]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function SmallTag({ children, className = "" }) {
   return (
@@ -331,9 +259,9 @@ export function NailDesignManagementPage() {
     } else if (sortBy === "name-desc") {
       result.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
     } else if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.maxPrice || a.minPrice || 0) - (b.maxPrice || b.minPrice || 0));
+      result.sort((a, b) => (a.uiEstimatedPrice || 0) - (b.uiEstimatedPrice || 0));
     } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.maxPrice || b.minPrice || 0) - (a.maxPrice || a.minPrice || 0));
+      result.sort((a, b) => (b.uiEstimatedPrice || 0) - (a.uiEstimatedPrice || 0));
     }
 
     return result;
@@ -346,31 +274,31 @@ export function NailDesignManagementPage() {
         value: metaData.totalItems.toLocaleString(),
         note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
         label: t("adminNailsDesignManagement.activeDesigns"),
         value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
         note: t("adminNailsDesignManagement.onCurrentPage"),
         icon: WandSparkles,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
       {
         label: t("adminNailsDesignManagement.tryonReady"),
         value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
         note: t("adminNailsDesignManagement.hasPreviewImage"),
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
+        color: "#23b68b",
       },
       {
         label: t("adminNailsDesignManagement.mostPopularStyle"),
-        value: normalizedDesigns[0]?.uiTitle,
+        value: normalizedDesigns[0]?.uiTitle || "N/A",
         note: t("adminNailsDesignManagement.currentPageHighlight"),
         icon: Star,
-        iconClassName: "bg-[#fff4df] text-[#f5a623]",
+        color: "#f5a623",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language],
+    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language, t],
   );
 
   const paginationItems = useMemo(() => {
@@ -460,38 +388,61 @@ export function NailDesignManagementPage() {
     onClick: ({ key }) => setSortBy(key),
   };
 
-  const toolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
-  const primaryToolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]";
-
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
 
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
+      <div className="mb-4">
+        <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_290px]">
+      <div className="grid gap-4">
         <div>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-extrabold text-[#432744]">
-                {t("adminNailsDesignManagement.designGallery")}
-              </h3>
-              <p className="mt-1 text-[11px] text-[#c694ad]">
-                {language === "vi"
-                  ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} thiết kế`
-                  : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} designs`
-                }
-              </p>
-            </div>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-3 border-b border-[#f1dce7] p-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <label className="relative block w-full sm:min-w-0 sm:flex-1">
+              <Search
+                size={15}
+                strokeWidth={2}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b58da3]"
+              />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t(
+                  "adminNailsDesignManagement.searchDesignsCategoriesTags"
+                )}
+                className="
+        h-10
+        w-full
+        rounded-full
+        border
+        border-[#f1dce7]
+        bg-[#fff9fc]
+        pl-10
+        pr-4
+        text-xs
+        font-medium
+        text-[#432744]
+        outline-none
+        transition-all
+        duration-200
+        placeholder:text-[#c39caf]
+        hover:border-[#ea4f93]/40
+        focus:border-[#ea4f93]
+        focus:bg-white
+        focus:ring-2
+        focus:ring-[#ea4f93]/10
+      "
+              />
+            </label>
+
+            {/* Toolbar Actions */}
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              {/* Filter */}
               <Dropdown
                 menu={filterMenu}
                 trigger={["click"]}
@@ -500,61 +451,106 @@ export function NailDesignManagementPage() {
               >
                 <button
                   type="button"
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                  className={`
+                    w-[150px]
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${selectedCategoryIds.length > 0
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93] shadow-[0_3px_10px_rgba(234,79,147,0.08)]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
                 >
-                  {selectedCategoryIds.length > 0
-                    ? `${t("adminNailsDesignManagement.filter")}: ${
-                        selectedCategoryIds.length === 1
-                          ? (categoriesList.find((c) => c.categoryId === selectedCategoryIds[0])?.name || "")
-                          : language === "vi"
-                            ? `${selectedCategoryIds.length} danh mục`
-                            : `${selectedCategoryIds.length} categories`
-                      }`
-                    : t("adminNailsDesignManagement.filter")
-                  }
+                  <ListFilter size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {selectedCategoryIds.length > 0
+                      ? selectedCategoryIds.length === 1
+                        ? categoriesList.find(
+                          (c) => c.categoryId === selectedCategoryIds[0]
+                        )?.name || t("adminNailsDesignManagement.filter")
+                        : language === "vi"
+                          ? `${selectedCategoryIds.length} danh mục`
+                          : `${selectedCategoryIds.length} categories`
+                      : t("adminNailsDesignManagement.filter")}
+                  </span>
+
+                  {selectedCategoryIds.length > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ea4f93] px-1.5 text-[10px] font-bold text-white">
+                      {selectedCategoryIds.length}
+                    </span>
+                  )}
                 </button>
               </Dropdown>
+
+              {/* Sort */}
               <Dropdown menu={sortMenu} trigger={["click"]}>
                 <button
                   type="button"
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] cursor-pointer hover:bg-[#ffeef5] transition"
+                  className={`
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${sortBy
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
                 >
-                  {sortBy
-                    ? `${t("adminNailsDesignManagement.sort")}: ${sortItems.find((s) => s.key === sortBy)?.label || ""}`
-                    : t("adminNailsDesignManagement.sort")
-                  }
+                  <ArrowUpDown size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {sortBy
+                      ? sortItems.find((s) => s.key === sortBy)?.label ||
+                      t("adminNailsDesignManagement.sort")
+                      : t("adminNailsDesignManagement.sort")}
+                  </span>
                 </button>
               </Dropdown>
-              <div className="flex flex-wrap gap-2">
-                {/* <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Tag size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.manageTags")}
-          </button> */}
-                {/* <Link
-            to={getAdminNailDesignCategoriesRoute()}
-            className={toolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.addCategory")}
-          </Link> */}
-                {/* <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Upload size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailsDesignManagement.uploadTryonAsset")}
-          </button> */}
-                <Link
-                  to={ROUTES.adminNailDesignsCreate}
-                  className={primaryToolbarButtonClassName}
-                >
-                  <Plus size={13} className="mr-1.5 shrink-0" />
-                  {t("adminNailsDesignManagement.addDesign")}
-                </Link>
-              </div>
+
+              {/* Add Design */}
+              <Link
+                to={ROUTES.adminNailDesignsCreate}
+                className="
+        inline-flex
+        h-10
+        items-center
+        gap-2
+        rounded-full
+        bg-gradient-to-r
+        from-[#ea4f93]
+        to-[#ff8ebb]
+        px-4
+        text-xs
+        font-semibold
+        text-white
+        shadow-[0_5px_14px_rgba(234,79,147,0.20)]
+        transition-all
+        duration-200
+        hover:-translate-y-0.5
+        hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
+      "
+              >
+                <Plus size={15} strokeWidth={2.5} />
+                <span>{t("adminNailsDesignManagement.addDesign")}</span>
+              </Link>
             </div>
           </div>
 
@@ -566,20 +562,7 @@ export function NailDesignManagementPage() {
             </div>
           ) : null}
 
-          <label className="relative mb-4 block max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t("adminNailsDesignManagement.searchDesignsCategoriesTags")}
-              className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-            />
-          </label>
-
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
               <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
@@ -608,7 +591,6 @@ export function NailDesignManagementPage() {
                             {design.uiTitle}
                           </Link>
                         </div>
-                        <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
                       </div>
 
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -720,90 +702,6 @@ export function NailDesignManagementPage() {
             </div>
           </div>
         </div>
-
-        <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.trendingDesigns")}
-            </h3>
-            <div className="mt-4 space-y-4">
-              {TRENDING_DESIGNS.map(([name, meta], index) => {
-                const localizedMeta = typeof meta === "string" && language === "vi"
-                  ? meta.replace("saves", "lượt lưu").replace("views", "lượt xem")
-                  : meta;
-                return (
-                  <div key={name} className="flex gap-3">
-                    <span className="w-4 text-xs font-extrabold text-[#ea4f93]">{index + 1}</span>
-                    <div>
-                      <p className="text-sm font-bold text-[#432744]">{name}</p>
-                      <p className="mt-1 text-[11px] text-[#c694ad]">{localizedMeta}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.missingTryonAssets")}
-            </h3>
-            <div className="mt-4 space-y-3">
-              {MISSING_TRY_ON.map((name) => (
-                <div key={name} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-[#6b5668]">{name}</span>
-                  <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">
-                    {t("adminNailsDesignManagement.uploadNeeded")}
-                  </SmallTag>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-            >
-              {t("adminNailsDesignManagement.bulkUploadAssets")}
-            </button>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.popularTags")}
-            </h3>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {POPULAR_TAGS.map(([tag, tone]) => (
-                <SmallTag key={tag} className={tone}>
-                  {tag}
-                </SmallTag>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">
-              {t("adminNailsDesignManagement.seasonalSuggestions")}
-            </h3>
-            <div className="mt-4 space-y-4">
-              {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => {
-                const localizedCollection = language === "vi"
-                  ? collection.replace("Spring Collection", "Bộ sưu tập Mùa Xuân").replace("Summer Collection", "Bộ sưu tập Mùa Hè").replace("Autumn Collection", "Bộ sưu tập Mùa Thu")
-                  : collection;
-                const localizedBadge = language === "vi"
-                  ? badge.replace("Trending", "Thịnh hành").replace("Upcoming", "Sắp tới").replace("Plan Now", "Lên kế hoạch")
-                  : badge;
-                return (
-                  <div key={name} className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-[#432744]">{name}</p>
-                      <p className="mt-1 text-[11px] text-[#c694ad]">{localizedCollection}</p>
-                    </div>
-                    <SmallTag className={tone}>{localizedBadge}</SmallTag>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </aside>
       </div>
     </section>
   );

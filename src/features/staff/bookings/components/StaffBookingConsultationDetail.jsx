@@ -92,7 +92,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
     <article className="rounded-[16px] xl:col-span-3">
 
       {services.length ? (
-        <div className="overflow-hidden rounded-[20px] border border-[#f2bfd4] bg-white">
+        <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
           <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
@@ -257,7 +257,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
             <div className="space-y-5">
 
               <div className="grid gap-4 md:grid-cols-2">
-                <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
                   <div className="mt-3 flex items-start gap-3">
                     <Image
@@ -277,7 +277,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                   </div>
                 </article>
 
-                <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+                <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
                   <div className="mt-3">
                     <p className="text-base font-extrabold text-[#3f2b3f]">
@@ -287,7 +287,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 </article>
               </div>
 
-              <article className="rounded-[20px] border border-[#f3d5e2] bg-[#fff9fc] p-4">
+              <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Components</p>
                   <span className="rounded-full border border-[#d8cbff] bg-[#f6f2ff] px-3 py-1 text-[10px] font-bold text-[#8c63ef]">
