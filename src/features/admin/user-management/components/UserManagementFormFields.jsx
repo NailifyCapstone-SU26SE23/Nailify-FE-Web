@@ -25,7 +25,7 @@ const getRoleLabel = (role, t) => {
     case "manager":
       return t("salonManager");
     case "receptionist":
-      return t("receptionist");
+      return t("roleReceptionist");
     case "staff":
     case "staff_artist":
       return t("nailArtist");

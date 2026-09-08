@@ -88,11 +88,11 @@ function getLastActiveLabel(status) {
 
   switch (normalizedStatus) {
     case "active":
-      return "Available now";
+      return "Active";
     case "pending":
-      return "Pending activation";
+      return "Pending";
     case "suspended":
-      return "Access restricted";
+      return "Suspended";
     case "inactive":
       return "Inactive";
     default:
@@ -126,7 +126,7 @@ export function normalizeAdminUser(user) {
     avatarUrl: user?.avatarUrl || "",
     status: statusLabel,
     statusLabel,
-    lastActive: getLastActiveLabel(statusLabel),
+    // lastActive: getLastActiveLabel(statusLabel),
     joinedAt: getJoinedAtLabel(),
     notes: "",
   };

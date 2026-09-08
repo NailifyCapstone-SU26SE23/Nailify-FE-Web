@@ -1,6 +1,5 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -18,7 +17,6 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
   getAdminCategoryDetailRoute,
@@ -405,13 +403,6 @@ export function CategoriesManagementPage() {
         </div>
 
         <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-          {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminCategories.categories")}</h2>
-            <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-              {t("adminCategories.showingCategories", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
-            </p>
-          </div> */}
-
           <Table
             rowKey="categoryId"
             columns={columns}

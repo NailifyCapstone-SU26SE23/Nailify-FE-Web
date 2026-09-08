@@ -43,7 +43,7 @@ export function UserManagementHeroCard({
           {headerActions ? <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-2">{headerActions}</div> : null}
         </div>
 
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+        {/* <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div className="max-w-full md:max-w-[32rem]">
             <p className="mt-5 text-sm uppercase tracking-[0.24em] text-[#d45b9f]">
               {badge}
@@ -83,7 +83,7 @@ export function UserManagementHeroCard({
             </div>
             <p className="mt-4 leading-6">{panelDescription}</p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

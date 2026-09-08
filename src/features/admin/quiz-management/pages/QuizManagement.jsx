@@ -436,9 +436,9 @@ export function QuizManagement() {
                                             <div className="flex justify-between items-start gap-4">
                                                 <div>
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#ea4f93] bg-[#fff0f6] px-2 py-0.5 rounded-md font-mono">
+                                                        {/* <span className="text-[10px] font-bold uppercase tracking-widest text-[#ea4f93] bg-[#fff0f6] px-2 py-0.5 rounded-md font-mono">
                                                             {language === "vi" ? `Bước ${q.sortOrder}` : `Step ${q.sortOrder}`}
-                                                        </span>
+                                                        </span> */}
                                                         <span className="text-[10px] font-bold text-[#a6869a] uppercase tracking-wider">
                                                             {q.type === "SingleSelect" ? (t("adminQuizManagement.singleSelect")) : (t("adminQuizManagement.multipleSelect"))}
                                                         </span>

@@ -19,7 +19,7 @@ import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  STAFF_UPDATE_CHECKLIST,
+  // STAFF_UPDATE_CHECKLIST,
   STAFF_ROLE_OPTIONS,
   createEmptyStaffForm,
   getStaffInitials,
@@ -73,8 +73,8 @@ InfoChip.propTypes = {
 
 // Define status options with only Active and Inactive
 const UPDATED_STATUS_OPTIONS = [
-  { value: "ACTIVE", label: "Active", color: "bg-emerald-100 text-emerald-600" },
-  { value: "INACTIVE", label: "Inactive", color: "bg-rose-100 text-rose-600" },
+  { value: "Active", label: "Active", color: "bg-emerald-100 text-emerald-600" },
+  { value: "Inactive", label: "Inactive", color: "bg-rose-100 text-rose-600" },
 ];
 
 export function StaffUpdatePage() {
@@ -97,24 +97,33 @@ export function StaffUpdatePage() {
     const mapApiRoleToForm = (apiRole) => {
       switch (apiRole) {
         case "Staff_Artist":
-          return "NAIL_ARTIST";
+        case "NAIL_ARTIST":
+          return "Staff_Artist";
         case "Salon_Manager":
-          return "SALON_MANAGER";
+        case "SALON_MANAGER":
+        case "Manager":
+          return "Manager";
         case "Receptionist":
-          return "RECEPTIONIST";
+        case "RECEPTIONIST":
+          return "Receptionist";
+        case "Admin":
+        case "ADMIN":
+          return "Admin";
         default:
-          return apiRole || "NAIL_ARTIST";
+          return apiRole || "--";
       }
     };
 
     const mapApiStatusToForm = (apiStatus) => {
       switch (apiStatus) {
+        case "ACTIVE":
         case "Active":
-          return "ACTIVE";
+          return "Active";
+        case "INACTIVE":
         case "Inactive":
-          return "INACTIVE";
+          return "Inactive";
         default:
-          return "ACTIVE";
+          return "Active";
       }
     };
 
@@ -340,9 +349,6 @@ export function StaffUpdatePage() {
             <h1 className="text-[28px] font-bold tracking-tight text-[#cf3d74]">
               {t("adminStaffManagement.updateStaff")}
             </h1>
-            <p className="text-[12px] font-medium text-slate-400">
-              {t("adminStaffManagement.updateStaffInfo", { id: formData.staffId || staffId })}
-            </p>
           </div>
         </div>
 
@@ -387,20 +393,20 @@ export function StaffUpdatePage() {
             <InfoChip
               icon={ShieldCheck}
               title={t("adminStaffManagement.role")}
-              value={selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : "-"}
+              value={formData.role || "-"}
               tone="text-violet-500"
             />
             <InfoChip
               icon={Sparkles}
               title={t("adminStaffManagement.status")}
-              value={selectedStatus ? (t("adminStaffManagement." + (selectedStatus.value === "ACTIVE" ? "workingToday" : "inactive"))) : "-"}
+              value={formData.status || "-"}
               tone="text-emerald-500"
             />
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
             <div className="space-y-5 lg:col-span-2">
-              <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+              <section className="rounded-lg bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
                 <h2 className="mb-6 text-[20px] font-bold text-slate-800">
                   {t("adminStaffManagement.staffDetails")}
                 </h2>
@@ -464,13 +470,13 @@ export function StaffUpdatePage() {
                     <Select
                       value={formData.role}
                       onChange={(value) => handleInputChange("role", value)}
-                      options={STAFF_ROLE_OPTIONS.map((option) => {
-                        const roleLabelMap = { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" };
-                        return {
-                          value: option.value,
-                          label: t("adminStaffManagement." + (option.value === "Staff_Artist" ? "staffArtist" : option.value === "Manager" ? "manager" : "receptionist")),
-                        };
-                      })}
+                      options={[
+                        { value: "--", label: "--" },
+                        { value: "Admin", label: "Admin" },
+                        { value: "Manager", label: "Manager" },
+                        { value: "Receptionist", label: "Receptionist" },
+                        { value: "Staff_Artist", label: "Staff_Artist" },
+                      ]}
                       className="w-full"
                       size="large"
                     />
@@ -503,10 +509,10 @@ export function StaffUpdatePage() {
                     <Select
                       value={formData.status}
                       onChange={(value) => handleInputChange("status", value)}
-                      options={UPDATED_STATUS_OPTIONS.map((option) => ({
-                        value: option.value,
-                        label: t("adminStaffManagement." + (option.value === "ACTIVE" ? "workingToday" : "inactive")),
-                      }))}
+                      options={[
+                        { value: "Active", label: "Active" },
+                        { value: "Inactive", label: "Inactive" },
+                      ]}
                       className="w-full"
                       size="large"
                     />
@@ -556,7 +562,7 @@ export function StaffUpdatePage() {
             </div>
 
             <aside className="space-y-5">
-              <section className="rounded-[28px] border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-6 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
+              <section className="rounded-lg border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-6 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
                 <div className="mb-4 flex items-center gap-2">
                   <div className="rounded-xl bg-rose-100 p-2 text-rose-500">
                     <User size={14} />
@@ -570,14 +576,23 @@ export function StaffUpdatePage() {
                 </div>
 
                 <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-bold text-white">
-                    {getStaffInitials(formData.fullName || "NS")}
-                  </div>
+                  {imagePreview ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={imagePreview}
+                      alt="Avatar"
+                      className="mx-auto h-16 w-16 rounded-full object-cover shadow-sm border-2 border-rose-100"
+                    />
+                  ) : (
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-bold text-white">
+                      {getStaffInitials(formData.fullName || "NS")}
+                    </div>
+                  )}
                   <h4 className="mt-3 text-[15px] font-bold text-slate-800">
                     {formData.fullName || (t("adminStaffManagement.staffMember"))}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-400">
-                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))} · #{formData.staffId}
+                    {formData.role || (t("adminStaffManagement.role"))}
                   </p>
                   <p className="mt-4 text-[11px] font-medium text-slate-400">
                     {t("adminStaffManagement.assignedSalon") + ":"}{" "}
@@ -586,28 +601,22 @@ export function StaffUpdatePage() {
                 </div>
               </section>
 
-              <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+              {/* <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
                 <h3 className="mb-4 text-[14px] font-bold text-slate-800">{t("adminStaffManagement.updateChecklist")}</h3>
                 <div className="space-y-3">
                   {STAFF_UPDATE_CHECKLIST.map((item) => {
-                    const checklistMap = {
-                      "Confirm Personal Information changes": "Xác nhận các thay đổi thông tin cá nhân",
-                      "Update Work Schedule if necessary": "Cập nhật lịch làm việc nếu cần thiết",
-                      "Verify Branch assignment details": "Xác minh chi tiết phân bổ chi nhánh",
-                      "Ensure credentials are secure": "Đảm bảo thông tin đăng nhập an toàn",
-                    };
                     return (
                       <div
                         key={item}
                         className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3"
                       >
                         <div className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                        <p className="text-[11px] font-semibold text-slate-600">{t("adminStaffManagement." + item.replace(/ /g, ""))}</p>
+                        <p className="text-[11px] font-semibold text-slate-600">{item}</p>
                       </div>
                     );
                   })}
                 </div>
-              </section>
+              </section> */}
             </aside>
           </form>
         </>
@@ -647,7 +656,7 @@ export function StaffUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.fullName || (t("adminStaffManagement.staffProfile")), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role, t("adminStaffManagement." + (formData.status === "ACTIVE" ? "workingToday" : "inactive"))]}
+        highlights={[formData.fullName || (t("adminStaffManagement.staffProfile")), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role, t("adminStaffManagement." + (formData.status === "active" ? "workingToday" : "inactive"))]}
         details={[
           { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}

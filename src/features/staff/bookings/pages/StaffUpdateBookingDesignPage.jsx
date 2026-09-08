@@ -16,7 +16,6 @@ import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
 import { formatAppointmentEndTime, formatTimeValue } from "../services/staffBookingService";
 import {
   getStaffBookingDesignStudioRoute,
@@ -245,94 +244,12 @@ export function StaffUpdateBookingDesignPage() {
   const { bookingId } = useParams();
   const { language } = useLanguage();
   const isVi = language === "vi";
-  const booking = getMockBookingById(bookingId);
   const payload = location.state?.designUpdate;
-  const appointmentStartTime = booking?.bookingTime ? formatTimeValue(booking.bookingTime) : "--";
-  const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
+  const data = payload || null;
+  
+  const appointmentStartTime = data?.appointment ?? "--";
+  const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, data?.duration ?? "60 min");
 
-  const fallbackData = useMemo(() => {
-    if (!booking) {
-      return null;
-    }
-
-    return {
-      bookingCode: booking.id.replace("BKG", "BK"),
-      statusLabel: "Updating Design",
-      summaryStatus: "Updating Design",
-      customer: booking.customerName || "Minh Thornton",
-      customerPhone: booking.customerPhone,
-      customerAvatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
-      staffArtist: "Sophie Lee",
-      appointment: appointmentStartTime,
-      chair: "Chair #3",
-      previousDesign: {
-        name: "Classic French Manicure",
-        shortName: "Classic French",
-        price: "$45.00",
-        duration: "45 min",
-        image: "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80",
-      },
-      newDesign: {
-        name: "Pink Ombre Chrome Floral",
-        shortName: "Pink Ombre Chrome",
-        price: "$78.00",
-        duration: "75 min",
-        image: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80",
-      },
-      serviceSummary: {
-        shape: ["Almond"],
-        length: ["Medium Long"],
-        colors: ["Blush Pink", "Deep Rose", "Pearl White"],
-        finish: ["Chrome Mirror", "Ombre Fade"],
-        decorations: ["Floral Art", "Rhinestones", "Foil Accent"],
-        extras: ["Gel Top Coat", "Cuticle Care"],
-      },
-      pricing: {
-        originalPrice: "$45.00",
-        newPrice: "$78.00",
-        additionalCost: "+$33.00",
-        additionalNote: "To be collected",
-        updatedDuration: "75 min",
-        durationNote: "+30 min added",
-        warning: "Additional payment required - customer must pay an extra $33.00 before service begins.",
-      },
-      designStatus: {
-        previousDesign: "Classic French",
-        newDesign: "Pink Ombre Chrome",
-        designSelected: "Confirmed",
-        bookingUpdated: "Pending",
-        customerAgreed: "Pending",
-      },
-      addOns: [
-        { title: "Hand Spa", note: "Moisturizing treatment", price: "+$18", tone: "pink", kind: "spa" },
-        { title: "Chrome Upgrade", note: "Mirror chrome powder", price: "+$12", tone: "violet", kind: "chrome" },
-        { title: "Nail Repair", note: "Fix broken nails", price: "+$8", tone: "emerald", kind: "repair" },
-      ],
-      confirmations: [
-        {
-          key: "reviewed",
-          title: "Customer reviewed new design",
-          note: "Customer has seen and approved the Pink Ombre Chrome Floral design preview",
-          checked: true,
-        },
-        {
-          key: "price",
-          title: "Customer accepted updated price",
-          note: "Customer agrees to pay $78.00 total (+$33.00 additional charge)",
-          checked: false,
-        },
-        {
-          key: "duration",
-          title: "Customer accepted updated duration",
-          note: `Customer acknowledges service will take approximately ${formatDurationLabel("75 minutes")}`,
-          checked: false,
-        },
-      ],
-    };
-  }, [appointmentStartTime, booking]);
-
-  const data = payload ?? fallbackData;
   const [confirmations, setConfirmations] = useState(data?.confirmations ?? []);
   const [selectedStaffArtist, setSelectedStaffArtist] = useState(data?.staffArtist ?? "Assigned Artist");
   const [selectedAddOns, setSelectedAddOns] = useState([]);
@@ -472,9 +389,9 @@ export function StaffUpdateBookingDesignPage() {
       state: {
         serviceSession: {
           bookingCode: data.bookingCode,
-          bookingItemId: booking?.bookingItems?.[0]?.bookingItemId ?? booking?.bookingItems?.[0]?.id ?? "",
-          customerName: booking?.customerName ?? data.customer,
-          customerPhone: booking?.customerPhone ?? data.customerPhone ?? "--",
+          bookingItemId: "",
+          customerName: data.customer,
+          customerPhone: data.customerPhone ?? "--",
           customerAvatar:
             data.customerAvatar ||
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",

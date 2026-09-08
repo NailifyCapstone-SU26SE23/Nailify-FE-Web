@@ -39,136 +39,7 @@ const createMockNailDesign = (definition) =>
     return design;
   }, {});
 
-const NAIL_DESIGN_ROW_DEFINITIONS = [
-  [
-    "ND-3001",
-    "Rose Chrome Bloom",
-    "Chrome",
-    "Summer 2026",
-    "Published",
-    "420,000 VND",
-    "90 min",
-    "Ariana Vo",
-    "Trending",
-    "2026-05-30",
-    "Rose gold, pearl white, mirror silver",
-    "chrome, floral, bridal",
-    "High-shine chrome base with sculpted rose petals and pearl accents.",
-    "Pinned for homepage campaign and premium upsell bundle.",
-  ],
-  [
-    "ND-3002",
-    "Matcha Minimal Tips",
-    "Minimal",
-    "Everyday Edit",
-    "Published",
-    "260,000 VND",
-    "55 min",
-    "Bao Tran",
-    "Stable",
-    "2026-05-28",
-    "Matcha green, nude beige, milky white",
-    "minimal, short nails, office",
-    "Clean diagonal French tips with soft green accents for daily wear.",
-    "Performs well with office-worker audience in District 1.",
-  ],
-  [
-    "ND-3003",
-    "Sunset Aura Glaze",
-    "Aura",
-    "Summer 2026",
-    "Draft",
-    "390,000 VND",
-    "75 min",
-    "Linh Pham",
-    "Rising",
-    "2026-06-01",
-    "Apricot, coral pink, soft amber",
-    "aura, gradient, glossy",
-    "Soft airbrushed aura blend with syrup gloss finish.",
-    "Needs final photo retouch and naming approval before publishing.",
-  ],
-  [
-    "ND-3004",
-    "Velvet Midnight Cat Eye",
-    "Cat Eye",
-    "Night Luxe",
-    "Published",
-    "450,000 VND",
-    "95 min",
-    "Hanh Vo",
-    "Trending",
-    "2026-05-24",
-    "Midnight blue, graphite, silver flare",
-    "cat eye, magnetic, glam",
-    "Magnetic cat-eye reflection with deep navy base and foil sparkle.",
-    "Strong repeat-booking rate from evening event customers.",
-  ],
-  [
-    "ND-3005",
-    "Peach Jelly Crystals",
-    "Jelly",
-    "Glass Candy",
-    "Archived",
-    "340,000 VND",
-    "70 min",
-    "Thao Bui",
-    "Cooling",
-    "2026-04-19",
-    "Peach jelly, clear gloss, crystal pink",
-    "jelly, translucent, gems",
-    "Translucent jelly layers finished with crystal placements.",
-    "Archived after spring campaign ended, still useful for references.",
-  ],
-  [
-    "ND-3006",
-    "Espresso Marble Lines",
-    "Marble",
-    "Autumn Preview",
-    "Draft",
-    "310,000 VND",
-    "65 min",
-    "Minh Nguyen",
-    "New",
-    "2026-06-02",
-    "Espresso brown, oat milk, gold linework",
-    "marble, neutral, editorial",
-    "Neutral marble flow with thin metallic contour lines.",
-    "Awaiting final pricing confirmation from operations.",
-  ],
-  [
-    "ND-3007",
-    "Pearl Bridal Veil",
-    "Bridal",
-    "Ceremony Suite",
-    "Published",
-    "480,000 VND",
-    "100 min",
-    "Alicia Tran",
-    "Trending",
-    "2026-05-26",
-    "Pearl white, champagne shimmer, blush pink",
-    "bridal, pearl, elegant",
-    "Sheer bridal finish layered with pearls and shimmer gradients.",
-    "Approved for wedding campaign and bundle promotions.",
-  ],
-  [
-    "ND-3008",
-    "Pop Art Citrus Grid",
-    "Graphic",
-    "Studio Lab",
-    "Review",
-    "360,000 VND",
-    "80 min",
-    "Quang Le",
-    "Rising",
-    "2026-06-03",
-    "Citrus yellow, cobalt, crisp white",
-    "graphic, editorial, bold",
-    "Bold pop-art geometry with citrus tones and comic-style outlines.",
-    "Waiting for admin review on campaign fit and target audience.",
-  ],
-];
+const NAIL_DESIGN_ROW_DEFINITIONS = [];
 
 export const NAIL_DESIGN_ROWS = NAIL_DESIGN_ROW_DEFINITIONS.map((definition) =>
   createMockNailDesign(definition),
@@ -235,8 +106,7 @@ export const createEmptyNailDesign = () => ({
   notes: "",
 });
 
-export const getMockNailDesignById = (designId) =>
-  NAIL_DESIGN_ROWS.find((design) => design.id === designId) ?? null;
+export const getMockNailDesignById = (designId) => null;
 
 const DEFAULT_DESIGN_DETAIL = {
   breadcrumbsLabel: "Chrome Pearl Elegance",
@@ -391,16 +261,4 @@ const DESIGN_DETAIL_OVERRIDES = {
   },
 };
 
-export const getMockNailDesignDetailById = (designId) => {
-  const base = getMockNailDesignById(designId);
-
-  if (!base) {
-    return null;
-  }
-
-  return {
-    ...base,
-    ...DEFAULT_DESIGN_DETAIL,
-    ...(DESIGN_DETAIL_OVERRIDES[designId] ?? {}),
-  };
-};
+export const getMockNailDesignDetailById = (designId) => null;
