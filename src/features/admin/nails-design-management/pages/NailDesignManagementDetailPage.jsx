@@ -27,7 +27,7 @@ import {
   assignProceduresToVariant,
   deleteAdminNailDesign,
   deleteAdminNailVariant,
-  fetchAdminCategories,
+  fetchAdminCategoryTypes,
   fetchAdminNailDesignDetail,
   fetchAdminNailDesignSummary,
   fetchProceduresByVariant,
@@ -635,6 +635,7 @@ export function NailDesignManagementDetailPage() {
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
+  const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -645,9 +646,9 @@ export function NailDesignManagementDetailPage() {
       setIsNotFound(false);
 
       try {
-        const [detail, categoryResponse, summaryResponse] = await Promise.all([
+        const [detail, categoryTypeResponse, summaryResponse] = await Promise.all([
           fetchAdminNailDesignDetail(designId),
-          fetchAdminCategories({ pageNumber: 1, pageSize: 100 }),
+          fetchAdminCategoryTypes({ pageNumber: 1, pageSize: 100 }),
           fetchAdminNailDesignSummary(designId).catch(() => EMPTY_SUMMARY),
         ]);
 
@@ -657,7 +658,17 @@ export function NailDesignManagementDetailPage() {
 
         setInitialDesign(detail);
         setFormValues(detail);
-        setCategoryRecords(categoryResponse.items);
+        setCategoryRecords(categoryTypeResponse.items);
+        setSelectedCategoryTypeId((current) => {
+          if (current) return current;
+
+          const selectedCategoryIds = Array.isArray(detail?.categoryIds) ? detail.categoryIds : [];
+          const matchingType = categoryTypeResponse.items.find((categoryType) =>
+            (categoryType.categories || []).some((category) => selectedCategoryIds.includes(category.categoryId)),
+          );
+
+          return String(matchingType?.categoryTypeId || categoryTypeResponse.items[0]?.categoryTypeId || "");
+        });
         setSummary(summaryResponse);
         setDesignImageFile(null);
       } catch (loadError) {
@@ -738,13 +749,22 @@ export function NailDesignManagementDetailPage() {
     }));
   };
 
+  const selectedCategoryType = categoryRecords.find(
+    (item) => String(item.categoryTypeId) === String(selectedCategoryTypeId),
+  );
+  const visibleCategoryRecords = selectedCategoryType?.categories || [];
+  const allCategoryRecords = categoryRecords.flatMap((item) => item.categories || []);
+  const selectedCategoryRecords = allCategoryRecords.filter((item) =>
+    formValues.categoryIds?.includes(item.categoryId),
+  );
+
   const toggleCategory = (categoryId) => {
     setFormValues((current) => {
       const currentCategoryIds = Array.isArray(current?.categoryIds) ? current.categoryIds : [];
       const nextCategoryIds = currentCategoryIds.includes(categoryId)
         ? currentCategoryIds.filter((value) => value !== categoryId)
         : [...currentCategoryIds, categoryId];
-      const nextCategoryNames = categoryRecords
+      const nextCategoryNames = allCategoryRecords
         .filter((category) => nextCategoryIds.includes(category.categoryId))
         .map((category) => category.name);
 
@@ -752,7 +772,7 @@ export function NailDesignManagementDetailPage() {
         ...current,
         categoryIds: nextCategoryIds,
         categoryNames: nextCategoryNames,
-        categories: categoryRecords.filter((category) => nextCategoryIds.includes(category.categoryId)),
+        categories: allCategoryRecords.filter((category) => nextCategoryIds.includes(category.categoryId)),
       };
     });
   };
@@ -1128,24 +1148,69 @@ export function NailDesignManagementDetailPage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c694ad]">
                       {t("adminNailsDesignManagement.category")}
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {categoryRecords.length ? (
-                        categoryRecords.map((category) => (
-                          <button
-                            key={category.categoryId}
-                            type="button"
-                            onClick={() => toggleCategory(category.categoryId)}
-                            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${formValues.categoryIds?.includes(category.categoryId)
-                              ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
-                              : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4]"
-                              }`}
-                          >
-                            {category.name}
-                          </button>
-                        ))
-                      ) : (
-                        <span className="text-sm text-[#b2879f]">{t("adminNailsDesignManagement.loading")}</span>
-                      )}
+                    <div className="mt-3 grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+                      <select
+                        value={selectedCategoryTypeId}
+                        onChange={(event) => setSelectedCategoryTypeId(event.target.value)}
+                        className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm font-semibold text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                      >
+                        {!categoryRecords.length ? (
+                          <option value="">{t("adminNailsDesignManagement.loading")}</option>
+                        ) : null}
+                        {categoryRecords.map((categoryType) => (
+                          <option key={categoryType.categoryTypeId} value={String(categoryType.categoryTypeId)}>
+                            {categoryType.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-[#f4d4e2] bg-white px-3 py-2">
+                        {visibleCategoryRecords.length ? (
+                          visibleCategoryRecords.map((category) => (
+                            <button
+                              key={category.categoryId}
+                              type="button"
+                              onClick={() => toggleCategory(category.categoryId)}
+                              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${formValues.categoryIds?.includes(category.categoryId)
+                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
+                                : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4]"
+                                }`}
+                            >
+                              {category.name}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-sm text-[#b2879f]">
+                            {categoryRecords.length
+                              ? (language === "vi" ? "Loại danh mục này chưa có danh mục." : "This category type has no categories.")
+                              : t("adminNailsDesignManagement.loading")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-dashed border-[#f4c6da] bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c896af]">
+                        {language === "vi" ? "Danh mục đã chọn" : "Selected Categories"}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedCategoryRecords.length ? (
+                          selectedCategoryRecords.map((category) => (
+                            <button
+                              key={category.categoryId}
+                              type="button"
+                              onClick={() => toggleCategory(category.categoryId)}
+                              className="rounded-full border border-[#ea4f93] bg-[#fff0f7] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
+                            >
+                              {category.name}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-sm text-[#b2879f]">
+                            {language === "vi" ? "Chưa chọn danh mục nào." : "No categories selected yet."}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
