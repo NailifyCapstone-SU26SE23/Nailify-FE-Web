@@ -104,9 +104,10 @@ export function TransactionOverviewPage() {
       await Promise.all(
         salonsList.map(async (salon) => {
           try {
-            const data = await fetchAdminTransactions({ pageNumber: 1, pageSize: 10, salonId: salon.id });
+            const data = await fetchAdminTransactions({ pageNumber: 1, pageSize: 10000, salonId: salon.id });
             const items = data.items || [];
             const paidItems = items.filter(t => t.status?.toLowerCase() === "paid");
+            const pendingItems = items.filter(t => t.status?.toLowerCase() === "pending");
             const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
             const successRate = items.length > 0
               ? Math.round((paidItems.length / items.length) * 100)
@@ -114,11 +115,13 @@ export function TransactionOverviewPage() {
             metricsMap[salon.id] = {
               txCount: items.length,
               successRate,
-              totalRevenue
+              totalRevenue,
+              paidCount: paidItems.length,
+              pendingCount: pendingItems.length
             };
           } catch (err) {
             console.error(`Failed to load metrics for salon ${salon.id}:`, err);
-            metricsMap[salon.id] = { txCount: 0, successRate: 0, totalRevenue: 0 };
+            metricsMap[salon.id] = { txCount: 0, successRate: 0, totalRevenue: 0, paidCount: 0, pendingCount: 0 };
           }
         })
       );
@@ -322,25 +325,18 @@ export function TransactionOverviewPage() {
     return processedTransactions.slice(startIndex, startIndex + pageSize);
   }, [isServerPaginated, processedTransactions, currentPage, pageSize]);
 
-  // Recalculate metrics for selected salon
+  // Use pre-calculated global metrics for the selected salon
   const metrics = useMemo(() => {
-    const allItems = transactionsData.items || [];
-    const paidItems = allItems.filter(t => t.status?.toLowerCase() === "paid");
-    const pendingItems = allItems.filter(t => t.status?.toLowerCase() === "pending");
-
-    const totalRevenue = paidItems.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-    const successRate = allItems.length > 0
-      ? Math.round((paidItems.length / allItems.length) * 100)
-      : 0;
-
+    if (!selectedSalon) return { totalRevenue: 0, successRate: 0, paidCount: 0, pendingCount: 0, totalCount: 0 };
+    const salonMetric = salonMetrics[selectedSalon.id] || { totalRevenue: 0, successRate: 0, paidCount: 0, pendingCount: 0, txCount: 0 };
     return {
-      totalRevenue,
-      successRate,
-      paidCount: paidItems.length,
-      pendingCount: pendingItems.length,
-      totalCount: allItems.length
+      totalRevenue: salonMetric.totalRevenue || 0,
+      successRate: salonMetric.successRate || 0,
+      paidCount: salonMetric.paidCount || 0,
+      pendingCount: salonMetric.pendingCount || 0,
+      totalCount: salonMetric.txCount || 0
     };
-  }, [transactionsData.items]);
+  }, [selectedSalon, salonMetrics]);
 
   const handleBackToSalons = () => {
     setSelectedSalon(null);

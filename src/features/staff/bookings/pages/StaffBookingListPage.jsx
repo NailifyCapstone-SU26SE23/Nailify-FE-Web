@@ -29,7 +29,6 @@ import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { StaffBookingNotesModal } from "../components/StaffBookingNotesModal";
 import {
   BOOKING_ROLE_CONFIG,
-  BOOKING_ROWS,
   BOOKING_STATUS_STYLES,
 } from "../../../../shared/bookings/services/mockBookings";
 import {

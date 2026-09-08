@@ -206,5 +206,5 @@ export class BaseAudioTask extends BaseTask {
     };
   }
 
-  onViewSwitched(_) {}
+  onViewSwitched() {}
 }

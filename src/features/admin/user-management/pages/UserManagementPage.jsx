@@ -57,10 +57,12 @@ const getRoleLabel = (role, t) => {
     case "manager":
       return t("salonManager");
     case "receptionist":
-      return t("receptionist");
+      return t("roleReceptionist");
     case "staff":
     case "staff_artist":
       return t("nailArtist");
+    case "customer":
+      return t("customer");
     default:
       return role;
   }
@@ -167,8 +169,12 @@ export function UserManagementPage() {
     lastRowOnPage: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [globalMetrics, setGlobalMetrics] = useState({
+    customers: 0,
+    staffArtists: 0,
+    managers: 0,
+    suspendedUsers: 0,
+  });
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -207,6 +213,7 @@ export function UserManagementPage() {
       return;
     }
 
+    toast.success(location.state.flashMessage);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -253,7 +260,6 @@ export function UserManagementPage() {
 
     const loadUsers = async () => {
       setIsLoading(true);
-      setError("");
 
       try {
         const response = await fetchAdminUsers({
@@ -276,7 +282,7 @@ export function UserManagementPage() {
         }
 
         setUsers([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load users.");
+        toast.error(loadError instanceof Error ? loadError.message : "Failed to load users.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -290,6 +296,45 @@ export function UserManagementPage() {
       isMounted = false;
     };
   }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedRole, selectedSalonId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchGlobalMetrics = async () => {
+      try {
+        const response = await fetchAdminUsers({
+          pageNumber: 1,
+          pageSize: 10000,
+          searchTerm: debouncedQuery,
+          salonId: selectedSalonId === ALL_FILTER_VALUE ? "" : selectedSalonId,
+          // We don't filter by role here because we want to count all roles
+        });
+
+        if (!isMounted) return;
+
+        const allUsers = response.items || [];
+        const customers = allUsers.filter((user) => user.role === "Customer").length;
+        const staffArtists = allUsers.filter((user) => user.role === "Staff" || user.role === "Staff_Artist").length;
+        const managers = allUsers.filter((user) => user.role === "Manager").length;
+        const suspendedUsers = allUsers.filter((user) => user.statusLabel === "Suspended").length;
+
+        setGlobalMetrics({
+          customers,
+          staffArtists,
+          managers,
+          suspendedUsers,
+        });
+      } catch (error) {
+        console.error("Failed to fetch global metrics", error);
+      }
+    };
+
+    void fetchGlobalMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, selectedSalonId]);
 
   const salonNameById = useMemo(
     () =>
@@ -311,17 +356,12 @@ export function UserManagementPage() {
     { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allRoles") },
     { value: "Admin", label: t("superAdmin") },
     { value: "Manager", label: t("salonManager") },
-    { value: "Receptionist", label: t("receptionist") },
+    { value: "Receptionist", label: t("roleReceptionist") },
     { value: "Staff_Artist", label: t("nailArtist") },
     { value: "Customer", label: t("userManagement.metric.clientAccounts") },
   ], [t]);
 
   const summaryCards = useMemo(() => {
-    const customers = displayedUsers.filter((user) => user.role === "Customer").length;
-    const staffArtists = displayedUsers.filter((user) => user.role === "Staff" || user.role === "Staff_Artist").length;
-    const managers = displayedUsers.filter((user) => user.role === "Manager").length;
-    const suspendedUsers = displayedUsers.filter((user) => user.statusLabel === "Suspended").length;
-
     const isVi = t("adminDashboard.year") === "Năm";
 
     return [
@@ -334,34 +374,34 @@ export function UserManagementPage() {
       },
       {
         label: t("userManagement.metric.clientAccounts"),
-        value: String(customers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        value: String(globalMetrics.customers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: Users,
         color: "#ea4f93",
       },
       {
         label: t("userManagement.metric.nailArtists"),
-        value: String(staffArtists),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        value: String(globalMetrics.staffArtists),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: UserCog,
         color: "#ea4f93",
       },
       {
         label: t("userManagement.metric.branchManagers"),
-        value: String(managers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        value: String(globalMetrics.managers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: Shield,
         color: "#7c5cff",
       },
       {
         label: t("userManagement.table.status") + " (Suspended)",
-        value: String(suspendedUsers),
-        note: isVi ? "Trên trang hiện tại" : "On current page",
+        value: String(globalMetrics.suspendedUsers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: AlertTriangle,
         color: "#ff7a59",
       },
     ];
-  }, [displayedUsers, metaData.totalItems, metaData.totalPages, t]);
+  }, [globalMetrics, metaData.totalItems, metaData.totalPages, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -450,13 +490,13 @@ export function UserManagementPage() {
         </span>
       ),
     },
-    {
-      title: t("userManagement.table.lastActive"),
-      dataIndex: "lastActive",
-      key: "lastActive",
-      sorter: (a, b) => (a.lastActive || "").localeCompare(b.lastActive || ""),
-      render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
-    },
+    // {
+    //   title: t("userManagement.table.lastActive"),
+    //   dataIndex: "lastActive",
+    //   key: "lastActive",
+    //   sorter: (a, b) => (a.lastActive || "").localeCompare(b.lastActive || ""),
+    //   render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
+    // },
     {
       title: t("userManagement.table.actions"),
       key: "action",
@@ -557,7 +597,7 @@ export function UserManagementPage() {
                       value: role,
                     })),
                   ]}
-                  className="min-w-[155px]"
+                  className="min-w-[155px] w-[200px]"
                   placeholder={t("userManagement.filter.allRoles")}
                   disabled={isLoading}
                 />
@@ -589,18 +629,6 @@ export function UserManagementPage() {
               </Link>
             </div>
           </div>
-
-          {flashMessage ? (
-            <div className="mt-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="mt-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
 
           <div className="mt-4 overflow-hidden rounded-lg border border-[#f6dbe7]">
 

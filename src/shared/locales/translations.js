@@ -101,9 +101,10 @@ export const translations = {
     english: "English",
 
     // Roles and Console Labels
-    superAdmin: "Super Admin",
+    superAdmin: "Admin",
     salonManager: "Salon Manager",
-    receptionist: "Receptionist",
+    roleReceptionist: "Receptionist",
+    customer: "Customer",
     nailArtist: "Staff Artist",
     adminConsole: "Admin Console",
     managerPortal: "Manager Portal",
@@ -641,7 +642,7 @@ export const translations = {
       metric: {
         totalUsers: "Total Users",
         activeAdmins: "Active Admins",
-        branchManagers: "Branch Managers",
+        branchManagers: "Salon Managers",
         receptionDesk: "Reception Desk",
         nailArtists: "Staff Artists",
         clientAccounts: "Client Accounts"
@@ -1000,7 +1001,7 @@ export const translations = {
       noLoyaltyTiersMatchYourFilter: "No Loyalty Tiers Match Your Filter",
       tryAdjustingYourSearchCriteria: "Try adjusting your search criteria, clearing your search query, or create a brand new loyalty tier to populate your dashboard.",
       resetFilters: "Reset Filters",
-      reloadApi: "Reload API",
+      reloadPage: "Reload Page",
       modifyLoyaltyTier: "Modify Loyalty Tier",
       configureRulesAndTheCardsPrint: "Configure rules and the card's printed face",
       cardStyle: "Card Style",
@@ -2639,7 +2640,8 @@ export const translations = {
     // Roles and Console Labels
     superAdmin: "Quản trị viên",
     salonManager: "Quản lý Salon",
-    receptionist: "Lễ tân",
+    roleReceptionist: "Lễ tân",
+    customer: "Khách hàng",
     nailArtist: "Nhân viên làm móng",
     adminConsole: "Bảng điều khiển Admin",
     managerPortal: "Cổng quản lý",
@@ -3463,7 +3465,7 @@ export const translations = {
       noLoyaltyTiersMatchYourFilter: "Không tìm thấy cấp độ thành viên nào",
       tryAdjustingYourSearchCriteria: "Vui lòng thử điều chỉnh tiêu chí tìm kiếm, xóa từ khóa tìm kiếm hoặc tạo một cấp độ thành viên mới.",
       resetFilters: "Đặt lại bộ lọc",
-      reloadApi: "Tải lại dữ liệu",
+      reloadPage: "Tải lại trang",
       modifyLoyaltyTier: "Chỉnh sửa Cấp độ thành viên",
       configureRulesAndTheCardsPrint: "Cấu hình quy tắc và mặt in của thẻ thành viên",
       cardStyle: "Kiểu thiết kế thẻ",
