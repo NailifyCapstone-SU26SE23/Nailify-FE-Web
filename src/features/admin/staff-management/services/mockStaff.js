@@ -55,162 +55,7 @@ export const STAFF_FILTER_OPTIONS = [
   { key: "inactive", label: "Inactive" },
 ];
 
-const STAFF_MEMBER_DEFINITIONS = [
-  {
-    id: "NF-001",
-    name: "Sophia Lee",
-    role: "Senior Staff Artist",
-    type: "artist",
-    status: "available",
-    salon: "Nailify Central",
-    rating: "4.9",
-    bookings: "312",
-    retention: "98%",
-    accent: "Performance",
-    accentTone: "bg-violet-100 text-violet-600",
-    tags: [
-      { label: "Gel", tone: "bg-rose-100 text-rose-500" },
-      { label: "Nail Art", tone: "bg-violet-100 text-violet-600" },
-      { label: "Acrylic", tone: "bg-sky-100 text-sky-600" },
-    ],
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: "NF-002",
-    name: "Mia Chen",
-    role: "Staff Artist",
-    type: "artist",
-    status: "available",
-    salon: "Nailify Uptown",
-    rating: "4.7",
-    bookings: "248",
-    retention: "94%",
-    accent: "Performance",
-    accentTone: "bg-amber-100 text-amber-600",
-    tags: [
-      { label: "Manicure", tone: "bg-amber-100 text-amber-600" },
-      { label: "Gel", tone: "bg-rose-100 text-rose-500" },
-    ],
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: "NF-003",
-    name: "Nina Torres",
-    role: "Salon Manager",
-    type: "manager",
-    status: "available",
-    salon: "Nailify Uptown",
-    rating: "4.9",
-    bookings: "18",
-    retention: "99%",
-    accent: "Leadership",
-    accentTone: "bg-sky-100 text-sky-600",
-    tags: [
-      { label: "Management", tone: "bg-sky-100 text-sky-600" },
-      { label: "Training", tone: "bg-emerald-100 text-emerald-600" },
-    ],
-    image:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: "NF-004",
-    name: "Rachel Park",
-    role: "Staff Artist",
-    type: "artist",
-    status: "available",
-    salon: "Nailify Westgate",
-    rating: "4.5",
-    bookings: "189",
-    retention: "91%",
-    accent: "Performance",
-    accentTone: "bg-emerald-100 text-emerald-600",
-    tags: [
-      { label: "Pedicure", tone: "bg-rose-100 text-rose-500" },
-      { label: "Nail Art", tone: "bg-emerald-100 text-emerald-600" },
-    ],
-    image:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    id: "NF-005",
-    name: "Amy Liu",
-    role: "Senior Artist",
-    type: "artist",
-    status: "leave",
-    salon: "Nailify Downtown",
-    rating: "4.6",
-    bookings: "276",
-    retention: "95%",
-    accent: "Performance",
-    accentTone: "bg-violet-100 text-violet-600",
-    tags: [
-      { label: "Gel", tone: "bg-rose-100 text-rose-500" },
-      { label: "Manicure", tone: "bg-amber-100 text-amber-600" },
-      { label: "Pedicure", tone: "bg-rose-100 text-rose-500" },
-    ],
-    initials: "AL",
-    avatarTone: "from-pink-400 to-rose-300",
-  },
-  {
-    id: "NF-006",
-    name: "Jessica Kim",
-    role: "Salon Manager",
-    type: "manager",
-    status: "available",
-    salon: "Nailify Eastside",
-    rating: "4.8",
-    bookings: "22",
-    retention: "97%",
-    accent: "Leadership",
-    accentTone: "bg-violet-100 text-violet-600",
-    tags: [
-      { label: "Management", tone: "bg-sky-100 text-sky-600" },
-      { label: "Scheduling", tone: "bg-violet-100 text-violet-600" },
-    ],
-    initials: "JK",
-    avatarTone: "from-violet-400 to-fuchsia-300",
-  },
-  {
-    id: "NF-007",
-    name: "Karen Sato",
-    role: "Staff Artist",
-    type: "artist",
-    status: "inactive",
-    salon: "Nailify Riverside",
-    rating: "4.1",
-    bookings: "152",
-    retention: "84%",
-    accent: "Performance",
-    accentTone: "bg-rose-100 text-rose-500",
-    tags: [
-      { label: "Pedicure", tone: "bg-rose-100 text-rose-500" },
-      { label: "Acrylic", tone: "bg-sky-100 text-sky-600" },
-    ],
-    initials: "KS",
-    avatarTone: "from-amber-400 to-orange-300",
-  },
-  {
-    id: "NF-008",
-    name: "Priya Mehta",
-    role: "Staff Artist",
-    type: "artist",
-    status: "leave",
-    salon: "Nailify Central",
-    rating: "4.4",
-    bookings: "205",
-    retention: "89%",
-    accent: "Performance",
-    accentTone: "bg-emerald-100 text-emerald-600",
-    tags: [
-      { label: "Gel", tone: "bg-rose-100 text-rose-500" },
-      { label: "Nail Art", tone: "bg-emerald-100 text-emerald-600" },
-    ],
-    initials: "PM",
-    avatarTone: "from-indigo-400 to-sky-300",
-  },
-];
+const STAFF_MEMBER_DEFINITIONS = [];
 
 export const STAFF_QUICK_ACTIONS = [
   { label: "Add Staff", icon: "plus", bg: "bg-rose-100", text: "text-rose-500", desc: "New member" },
@@ -221,65 +66,11 @@ export const STAFF_QUICK_ACTIONS = [
   { label: "Deactivate", icon: "clock", bg: "bg-slate-100", text: "text-slate-500", desc: "Suspend access" },
 ];
 
-export const STAFF_TOP_PERFORMERS = [
-  {
-    name: "Sophia Lee",
-    meta: "312 bookings · Central",
-    rating: "4.9",
-    color: "bg-amber-400",
-    rank: "1",
-    image:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80",
-  },
-  {
-    name: "Nina Torres",
-    meta: "Manager · Uptown",
-    rating: "4.9",
-    color: "bg-slate-300",
-    rank: "2",
-    image:
-      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=80&q=80",
-  },
-  {
-    name: "Mia Chen",
-    meta: "248 bookings · Uptown",
-    rating: "4.7",
-    color: "bg-orange-300",
-    rank: "3",
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&q=80",
-  },
-  {
-    name: "Jessica Kim",
-    meta: "Manager · Eastside",
-    rating: "4.8",
-    color: "bg-violet-300",
-    rank: "4",
-    initials: "JK",
-    avatarTone: "from-violet-400 to-fuchsia-300",
-  },
-  {
-    name: "Amy Liu",
-    meta: "276 bookings · Downtown",
-    rating: "4.6",
-    color: "bg-pink-300",
-    rank: "5",
-    initials: "AL",
-    avatarTone: "from-pink-400 to-rose-300",
-  },
-];
+export const STAFF_TOP_PERFORMERS = [];
 
-export const STAFF_LEAVE_LIST = [
-  { name: "Rachel Park", note: "Returning Jun 2, 2026", tag: "3 days", tone: "bg-amber-100 text-amber-600" },
-  { name: "Karen Sato", note: "Returns Jun 3, 2026", tag: "17 days", tone: "bg-violet-100 text-violet-600" },
-  { name: "Lisa Nguyen", note: "Returns Jun 6, 2026", tag: "10 days", tone: "bg-amber-100 text-amber-600" },
-  { name: "Priya Mehta", note: "Returns Feb 10, 2026", tag: "12 days", tone: "bg-amber-100 text-amber-600" },
-];
+export const STAFF_LEAVE_LIST = [];
 
-export const STAFF_LOW_RATING_ALERTS = [
-  { name: "Bella Wong", detail: "3.2 - Needs improvement", action: "Review" },
-  { name: "Chloe Martin", detail: "3.4 - Client score drop", action: "Review" },
-];
+export const STAFF_LOW_RATING_ALERTS = [];
 
 export const STAFF_STATUS_LABELS = {
   available: "Available",
@@ -393,13 +184,13 @@ export const STAFF_ONBOARDING_CHECKLIST = [
   "Review and save profile",
 ];
 
-export const STAFF_UPDATE_CHECKLIST = [
-  "Review core profile information",
-  "Confirm salon and role assignment",
-  "Update specialties and notes",
-  "Adjust weekly schedule if needed",
-  "Save changes to return to staff list",
-];
+// export const STAFF_UPDATE_CHECKLIST = [
+//   "Review core profile information",
+//   "Confirm salon and role assignment",
+//   "Update specialties and notes",
+//   "Adjust weekly schedule if needed",
+//   "Save changes to return to staff list",
+// ];
 
 const DEFAULT_STAFF_SCHEDULE = {
   monday: { enabled: true, start: "09:00", end: "18:00" },
@@ -578,7 +369,7 @@ export const createEmptyStaffForm = () => ({
   staffId: "",
   email: "",
   phone: "",
-  role: "NAIL_ARTIST",
+  role: "Staff_Artist",
   assignedSalon: "Nailify Central",
   status: "ONBOARDING",
   employmentType: "Full-time",
@@ -675,11 +466,7 @@ export const getMockStaffFormById = (staffId) => {
 };
 
 export const fetchMockStaffFormById = (staffId) =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      resolve(getMockStaffFormById(staffId));
-    }, 350);
-  });
+  Promise.resolve(getMockStaffFormById(staffId));
 
 const applyStaffFormToMember = (member, formData) => ({
   ...formDataToStaffMember(formData),
@@ -698,45 +485,9 @@ export const saveMockStaffForm = (recordId, formData) => {
 };
 
 export const submitMockStaffUpdate = (recordId, formData) =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      if (!recordId || deletedStaffIds.has(String(recordId))) {
-        resolve({
-          success: false,
-          message: "Staff member not found. It may have been removed.",
-        });
-        return;
-      }
-
-      const member = findStaffMemberById(recordId);
-      if (!member) {
-        resolve({
-          success: false,
-          message: "Staff member not found. Please refresh and try again.",
-        });
-        return;
-      }
-
-      const validationError = validateStaffForm(formData);
-      if (validationError) {
-        resolve({ success: false, message: validationError });
-        return;
-      }
-
-      saveMockStaffForm(recordId, formData);
-
-      const createdIndex = createdStaffMembers.findIndex(
-        (entry) => entry.id === String(recordId),
-      );
-      if (createdIndex >= 0) {
-        createdStaffMembers[createdIndex] = applyStaffFormToMember(member, formData);
-      }
-
-      resolve({
-        success: true,
-        message: `${formData.fullName.trim()} has been updated successfully.`,
-      });
-    }, 600);
+  Promise.resolve({
+    success: true,
+    message: `${formData.fullName.trim()} has been updated successfully.`,
   });
 
 const isStaffIdTaken = (staffId) => {
@@ -815,30 +566,9 @@ const validateStaffForm = (formData) => {
 };
 
 export const submitMockStaffCreate = (formData) =>
-  new Promise((resolve) => {
-    window.setTimeout(() => {
-      const validationError = validateStaffForm(formData);
-      if (validationError) {
-        resolve({ success: false, message: validationError });
-        return;
-      }
-
-      if (isStaffIdTaken(formData.staffId)) {
-        resolve({
-          success: false,
-          message: "Staff ID already exists. Please use a different ID.",
-        });
-        return;
-      }
-
-      const newMember = formDataToStaffMember(cloneStaffForm(formData));
-      createdStaffMembers.push(newMember);
-      saveMockStaffForm(formData.staffId, formData);
-      resolve({
-        success: true,
-        message: `${formData.fullName.trim()} has been added successfully.`,
-      });
-    }, 600);
+  Promise.resolve({
+    success: true,
+    message: `${formData.fullName.trim()} has been added successfully.`,
   });
 
 export const removeMockStaffById = (staffId) => {

@@ -24,12 +24,14 @@ import {
     fetchLoyaltyTiers,
     createLoyaltyTier,
     updateLoyaltyTier,
-    deleteLoyaltyTier
+    deleteLoyaltyTier,
+    fetchAllCustomersForLoyalty
 } from "../services/loyaltyTiersManagementService";
 import LoyaltyTierDetailModal from "../components/LoyaltyTierDetailModal";
 import { DeleteConfirmModal } from "../../quiz-management/components/DeleteConfirmModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { toast } from "react-hot-toast";
 
 // Presentation-only helper: renders a tier's rank as a roman numeral stamp.
 // Purely derived from sortOrder at render time — does not touch any state.
@@ -58,6 +60,7 @@ const cardNumber = (tier) => {
 export function LoyaltyTierManagement() {
     const { t, language } = useLanguage();
     const [tiers, setTiers] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
@@ -82,7 +85,6 @@ export function LoyaltyTierManagement() {
     });
 
     const [formErrors, setFormErrors] = useState({});
-    const [notification, setNotification] = useState(null);
     const [selectedTierId, setSelectedTierId] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -94,8 +96,12 @@ export function LoyaltyTierManagement() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const fetched = await fetchLoyaltyTiers();
-            setTiers(fetched.sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
+            const [fetchedTiers, fetchedCustomers] = await Promise.all([
+                fetchLoyaltyTiers(),
+                fetchAllCustomersForLoyalty()
+            ]);
+            setTiers(fetchedTiers.sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
+            setCustomers(fetchedCustomers || []);
         } catch (err) {
             console.error("Failed to fetch loyalty tiers:", err);
             showNotification(err instanceof Error ? err.message : "Failed to load loyalty tiers.", "error");
@@ -109,8 +115,11 @@ export function LoyaltyTierManagement() {
     }, []);
 
     const showNotification = (message, type = "success") => {
-        setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
+        if (type === "error") {
+            toast.error(message);
+        } else {
+            toast.success(message);
+        }
     };
 
     // Filter & Search logic
@@ -126,17 +135,12 @@ export function LoyaltyTierManagement() {
         .sort((a, b) => a.minLifetimePoints - b.minLifetimePoints);
 
     // Derived metrics or organic mock stats for admin dashboard
-    const getMockMemberCount = (tierName) => {
-        const lower = String(tierName).toLowerCase();
-        if (lower.includes("đồng") || lower.includes("bronze")) return 142;
-        if (lower.includes("bạc") || lower.includes("silver")) return 88;
-        if (lower.includes("vàng") || lower.includes("gold")) return 45;
-        if (lower.includes("kim cương") || lower.includes("diamond")) return 14;
-        if (lower.includes("bạch kim") || lower.includes("platinum")) return 28;
-        return 6;
+    const getMemberCount = (tier) => {
+        if (!tier) return 0;
+        return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
     };
 
-    const totalMembers = tiers.reduce((sum, tier) => sum + getMockMemberCount(tier.name), 0);
+    const totalMembers = customers.length;
     const activeTiersCount = tiers.filter(t => t.status === "Active").length;
     const maxDiscount = tiers.length ? Math.max(...tiers.map(t => t.discountRate)) : 0;
     const averageDiscount = tiers.length ? Math.round(tiers.reduce((sum, t) => sum + t.discountRate, 0) / tiers.length) : 0;
@@ -463,7 +467,7 @@ export function LoyaltyTierManagement() {
             </div>
 
             {/* Expandable/Dismissible Loyalty Blueprint guide banner */}
-            <AnimatePresence>
+            {/* <AnimatePresence>
                 {showGuide && (
                     <motion.div
                         initial={{ opacity: 0, height: 0, y: -10 }}
@@ -496,7 +500,7 @@ export function LoyaltyTierManagement() {
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence> */}
 
             {/* Card Catalog: literal membership cards, credit-card proportions */}
             <div className="relative">
@@ -624,7 +628,7 @@ export function LoyaltyTierManagement() {
                                             <div className="flex items-center gap-3 text-[11px] font-semibold text-[#8c7484]">
                                                 <span className="inline-flex items-center">
                                                     <Users size={12} className="mr-1 text-[#c9a7be]" />
-                                                    {getMockMemberCount(tier.name)} {t("adminLoyaltyTiersManagement.members")}
+                                                    {getMemberCount(tier)} {t("adminLoyaltyTiersManagement.members")}
                                                 </span>
                                             </div>
 
@@ -716,11 +720,11 @@ export function LoyaltyTierManagement() {
                                 {t("adminLoyaltyTiersManagement.resetFilters")}
                             </button>
                             <button
-                                onClick={loadData}
+                                onClick={() => window.location.reload()}
                                 className="mt-5 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#f5cbdc] bg-[#fff5f9] px-4 py-2 text-xs font-bold text-[#c03478] hover:bg-[#ffd9e7] transition-all"
                             >
                                 <RefreshCw size={12} />
-                                {t("adminLoyaltyTiersManagement.reloadApi")}
+                                {t("adminLoyaltyTiersManagement.reloadPage")}
                             </button>
                         </div>
                     </motion.div>
@@ -732,6 +736,7 @@ export function LoyaltyTierManagement() {
                 isOpen={isDetailOpen}
                 tierId={selectedTierId}
                 onClose={handleCloseDetail}
+                customers={customers}
             />
 
             {/* sliding sidebar panel editor drawer */}
@@ -1133,24 +1138,6 @@ export function LoyaltyTierManagement() {
                             </div>
                         </motion.div>
                     </>
-                )}
-            </AnimatePresence>
-
-            {/* Floating Action Notifications */}
-            <AnimatePresence>
-                {notification && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs font-bold text-white shadow-lg ${notification.type === "error"
-                            ? "bg-[#d14c84] shadow-[0_12px_24px_rgba(209,76,132,0.3)]"
-                            : "bg-[#16975f] shadow-[0_12px_24px_rgba(22,151,95,0.3)]"
-                            }`}
-                    >
-                        {notification.type === "error" ? <AlertCircle size={14} /> : <Check size={14} />}
-                        <span>{notification.message}</span>
-                    </motion.div>
                 )}
             </AnimatePresence>
 

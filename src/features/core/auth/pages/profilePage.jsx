@@ -66,7 +66,7 @@ function formatRoleLabel(role, t) {
     case "manager":
       return t("salonManager") || "Salon Manager";
     case "receptionist":
-      return t("receptionist") || "Receptionist";
+      return t("roleReceptionist") || "Receptionist";
     case "staff_artist":
     case "staff":
       return t("nailArtist") || "Staff Artist";
