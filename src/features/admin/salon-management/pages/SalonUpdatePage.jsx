@@ -18,15 +18,74 @@ import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
-import {
-  SALON_DAYS_OF_WEEK,
-  SALON_STATUS_OPTIONS,
-  createEmptySalonForm,
-  getSalonStatusStyle,
-  validateSalonForm,
-} from "../services/mockSalon";
 import { updateSalon } from "../services/salonsService";
 import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
+
+const SALON_DAYS_OF_WEEK = [
+  { key: "monday", label: "Monday" },
+  { key: "tuesday", label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday", label: "Thursday" },
+  { key: "friday", label: "Friday" },
+  { key: "saturday", label: "Saturday" },
+  { key: "sunday", label: "Sunday" },
+];
+
+const SALON_STATUS_OPTIONS = [
+  { value: "Open", label: "Open", color: "bg-emerald-100 text-emerald-600" },
+  { value: "Closed", label: "Closed", color: "bg-rose-100 text-rose-600" },
+];
+
+const DEFAULT_OPERATING_HOURS = {
+  monday: { open: "09:00", close: "20:00" },
+  tuesday: { open: "09:00", close: "20:00" },
+  wednesday: { open: "09:00", close: "20:00" },
+  thursday: { open: "09:00", close: "20:00" },
+  friday: { open: "09:00", close: "20:00" },
+  saturday: { open: "09:00", close: "18:00" },
+  sunday: { open: "10:00", close: "16:00" },
+};
+
+const createEmptySalonForm = () => ({
+  salonName: "",
+  salonId: "",
+  address: "",
+  manager: "",
+  phone: "",
+  staffAmount: "",
+  operatingHours: Object.fromEntries(
+    Object.entries(DEFAULT_OPERATING_HOURS).map(([day, hours]) => [
+      day,
+      { ...hours },
+    ]),
+  ),
+  status: "Open",
+  description: "",
+});
+
+const getSalonStatusStyle = (status) =>
+  SALON_STATUS_OPTIONS.find((option) => option.value === status)?.color ??
+  "bg-emerald-100 text-emerald-600";
+
+const validateSalonForm = (formData, { requireSalonId = false } = {}) => {
+  if (!formData.salonName?.trim()) {
+    return "Salon name is required.";
+  }
+
+  if (requireSalonId && !formData.salonId?.trim()) {
+    return "Salon ID is required.";
+  }
+
+  if (!formData.address?.trim()) {
+    return "Address is required.";
+  }
+
+  if (!formData.phone?.trim()) {
+    return "Phone number is required.";
+  }
+
+  return null;
+};
 
 const inputWrapperClassName =
   "flex items-center gap-2 rounded-[16px] border border-[#f5cbdc] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#eba2c6] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.2)]";

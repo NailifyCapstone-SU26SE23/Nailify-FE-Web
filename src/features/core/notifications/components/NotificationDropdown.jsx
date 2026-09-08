@@ -118,13 +118,13 @@ export function NotificationDropdown({ isOpen, onClose }) {
             )}
 
             {/* Quick action helper to test/mock notifications */}
-            <button
+            {/* <button
               onClick={() => receiveMockNotification(isVi ? "Thông báo thử nghiệm" : "Test notification", isVi ? "Đây là tin nhắn thông báo demo thời gian thực!" : "This is a real-time demo notification message!")}
               className="text-[9px] border border-dashed border-[#ea4f93] text-[#ea4f93] px-2 py-0.5 rounded-lg hover:bg-[#fff0f5] transition"
               title={isVi ? "Test notification receipt" : "Test notification receipt"}
             >
               {isVi ? "Thử nghiệm" : "Test"}
-            </button>
+            </button> */}
           </div>
         </div>
 

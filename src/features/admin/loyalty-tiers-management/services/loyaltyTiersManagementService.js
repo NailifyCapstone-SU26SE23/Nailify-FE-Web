@@ -236,3 +236,19 @@ export async function deleteLoyaltyTier(id) {
         handleApiError(e, "Failed to delete loyalty tier.");
     }
 }
+
+export async function fetchAllCustomersForLoyalty() {
+    try {
+        const response = await axiosClient.get("/Users/customers", {
+            headers: getAuthHeaders(),
+            params: {
+                pageNumber: 1,
+                pageSize: 10000,
+            },
+        });
+        const data = unwrapResponse(response, "Failed to fetch customers.");
+        return data?.items || [];
+    } catch (error) {
+        handleApiError(error, "Failed to fetch customers for loyalty.");
+    }
+}

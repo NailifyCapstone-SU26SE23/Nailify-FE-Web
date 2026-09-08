@@ -1,4 +1,5 @@
-import { Modal, Spin, Alert, Select, Drawer } from "antd";
+import { Modal, Spin, Alert, Select, Drawer, Calendar as AntCalendar, Badge } from "antd";
+import dayjs from "dayjs";
 import {
   Users,
   Clock3,
@@ -235,6 +236,139 @@ function ScheduleEntryRow({ entry }) {
 
 ScheduleEntryRow.propTypes = {
   entry: PropTypes.object.isRequired,
+};
+
+const CustomScheduleCalendar = ({ schedule }) => {
+  const { language } = useLanguage();
+  const [currentMonth, setCurrentMonth] = useState(dayjs());
+
+  const daysInMonth = currentMonth.daysInMonth();
+  const firstDayOfMonth = currentMonth.startOf('month').day(); // 0 is Sunday, 1 is Monday
+
+  // Adjust for Monday start
+  const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; 
+  const prevMonthDays = currentMonth.subtract(1, 'month').daysInMonth();
+
+  const cells = [];
+  
+  // Previous month trailing days
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells.push({
+      date: currentMonth.subtract(1, 'month').date(prevMonthDays - i),
+      isCurrentMonth: false
+    });
+  }
+
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({
+      date: currentMonth.date(i),
+      isCurrentMonth: true
+    });
+  }
+
+  // Next month leading days (to complete 42 cells grid)
+  const remainingCells = 42 - cells.length;
+  for (let i = 1; i <= remainingCells; i++) {
+    cells.push({
+      date: currentMonth.add(1, 'month').date(i),
+      isCurrentMonth: false
+    });
+  }
+
+  const weekdaysVi = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "C.Nhật"];
+  const weekdaysEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekdays = language === 'vi' ? weekdaysVi : weekdaysEn;
+
+  return (
+    <div className="w-full rounded-[14px] overflow-hidden border border-[#ea4f93]/30 bg-white shadow-sm font-sans mt-2">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-[#ea4f93] px-4 py-3 text-white">
+        <button onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <h4 className="font-bold text-sm uppercase tracking-wider text-white m-0">
+          {language === 'vi' ? `Lịch làm việc - Tháng ${currentMonth.format('M/YYYY')}` : `Working Schedule - ${currentMonth.format('MMMM YYYY')}`}
+        </h4>
+        <button onClick={() => setCurrentMonth(prev => prev.add(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      {/* Weekdays */}
+      <div className="grid grid-cols-7 bg-[#fff5f9] border-b border-[#f0d9e8]">
+        {weekdays.map((day, idx) => (
+          <div key={idx} className="py-2.5 text-center text-xs font-bold text-[#ea4f93] border-r border-[#f0d9e8] last:border-0">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 bg-white">
+        {cells.map((cell, idx) => {
+          const dateString = cell.date.format("YYYY-MM-DD");
+          const sched = schedule.find(s => {
+            const sd = s.date || s.workDate || s.scheduleDate || s.day;
+            return sd && dayjs(sd).format("YYYY-MM-DD") === dateString;
+          });
+
+          const isToday = dateString === dayjs().format("YYYY-MM-DD");
+
+          let bgClass = "bg-white";
+          if (!cell.isCurrentMonth) bgClass = "bg-[#fcf9fb] opacity-60";
+          if (isToday) bgClass = "bg-[#fff0f8]";
+
+          return (
+            <div key={idx} className={`min-h-[85px] border-b border-r border-[#f0d9e8] p-2 flex flex-col transition-colors hover:bg-[#fff9fc] ${bgClass} ${idx % 7 === 6 ? 'border-r-0' : ''} ${idx >= 35 ? 'border-b-0' : ''}`}>
+              <div className="flex justify-between items-start">
+                <span className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#ea4f93] text-white' : cell.isCurrentMonth ? 'text-[#2d1b35]' : 'text-[#a88a9f]'}`}>
+                  {cell.date.date()}
+                </span>
+                {sched && (
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                    ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("active") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("working")) 
+                      ? "bg-[#2fa25f]" 
+                      : ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("leave") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("off"))
+                        ? "bg-[#ea4f93]"
+                        : "bg-[#8b7382]"
+                  }`} />
+                )}
+              </div>
+              
+              <div className="mt-auto pt-2 flex flex-col gap-1 w-full">
+                {sched && (
+                  (() => {
+                    const status = (sched.status || sched.scheduleStatus || "").toLowerCase();
+                    const start = sched.startTime || sched.start || sched.from || sched.checkIn;
+                    
+                    if (status.includes("active") || status.includes("working")) {
+                      return (
+                        <div className="bg-[#eaf9ee] border border-[#b8e6c7] text-[#2fa25f] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
+                          {start ? start : (language==='vi'?'Làm việc':'Working')}
+                        </div>
+                      );
+                    } else if (status.includes("leave") || status.includes("off")) {
+                      return (
+                        <div className="bg-[#fff0f8] border border-[#f0d9e8] text-[#ea4f93] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
+                          {language==='vi'?'Nghỉ phép':'On Leave'}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+CustomScheduleCalendar.propTypes = {
+  schedule: PropTypes.array.isRequired
 };
 
 export function StaffManagementPage() {
@@ -831,7 +965,7 @@ export function StaffManagementPage() {
 
                 {/* Working Schedule Section (for Staff Artists) */}
                 {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
-                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8] mb-4">
                     <div className="mb-4 flex items-center gap-2">
                       <CalendarDays size={16} className="text-[#ea4f93]" />
                       <h3 className="text-sm font-bold text-[#2d1b35]">
@@ -842,16 +976,8 @@ export function StaffManagementPage() {
                       <div className="flex justify-center py-4">
                         <Spin size="small" />
                       </div>
-                    ) : staffSchedule.length > 0 ? (
-                      <div className="space-y-2">
-                        {staffSchedule.map((entry, index) => (
-                          <ScheduleEntryRow key={entry.id || index} entry={entry} />
-                        ))}
-                      </div>
                     ) : (
-                      <p className="text-xs text-[#a88a9f]">
-                        {t("adminStaffManagement.noScheduleAvailable")}
-                      </p>
+                      <CustomScheduleCalendar schedule={staffSchedule} />
                     )}
                   </div>
                 )}

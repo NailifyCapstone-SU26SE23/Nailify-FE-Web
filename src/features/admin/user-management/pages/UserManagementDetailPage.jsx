@@ -2,7 +2,8 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Building2, CalendarDays, Clock3, LoaderCircle, MapPin, PencilLine, Phone, Save, Star, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Table } from "antd";
+import { Calendar } from "antd";
+import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -57,6 +58,26 @@ function getScheduleStatusClass(status) {
   }
 }
 
+function getLocalizedStatus(status, t) {
+  if (!status) return "";
+  switch (String(status).trim().toLowerCase()) {
+    case "active":
+      return t("userManagement.detail.statusActive") || "Active";
+    case "inactive":
+      return t("userManagement.detail.statusInactive") || "Inactive";
+    case "pending":
+      return t("userManagement.detail.statusPending") || "Pending";
+    case "suspended":
+      return t("userManagement.detail.statusSuspended") || "Suspended";
+    case "open":
+      return t("profile.open") || "Open";
+    case "closed":
+      return t("profile.closed") || "Closed";
+    default:
+      return status;
+  }
+}
+
 function InfoSection({ icon: Icon, title, children }) {
   return (
     <section className="rounded-[22px] border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)]">
@@ -98,7 +119,6 @@ export function UserManagementDetailPage() {
   const [formValues, setFormValues] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [flashMessage, setFlashMessage] = useState("");
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.requestEdit));
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -225,34 +245,34 @@ export function UserManagementDetailPage() {
   const sortedSchedules = [...artistSchedules].sort(
     (left, right) => new Date(left?.workDate || 0).getTime() - new Date(right?.workDate || 0).getTime(),
   );
-  const scheduleColumns = [
-    {
-      title: t("userManagement.detail.workDate"),
-      dataIndex: "workDate",
-      key: "workDate",
-      render: (value) => <span className="font-semibold text-[var(--color-ink)]">{formatWorkDate(value)}</span>,
-    },
-    {
-      title: t("userManagement.detail.shift"),
-      key: "shift",
-      render: (_, schedule) => (
-        <span className="inline-flex items-center gap-2 text-sm text-[var(--color-muted)]">
-          <Clock3 size={14} className="text-[#d45b9f]" />
-          {formatShiftRange(schedule.shiftStart, schedule.shiftEnd)}
-        </span>
-      ),
-    },
-    {
-      title: t("userManagement.detail.status"),
-      dataIndex: "status",
-      key: "status",
-      render: (value) => (
-        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getScheduleStatusClass(value)}`}>
-          {value || t("userManagement.detail.unknown")}
-        </span>
-      ),
-    },
-  ];
+
+  const cellRender = (current, info) => {
+    if (info.type === "date") {
+      const dateStr = current.format("YYYY-MM-DD");
+      const daySchedules = sortedSchedules.filter((s) => s.workDate && dayjs(s.workDate).format("YYYY-MM-DD") === dateStr);
+
+      if (daySchedules.length > 0) {
+        return (
+          <ul className="m-0 flex flex-col gap-1 p-0 list-none mt-1">
+            {daySchedules.map((schedule, idx) => (
+              <li key={idx} className="rounded border border-[#f6dbe7] bg-[#fffcfd] p-1 text-center shadow-sm hover:shadow-md transition">
+                <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-[var(--color-ink)]">
+                  <Clock3 size={11} className="text-[#d39bb5]" />
+                  {formatShiftRange(schedule.shiftStart, schedule.shiftEnd)}
+                </div>
+                <div className="mt-1">
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.05em] ${getScheduleStatusClass(schedule.status)}`}>
+                    {getLocalizedStatus(schedule.status, t) || t("userManagement.detail.unknown")}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        );
+      }
+    }
+    return null;
+  };
 
   const handleSave = async () => {
     const firstName = String(formValues.firstName || "").trim();
@@ -301,7 +321,6 @@ export function UserManagementDetailPage() {
       setFormValues(nextValues);
       setShowSaveConfirm(false);
       setIsEditing(false);
-      setFlashMessage(t("userManagement.detail.updateSuccess"));
       toast.success(t("userManagement.detail.updateSuccess"));
     } catch (error) {
       const message = error instanceof Error ? error.message : t("userManagement.detail.updateFailed");
@@ -312,14 +331,12 @@ export function UserManagementDetailPage() {
   };
 
   const handleStartEdit = () => {
-    setFlashMessage("");
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setShowCancelConfirm(false);
     setFormValues(initialUser);
-    setFlashMessage("");
     setIsEditing(false);
   };
 
@@ -351,7 +368,7 @@ export function UserManagementDetailPage() {
         backTo={ROUTES.adminUsers}
         badge={t("menus.admin-users") || "Users"}
         title={displayName}
-        description={t("userManagement.detail.detailNotice")}
+        // description={t("userManagement.detail.detailNotice")}
         headerActions={!isEditing ? (
           <>
             <button
@@ -373,16 +390,10 @@ export function UserManagementDetailPage() {
             </button>
           </>
         ) : null}
-        panelIcon={<PencilLine size={18} className="text-[#d45b9f]" />}
-        panelTitle={isEditing ? t("userManagement.detail.editMode") : t("userManagement.detail.viewMode")}
-        panelDescription={t("userManagement.detail.detailDataLoadedDesc")}
+      // panelIcon={<PencilLine size={18} className="text-[#d45b9f]" />}
+      // panelTitle={isEditing ? t("userManagement.detail.editMode") : t("userManagement.detail.viewMode")}
+      // panelDescription={t("userManagement.detail.detailDataLoadedDesc")}
       />
-
-      {flashMessage ? (
-        <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
-          {flashMessage}
-        </div>
-      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
@@ -448,7 +459,7 @@ export function UserManagementDetailPage() {
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.status")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.status}</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{getLocalizedStatus(salonDetail?.status, t)}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3 sm:col-span-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.address")}</p>
@@ -459,8 +470,8 @@ export function UserManagementDetailPage() {
                       <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone}</p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">Artist {t("userManagement.detail.status")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{artistDetail?.status || formValues.status}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{language === "vi" ? "Trạng thái nhân viên" : "Staff Artist Status"}</p>
+                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{getLocalizedStatus(artistDetail?.status || formValues.status, t)}</p>
                     </div>
                   </div>
                 </div>
@@ -498,15 +509,8 @@ export function UserManagementDetailPage() {
               <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
                 {formValues.staffId ? (
                   sortedSchedules.length ? (
-                    <div className="overflow-hidden rounded-lg border border-[#f6dbe7] bg-white">
-                      <Table
-                        rowKey={(schedule) => schedule.scheduleId || `${schedule.workDate}-${schedule.shiftStart}-${schedule.shiftEnd}`}
-                        columns={scheduleColumns}
-                        dataSource={sortedSchedules}
-                        pagination={false}
-                        locale={{ emptyText: t("userManagement.detail.noWorkScheduleFound") }}
-                        scroll={{ x: 640 }}
-                      />
+                    <div className="overflow-hidden rounded-2xl border border-[#f6dbe7] bg-white p-2 md:p-4 shadow-sm custom-calendar-wrapper">
+                      <Calendar cellRender={cellRender} />
                     </div>
                   ) : (
                     <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
@@ -525,7 +529,7 @@ export function UserManagementDetailPage() {
 
         <UserManagementSnapshotCard
           formValues={formValues}
-          notice={t("userManagement.detail.detailNotice")}
+        // notice={t("userManagement.detail.detailNotice")}
         />
       </div>
 

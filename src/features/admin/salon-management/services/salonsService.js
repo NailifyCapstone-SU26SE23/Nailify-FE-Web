@@ -205,3 +205,32 @@ export async function updateSalonOperatingHours(salonId, operatingHoursData) {
     throw new Error(error.response?.data?.message || error.message || "Failed to update salon operating hours.");
   }
 }
+
+export async function fetchSalonRatings(salonId) {
+  const normalizedId = String(salonId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.get(`/BookingRatings/by-salon/${normalizedId}`, {
+      headers: getAuthHeaders(),
+      params: {
+        pageNumber: 1,
+        pageSize: 100, // Fetch a large enough page to calculate the average
+      }
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load salon ratings.");
+    }
+    
+    return payload.data?.items || [];
+  } catch (error) {
+    console.error("Error fetching salon ratings:", error.response?.data || error);
+    return []; // Return empty array on failure instead of crashing the UI
+  }
+}
+
