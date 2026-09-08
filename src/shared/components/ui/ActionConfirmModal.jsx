@@ -90,10 +90,59 @@ export function ActionConfirmModal({
   warnings = [],
   item = null,
   width = 480,
+  compact = false,
 }) {
   const palette = INTENT_STYLES[intent] ?? INTENT_STYLES.info;
   const HeaderIcon = ICON_BY_TONE[intent] ?? ICON_BY_TONE.info;
   const { t, language } = useLanguage();
+  const useCompactLayout = compact || intent === "danger";
+  const modalWidth = useCompactLayout ? Math.min(width, 420) : width;
+
+  if (useCompactLayout) {
+    return (
+      <Modal
+        open={open}
+        centered
+        onCancel={loading ? undefined : onCancel}
+        footer={null}
+        closable={false}
+        mask={{ closable: !loading }}
+        keyboard={!loading}
+        width={modalWidth}
+        styles={MODAL_STYLES}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${palette.panelIconClassName}`}>
+            <HeaderIcon size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+          >
+            {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
+            {loading ? "Processing..." : confirmText}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -104,7 +153,7 @@ export function ActionConfirmModal({
       closable={false}
       mask={{ closable: !loading }}
       keyboard={!loading}
-      width={width}
+      width={modalWidth}
       styles={MODAL_STYLES}
     >
       <div>
@@ -265,6 +314,7 @@ ActionConfirmModal.propTypes = {
   title: PropTypes.string.isRequired,
   warnings: PropTypes.arrayOf(PropTypes.string),
   width: PropTypes.number,
+  compact: PropTypes.bool,
 };
 
 ActionConfirmModal.defaultProps = {
@@ -278,5 +328,6 @@ ActionConfirmModal.defaultProps = {
   subtitle: "",
   warnings: [],
   width: 480,
+  compact: false,
 };
 

@@ -25,6 +25,7 @@ import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   assignProceduresToVariant,
+  deleteAdminNailDesign,
   deleteAdminNailVariant,
   fetchAdminCategories,
   fetchAdminNailDesignDetail,
@@ -619,10 +620,12 @@ export function NailDesignManagementDetailPage() {
   const [designImageFile, setDesignImageFile] = useState(null);
   const [designImagePreviewUrl, setDesignImagePreviewUrl] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteDesignConfirm, setShowDeleteDesignConfirm] = useState(false);
   const [pendingDeleteVariant, setPendingDeleteVariant] = useState(null);
   const [highlightedSection, setHighlightedSection] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingVariants, setIsSavingVariants] = useState(false);
+  const [isDeletingDesign, setIsDeletingDesign] = useState(false);
   const [isDeletingVariant, setIsDeletingVariant] = useState(false);
   const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
   const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
@@ -897,6 +900,32 @@ export function NailDesignManagementDetailPage() {
     }
   };
 
+  const handleDeleteDesign = async () => {
+    if (!formValues?.nailDesignId) {
+      return;
+    }
+
+    setError("");
+    setIsDeletingDesign(true);
+
+    try {
+      await deleteAdminNailDesign(formValues.nailDesignId);
+      toast.success(
+        language === "vi"
+          ? `Đã xóa thiết kế "${formValues.heroTitle || formValues.name}".`
+          : `Deleted design "${formValues.heroTitle || formValues.name}".`,
+      );
+      navigate(ROUTES.adminNailDesigns);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Failed to delete nail design.",
+      );
+    } finally {
+      setIsDeletingDesign(false);
+      setShowDeleteDesignConfirm(false);
+    }
+  };
+
   const handleViewVariant = (variant) => {
     if (!variant?.nailVariantId) {
       setError("Variant ID is required.");
@@ -1013,10 +1042,7 @@ export function NailDesignManagementDetailPage() {
             <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
               {t("adminNailsDesignManagement.nailDesignDetail")}
             </h2>
-            <p className="mt-1 text-sm text-[#c694ad]">
-              {t("adminNailsDesignManagement.viewAndEditDesignDetailsWorkfl")
-              }
-            </p>
+         
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
@@ -1027,7 +1053,7 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() => void handleSave()}
-                  disabled={isSavingVariants || isDeletingVariant}
+                  disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
                   {isSavingVariants ? t("adminNailsDesignManagement.saving") : t("adminNailsDesignManagement.saveChanges")}
@@ -1035,7 +1061,7 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)} // Just exit edit mode without resetting
-                  disabled={isSavingVariants || isDeletingVariant}
+                  disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
                   {t("adminNailsDesignManagement.cancel")}
@@ -1046,7 +1072,8 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={handleStartEdit}
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                  disabled={isDeletingDesign}
+                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <PencilLine size={13} className="mr-1.5 inline" />
                   {t("adminNailsDesignManagement.editDesign")}
@@ -1054,6 +1081,15 @@ export function NailDesignManagementDetailPage() {
 
               </>
             )}
+            <button
+              type="button"
+              onClick={() => setShowDeleteDesignConfirm(true)}
+              disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
+              className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={13} className="mr-1.5 inline" />
+              {language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+            </button>
           </div>
         </div>
       </div>
@@ -1202,7 +1238,7 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => navigate(getAdminNailVariantCreateRoute(designId))}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0 ml-210"
+                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0 ml-200"
               >
                 <Plus size={13} className="mr-1.5 inline" />
                 {t("adminNailsDesignManagement.addNailVariant")}
@@ -1237,7 +1273,6 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
-                <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Pill tone="yellow">{variant.priceDelta}</Pill>
                   <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
@@ -1264,6 +1299,23 @@ export function NailDesignManagementDetailPage() {
           { label: t("adminNailsDesignManagement.result"), value: t("adminNailsDesignManagement.revertToLastLoadedValues") },
         ]}
         warnings={[t("adminNailsDesignManagement.currentUnsavedNonpricingEditsO")]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteDesignConfirm}
+        intent="danger"
+        title={language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+        description={
+          language === "vi"
+            ? `Bạn có chắc muốn xóa thiết kế ${formValues?.heroTitle || formValues?.name || "này"} không?`
+            : `Are you sure you want to delete ${formValues?.heroTitle || formValues?.name || "this design"}?`
+        }
+        confirmText={language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        loading={isDeletingDesign}
+        onConfirm={handleDeleteDesign}
+        onCancel={() => !isDeletingDesign && setShowDeleteDesignConfirm(false)}
       />
 
       <ActionConfirmModal
