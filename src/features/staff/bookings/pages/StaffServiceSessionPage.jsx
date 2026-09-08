@@ -3462,23 +3462,24 @@ export function StaffServiceSessionPage() {
 
                 <div className="mt-4 border-t border-[#f5d9e6]" />
                 <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tổng tiền" : "Total Price"}</span>
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
                   <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                 </div>
+
                 {data.amountPaid ? (
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                    <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
-                  </div>
+                  <>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                      <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                    </div>
+                    {data.amountDue ? (
+                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
+                        <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
+                        <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
-                {data.amountDue ? (
-                  <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
-                    <span className="text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
-                    <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
-                  </div>
-                ) : null}
-
-
                 <button
                   type="button"
                   disabled={!canCompleteSession || isCompletingSession}
@@ -3580,21 +3581,24 @@ export function StaffServiceSessionPage() {
                     <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
                   </div>
                 ) : null}
-                <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
-                  <span className="font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
+                  <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                 </div>
+
                 {data.amountPaid ? (
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                    <span className="font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
-                  </div>
-                ) : null}
-                {data.amountDue ? (
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
-                    <span className="font-extrabold text-[#ea4f93]">{data.amountDue}</span>
-                  </div>
+                  <>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                      <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                    </div>
+                    {data.amountDue ? (
+                      <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
+                        <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
+                        <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái ảnh" : "Photo Status"}</span>
@@ -3617,47 +3621,47 @@ export function StaffServiceSessionPage() {
                 />
                 <div className="mt-4 space-y-3 text-sm">
                   {hasConfirmedDesign ? (
-                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thiết kế đã xác nhận" : "Confirmed Design"}</span>
                       <span className="text-right font-extrabold text-[#ea4f93]">{data.designName}</span>
                     </div>
                   ) : null}
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thời gian" : "Duration"}</span>
                     <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
                   </div>
-                  {/* <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thành tiền (trước giảm)" : "Subtotal"}</span>
-                    <span className="font-extrabold text-[#3f2b3f]">{data.originalServicePrice}</span>
-                  </div> */}
+                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái" : "Status"}</span>
+                    <span className="rounded-full border border-rose-200 bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#d65b92]">
+                      {isVi ? "Đang tiến hành" : "In Progress"}
+                    </span>
+                  </div>
                   {data.discountValue && data.discountValue !== "0 VND" ? (
                     <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                       <span className="text-[11px] text-[#a88a9d]">{data.discountLabel || (isVi ? "Giảm giá" : "Discount")}</span>
                       <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
                     </div>
                   ) : null}
-                  <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền dự tính" : "Estimated Total"}</span>
-                    <span className="font-extrabold text-[#ea4f93]">{data.totalPrice}</span>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
+                    <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
                   </div>
+
                   {data.amountPaid ? (
-                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                      <span className="font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
-                    </div>
+                    <>
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
+                        <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                      </div>
+                      {data.amountDue ? (
+                        <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
+                          <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
+                          <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                        </div>
+                      ) : null}
+                    </>
                   ) : null}
-                  {data.amountDue ? (
-                    <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
-                      <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền sẽ phải trả" : "Amount Due"}</span>
-                      <span className="font-extrabold text-[#ea4f93]">{data.amountDue}</span>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái" : "Status"}</span>
-                    <span className="rounded-full border border-rose-200 bg-[#fff1f7] px-2.5 py-1 text-[10px] font-bold text-[#d65b92]">
-                      {isVi ? "Đang tiến hành" : "In Progress"}
-                    </span>
-                  </div>
+
                 </div>
               </article>
 
