@@ -524,7 +524,7 @@ Pill.propTypes = {
 function TemplateCard({ item, isSelected, onSelect }) {
   return (
     <article
-      className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
+      className={`overflow-hidden rounded-lg border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
         }`}
     >
       <img
@@ -2830,7 +2830,7 @@ export function StaffNailDesignStudioPage() {
                           key={item.id}
                           type="button"
                           onClick={() => void handleVariantSelect(item.id)}
-                          className={`overflow-hidden rounded-[20px] border bg-white text-left shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${selectedVariantId === String(item.id)
+                          className={`overflow-hidden rounded-lg border bg-white text-left shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${selectedVariantId === String(item.id)
                             ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20"
                             : "border-[#f4dbe7]"
                             }`}

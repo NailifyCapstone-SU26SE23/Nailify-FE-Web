@@ -151,9 +151,9 @@ export default function ChairManagementPage() {
 
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#fff9fb] text-slate-800 font-sans bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.15),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.15),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.15),transparent_35%)]">
+    <div className="flex min-h-screen flex-col text-slate-800 font-sans">
       {/* Header */}
-      <div className="top-0 z-30 flex flex-col gap-4 border-b border-white/40 bg-white/60 px-8 py-6 backdrop-blur-xl md:flex-row md:items-center md:justify-between shadow-[0_8px_30px_rgb(236,72,153,0.04)]">
+      <div className="rounded-lg top-0 z-30 flex flex-col gap-4 border-b border-white/40 bg-white/60 px-8 py-6 backdrop-blur-xl md:flex-row md:items-center md:justify-between shadow-[0_8px_30px_rgb(236,72,153,0.04)]">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ec4899_0%,#fb7185_100%)] text-white shadow-[0_8px_20px_rgba(236,72,153,0.25)]">
             <Armchair size={24} />
@@ -168,18 +168,37 @@ export default function ChairManagementPage() {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex items-center gap-2 bg-white/80 p-1.5 rounded-2xl border border-[#f5d6e3] shadow-[0_4px_12px_rgba(236,72,153,0.04)] transition-all hover:border-[#ef6bb4]">
-            <div className="pl-3 text-[#ea4f93]"><Building2 size={18} /></div>
+          <div className="flex h-11 items-center gap-2 rounded-full border border-[#f3d8e5] bg-white px-1.5 shadow-[0_4px_14px_rgba(234,79,147,0.06)] transition-all duration-200 hover:border-[#ea4f93]/40 hover:shadow-[0_6px_18px_rgba(234,79,147,0.10)]">
+            {/* Icon */}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff0f7] text-[#ea4f93]">
+              <Building2 size={16} strokeWidth={2.2} />
+            </div>
+
+            {/* Select */}
             <Select
               value={selectedSalonId}
               onChange={setSelectedSalonId}
-              style={{ width: 220, height: 20 }}
               bordered={false}
-              className="font-semibold text-[#432744] [&_.ant-select-selection-item]:text-[#432744]"
               placeholder={t("adminChairs.selectSalon")}
+              className="
+                        w-[210px]
+                        font-semibold
+                        text-[#432744]
+                        [&_.ant-select-selector]:!px-1
+                        [&_.ant-select-selector]:!bg-transparent
+                        [&_.ant-select-selection-item]:!text-[#432744]
+                        [&_.ant-select-selection-placeholder]:!text-[#a88a9f]
+                        [&_.ant-select-selection-item]:!font-semibold
+                      "
+              popupClassName="select-premium-dropdown"
             >
-              {salons.map(salon => (
-                <Option key={salon.salonId || salon.id} value={salon.salonId || salon.id}>{salon.name}</Option>
+              {salons.map((salon) => (
+                <Option
+                  key={salon.salonId || salon.id}
+                  value={salon.salonId || salon.id}
+                >
+                  {salon.name}
+                </Option>
               ))}
             </Select>
           </div>

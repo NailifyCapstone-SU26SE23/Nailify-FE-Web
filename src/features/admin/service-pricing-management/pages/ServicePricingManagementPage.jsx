@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
@@ -31,33 +31,11 @@ import {
   createEmptyService,
   formatVndCurrency,
 } from "../services/mockServicePricing";
-import { fetchAdminServices } from "../services/servicePricingService";
+import { fetchAdminServices, createAdminService, updateAdminService, deleteAdminService } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-1 text-xs font-medium text-[#a98097]">{item.label}</p>
-      <p className="mt-2 text-[11px] font-bold text-[#20ab77]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function Pill({ children, active = false, className = "" }) {
   return (
@@ -204,6 +182,13 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             <input
               value={draft.name}
               onChange={(event) => onChange("name", event.target.value)}
+              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            />
+          </FormField>
+          <FormField label={language === "vi" ? "Mô tả" : "Description"}>
+            <input
+              value={draft.description || ""}
+              onChange={(event) => onChange("description", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
@@ -417,54 +402,6 @@ function getAlertTone(tone) {
   }
 }
 
-function SortableHeader({ label, sortKey, selectedSort, onToggle }) {
-  const isActive = selectedSort.startsWith(`${sortKey}-`);
-  const isDesc = selectedSort === `${sortKey}-desc`;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(sortKey)}
-      className={`inline-flex items-center gap-1.5 font-semibold transition ${isActive ? "text-[#ea4f93]" : "text-[#5f4a5c] hover:text-[#ea4f93]"}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown size={13} className={isActive ? "text-[#ea4f93]" : "text-[#d39bb5]"} />
-      {isActive ? <span className="text-[10px] font-bold">{isDesc ? "DESC" : "ASC"}</span> : null}
-    </button>
-  );
-}
-
-function sortServices(items, sortValue) {
-  const [sortKey = "service", sortDirection = "asc"] = String(sortValue || "service-asc").split("-");
-  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
-
-  return [...items].sort((left, right) => {
-    const getSortValue = (item) => {
-      switch (sortKey) {
-        case "category":
-          return item.category || "";
-        case "price":
-          return Number(item.price || 0);
-        case "duration":
-          return Number(item.duration || 0);
-        case "status":
-          return item.status || "";
-        case "service":
-        default:
-          return item.name || "";
-      }
-    };
-
-    const leftValue = getSortValue(left);
-    const rightValue = getSortValue(right);
-
-    if (typeof leftValue === "number" && typeof rightValue === "number") {
-      return (leftValue - rightValue) * directionMultiplier;
-    }
-
-    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
-  });
-}
 
 export function ServicePricingManagementPage() {
   const { t, language } = useLanguage();
@@ -472,7 +409,6 @@ export function ServicePricingManagementPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedSort, setSelectedSort] = useState("service-asc");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
@@ -491,6 +427,7 @@ export function ServicePricingManagementPage() {
   });
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceLoadError, setServiceLoadError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -542,7 +479,7 @@ export function ServicePricingManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize]);
+  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize, refreshKey]);
 
   const serviceCategories = useMemo(() => {
     const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
@@ -555,11 +492,6 @@ export function ServicePricingManagementPage() {
       return matchesCategory;
     });
   }, [activeCategory, services]);
-
-  const sortedServices = useMemo(
-    () => sortServices(filteredServices, selectedSort),
-    [filteredServices, selectedSort],
-  );
 
   const summaryCards = useMemo(
     () => {
@@ -625,6 +557,7 @@ export function ServicePricingManagementPage() {
   const openEditService = useCallback((service) => {
     setServiceDraft({
       name: service.name,
+      description: service.description || "",
       category: service.category,
       price: String(service.price),
       duration: String(service.duration),
@@ -662,32 +595,29 @@ export function ServicePricingManagementPage() {
     },
   ], [openEditService, t, language]);
 
-  const submitServiceForm = () => {
-    setServiceError("Service create/update API is not connected yet.");
-  };
-
-  const handleSortToggle = (sortKey) => {
-    setSelectedSort((current) => {
-      if (current.startsWith(`${sortKey}-`)) {
-        return current.endsWith("-asc") ? `${sortKey}-desc` : `${sortKey}-asc`;
+  const submitServiceForm = async () => {
+    setServiceError("");
+    try {
+      if (serviceModal.mode === "create") {
+        await createAdminService(serviceDraft);
+        setFlashMessage(language === "vi" ? "Thêm dịch vụ thành công!" : "Service created successfully!");
+      } else {
+        await updateAdminService(serviceModal.recordId, serviceDraft);
+        setFlashMessage(language === "vi" ? "Cập nhật dịch vụ thành công!" : "Service updated successfully!");
       }
-
-      return `${sortKey}-asc`;
-    });
+      setServiceModal({ open: false, mode: "create", recordId: null });
+      setRefreshKey(k => k + 1);
+    } catch (error) {
+      setServiceError(error.message || (language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service."));
+    }
   };
 
   const serviceColumns = useMemo(() => ([
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.service")}
-          sortKey="service"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.service"),
       dataIndex: "name",
       key: "name",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (value) => (
         <Tooltip title={value} placement="topLeft">
           <div className="max-w-[200px] truncate text-sm font-bold text-[#432744]">
@@ -697,16 +627,10 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.category")}
-          sortKey="category"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.category"),
       dataIndex: "category",
       key: "category",
+      sorter: (a, b) => (a.category || "").localeCompare(b.category || ""),
       render: (value) => (
         <Pill
           className={SERVICE_CATEGORY_TONES[value] ?? "border border-[#f4d5e3] bg-white text-[#8a7082]"}
@@ -716,67 +640,64 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.price")}
-          sortKey="price"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.price"),
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.duration")}
-          sortKey="duration"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.duration"),
       dataIndex: "duration",
       key: "duration",
+      sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
     },
     {
-      title: (
-        <SortableHeader
-          label={t("servicePricing.table.status")}
-          sortKey="status"
-          selectedSort={selectedSort}
-          onToggle={handleSortToggle}
-        />
-      ),
+      title: t("servicePricing.table.status"),
       dataIndex: "status",
       key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (value) => <StatusBadge status={value} />,
     },
     {
       title: t("userManagement.table.actions"),
       key: "actions",
-      render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
+      render: (_, service) => (
+        <div className="flex items-center gap-2">
+          {getServiceActionItems(service).map((item) => {
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.key} title={item.label}>
+                <button
+                  type="button"
+                  onClick={item.onSelect}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a17a91] hover:bg-[#fff0f5] hover:text-[#e84d92] transition-colors shadow-sm border border-[#f4d5e3] ${item.className || ""}`}
+                >
+                  <Icon size={14} />
+                </button>
+              </Tooltip>
+            );
+          })}
+        </div>
+      ),
     },
-  ]), [getServiceActionItems, selectedSort, t]);
+  ]), [getServiceActionItems, t]);
 
   return (
     <>
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         {flashMessage ? (
           <div className="rounded-[18px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
             {flashMessage}
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
           <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -832,10 +753,10 @@ export function ServicePricingManagementPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_310px]">
+        <div className="grid gap-4">
           <div className="space-y-4">
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="border-b border-[#f6dbe7] px-5 py-4">
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+              {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
                 <h2 className="text-sm font-extrabold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
                   {t("userManagement.table.actions") === "Thao tác"
@@ -843,16 +764,17 @@ export function ServicePricingManagementPage() {
                     : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`
                   }
                 </p>
-              </div>
+              </div> */}
 
               <Table
                 rowKey="id"
                 columns={serviceColumns}
-                dataSource={sortedServices}
+                dataSource={filteredServices}
                 loading={isLoadingServices}
                 pagination={false}
                 scroll={{ x: 800 }}
                 locale={{ emptyText: serviceLoadError || "No services found." }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -912,7 +834,7 @@ export function ServicePricingManagementPage() {
             </section>
           </div>
 
-          <aside className="space-y-4">
+          {/* <aside className="space-y-4">
             <SidePanel title="Insights">
               <div className="space-y-4">
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
@@ -995,7 +917,7 @@ export function ServicePricingManagementPage() {
                 </div>
               </div>
             </SidePanel>
-          </aside>
+          </aside> */}
         </div>
       </section>
 
@@ -1024,8 +946,14 @@ export function ServicePricingManagementPage() {
           label={deleteState.label}
           recordType="Service"
           onCancel={() => setDeleteState(null)}
-          onConfirm={() => {
-            setFlashMessage("Service delete API is not connected yet.");
+          onConfirm={async () => {
+            try {
+              await deleteAdminService(deleteState.recordId);
+              setFlashMessage(language === "vi" ? "Xóa dịch vụ thành công!" : "Service deleted successfully!");
+              setRefreshKey(k => k + 1);
+            } catch (error) {
+              setFlashMessage(error.message || (language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service."));
+            }
             setDeleteState(null);
           }}
         />

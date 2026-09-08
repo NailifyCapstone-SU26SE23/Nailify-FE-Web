@@ -85,10 +85,9 @@ export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
           .getElementById("view-webcam")
           ?.classList.contains("active");
         if (isVideo) {
-          handLandmarkerTask.switchStep("upload");
+          handLandmarkerTask.startImageTryOn();
         } else {
-          handLandmarkerTask.switchMode("VIDEO");
-          handLandmarkerTask.switchStep("tryon");
+          handLandmarkerTask.startLiveTryOn();
         }
       }
     };
@@ -164,40 +163,7 @@ export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
             <div className="scanner-corner top-right"></div>
             <div className="scanner-corner bottom-left"></div>
             <div className="scanner-corner bottom-right"></div>
-            <div className="scanner-grid-line"></div>
 
-            {/* Hand Guideline Silhouette */}
-            <div className="hud-hand-guide-container">
-              <svg
-                className="hud-hand-guide-svg"
-                viewBox="0 0 100 120"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M50 115 C45 110, 42 100, 42 90 C42 85, 38 80, 36 75 C34 70, 31 60, 31 52 C31 46, 33 42, 35 42 C37 42, 38 45, 38 48 C38 40, 40 35, 43 35 C46 35, 47 38, 47 43 C47 34, 49 28, 52 28 C55 28, 56 31, 56 38 C56 34, 58 30, 61 30 C64 30, 65 33, 65 41 C65 42, 65 45, 65 48 C65 43, 68 39, 71 39 C74 39, 75 42, 75 49 C75 56, 73 66, 73 72 C73 78, 68 85, 68 90 C68 100, 65 110, 60 115"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Hand sparkles */}
-                <path
-                  d="M25 45 L27 48 L30 45 L27 42 Z"
-                  fill="white"
-                  opacity="0.8"
-                />
-                <path
-                  d="M75 60 L77 63 L80 60 L77 57 Z"
-                  fill="white"
-                  opacity="0.8"
-                />
-              </svg>
-              <div className="hud-center-tip" id="tryon-title">
-                Show your nails
-              </div>
-            </div>
           </div>
 
           <div id="view-webcam" className="view-content">

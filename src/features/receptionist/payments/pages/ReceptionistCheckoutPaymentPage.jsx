@@ -437,10 +437,10 @@ export function ReceptionistCheckoutPaymentPage() {
                   <img crossOrigin="anonymous"
                     src={customerProfile.avatarUrl}
                     alt={customerDisplayName}
-                    className="h-16 w-16 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
+                    className="h-16 w-16 rounded-lg border-2 border-[#f4d6e2] object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-bold text-white">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-bold text-white">
                     {customerInitials}
                   </div>
                 )}
@@ -478,7 +478,7 @@ export function ReceptionistCheckoutPaymentPage() {
           </SummaryCard>
 
           <SummaryCard title={t("receptionist.payments.summaryTitle") || "Bill Details"}>
-            <div className="overflow-hidden rounded-[20px] border border-[#f5d7e4]">
+            <div className="overflow-hidden rounded-lg border border-[#f5d7e4]">
               <Table
                 dataSource={billItems}
                 pagination={false}
@@ -627,21 +627,17 @@ export function ReceptionistCheckoutPaymentPage() {
             </div>
 
             {paymentMethod === 'cod' && (
-              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-[20px] bg-[#fffafb] mt-4">
+              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-lg bg-[#fffafb] mt-4">
                 <CircleDollarSign size={48} className="text-[#ea4f93] mb-4" />
-                <p className="text-lg font-bold text-[#412643]">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
-                <p className="text-sm text-[#b38a9f] text-center mb-6 max-w-sm">
-                  {language === "vi"
-                    ? `Vui lòng thu đúng số tiền ${formatCurrency(totalValue)} từ khách hàng trước khi hoàn thành thanh toán.`
-                    : `Please collect ${formatCurrency(totalValue)} from the customer before completing the checkout.`}
-                </p>
+                <p className="text-lg font-bold text-[#412643] mb-4">{language === "vi" ? "Thanh toán bằng Tiền mặt" : "Pay with Cash"}</p>
+
                 <button
                   type="button"
                   onClick={async () => {
                     try {
                       await checkoutReceptionistBooking(bookingId);
                       toast.success(t("receptionist.bookings.checkoutSuccess") || "Booking checked out successfully.");
-                      navigate(`${ROUTES.paymentSuccess}?orderCode=COD-${bookingId}`);
+                      navigate(getReceptionistBookingDetailRoute(bookingId));
                     } catch (checkoutErr) {
                       toast.error(checkoutErr instanceof Error ? checkoutErr.message : (language === "vi" ? "Thanh toán thất bại." : "Failed to check out booking."));
                     }

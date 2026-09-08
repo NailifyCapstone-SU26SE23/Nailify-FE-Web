@@ -1103,7 +1103,7 @@ export function ReceptionistDashboardPage() {
                   <div
                     key={item.queueId || `${guestName}-${index}`}
                     onClick={() => { setSelectedQueueItem(item); setIsQueueDetailModalOpen(true); }}
-                    className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-[20px] border border-[#F3E2EC] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,79,147,0.12)] cursor-pointer"
+                    className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#F3E2EC] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,79,147,0.12)] cursor-pointer"
                   >
                     <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
                       {/* Position Badge */}
@@ -1166,7 +1166,7 @@ export function ReceptionistDashboardPage() {
               displayQueue.map(([name, service, wait], index) => (
                 <div
                   key={`${name}-${wait}`}
-                  className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-[20px] border border-[#f7e0ea] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(245,158,11,0.12)] cursor-pointer"
+                  className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#f7e0ea] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(245,158,11,0.12)] cursor-pointer"
                 >
                   <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
                     <div className="flex-shrink-0 mt-0.5">
@@ -1272,11 +1272,8 @@ export function ReceptionistDashboardPage() {
 
 
   return (
-    <section className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
-      <div className="mx-auto w-full space-y-6 p-4 md:p-8
-                      bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-                    ">
+    <section className="flex min-h-screen flex-col text-slate-800 font-sans">
+      <div className="w-full space-y-6 p-4 md:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div>
             <h1 className="text-2xl font-black text-[#e14f91]">{t("receptionDesk") || "Receptionist Dashboard"}</h1>
@@ -1486,7 +1483,7 @@ export function ReceptionistDashboardPage() {
             `verify-qr` {language === "vi" ? "trước khi mở lịch hẹn" : "before opening the booking"}.
           </p>
 
-          <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+          <div className="overflow-hidden rounded-lg border border-[#f2d8e4] bg-[#fff7fb]">
             <div className="relative aspect-[4/3] bg-[#2a1d2b]">
               <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
               <canvas ref={scannerCanvasRef} className="hidden" />

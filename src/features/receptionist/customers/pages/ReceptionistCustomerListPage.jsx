@@ -45,6 +45,7 @@ import { receptionistWalkInBookingService } from "../../walk-in-bookings/service
 import { getReceptionistSalonId } from "../../bookings/services/receptionistBookingService";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { AssignChairModal } from "../../bookings/components/AssignChairModal";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 function formatDate(dateString, language) {
   if (!dateString) return language === "vi" ? "Chưa cập nhật" : "Not updated";
@@ -889,26 +890,30 @@ export function ReceptionistCustomerListPage() {
       {
         label: language === "vi" ? "Tổng Khách Hàng" : "Total Customers",
         value: totalItems || customers.length,
-        subtext: language === "vi" ? "Hồ sơ lưu trữ tại salon" : "Stored profiles at salon",
+        note: language === "vi" ? "Hồ sơ lưu trữ tại salon" : "Stored profiles at salon",
         icon: Users,
+        color: "#C97A9E",
       },
       {
         label: language === "vi" ? "Khách Hoạt Động" : "Active Customers",
         value: activeCount || Math.ceil((totalItems || customers.length) * 0.85),
-        subtext: language === "vi" ? "Đã làm dịch vụ gần đây" : "Serviced recently",
+        note: language === "vi" ? "Đã làm dịch vụ gần đây" : "Serviced recently",
         icon: UserCheck,
+        color: "#10b981",
       },
       {
         label: language === "vi" ? "Hàng Chờ Walk-In" : "Walk-in Queue",
         value: walkInGuests.filter((g) => g.status !== "completed").length,
-        subtext: language === "vi" ? "Lượt khách trong ngày" : "Daily check-ins",
+        note: language === "vi" ? "Lượt khách trong ngày" : "Daily check-ins",
         icon: Clock,
+        color: "#f59e0b",
       },
       {
         label: language === "vi" ? "Thành Viên VIP" : "VIP Members",
         value: Math.ceil((totalItems || customers.length || 1) * 0.4),
-        subtext: language === "vi" ? "Chương trình tích điểm" : "Loyalty rewards program",
+        note: language === "vi" ? "Chương trình tích điểm" : "Loyalty rewards program",
         icon: Crown,
+        color: "#8b5cf6",
       },
     ];
   }, [customers, totalItems, walkInGuests, language]);
@@ -918,6 +923,7 @@ export function ReceptionistCustomerListPage() {
       {
         title: t("receptionist.bookings.customer") || "Khách Hàng",
         key: "name",
+        sorter: (a, b) => (a.firstName || "").localeCompare(b.firstName || ""),
         render: (_, record) => {
           return (
             <div className="flex items-center gap-3">
@@ -950,12 +956,14 @@ export function ReceptionistCustomerListPage() {
         title: "Email",
         dataIndex: "email",
         key: "email",
+        sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
         render: (val) => <span className="text-gray-600 text-xs font-medium">{val}</span>,
       },
       {
         title: t("receptionist.common.status") || "Trạng Thái",
         dataIndex: "status",
         key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (val) => {
           const badge = getStatusBadge(val, language);
           return (
@@ -972,6 +980,7 @@ export function ReceptionistCustomerListPage() {
         title: language === "vi" ? "Ngày Đăng Ký" : "Date Registered",
         dataIndex: "createdAt",
         key: "createdAt",
+        sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
         render: (val) => <span className="text-gray-500 text-xs font-medium">{formatDate(val, language)}</span>,
       },
       {
@@ -1055,26 +1064,7 @@ export function ReceptionistCustomerListPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {metrics.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.label}
-              className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs flex items-center justify-between"
-            >
-              <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{item.label}</p>
-                <p className="text-2xl font-bold text-[#221F26] mt-0.5">{item.value}</p>
-                <p className="text-[10px] text-gray-500 font-medium">{item.subtext}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-[#FAF0F5] text-[#C97A9E] flex items-center justify-center border border-[#F2D6E3] shrink-0">
-                <Icon size={18} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <TopMetricsRow metrics={metrics} className="grid grid-cols-2 lg:grid-cols-4 gap-3.5" />
 
       {mainWorkspaceTab === "directory" && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 md:p-6 space-y-4">

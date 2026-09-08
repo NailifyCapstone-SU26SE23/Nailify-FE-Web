@@ -343,7 +343,7 @@ export function StaffUpdatePage() {
   if (isLoading) {
     return (
       <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-        <div className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
           <div className="h-8 w-48 rounded-full bg-rose-100 animate-pulse" />
         </div>
         <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
@@ -371,7 +371,7 @@ export function StaffUpdatePage() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             {language === "vi" ? "Cập nhật thông tin nhân viên" : "Update Artist"}

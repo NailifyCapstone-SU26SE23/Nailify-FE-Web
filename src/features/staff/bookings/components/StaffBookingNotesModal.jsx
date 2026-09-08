@@ -95,7 +95,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
             {notesSections.map((section) => (
               <article
                 key={section.label}
-                className="rounded-[20px] border border-[#f3d5e2] bg-[#fffafd] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)]"
+                className="rounded-lg border border-[#f3d5e2] bg-[#fffafd] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)]"
               >
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                   {section.label}

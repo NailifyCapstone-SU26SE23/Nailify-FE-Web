@@ -91,3 +91,38 @@ export async function fetchAdminServices({ pageNumber = 1, pageSize = 10, name =
     },
   };
 }
+
+export async function createAdminService(serviceData) {
+  const response = await axiosClient.post("/Services", serviceData, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to create service.");
+  return data ? normalizeAdminService(data) : null;
+}
+
+export async function getAdminServiceById(serviceId) {
+  const response = await axiosClient.get(`/Services/${serviceId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to get service details.");
+  return data ? normalizeAdminService(data) : null;
+}
+
+export async function updateAdminService(serviceId, serviceData) {
+  const response = await axiosClient.put(`/Services/${serviceId}`, serviceData, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to update service.");
+  return data ? normalizeAdminService(data) : null;
+}
+
+export async function deleteAdminService(serviceId) {
+  const response = await axiosClient.delete(`/Services/${serviceId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to delete service.");
+}

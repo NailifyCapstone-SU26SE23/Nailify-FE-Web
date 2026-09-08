@@ -221,7 +221,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
           ) : null}
         </div>
 
-        <div className="rounded-[20px] border border-rose-100 bg-[#fff8fb] p-4">
+        <div className="rounded-lg border border-rose-100 bg-[#fff8fb] p-4">
           <p className="text-[13px] font-semibold text-slate-600">{t("adminNailSurfacesManagement.colorOffsets")}</p>
           <p className="mt-1 text-xs text-slate-400">
             {t("adminNailSurfacesManagement.colorOffsetsHelper")}

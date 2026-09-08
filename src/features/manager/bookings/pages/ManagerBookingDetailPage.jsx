@@ -24,7 +24,7 @@ import {
   Banknote,
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -100,7 +100,7 @@ function Card({ className = "", children }) {
       initial="hidden"
       animate="visible"
       variants={fadeInUp}
-      className={`rounded-[24px] border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.1)] hover:border-[#E8C5D8] md:p-7 ${className}`}
+      className={`rounded-lg border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.1)] hover:border-[#E8C5D8] md:p-7 ${className}`}
     >
       {children}
     </motion.article>
@@ -346,7 +346,9 @@ const _shownRefundWarningForBookings = new Set();
 export function ManagerBookingDetailPage() {
   const { t, language } = useLanguage();
   const { bookingId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const backRoute = location.state?.from || (location.pathname.startsWith("/admin/") ? ROUTES.adminBookings : ROUTES.managerBookings);
   const [booking, setBooking] = useState(null);
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -599,7 +601,7 @@ export function ManagerBookingDetailPage() {
   if (!isLoading && error) {
     return (
       <section className="flex min-h-full flex-col gap-4 p-6 font-sans">
-        <Link to="/manager/bookings" className="inline-flex items-center gap-2 text-xs font-bold text-[#E84F93]">
+        <Link to={backRoute} className="inline-flex items-center gap-2 text-xs font-bold text-[#E84F93]">
           <ArrowLeft size={16} /> {t("manager.common.back")}
         </Link>
         <Alert message={t("manager.common.error")} description={error} type="error" showIcon className="rounded-2xl" />
@@ -629,11 +631,11 @@ export function ManagerBookingDetailPage() {
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
-      className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans bg-[#FAF6F8]"
+      className="flex min-h-[100dvh] flex-col gap-6 font-sans"
     >
       {/* Top Hero Banner */}
       <motion.div variants={fadeInUp}>
-        <div className="relative overflow-hidden rounded-[28px] border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFFFFF] to-[#FFF0F5] p-6 lg:p-7 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
+        <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFFFFF] to-[#FFF0F5] p-6 lg:p-7 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
           {/* Subtle Shimmer Background Blur */}
           <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full bg-[#E84F93]/10 blur-3xl" />
 
@@ -641,7 +643,7 @@ export function ManagerBookingDetailPage() {
             <div>
               <button
                 type="button"
-                onClick={() => navigate("/manager/bookings")}
+                onClick={() => navigate(backRoute)}
                 className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
               >
                 <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -674,7 +676,7 @@ export function ManagerBookingDetailPage() {
 
             {/* Header Action Buttons Bar */}
             <div className="flex flex-wrap items-center gap-2.5">
-              <motion.button
+              {/* <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 type="button"
@@ -683,7 +685,7 @@ export function ManagerBookingDetailPage() {
               >
                 <Edit3 size={15} className="text-[#E84F93]" />
                 <span>{t("manager.common.edit")}</span>
-              </motion.button>
+              </motion.button> */}
 
               {/* Refund Button */}
               {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
@@ -783,7 +785,7 @@ export function ManagerBookingDetailPage() {
         <div className="space-y-6">
           {/* Customer Reschedule Request Alert Banner */}
           {(booking?.status === "ReschedulePending" || booking?.status === "RescheduleReq" || booking?.proposedBy === "Customer") && (
-            <motion.div variants={fadeInUp} className="rounded-[24px] border-2 border-[#6366F1]/50 bg-gradient-to-r from-[#EEF2FF] via-[#F5F3FF] to-[#EEF2FF] p-5 shadow-sm">
+            <motion.div variants={fadeInUp} className="rounded-lg border-2 border-[#6366F1]/50 bg-gradient-to-r from-[#EEF2FF] via-[#F5F3FF] to-[#EEF2FF] p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
@@ -820,7 +822,7 @@ export function ManagerBookingDetailPage() {
 
           {/* Manager Reschedule Proposal Sent Banner */}
           {(booking?.status === "RescheduleSuggested" && booking?.proposedBy === "Manager") && (
-            <motion.div variants={fadeInUp} className="rounded-[24px] border border-[#FCD34D] bg-[#FFFBEB] p-4.5 text-xs text-[#B45309] flex items-center justify-between shadow-2xs">
+            <motion.div variants={fadeInUp} className="rounded-lg border border-[#FCD34D] bg-[#FFFBEB] p-4.5 text-xs text-[#B45309] flex items-center justify-between shadow-2xs">
               <div className="flex items-center gap-2.5">
                 <Clock3 size={16} className="text-[#D97706] shrink-0" />
                 <div>
@@ -991,7 +993,7 @@ export function ManagerBookingDetailPage() {
                       render: (text, item) => (
                         <div className="flex items-start gap-4">
                           {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
-                            <div 
+                            <div
                               className="group relative w-[72px] h-[72px] rounded-xl border border-[#F3D6E5] overflow-hidden cursor-pointer hover:border-[#E84F93] transition-colors shrink-0 shadow-sm"
                               onClick={() => setActiveImageModalUrl((item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, ''))}
                             >
@@ -1134,11 +1136,11 @@ export function ManagerBookingDetailPage() {
               })()}
 
               {/* Transactions List */}
-              {transactions && transactions.length > 0 && (
-                <div className="pt-2">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] mb-3">
-                    {language === "vi" ? "Lịch sử giao dịch" : "Transaction History"}
-                  </h4>
+              <div className="pt-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] mb-3">
+                  {language === "vi" ? "Lịch sử giao dịch" : "Transaction History"}
+                </h4>
+                {transactions && transactions.length > 0 ? (
                   <div className="space-y-3">
                     {[...transactions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((tx, idx) => {
                       const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
@@ -1200,8 +1202,14 @@ export function ManagerBookingDetailPage() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#F3E2EC] p-4 text-center bg-[#FFF9FB]/50">
+                    <p className="text-xs text-[#9E8497] font-medium">
+                      {language === "vi" ? "Chưa có giao dịch nào" : "No transactions yet"}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* QR & QT Confirmation Code */}
               {(booking?.qrCode || booking?.qtCode) && (

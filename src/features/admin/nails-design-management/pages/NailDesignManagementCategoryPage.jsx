@@ -217,8 +217,8 @@ export function NailDesignManagementCategoryPage() {
   const descriptionLength = draft.description.trim().length;
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
-      <header className="rounded-[20px] border border-[#f8dce8] bg-white/80 p-5 shadow-[0_12px_30px_rgba(236,72,153,0.08)]">
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
+      <header className="rounded-lg border border-[#f8dce8] bg-white/80 p-5 shadow-[0_12px_30px_rgba(236,72,153,0.08)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <Link
@@ -324,7 +324,7 @@ export function NailDesignManagementCategoryPage() {
               ) : null}
             </div>
 
-            <div className="mt-5 rounded-[20px] border border-white/80 bg-white/80 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.08)] backdrop-blur">
+            <div className="mt-5 rounded-lg border border-white/80 bg-white/80 p-4 shadow-[0_10px_24px_rgba(236,72,153,0.08)] backdrop-blur">
               <div className="flex items-start gap-3">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#ec4899_0%,#f472b6_100%)] text-lg font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.22)]">
                   {previewInitials}
