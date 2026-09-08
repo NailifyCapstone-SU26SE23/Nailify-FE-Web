@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { fetchLoyaltyTierDetail } from "../services/loyaltyTiersManagementService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
-export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
+export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, customers = [] }) {
   const { t, language } = useLanguage();
   const [tier, setTier] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,17 +56,10 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
     } catch (e) { }
   }
 
-  // Derived mock member count for UI richness
-  const getMockMemberCount = (name) => {
-    if (!name) return 0;
-    const lower = String(name).toLowerCase();
-    if (lower.includes("đồng") || lower.includes("bronze")) return 142;
-    if (lower.includes("bạc") || lower.includes("silver")) return 88;
-    if (lower.includes("vàng") || lower.includes("gold")) return 45;
-    if (lower.includes("kim cương") || lower.includes("diamond")) return 14;
-    if (lower.includes("bạch kim") || lower.includes("platinum")) return 28;
-    return 6;
-  };
+  const memberCount = React.useMemo(() => {
+    if (!tier || !customers.length) return 0;
+    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
+  }, [tier, customers]);
 
   return (
     <AnimatePresence>
@@ -291,7 +284,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose }) {
                       {t("adminLoyaltyTiersManagement.totalMembers")}
                     </span>
                     <span className="text-xs font-bold text-[#3f2034]">
-                      {getMockMemberCount(tier.name)} {t("adminLoyaltyTiersManagement.active")}
+                      {memberCount} {t("adminLoyaltyTiersManagement.active")}
                     </span>
                   </div>
                 </div>

@@ -30,69 +30,15 @@ export const STATUS_OPTIONS = ["Active", "Inactive"];
 
 export const SERVICE_CATEGORY_FILTERS = ["All", ...SERVICE_CATEGORIES];
 
-const BASE_SERVICE_ROWS = [
-  { id: "svc-01", name: "Classic Manicure", category: "Basic Nail", price: 22, duration: 30, hasAddOn: true, status: "Active" },
-  { id: "svc-02", name: "Classic Pedicure", category: "Basic Nail", price: 28, duration: 45, hasAddOn: true, status: "Active" },
-  { id: "svc-03", name: "Gel Manicure", category: "Gel Nail", price: 38, duration: 60, hasAddOn: true, status: "Active" },
-  { id: "svc-04", name: "Gel Pedicure", category: "Gel Nail", price: 45, duration: 75, hasAddOn: true, status: "Active" },
-  { id: "svc-05", name: "Floral Nail Art", category: "Nail Art", price: 55, duration: 90, hasAddOn: true, status: "Active" },
-  { id: "svc-06", name: "Ombre Gradient Art", category: "Nail Art", price: 60, duration: 90, hasAddOn: false, status: "Inactive" },
-  { id: "svc-07", name: "Gel Extension Full Set", category: "Gel Extension", price: 75, duration: 120, hasAddOn: true, status: "Active" },
-  { id: "svc-08", name: "Gel Extension Refill", category: "Gel Extension", price: 50, duration: 75, hasAddOn: true, status: "Active" },
-  { id: "svc-09", name: "Luxury Hand Spa", category: "Hand Spa", price: 35, duration: 50, hasAddOn: true, status: "Active" },
-  { id: "svc-10", name: "Express Hand Spa", category: "Hand Spa", price: 20, duration: 25, hasAddOn: false, status: "Inactive" },
-  { id: "svc-11", name: "Gel Removal", category: "Removal", price: 15, duration: 20, hasAddOn: false, status: "Active" },
-  { id: "svc-12", name: "Acrylic Removal", category: "Removal", price: 18, duration: 25, hasAddOn: false, status: "Active" },
-  { id: "svc-13", name: "Custom Design (per nail)", category: "Custom Design", price: 8, duration: 15, hasAddOn: true, status: "Active" },
-];
+const BASE_SERVICE_ROWS = [];
 
-const BASE_ADD_ON_ROWS = [
-  { id: "addon-01", name: "Decoration", type: "Decorative", price: 5, appliedTo: "All Services", status: "Active" },
-  { id: "addon-02", name: "Stone", type: "Decorative", price: 7, appliedTo: "All Services", status: "Active" },
-  { id: "addon-03", name: "Pearl", type: "Decorative", price: 8, appliedTo: "Gel Nail", status: "Active" },
-  { id: "addon-04", name: "Chrome Powder", type: "Finish", price: 10, appliedTo: "Gel Nail", status: "Active" },
-  { id: "addon-05", name: "Nail Repair", type: "Repair", price: 6, appliedTo: "All Services", status: "Active" },
-  { id: "addon-06", name: "Hand Spa Upgrade", type: "Treatment", price: 12, appliedTo: "Hand Spa", status: "Inactive" },
-];
+const BASE_ADD_ON_ROWS = [];
 
-export const MOST_BOOKED_SERVICES = [
-  ["Gel Manicure", "248 bookings"],
-  ["Classic Manicure", "196 bookings"],
-  ["Floral Nail Art", "154 bookings"],
-  ["Gel Extension Full Set", "132 bookings"],
-  ["Luxury Hand Spa", "98 bookings"],
-];
+export const MOST_BOOKED_SERVICES = [];
 
-export const HIGHEST_REVENUE_SERVICES = [
-  ["Gel Extension Full Set", formatVndCurrency(9900), 100],
-  ["Gel Manicure", formatVndCurrency(9424), 94],
-  ["Floral Nail Art", formatVndCurrency(8470), 85],
-  ["Gel Pedicure", formatVndCurrency(6750), 67],
-  ["Classic Manicure", formatVndCurrency(4312), 43],
-];
+export const HIGHEST_REVENUE_SERVICES = [];
 
-export const PRICING_ALERTS = [
-  {
-    tone: "amber",
-    title: "Below Market Rate",
-    body: `Classic Manicure at ${formatVndCurrency(22)} is 18% below local avg. Consider updating.`,
-  },
-  {
-    tone: "rose",
-    title: "Price Not Updated",
-    body: "Gel Removal price unchanged for 6+ months.",
-  },
-  {
-    tone: "sky",
-    title: "New Competitor Pricing",
-    body: `Nearby salons offer Gel Extension at ${formatVndCurrency(68)}. You're at ${formatVndCurrency(75)}.`,
-  },
-  {
-    tone: "emerald",
-    title: "Optimal Pricing",
-    body: "Floral Nail Art is priced competitively with high demand.",
-  },
-];
+export const PRICING_ALERTS = [];
 
 const serviceUpdates = new Map();
 const addOnUpdates = new Map();

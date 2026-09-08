@@ -31,7 +31,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../../shared/bookings/services/mockBookings";
+
 import {
   buildStaffBookingItemsForUpdate,
   buildStaffServiceSessionPayload,
@@ -773,7 +773,6 @@ export function StaffServiceSessionPage() {
   const { bookingId } = useParams();
   const { language } = useLanguage();
   const isVi = language === "vi";
-  const booking = getMockBookingById(bookingId);
   const { notifications } = useNotifications();
   const payload = location.state?.serviceSession;
   const persistedSession = useSelector((state) =>
@@ -927,7 +926,6 @@ export function StaffServiceSessionPage() {
     if (bookingDetail) {
       return buildStaffServiceSessionPayload(bookingDetail, {
         backRoute: getStaffBookingDetailRoute(bookingId),
-        customerDetail,
         designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
         serviceDetailMap,
         nailVariantDetailMap: bookingNailVariantDetailMap,
@@ -935,195 +933,8 @@ export function StaffServiceSessionPage() {
       });
     }
 
-    if (!booking) {
-      return null;
-    }
-
-    const appointmentStartTime = formatTimeValue(booking.bookingTime);
-    const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, booking.totalDuration || booking.duration);
-
-    return {
-      bookingCode: booking.id.replace("BKG", "BK"),
-      bookingItemId: booking.bookingItems?.[0]?.bookingItemId ?? booking.bookingItems?.[0]?.id ?? "",
-      bookingItemIds: getSessionBookingItemIds(
-        booking.bookingItems?.map((item) => item?.bookingItemId ?? item?.id),
-      ),
-      customerName: booking.customerName,
-      customerPhone: booking.customerPhone,
-      customerAvatar: DEFAULT_CUSTOMER_AVATAR,
-      serviceLabel: Array.isArray(booking.services) && booking.services.length ? booking.services.join("\n") : booking.service,
-      serviceBreakdown: (() => {
-        const raw = Array.isArray(booking.bookingItems)
-          ? booking.bookingItems
-            .map((item, index) => {
-              const name = String(item?.serviceName || item?.customerNailName || item?.nailVariantName || "").trim();
-
-              if (!name) {
-                return null;
-              }
-
-              const durationValue = String(item?.duration || "").trim();
-              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-              const priceValue = Number(item?.price || item?.finalPrice || 0);
-
-              const resolvedId = String(item?.bookingItemId || item?.id || `${name}-${index}`).trim();
-              return {
-                id: resolvedId,
-                bookingItemId: resolvedId,
-                name,
-                duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-                durationLabel: durationValue,
-                quantity,
-                priceLabel: formatCurrency(priceValue),
-              };
-            })
-            .filter(Boolean)
-          : [];
-
-        const grouped = [];
-        const map = new Map();
-        raw.forEach((r) => {
-          const key = `${r.name}_${r.priceLabel}_${r.durationLabel}`;
-          if (!map.has(key)) {
-            const copy = { ...r };
-            map.set(key, copy);
-            grouped.push(copy);
-          } else {
-            map.get(key).quantity += r.quantity;
-          }
-        });
-        return grouped;
-      })(),
-      nailServiceBreakdown: (() => {
-        const raw = Array.isArray(booking.bookingItems)
-          ? booking.bookingItems
-            .map((item, index) => {
-              const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
-
-              if (!name) {
-                return null;
-              }
-
-              const durationValue = String(item?.duration || "").trim();
-              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-              const priceValue = Number(item?.price || item?.finalPrice || 0);
-
-              return {
-                id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
-                name,
-                duration: durationValue ? Number.parseInt(durationValue, 10) || 0 : 0,
-                durationLabel: durationValue,
-                quantity,
-                priceLabel: formatCurrency(priceValue),
-              };
-            })
-            .filter(Boolean)
-          : [];
-
-        const grouped = [];
-        const map = new Map();
-        raw.forEach((r) => {
-          const key = `${r.name}_${r.priceLabel}_${r.durationLabel}`;
-          if (!map.has(key)) {
-            const copy = { ...r };
-            map.set(key, copy);
-            grouped.push(copy);
-          } else {
-            map.get(key).quantity += r.quantity;
-          }
-        });
-        return grouped;
-      })(),
-      priceSummary: {
-        serviceRows: Array.isArray(booking.bookingItems)
-          ? booking.bookingItems
-            .map((item, index) => {
-              const name = String(item?.serviceName || "").trim();
-
-              if (!name) {
-                return null;
-              }
-
-              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-              return {
-                id: `service-${item?.bookingItemId || item?.id || index}`,
-                category: "Service",
-                label: name,
-                amount: formatCurrency(item?.price || item?.finalPrice || 0),
-              };
-            })
-            .filter(Boolean)
-          : [],
-        nailRows: Array.isArray(booking.bookingItems)
-          ? booking.bookingItems
-            .map((item, index) => {
-              const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
-
-              if (!name) {
-                return null;
-              }
-
-              const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
-
-              return {
-                id: `nail-${item?.bookingItemId || item?.id || index}`,
-                category: "Nail Service",
-                label: name,
-                amount: formatCurrency(item?.price || item?.finalPrice || 0),
-              };
-            })
-            .filter(Boolean)
-          : [],
-        discountRows: Array.isArray(booking.discounts)
-          ? booking.discounts.map((item, index) => ({
-            id: `discount-${index}`,
-            category: "Discount",
-            label: item?.name || item?.type || `Discount ${index + 1}`,
-            meta: item?.type || null,
-            amount: `-${formatCurrency(Math.abs(Number(item?.amount || 0)))}`,
-          }))
-          : [],
-      },
-      staffArtist: booking.staffName,
-      chair: "Chair 03",
-      appointmentTime: appointmentStartTime,
-      estimatedDuration: appointmentEndTime,
-      estimatedFinishTime: appointmentEndTime,
-      completedAt: "11:25 AM",
-      designName: booking.bookingItems?.find((item) => item?.nailVariantName)?.nailVariantName,
-      totalPrice: booking.total,
-      totalAmount: "$94.50",
-      originalServicePrice: "$85.00",
-      extraServiceFee: "$20.00",
-      discountLabel: "Discount (Member 10%)",
-      discountValue: "- $10.50",
-      remainingBalance: "$94.50",
-      beforePhotoTimestamp: "9:52 AM - Today",
-      currentProcess: [
-        Array.isArray(booking.services) && booking.services.length ? booking.services.join(" | ") : booking.service,
-        booking.bookingItems?.find((item) => item?.nailVariantName)?.nailVariantName || "",
-      ].filter(Boolean).join(" | "),
-      remainingTime: "35 minutes",
-      materialsUsed: ["Gel Polish", "Chrome Powder", "Top Coat"],
-      stepNote: "Customer requested softer chrome finish.",
-      customerNotes: [
-        "Sensitive nails - handle with care",
-        "Avoid strong acetone smell",
-        "Prefers elegant chrome style",
-      ],
-      backRoute: getStaffBookingDetailRoute(bookingId),
-      designUpdateRoute: getStaffBookingDesignUpdateRoute(bookingId),
-      amountDue: booking?.amountDue !== undefined ? formatCurrency(booking.amountDue) : null,
-      amountPaid: booking?.amountPaid !== undefined ? formatCurrency(booking.amountPaid) : null,
-      confirmations: [
-        "Customer identity confirmed",
-        "Service design confirmed",
-        "Price confirmed",
-        "Before photo uploaded",
-      ],
-    };
-  }, [booking, bookingDetail, bookingId, customerDetail, serviceDetailMap, bookingNailVariantDetailMap, bookingCustomerNailDetailMap]);
+    return null;
+  }, [bookingDetail, bookingId, customerDetail, serviceDetailMap, bookingNailVariantDetailMap, bookingCustomerNailDetailMap]);
 
   const [bookingProcedures, setBookingProcedures] = useState(
     () => persistedSession?.bookingProcedures ?? [],

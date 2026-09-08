@@ -27,13 +27,20 @@ import {
 import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail } from "../services/salonManagementService";
 import { uploadSalonImage } from "../services/salonsService";
 import { fetchAdminUsers } from "../../user-management/services/userManagementService";
-import {
-  SALON_DAYS_OF_WEEK,
-} from "../services/mockSalon";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
 )}`;
+
+const SALON_DAYS_OF_WEEK = [
+  { key: "monday", label: "Monday" },
+  { key: "tuesday", label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday", label: "Thursday" },
+  { key: "friday", label: "Friday" },
+  { key: "saturday", label: "Saturday" },
+  { key: "sunday", label: "Sunday" },
+];
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },

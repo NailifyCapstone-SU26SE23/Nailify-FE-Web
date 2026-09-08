@@ -8,10 +8,13 @@ import {
   Star,
   Tag, ListFilter, ArrowUpDown,
   WandSparkles,
+  Trash2,
+  Eye,
+  Pen,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Dropdown } from "antd";
+import { Dropdown, Tooltip } from "antd";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
@@ -20,8 +23,9 @@ import {
   getAdminNailDesignDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { fetchAdminNailDesigns, fetchAdminCategories } from "../services/nailDesignManagementService";
+import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 const DESIGN_CARD_PRESETS = [
   {
@@ -145,7 +149,7 @@ export function NailDesignManagementPage() {
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
-    pageSize: 6,
+    pageSize: 8,
     totalItems: 0,
     hasPrevious: false,
     hasNext: false,
@@ -154,11 +158,63 @@ export function NailDesignManagementPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [globalMetrics, setGlobalMetrics] = useState({
+    activeDesigns: 0,
+    tryOnReady: 0,
+  });
 
   const [categoriesList, setCategoriesList] = useState([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [sortBy, setSortBy] = useState("name-asc");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [pendingDeleteDesign, setPendingDeleteDesign] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!pendingDeleteDesign) return;
+    setIsDeleting(true);
+    try {
+      await deleteAdminNailDesign(pendingDeleteDesign.id);
+      toast.success(language === "vi" ? `Đã xóa thiết kế "${pendingDeleteDesign.name}"` : `Deleted design "${pendingDeleteDesign.name}" successfully.`);
+      setRefreshKey(prev => prev + 1);
+      setMetaData(prev => ({ ...prev, currentPage: 1 }));
+      setDebouncedQuery(query.trim() + " ");
+      setTimeout(() => setDebouncedQuery(query.trim()), 0);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (language === "vi" ? "Lỗi khi xóa" : "Failed to delete design"));
+    } finally {
+      setIsDeleting(false);
+      setPendingDeleteDesign(null);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadGlobalMetrics = async () => {
+      try {
+        const response = await fetchAdminNailDesigns({
+          pageNumber: 1,
+          pageSize: 10000,
+          name: debouncedQuery,
+          categoryIds: selectedCategoryIds,
+        });
+
+        if (!isMounted) return;
+
+        const allItems = response.items || [];
+        setGlobalMetrics({
+          activeDesigns: allItems.filter(d => d.status === "Active").length,
+          tryOnReady: allItems.filter(d => !!d.previewImage).length,
+        });
+      } catch (err) {
+        console.error("Failed to load global metrics", err);
+      }
+    };
+    void loadGlobalMetrics();
+    return () => { isMounted = false; };
+  }, [debouncedQuery, selectedCategoryIds]);
 
   useEffect(() => {
     let isMounted = true;
@@ -185,12 +241,15 @@ export function NailDesignManagementPage() {
     setFilterDropdownOpen(nextOpen);
   };
 
+  const flashMessageShownRef = useRef(false);
+
   useEffect(() => {
-    if (!location.state?.flashMessage) {
+    if (!location.state?.flashMessage || flashMessageShownRef.current) {
       return;
     }
 
     toast.success(location.state.flashMessage);
+    flashMessageShownRef.current = true;
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
@@ -223,7 +282,7 @@ export function NailDesignManagementPage() {
           return;
         }
 
-        setDesigns(response.items);
+        setDesigns((prev) => metaData.currentPage === 1 ? response.items : [...prev, ...response.items]);
         setMetaData(response.metaData);
       } catch (loadError) {
         if (!isMounted) {
@@ -244,7 +303,7 @@ export function NailDesignManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedCategoryIds]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedCategoryIds, refreshKey]);
 
   const normalizedDesigns = useMemo(
     () => designs.map((design, index) => normalizeDesign(design, index, t)),
@@ -258,10 +317,6 @@ export function NailDesignManagementPage() {
       result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     } else if (sortBy === "name-desc") {
       result.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
-    } else if (sortBy === "price-asc") {
-      result.sort((a, b) => (a.uiEstimatedPrice || 0) - (b.uiEstimatedPrice || 0));
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => (b.uiEstimatedPrice || 0) - (a.uiEstimatedPrice || 0));
     }
 
     return result;
@@ -278,55 +333,28 @@ export function NailDesignManagementPage() {
       },
       {
         label: t("adminNailsDesignManagement.activeDesigns"),
-        value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
-        note: t("adminNailsDesignManagement.onCurrentPage"),
+        value: globalMetrics.activeDesigns.toLocaleString(),
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: WandSparkles,
         color: "#8b5cf6",
       },
       {
         label: t("adminNailsDesignManagement.tryonReady"),
-        value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
-        note: t("adminNailsDesignManagement.hasPreviewImage"),
+        value: globalMetrics.tryOnReady.toLocaleString(),
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: Sparkles,
         color: "#23b68b",
       },
       {
         label: t("adminNailsDesignManagement.mostPopularStyle"),
         value: normalizedDesigns[0]?.uiTitle || "N/A",
-        note: t("adminNailsDesignManagement.currentPageHighlight"),
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: Star,
         color: "#f5a623",
       },
     ],
     [metaData.totalItems, metaData.totalPages, normalizedDesigns, language, t],
   );
-
-  const paginationItems = useMemo(() => {
-    const currentPage = metaData.currentPage;
-    const totalPages = metaData.totalPages;
-
-    if (totalPages <= 1) {
-      return [1];
-    }
-
-    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
-    const normalizedPages = [...pages]
-      .filter((page) => page >= 1 && page <= totalPages)
-      .sort((left, right) => left - right);
-
-    const result = [];
-
-    normalizedPages.forEach((page, index) => {
-      result.push(page);
-
-      const nextPage = normalizedPages[index + 1];
-      if (nextPage && nextPage - page > 1) {
-        result.push("...");
-      }
-    });
-
-    return result;
-  }, [metaData.currentPage, metaData.totalPages]);
 
   const filterItems = useMemo(() => {
     const allItem = {
@@ -381,7 +409,7 @@ export function NailDesignManagementPage() {
   };
 
   return (
-    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
+    <section className="flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
 
       </div>
@@ -564,29 +592,87 @@ export function NailDesignManagementPage() {
               </div>
             ) : (
               sortedDesigns.map((design) => (
-                <Link
-                  to={getAdminNailDesignDetailRoute(design.id)}>
-                  <article
-                    key={design.id}
-                    className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
-                  >
-                    <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
-                      <DesignPreview design={design} />
-                    </Link>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
-                          >
-                            {design.uiTitle}
-                          </Link>
-                        </div>
+                <article
+                  key={design.id}
+                  className="relative flex h-full flex-col overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
+                >
+                  <SmallTag className={`absolute top-3 right-3 z-10 shadow-sm ${design.uiStatusTone}`}>
+                    {design.uiStatus}
+                  </SmallTag>
+                  <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
+                    <DesignPreview design={design} />
+                  </Link>
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <Link
+                          to={getAdminNailDesignDetailRoute(design.id)}
+                          className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
+                        >
+                          {design.uiTitle}
+                        </Link>
                       </div>
                     </div>
-                  </article>
-                </Link>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {design.uiTags.map((tag, index) => (
+                        <SmallTag
+                          key={`${design.id}-${tag}`}
+                          className={
+                            [
+                              "bg-[#ffe7ef] text-[#ea4f93]",
+                              "bg-[#f5ecff] text-[#8b5cf6]",
+                              "bg-[#fff4df] text-[#d9871c]",
+                            ][index % 3]
+                          }
+                        >
+                          {tag}
+                        </SmallTag>
+                      ))}
+                      {design.uiTones.map((tag) => (
+                        <SmallTag key={`${design.id}-${tag}`} className="bg-[#fff7fb] text-[#c694ad]">
+                          {tag}
+                        </SmallTag>
+                      ))}
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-center gap-3 border-t border-[#fdf2f7] pt-4">
+                      <div className="flex gap-3">
+                        <Tooltip title={t("adminNailsDesignManagement.view")} placement="bottom">
+                          <Link
+                            to={getAdminNailDesignDetailRoute(design.id)}
+                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-white text-[#8c7085] hover:bg-[#fbf4f8] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Eye size={14} />
+                          </Link>
+                        </Tooltip>
+                        <Tooltip title={t("adminNailsDesignManagement.edit")} placement="bottom">
+                          <Link
+                            to={getAdminNailDesignDetailRoute(design.id)}
+                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] text-[#ea4f93] hover:bg-[#ffe1ee] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Pen size={14} />
+                          </Link>
+                        </Tooltip>
+                        <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="bottom">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setPendingDeleteDesign(design);
+                            }}
+                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff0f6] text-[#d14c84] hover:bg-[#ffe1ee] transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               ))
             )}
           </div>
@@ -597,64 +683,59 @@ export function NailDesignManagementPage() {
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] text-[#c694ad]">
+          <div className="mt-4 flex flex-col items-center justify-center pt-2">
+            <p className="text-[11px] text-[#c694ad] mb-3">
               {language === "vi"
-                ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} thiết kế`
-                : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} designs`
+                ? `Hiển thị ${normalizedDesigns.length} trong số ${metaData.totalItems} thiết kế`
+                : `Showing ${normalizedDesigns.length} of ${metaData.totalItems} designs`
               }
             </p>
-            <div className="flex items-center gap-1">
+            {metaData.hasNext && (
               <button
                 type="button"
-                disabled={!metaData.hasPrevious || isLoading}
+                disabled={isLoading}
                 onClick={() =>
                   setMetaData((current) => ({
                     ...current,
-                    currentPage: Math.max(current.currentPage - 1, 1),
+                    currentPage: current.currentPage + 1,
                   }))
                 }
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full bg-[#fff0f6] px-6 py-2 text-xs font-bold text-[#ea4f93] hover:bg-[#ffe1ee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ChevronLeft size={12} />
+                {isLoading ? <LoaderCircle size={14} className="animate-spin mr-2" /> : null}
+                {language === "vi" ? "Xem thêm" : "Load more"}
               </button>
-              {paginationItems.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  disabled={item === "..." || item === metaData.currentPage || isLoading}
-                  onClick={() => {
-                    if (typeof item !== "number") {
-                      return;
-                    }
-
-                    setMetaData((current) => ({ ...current, currentPage: item }));
-                  }}
-                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
-                    ? "bg-[#ea4f93] font-bold text-white"
-                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
-                    } disabled:cursor-default disabled:opacity-100`}
-                >
-                  {item}
-                </button>
-              ))}
-              <button
-                type="button"
-                disabled={!metaData.hasNext || isLoading}
-                onClick={() =>
-                  setMetaData((current) => ({
-                    ...current,
-                    currentPage: Math.min(current.currentPage + 1, current.totalPages),
-                  }))
-                }
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronRight size={12} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
+
+      <ActionConfirmModal
+        open={Boolean(pendingDeleteDesign)}
+        loading={isDeleting}
+        intent="danger"
+        title={language === "vi" ? "Xóa Mẫu Móng" : "Delete Nail Design"}
+        description={language === "vi" ? `Bạn sắp xóa thiết kế ${pendingDeleteDesign?.name ?? ""}.` : `You are about to delete ${pendingDeleteDesign?.name ?? "this design"}.`}
+        confirmText={language === "vi" ? "Xóa Thiết Kế" : "Delete Design"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDeleteDesign(null)}
+        item={
+          pendingDeleteDesign
+            ? {
+              title: pendingDeleteDesign.name,
+              image: pendingDeleteDesign.imageUrl || undefined,
+              meta: pendingDeleteDesign.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive"),
+              note: pendingDeleteDesign.description || "Nail design",
+            }
+            : undefined
+        }
+        warnings={[
+          language === "vi"
+            ? "Hành động này không thể hoàn tác. Mọi dữ liệu liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống."
+            : "This action cannot be undone. Any related data will be permanently deleted from the system."
+        ]}
+      />
     </section>
   );
 }

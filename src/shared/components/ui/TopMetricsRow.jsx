@@ -54,9 +54,9 @@ export function TopMetricsRow({ metrics, className }) {
                 <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
                   {displayValue} <span className="text-[14px] text-slate-400 font-semibold">{displayUnit}</span>
                 </h2>
-                {metric.note && (
+                {/* {metric.note && (
                   <p className="mt-1 text-[11px] font-medium text-green-600">{safeStr(metric.note)}</p>
-                )}
+                )} */}
               </div>
               <div
                 className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"

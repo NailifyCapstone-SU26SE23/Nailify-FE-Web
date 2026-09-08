@@ -4,6 +4,38 @@ import { ShieldAlert } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { USER_STATUS_STYLES } from "../services/mockUsers";
 
+const getRoleLabel = (role, t) => {
+  switch (String(role).trim().toLowerCase()) {
+    case "admin":
+      return t("superAdmin");
+    case "manager":
+      return t("salonManager");
+    case "receptionist":
+      return t("roleReceptionist");
+    case "staff":
+    case "staff_artist":
+      return t("nailArtist");
+    default:
+      return role;
+  }
+};
+
+const getStatusLabel = (status, t) => {
+  if (!status) return "";
+  switch (String(status).trim().toLowerCase()) {
+    case "active":
+      return t("userManagement.detail.statusActive") || "Active";
+    case "inactive":
+      return t("userManagement.detail.statusInactive") || "Inactive";
+    case "pending":
+      return t("userManagement.detail.statusPending") || "Pending";
+    case "suspended":
+      return t("userManagement.detail.statusSuspended") || "Suspended";
+    default:
+      return status;
+  }
+};
+
 export function UserManagementSnapshotCard({ formValues, notice }) {
   const { t, language } = useLanguage();
   const displayName =
@@ -71,10 +103,10 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
           <span
             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${USER_STATUS_STYLES[formValues.status] ?? "bg-[#fff0f5] text-[#d14c84]"}`}
           >
-            {formValues.status || t("userManagement.detail.newAccount")}
+            {getStatusLabel(formValues.status, t) || t("userManagement.detail.newAccount")}
           </span>
           <span className="inline-flex rounded-full bg-[#fff] px-3 py-1 text-xs font-semibold text-[var(--color-ink)]">
-            {formValues.role}
+            {getRoleLabel(formValues.role, t)}
           </span>
         </div>
       </div>
@@ -86,12 +118,12 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[22px] bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
+      {/* <div className="mt-5 rounded-[22px] bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
         <div className="flex items-start gap-3">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" />
           <p>{notice}</p>
         </div>
-      </div>
+      </div> */}
     </article>
   );
 }

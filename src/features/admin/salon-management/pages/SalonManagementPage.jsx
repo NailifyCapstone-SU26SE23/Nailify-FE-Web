@@ -38,7 +38,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-import { fetchSalonsPaginated, deleteSalon } from "../services/salonsService";
+import { fetchSalonsPaginated, deleteSalon, fetchSalonRatings } from "../services/salonsService";
 import { fetchSalonStaffCount } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -170,8 +170,34 @@ RightMetricCard.propTypes = {
 };
 
 function BranchCard({ branch, onClick }) {
-
   const { t, language } = useLanguage();
+  const [ratingData, setRatingData] = useState({ rating: branch.rating, reviews: branch.reviews });
+
+  useEffect(() => {
+    let isMounted = true;
+    const getRatings = async () => {
+      try {
+        const ratings = await fetchSalonRatings(branch.id);
+        if (isMounted) {
+          if (ratings && ratings.length > 0) {
+            const sum = ratings.reduce((acc, curr) => acc + curr.overallScore, 0);
+            const avg = (sum / ratings.length).toFixed(1);
+            setRatingData({ rating: avg, reviews: ratings.length });
+          } else {
+            setRatingData({ rating: "0.0", reviews: "0" });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load rating for branch:", branch.id);
+      }
+    };
+    getRatings();
+    return () => { isMounted = false; };
+  }, [branch.id]);
+
+  const displayStatus = branch.status.toLowerCase() === "open" 
+    ? (language === "vi" ? "Mở cửa" : "Open") 
+    : (language === "vi" ? "Đóng cửa" : "Closed");
 
   return (
     <motion.button
@@ -192,7 +218,7 @@ function BranchCard({ branch, onClick }) {
         />
         <div className="absolute right-4 top-4 z-10">
           <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md ${branch.statusColor}`}>
-            {branch.status}
+            {displayStatus}
           </span>
         </div>
       </div>
@@ -222,12 +248,15 @@ function BranchCard({ branch, onClick }) {
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
           <div className="flex items-center gap-1 text-[#f59e0b]">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={`${branch.id}-${i}`} size={16} fill="currentColor" strokeWidth={0} />
-            ))}
+            {Array.from({ length: 5 }).map((_, i) => {
+              const isFilled = i < Math.round(Number(ratingData.rating));
+              return (
+                <Star key={`${branch.id}-${i}`} size={16} fill={isFilled ? "currentColor" : "none"} strokeWidth={isFilled ? 0 : 1.5} color={isFilled ? "transparent" : "currentColor"} />
+              );
+            })}
           </div>
           <p className="text-[12px] font-semibold text-[#a88a9f]">
-            <span className="font-bold text-[#2d1b35]">{branch.rating}</span> ({branch.reviews} reviews)
+            <span className="font-bold text-[#2d1b35]">{ratingData.rating}</span> ({ratingData.reviews} {language === "vi" ? "đánh giá" : "reviews"})
           </p>
         </div>
       </div>
@@ -354,6 +383,7 @@ export function SalonManagementPage() {
   const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [pageIndex, setPageIndex] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadMore, setIsLoadMore] = useState(false);
@@ -381,16 +411,17 @@ export function SalonManagementPage() {
   const GAP = 24;
   const SALONS_PER_PAGE = 3;
   const BRANCH_CONTROLS_PER_PAGE = 5;
-  const loadSalons = async (page = 1, search = "") => {
+  const loadSalons = async (page = 1, search = "", status = statusFilter) => {
     if (page === 1) setIsLoading(true);
     else setIsLoadMore(true);
     setError("");
     
     try {
       const data = await fetchSalonsPaginated({
-        PageIndex: page,
-        PageSize: 6,
-        Name: search.trim() || undefined
+        pageNumber: page,
+        pageSize: 6,
+        name: search.trim() || undefined,
+        status: status !== "All" ? status : undefined
       });
       
       const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
@@ -422,7 +453,7 @@ export function SalonManagementPage() {
       }
     };
     loadInitialDeps();
-    loadSalons(1, searchTerm);
+    loadSalons(1, searchTerm, statusFilter);
   }, [salonsRefreshKey]);
 
   useEffect(() => {
@@ -502,16 +533,17 @@ export function SalonManagementPage() {
 
   const clearFilters = () => {
     setSearchTerm("");
-    loadSalons(1, "");
+    setStatusFilter("All");
+    loadSalons(1, "", "All");
   };
 
   const handleSearch = () => {
-    loadSalons(1, searchTerm);
+    loadSalons(1, searchTerm, statusFilter);
   };
 
   const handleLoadMore = () => {
     if (hasMore && !isLoadMore) {
-      loadSalons(pageIndex + 1, searchTerm);
+      loadSalons(pageIndex + 1, searchTerm, statusFilter);
     }
   };
 
@@ -688,6 +720,20 @@ export function SalonManagementPage() {
               </div>
               <div className="flex flex-col gap-4 xl:ml-auto xl:min-w-[640px] xl:items-end">
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                  <Select
+                    value={statusFilter}
+                    onChange={(value) => {
+                      setStatusFilter(value);
+                      loadSalons(1, searchTerm, value);
+                    }}
+                    className="w-full sm:w-[150px] min-w-[150px] custom-select"
+                    style={{ height: "46px" }}
+                    options={[
+                      { value: "All", label: language === "vi" ? "Tất cả" : "All" },
+                      { value: "Open", label: language === "vi" ? "Mở cửa" : "Open" },
+                      { value: "Closed", label: language === "vi" ? "Đóng cửa" : "Closed" },
+                    ]}
+                  />
                   <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8] sm:max-w-[340px]">
                     <Search size={18} className="text-[#ea4f93]" />
                     <input

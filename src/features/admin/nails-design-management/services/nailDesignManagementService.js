@@ -801,6 +801,17 @@ export async function deleteAdminNailVariant(variantId) {
   return unwrapResponse(response, "Failed to delete nail variant.");
 }
 
+export async function deleteAdminNailDesign(designId) {
+  try {
+    const response = await axiosClient.delete(`/NailDesigns/${designId}`, {
+      headers: getAuthHeaders(),
+    });
+    return unwrapResponse(response, "Failed to delete nail design.");
+  } catch (e) {
+    handleApiError(e, "Failed to delete nail design.");
+  }
+}
+
 export async function fetchAdminNailVariantDetail(variantId) {
   const normalizedVariantId = normalizeIntegerId(variantId, -1);
 
