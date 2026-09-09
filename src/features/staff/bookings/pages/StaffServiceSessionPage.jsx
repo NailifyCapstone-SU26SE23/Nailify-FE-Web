@@ -1318,12 +1318,12 @@ export function StaffServiceSessionPage() {
     });
   }, [currentStaffArtistId, serviceProcedureList]);
   const sessionBookingItemKey = useMemo(() => {
-    const rawItems = bookingDetail?.bookingItems || booking?.bookingItems || payload?.bookingItemIds || [];
+    const rawItems = bookingDetail?.bookingItems || payload?.bookingItemIds || [];
     const ids = Array.isArray(rawItems)
       ? rawItems.map((item) => String(item?.bookingItemId || item?.id || item || "").trim()).filter(Boolean)
       : [];
     return [...new Set(ids)].join("|");
-  }, [bookingDetail, booking, payload?.bookingItemIds]);
+  }, [bookingDetail, payload?.bookingItemIds]);
   const sessionBookingItemIds = useMemo(
     () => (sessionBookingItemKey ? sessionBookingItemKey.split("|") : []),
     [sessionBookingItemKey],
