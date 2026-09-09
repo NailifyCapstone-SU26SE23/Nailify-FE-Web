@@ -34,7 +34,7 @@
     "framer-motion": "^13.1.1",
     "html-to-image": "^1.11.13",
     "jsqr": "^1.4.0",
-    "jwt-decode": "^4.0.0",
+    "jwt-decode": "^3.1.2",
     "lucide-react": "^1.38.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -43,10 +43,12 @@
     "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.3",
     "recharts": "^3.10.1",
+    "stats.js": "^0.17.0",
     "sweetalert2": "^11.26.25",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "three": "^0.185.1",
+    "three-mesh-bvh": "^0.9.14",
     "zod": "^4.5.4"
   },
   "devDependencies": {

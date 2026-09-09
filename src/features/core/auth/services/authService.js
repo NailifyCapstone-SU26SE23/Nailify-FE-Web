@@ -1,5 +1,5 @@
 import { axiosClient } from "../../../../lib/axiosClient";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import { ROLES } from "../../../../shared/constants/roles";
 
 function normalizeRole(role) {

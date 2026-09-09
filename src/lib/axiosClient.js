@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getErrorMessage } from "../shared/utils/getErrorMessage";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import { AUTH_STORAGE_KEY } from "../features/core/auth/constants/authConstants";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL?.trim();
