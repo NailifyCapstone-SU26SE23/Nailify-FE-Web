@@ -1237,7 +1237,7 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
-                <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
+                {/* <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p> */}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Pill tone="yellow">{variant.priceDelta}</Pill>
                   <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>

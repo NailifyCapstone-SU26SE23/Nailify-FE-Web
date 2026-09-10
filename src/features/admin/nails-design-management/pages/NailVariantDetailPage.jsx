@@ -333,11 +333,11 @@ function getFingerAlignmentClass(fingerName) {
 // Default coordinates for nails on the hand images
 const DEFAULT_COORDINATES = {
   woman: {
-    1: { left: 17.8, top: 35.8, width: 7.7, height: 11.4, rotation: -46 }, // Thumb
-    2: { left: 38.5, top: 11.5, width: 8.9, height: 14.4, rotation: -2 }, // Index
-    3: { left: 52.7, top: 8.8, width: 10.1, height: 16.2, rotation: 0 }, // Middle
-    4: { left: 65.5, top: 13.0, width: 9.5, height: 14.7, rotation: 0 }, // Ring
-    5: { left: 81.4, top: 23.5, width: 6.8, height: 11.1, rotation: 9 }, // Pinky
+    1: { left: 0, top: 44.1, width: 15.3, height: 16.5, rotation: -46 }, // Thumb
+    2: { left: 17.6, top: 14.1, width: 17.1, height: 22.4, rotation: -22 }, // Index
+    3: { left: 45.3, top: 7.1, width: 17.1, height: 21.2, rotation: 0 }, // Middle
+    4: { left: 69.4, top: 12.9, width: 14.7, height: 19.4, rotation: 3 }, // Ring
+    5: { left: 87.1, top: 25.3, width: 11.8, height: 15.9, rotation: 9 }, // Pinky
   },
   man: {
     1: { left: 14.4, top: 43.2, width: 7.4, height: 17.5, rotation: -54 }, // Thumb
@@ -356,6 +356,7 @@ const EMPTY_SUMMARY = {
 };
 
 function NailVariantHandPreview({ variantDetail }) {
+  const { language } = useLanguage();
   const [viewMode, setViewMode] = useState("tips"); // "tips" or "hand"
   const [handType, setHandType] = useState("woman"); // "woman" or "man"
   const [zoom, setZoom] = useState(1);
@@ -455,7 +456,7 @@ function NailVariantHandPreview({ variantDetail }) {
     : { width: 400, height: 400 };
 
   return (
-    <div className="rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+    <div className="rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       {/* View Switch Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#fce6f3] pb-4">
         <div className="flex rounded-full bg-[#ffeef5]/60 p-1 border border-[#fce6f3]">
@@ -463,14 +464,14 @@ function NailVariantHandPreview({ variantDetail }) {
             onClick={() => setViewMode("tips")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ${viewMode === "tips" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
-            Individual Nails
+            {language === "vi" ? "Móng lẻ" : "Individual Nails"}
           </button>
           <button
             onClick={() => setViewMode("hand")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${viewMode === "hand" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            View on Hand
+            {language === "vi" ? "Tay mẫu" : "View on Hand"}
           </button>
         </div>
 
@@ -1254,77 +1255,80 @@ export function NailVariantDetailPage() {
           <div className="space-y-5">
             <NailVariantHandPreview variantDetail={variant} />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                [t("adminNailsDesignManagement.price"), variant.priceLabel],
-                [t("adminNailsDesignManagement.duration"), variant.durationLabel],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-[18px] border border-[#f7d7e5] bg-[#fffafb] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                  <p className="mt-2 text-sm font-bold text-[#432744]">{value}</p>
-                </div>
-              ))}
-            </div>
+            <div className="rounded-lg border border-[#f3dce7] bg-white p-6 shadow-sm sm:p-8">
+              <div className="grid gap-8 lg:grid-cols-[1fr_auto_1.5fr]">
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</h3>
-                <div className="mt-4 space-y-3">
-                  {[
-                    [t("adminNailsDesignManagement.name"), variant.nailShape?.name],
-                    [t("adminNailsDesignManagement.price"), variant.nailShape?.priceLabel],
-                    [t("adminNailsDesignManagement.duration"), variant.nailShape?.durationLabel],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
-                    </div>
-                  ))}
+                {/* Left Column: Core Pricing & Duration */}
+                <div className="flex flex-col justify-center space-y-6">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#c694ad]">{t("adminNailsDesignManagement.price")}</p>
+                    <p className="mt-1 text-3xl font-extrabold text-[#432744]">{variant.priceLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
+                    <p className="mt-1 text-xl font-bold text-[#432744]">{variant.durationLabel}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</h3>
-                <div className="mt-4 space-y-3">
-                  {[
-                    [t("adminNailsDesignManagement.name"), variant.nailSurface?.name],
-                    [t("adminNailsDesignManagement.price"), variant.nailSurface?.priceLabel],
-                    [t("adminNailsDesignManagement.duration"), variant.nailSurface?.durationLabel],
-                  ].map(([label, value]) => (
-                    <div key={label} className="rounded-[16px] border border-[#f3dce7] bg-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{label}</p>
-                      <p className="mt-1 text-sm font-bold text-[#432744]">{value}</p>
+                {/* Divider */}
+                <div className="hidden w-px bg-gradient-to-b from-transparent via-[#f3dce7] to-transparent lg:block" />
+                <div className="block h-px w-full bg-gradient-to-r from-transparent via-[#f3dce7] to-transparent lg:hidden" />
+
+                {/* Right Column: Specifications */}
+                <div className="flex flex-col justify-center space-y-4">
+                  <h4 className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#d17b9f] mb-1">{language === "vi" ? "Thông tin chi tiết" : "Specifications"}</h4>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-[#fffafb] px-5 py-4 border border-[#f8ebf1] transition-colors hover:border-[#f4d4e2]">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailShape")}</p>
+                      <p className="mt-0.5 text-sm font-bold text-[#432744]">{variant.nailShape?.name || "N/A"}</p>
                     </div>
-                  ))}
+                    {((!variant.nailShape?.priceLabel?.startsWith('0') && variant.nailShape?.priceLabel) || (!variant.nailShape?.durationLabel?.startsWith('0') && variant.nailShape?.durationLabel)) && (
+                      <div className="flex items-center gap-4 text-right">
+                        {!variant.nailShape?.priceLabel?.startsWith('0') && variant.nailShape?.priceLabel && (
+                          <div>
+                            <p className="text-[9px] uppercase font-semibold text-[#c694ad]">{t("adminNailsDesignManagement.price")}</p>
+                            <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">+{variant.nailShape.priceLabel}</p>
+                          </div>
+                        )}
+                        {!variant.nailShape?.durationLabel?.startsWith('0') && variant.nailShape?.durationLabel && (
+                          <div>
+                            <p className="text-[9px] uppercase font-semibold text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
+                            <p className="mt-0.5 text-xs font-bold text-[#8c7085]">+{variant.nailShape.durationLabel}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-[#fffafb] px-5 py-4 border border-[#f8ebf1] transition-colors hover:border-[#f4d4e2]">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.nailSurface")}</p>
+                      <p className="mt-0.5 text-sm font-bold text-[#432744]">{variant.nailSurface?.name || "N/A"}</p>
+                    </div>
+                    {((!variant.nailSurface?.priceLabel?.startsWith('0') && variant.nailSurface?.priceLabel) || (!variant.nailSurface?.durationLabel?.startsWith('0') && variant.nailSurface?.durationLabel)) && (
+                      <div className="flex items-center gap-4 text-right">
+                        {!variant.nailSurface?.priceLabel?.startsWith('0') && variant.nailSurface?.priceLabel && (
+                          <div>
+                            <p className="text-[9px] uppercase font-semibold text-[#c694ad]">{t("adminNailsDesignManagement.price")}</p>
+                            <p className="mt-0.5 text-xs font-bold text-[#ea4f93]">+{variant.nailSurface.priceLabel}</p>
+                          </div>
+                        )}
+                        {!variant.nailSurface?.durationLabel?.startsWith('0') && variant.nailSurface?.durationLabel && (
+                          <div>
+                            <p className="text-[9px] uppercase font-semibold text-[#c694ad]">{t("adminNailsDesignManagement.duration")}</p>
+                            <p className="mt-0.5 text-xs font-bold text-[#8c7085]">+{variant.nailSurface.durationLabel}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>
         </DetailCard>
-
-        {/* <DetailCard title="Accessories / Components">
-            {variant.nailComponents?.length ? (
-              <div className="space-y-3">
-                {variant.nailComponents.map((item) => (
-                  <div key={item.id} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Pill tone="pink">{item.component?.name }</Pill>
-                      <Pill tone="blue">{item.component?.componentType }</Pill>
-                      <Pill tone="yellow">{item.component?.priceLabel }</Pill>
-                    </div>
-                    <div className="mt-3 grid gap-2 text-sm md:grid-cols-4">
-                      <span>Finger: <b>{item.fingerIndex}</b></span>
-                      <span>Pos X: <b>{item.posX}</b></span>
-                      <span>Pos Y: <b>{item.posY}</b></span>
-                      <span className="break-all">Config: <b>{item.configJson }</b></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-[#8c7085]">This variant has no accessory components.</p>
-            )}
-          </DetailCard> */}
 
         <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
