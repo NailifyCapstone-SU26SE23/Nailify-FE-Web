@@ -25,7 +25,7 @@ import {
   updateAdminShapeMethodConfig,
   deleteAdminShapeMethodConfig,
 } from "../services/nailShapesManagementService";
-import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button, Popconfirm } from "antd";
+import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button } from "antd";
 
 function validateForm(formValues, language) {
   const isVi = language === "vi";
@@ -58,7 +58,9 @@ export function NailShapeDetailPage() {
 
   const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState(null);
+  const [configPendingDelete, setConfigPendingDelete] = useState(null);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isDeletingConfig, setIsDeletingConfig] = useState(false);
   const [configForm] = Form.useForm();
 
   const handleOpenConfigModal = (config = null) => {
@@ -110,14 +112,23 @@ export function NailShapeDetailPage() {
     }
   };
 
-  const handleDeleteConfig = async (configId) => {
+  const handleDeleteConfig = async () => {
+    if (!configPendingDelete) {
+      return;
+    }
+
     const toastId = toast.loading(t("adminNailShapesManagement.deletingConfig"));
+    setIsDeletingConfig(true);
+
     try {
-      await deleteAdminShapeMethodConfig(configId);
-      setConfigs((prev) => prev.filter((c) => c.shapeMethodConfigId !== configId));
+      await deleteAdminShapeMethodConfig(configPendingDelete.shapeMethodConfigId);
+      setConfigs((prev) => prev.filter((c) => c.shapeMethodConfigId !== configPendingDelete.shapeMethodConfigId));
       toast.success(t("adminNailShapesManagement.configDeletedSuccessfully"), { id: toastId });
+      setConfigPendingDelete(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : (t("adminNailShapesManagement.failedToDeleteConfig")), { id: toastId });
+    } finally {
+      setIsDeletingConfig(false);
     }
   };
 
@@ -460,7 +471,11 @@ export function NailShapeDetailPage() {
                 type="primary"
                 icon={<Plus size={16} />}
                 onClick={() => handleOpenConfigModal()}
-                className="bg-rose-500 hover:bg-rose-600 border-none rounded-full px-5 shadow-md shadow-rose-200"
+                className="!inline-flex !h-10 !items-center !rounded-full !border-none !bg-[#df4d82] !px-5 !font-bold !text-white !shadow-[0_12px_24px_rgba(226,93,143,0.28)] hover:!bg-[#cf3d74] hover:!text-white"
+                style={{
+                  background: "linear-gradient(135deg, #eb5b92 0%, #cf3d74 100%)",
+                  borderColor: "transparent",
+                }}
               >
                 {t("adminNailShapesManagement.addConfig")}
               </Button>
@@ -515,16 +530,12 @@ export function NailShapeDetailPage() {
                         onClick={() => handleOpenConfigModal(record)}
                         className="text-slate-500 hover:text-blue-600"
                       />
-                      <Popconfirm
-                        title={t("adminNailShapesManagement.deleteConfig")}
-                        description={t("adminNailShapesManagement.areYouSureYouWantToDeleteThisC")}
-                        onConfirm={() => handleDeleteConfig(record.shapeMethodConfigId)}
-                        okText={t("adminNailShapesManagement.yes")}
-                        cancelText={t("adminNailShapesManagement.no")}
-                        okButtonProps={{ danger: true }}
-                      >
-                        <Button type="text" danger icon={<Trash2 size={16} />} />
-                      </Popconfirm>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<Trash2 size={16} />}
+                        onClick={() => setConfigPendingDelete(record)}
+                      />
                     </div>
                   )
                 }
@@ -579,6 +590,30 @@ export function NailShapeDetailPage() {
         warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet")]}
       />
 
+      <ActionConfirmModal
+        open={Boolean(configPendingDelete)}
+        intent="danger"
+        title={t("adminNailShapesManagement.deleteConfig")}
+        subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
+        description={t("adminNailShapesManagement.areYouSureYouWantToDeleteThisC")}
+        confirmText={t("adminNailShapesManagement.deleteConfig")}
+        cancelText={t("adminNailShapesManagement.no")}
+        confirmIcon={Trash2}
+        loading={isDeletingConfig}
+        onConfirm={handleDeleteConfig}
+        onCancel={() => !isDeletingConfig && setConfigPendingDelete(null)}
+        item={
+          configPendingDelete
+            ? {
+              title: configPendingDelete.name,
+              meta: `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(configPendingDelete.price || 0))} VND`,
+              note: formatNailShapeDuration(configPendingDelete.duration),
+            }
+            : null
+        }
+        warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet")]}
+      />
+
       <Modal
         title={null}
         open={isConfigModalVisible}
@@ -586,7 +621,7 @@ export function NailShapeDetailPage() {
         footer={null}
         destroyOnClose
         centered
-        width={520}
+        width={560}
         styles={{
           content: { padding: 0, borderRadius: 24, overflow: "hidden" },
           body: { padding: 0 },
@@ -613,7 +648,7 @@ export function NailShapeDetailPage() {
           form={configForm}
           layout="vertical"
           onFinish={handleSaveConfig}
-          className="-mt-4 rounded-t-[24px] bg-white px-6 pb-6 pt-5"
+          className="-mt-4 rounded-t-[24px] bg-white px-6 pb-6 pt-5 [&_.ant-form-item]:mb-4"
         >
           <Form.Item
             name="name"
@@ -623,14 +658,15 @@ export function NailShapeDetailPage() {
             <Input className="h-10 rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93]" />
           </Form.Item>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Form.Item
               name="price"
               label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.priceVnd")}</span>}
               rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterPrice") }]}
             >
               <InputNumber
-                className="w-full [&_.ant-input-number-input]:!h-10"
+                className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
+                style={{ width: "100%" }}
                 min={0}
                 step={1000}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -644,17 +680,18 @@ export function NailShapeDetailPage() {
               rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterDuration") }]}
             >
               <InputNumber
-                className="w-full [&_.ant-input-number-input]:!h-10"
+                className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
+                style={{ width: "100%" }}
                 min={1}
               />
             </Form.Item>
           </div>
 
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="flex justify-end gap-2 border-t border-rose-50">
             <Button
               onClick={() => setIsConfigModalVisible(false)}
               disabled={isSavingConfig}
-              className="h-10 rounded-full px-5 font-bold"
+              className="h-10 rounded-full border-rose-200 px-5 font-bold text-rose-500 hover:!border-rose-300 hover:!text-rose-600"
             >
               {t("adminNailShapesManagement.cancel")}
             </Button>
@@ -662,9 +699,13 @@ export function NailShapeDetailPage() {
               type="primary"
               htmlType="submit"
               loading={isSavingConfig}
-              className="h-10 rounded-full bg-[#ea4f93] px-5 font-bold shadow-[0_10px_20px_rgba(234,79,147,0.2)]"
+              className="!h-10 !rounded-full !border-none !bg-[#df4d82] !px-5 !font-bold !text-white !shadow-[0_12px_24px_rgba(226,93,143,0.28)] hover:!bg-[#cf3d74] hover:!text-white"
+              style={{
+                background: "linear-gradient(135deg, #eb5b92 0%, #cf3d74 100%)",
+                borderColor: "transparent",
+              }}
             >
-              {t("adminNailShapesManagement.saveConfig")}
+              {editingConfig ? t("adminNailShapesManagement.saveConfig") : t("adminNailShapesManagement.addConfig")}
             </Button>
           </div>
         </Form>

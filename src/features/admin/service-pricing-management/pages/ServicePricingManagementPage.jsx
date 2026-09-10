@@ -360,21 +360,21 @@ function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
       open
       intent="danger"
       title={title}
-      subtitle={language === "vi" ? "Hành động này sẽ cập nhật trạng thái giá giả lập hiện tại." : "This will update the current mock pricing state."}
+      subtitle={language === "vi" ? "Hành động này sẽ xóa dịch vụ khỏi hệ thống." : "This will remove the service from the system."}
       description={body}
       confirmText={language === "vi" ? "Xóa" : "Delete"}
-      cancelText={language === "vi" ? "Giữ bản ghi" : "Keep Record"}
+      cancelText={language === "vi" ? "Giữ dịch vụ" : "Keep Service"}
       confirmIcon={Trash2}
       onConfirm={onConfirm}
       onCancel={onCancel}
       item={{
         title: label,
-        meta: language === "vi" ? `Bản ghi giá • ${recordType}` : `Pricing record • ${recordType}`,
-        note: language === "vi" ? "Mục này sẽ bị xóa khỏi trạng thái UI giả lập hiện tại." : "This entry will be removed from the current admin UI state.",
+        meta: language === "vi" ? `Dịch vụ • ${recordType}` : `Service • ${recordType}`,
+        note: language === "vi" ? "Dịch vụ này sẽ bị xóa khỏi danh sách quản lý." : "This service will be removed from the admin list.",
       }}
       warnings={[
-        language === "vi" ? "Xóa này chỉ là giả lập và ảnh hưởng đến trạng thái UI hiện tại." : "This delete is mock-only and affects the current UI state.",
-        language === "vi" ? "Bất kỳ màn hình nào phụ thuộc vào bản ghi này nên được xem xét sau khi xóa." : "Any screens depending on this record should be reviewed after deletion.",
+        language === "vi" ? "Hành động này không thể hoàn tác từ màn hình này." : "This action cannot be undone from this screen.",
+        language === "vi" ? "Các màn hình phụ thuộc vào dịch vụ này nên được kiểm tra sau khi xóa." : "Any screens depending on this service should be reviewed after deletion.",
       ]}
     />
   );
@@ -577,13 +577,13 @@ export function ServicePricingManagementPage() {
     },
     {
       key: "edit-service",
-      label: `${t("promotionDetail.editTitle") || "Edit"} ${t("servicePricing.table.service")}`,
+      label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
       icon: Pencil,
       onSelect: () => openEditService(service),
     },
     {
       key: "delete-service",
-      label: `${t("promotionDetail.deleteBtn") || "Delete"} ${t("servicePricing.table.service")}`,
+      label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
       icon: Trash2,
       className: "text-[#d14c84]",
       onSelect: () =>
@@ -834,90 +834,6 @@ export function ServicePricingManagementPage() {
             </section>
           </div>
 
-          {/* <aside className="space-y-4">
-            <SidePanel title="Insights">
-              <div className="space-y-4">
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ được đặt nhiều nhất" : "Most Booked Services"}</p>
-                  <div className="mt-3 space-y-3">
-                    {MOST_BOOKED_SERVICES.map(([name, value], index) => (
-                      <div key={name} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#ffe7ef] text-[10px] font-extrabold text-[#ea4f93]">
-                            {index + 1}
-                          </span>
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                        </div>
-                        <span className="text-[11px] font-bold text-[#ea4f93]">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Dịch vụ có doanh thu cao nhất" : "Highest Revenue Services"}</p>
-                  <div className="mt-3 space-y-3">
-                    {HIGHEST_REVENUE_SERVICES.map(([name, value, progress]) => (
-                      <div key={name}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                          <span className="text-[11px] font-bold text-[#ea4f93]">{value}</span>
-                        </div>
-                        <div className="mt-2 h-1.5 rounded-full bg-[#f8dce8]">
-                          <div
-                            className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f38cba_100%)]"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Cảnh báo giá" : "Pricing Alerts"}</p>
-                  <div className="mt-3 space-y-3">
-                    {PRICING_ALERTS.map((alert) => {
-                      const tone = getAlertTone(alert.tone);
-                      const Icon = tone.icon;
-
-                      return (
-                        <div key={alert.title} className="flex items-start gap-3">
-                          <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tone.badge}`}>
-                            <Icon size={14} />
-                          </span>
-                          <div>
-                            <p className="text-xs font-bold text-[#432744]">{alert.title}</p>
-                            <p className="mt-1 text-[11px] leading-5 text-[#8a7082]">{alert.body}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">{language === "vi" ? "Phân loại dịch vụ" : "Category Breakdown"}</p>
-                  <div className="mt-3 space-y-3">
-                    {categoryBreakdown.map(([name, count]) => (
-                      <div key={name}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                          <span className="text-[11px] font-bold text-[#ea4f93]">{count}</span>
-                        </div>
-                        <div className="mt-2 h-1.5 rounded-full bg-[#f8dce8]">
-                          <div
-                            className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f38cba_100%)]"
-                            style={{ width: `${Math.min(count * 12, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </SidePanel>
-          </aside> */}
         </div>
       </section>
 
@@ -941,10 +857,14 @@ export function ServicePricingManagementPage() {
 
       {deleteState ? (
         <ConfirmModal
-          title="Delete Service"
-          body={`Are you sure you want to delete ${deleteState.label}? This record will be removed from the current admin UI state.`}
+          title={language === "vi" ? "Xóa dịch vụ" : "Delete Service"}
+          body={
+            language === "vi"
+              ? `Bạn có chắc muốn xóa dịch vụ ${deleteState.label}? Dịch vụ này sẽ bị xóa khỏi danh sách quản lý.`
+              : `Are you sure you want to delete ${deleteState.label}? This service will be removed from the admin list.`
+          }
           label={deleteState.label}
-          recordType="Service"
+          recordType={language === "vi" ? "Dịch vụ" : "Service"}
           onCancel={() => setDeleteState(null)}
           onConfirm={async () => {
             try {
