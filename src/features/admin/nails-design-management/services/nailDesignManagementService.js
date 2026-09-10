@@ -315,6 +315,20 @@ export function normalizeAdminCategory(category) {
   };
 }
 
+export function normalizeAdminCategoryType(categoryType) {
+  const categories = Array.isArray(categoryType?.categories)
+    ? categoryType.categories.map(normalizeAdminCategory)
+    : [];
+
+  return {
+    id: String(categoryType?.categoryTypeId || ""),
+    categoryTypeId: Number(categoryType?.categoryTypeId || 0),
+    name: String(categoryType?.name || "").trim(),
+    status: String(categoryType?.status || "").trim() || "Inactive",
+    categories,
+  };
+}
+
 export function normalizeAdminNailDesignDetail(design) {
   const normalized = normalizeAdminNailDesign(design);
   const firstVariant = normalized.nailVariants[0] ?? null;
@@ -502,6 +516,39 @@ export async function fetchAdminCategories({
 
   const data = unwrapResponse(response, "Failed to load categories.");
   const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminCategory) : [];
+  const metaData = data?.metaData ?? {};
+
+  return {
+    items,
+    metaData: {
+      currentPage: Number(metaData.currentPage || pageNumber || 1),
+      totalPages: Number(metaData.totalPages || 1),
+      pageSize: Number(metaData.pageSize || pageSize || 10),
+      totalItems: Number(metaData.totalItems || items.length),
+      hasPrevious: Boolean(metaData.hasPrevious),
+      hasNext: Boolean(metaData.hasNext),
+      firstRowOnPage: Number(metaData.firstRowOnPage || (items.length ? 1 : 0)),
+      lastRowOnPage: Number(metaData.lastRowOnPage || items.length),
+    },
+  };
+}
+
+export async function fetchAdminCategoryTypes({
+  pageNumber = 1,
+  pageSize = 10,
+  name = "",
+} = {}) {
+  const response = await axiosClient.get("/CategoryTypes", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      name: name || undefined,
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load category types.");
+  const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminCategoryType) : [];
   const metaData = data?.metaData ?? {};
 
   return {
@@ -754,17 +801,6 @@ export async function deleteAdminNailVariant(variantId) {
   return unwrapResponse(response, "Failed to delete nail variant.");
 }
 
-export async function deleteAdminNailDesign(designId) {
-  try {
-    const response = await axiosClient.delete(`/NailDesigns/${designId}`, {
-      headers: getAuthHeaders(),
-    });
-    return unwrapResponse(response, "Failed to delete nail design.");
-  } catch (e) {
-    handleApiError(e, "Failed to delete nail design.");
-  }
-}
-
 export async function fetchAdminNailVariantDetail(variantId) {
   const normalizedVariantId = normalizeIntegerId(variantId, -1);
 
@@ -848,6 +884,20 @@ export async function updateAdminNailDesign(designId, designFormValues) {
   });
 
   return unwrapResponse(response, "Failed to update nail design.");
+}
+
+export async function deleteAdminNailDesign(designId) {
+  const normalizedDesignId = normalizeIntegerId(designId, -1);
+
+  if (normalizedDesignId <= 0) {
+    throw new Error("Design ID is required.");
+  }
+
+  const response = await axiosClient.delete(`/NailDesigns/${normalizedDesignId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to delete nail design.");
 }
 
 export async function fetchProceduresByVariant(nailVariantId) {

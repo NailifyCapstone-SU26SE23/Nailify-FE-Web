@@ -25,8 +25,9 @@ import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   assignProceduresToVariant,
+  deleteAdminNailDesign,
   deleteAdminNailVariant,
-  fetchAdminCategories,
+  fetchAdminCategoryTypes,
   fetchAdminNailDesignDetail,
   fetchAdminNailDesignSummary,
   fetchProceduresByVariant,
@@ -619,10 +620,12 @@ export function NailDesignManagementDetailPage() {
   const [designImageFile, setDesignImageFile] = useState(null);
   const [designImagePreviewUrl, setDesignImagePreviewUrl] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteDesignConfirm, setShowDeleteDesignConfirm] = useState(false);
   const [pendingDeleteVariant, setPendingDeleteVariant] = useState(null);
   const [highlightedSection, setHighlightedSection] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingVariants, setIsSavingVariants] = useState(false);
+  const [isDeletingDesign, setIsDeletingDesign] = useState(false);
   const [isDeletingVariant, setIsDeletingVariant] = useState(false);
   const [selectedVariantDetail, setSelectedVariantDetail] = useState(null);
   const [variantProcedureDraft, setVariantProcedureDraft] = useState([]);
@@ -632,6 +635,7 @@ export function NailDesignManagementDetailPage() {
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
   const [isNotFound, setIsNotFound] = useState(false);
+  const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -642,9 +646,9 @@ export function NailDesignManagementDetailPage() {
       setIsNotFound(false);
 
       try {
-        const [detail, categoryResponse, summaryResponse] = await Promise.all([
+        const [detail, categoryTypeResponse, summaryResponse] = await Promise.all([
           fetchAdminNailDesignDetail(designId),
-          fetchAdminCategories({ pageNumber: 1, pageSize: 100 }),
+          fetchAdminCategoryTypes({ pageNumber: 1, pageSize: 100 }),
           fetchAdminNailDesignSummary(designId).catch(() => EMPTY_SUMMARY),
         ]);
 
@@ -654,7 +658,17 @@ export function NailDesignManagementDetailPage() {
 
         setInitialDesign(detail);
         setFormValues(detail);
-        setCategoryRecords(categoryResponse.items);
+        setCategoryRecords(categoryTypeResponse.items);
+        setSelectedCategoryTypeId((current) => {
+          if (current) return current;
+
+          const selectedCategoryIds = Array.isArray(detail?.categoryIds) ? detail.categoryIds : [];
+          const matchingType = categoryTypeResponse.items.find((categoryType) =>
+            (categoryType.categories || []).some((category) => selectedCategoryIds.includes(category.categoryId)),
+          );
+
+          return String(matchingType?.categoryTypeId || categoryTypeResponse.items[0]?.categoryTypeId || "");
+        });
         setSummary(summaryResponse);
         setDesignImageFile(null);
       } catch (loadError) {
@@ -735,13 +749,22 @@ export function NailDesignManagementDetailPage() {
     }));
   };
 
+  const selectedCategoryType = categoryRecords.find(
+    (item) => String(item.categoryTypeId) === String(selectedCategoryTypeId),
+  );
+  const visibleCategoryRecords = selectedCategoryType?.categories || [];
+  const allCategoryRecords = categoryRecords.flatMap((item) => item.categories || []);
+  const selectedCategoryRecords = allCategoryRecords.filter((item) =>
+    formValues.categoryIds?.includes(item.categoryId),
+  );
+
   const toggleCategory = (categoryId) => {
     setFormValues((current) => {
       const currentCategoryIds = Array.isArray(current?.categoryIds) ? current.categoryIds : [];
       const nextCategoryIds = currentCategoryIds.includes(categoryId)
         ? currentCategoryIds.filter((value) => value !== categoryId)
         : [...currentCategoryIds, categoryId];
-      const nextCategoryNames = categoryRecords
+      const nextCategoryNames = allCategoryRecords
         .filter((category) => nextCategoryIds.includes(category.categoryId))
         .map((category) => category.name);
 
@@ -749,7 +772,7 @@ export function NailDesignManagementDetailPage() {
         ...current,
         categoryIds: nextCategoryIds,
         categoryNames: nextCategoryNames,
-        categories: categoryRecords.filter((category) => nextCategoryIds.includes(category.categoryId)),
+        categories: allCategoryRecords.filter((category) => nextCategoryIds.includes(category.categoryId)),
       };
     });
   };
@@ -897,6 +920,32 @@ export function NailDesignManagementDetailPage() {
     }
   };
 
+  const handleDeleteDesign = async () => {
+    if (!formValues?.nailDesignId) {
+      return;
+    }
+
+    setError("");
+    setIsDeletingDesign(true);
+
+    try {
+      await deleteAdminNailDesign(formValues.nailDesignId);
+      toast.success(
+        language === "vi"
+          ? `Đã xóa thiết kế "${formValues.heroTitle || formValues.name}".`
+          : `Deleted design "${formValues.heroTitle || formValues.name}".`,
+      );
+      navigate(ROUTES.adminNailDesigns);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : "Failed to delete nail design.",
+      );
+    } finally {
+      setIsDeletingDesign(false);
+      setShowDeleteDesignConfirm(false);
+    }
+  };
+
   const handleViewVariant = (variant) => {
     if (!variant?.nailVariantId) {
       setError("Variant ID is required.");
@@ -1013,10 +1062,7 @@ export function NailDesignManagementDetailPage() {
             <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
               {t("adminNailsDesignManagement.nailDesignDetail")}
             </h2>
-            <p className="mt-1 text-sm text-[#c694ad]">
-              {t("adminNailsDesignManagement.viewAndEditDesignDetailsWorkfl")
-              }
-            </p>
+         
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
@@ -1027,7 +1073,7 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() => void handleSave()}
-                  disabled={isSavingVariants || isDeletingVariant}
+                  disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
                   className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)]"
                 >
                   {isSavingVariants ? t("adminNailsDesignManagement.saving") : t("adminNailsDesignManagement.saveChanges")}
@@ -1035,7 +1081,7 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)} // Just exit edit mode without resetting
-                  disabled={isSavingVariants || isDeletingVariant}
+                  disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
                   className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075]"
                 >
                   {t("adminNailsDesignManagement.cancel")}
@@ -1046,7 +1092,8 @@ export function NailDesignManagementDetailPage() {
                 <button
                   type="button"
                   onClick={handleStartEdit}
-                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                  disabled={isDeletingDesign}
+                  className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <PencilLine size={13} className="mr-1.5 inline" />
                   {t("adminNailsDesignManagement.editDesign")}
@@ -1054,6 +1101,15 @@ export function NailDesignManagementDetailPage() {
 
               </>
             )}
+            <button
+              type="button"
+              onClick={() => setShowDeleteDesignConfirm(true)}
+              disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
+              className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={13} className="mr-1.5 inline" />
+              {language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+            </button>
           </div>
         </div>
       </div>
@@ -1092,24 +1148,69 @@ export function NailDesignManagementDetailPage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c694ad]">
                       {t("adminNailsDesignManagement.category")}
                     </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {categoryRecords.length ? (
-                        categoryRecords.map((category) => (
-                          <button
-                            key={category.categoryId}
-                            type="button"
-                            onClick={() => toggleCategory(category.categoryId)}
-                            className={`rounded-full border px-4 py-2 text-xs font-bold transition ${formValues.categoryIds?.includes(category.categoryId)
-                              ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
-                              : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4]"
-                              }`}
-                          >
-                            {category.name}
-                          </button>
-                        ))
-                      ) : (
-                        <span className="text-sm text-[#b2879f]">{t("adminNailsDesignManagement.loading")}</span>
-                      )}
+                    <div className="mt-3 grid gap-3 md:grid-cols-[260px_minmax(0,1fr)]">
+                      <select
+                        value={selectedCategoryTypeId}
+                        onChange={(event) => setSelectedCategoryTypeId(event.target.value)}
+                        className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 text-sm font-semibold text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                      >
+                        {!categoryRecords.length ? (
+                          <option value="">{t("adminNailsDesignManagement.loading")}</option>
+                        ) : null}
+                        {categoryRecords.map((categoryType) => (
+                          <option key={categoryType.categoryTypeId} value={String(categoryType.categoryTypeId)}>
+                            {categoryType.name}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-2xl border border-[#f4d4e2] bg-white px-3 py-2">
+                        {visibleCategoryRecords.length ? (
+                          visibleCategoryRecords.map((category) => (
+                            <button
+                              key={category.categoryId}
+                              type="button"
+                              onClick={() => toggleCategory(category.categoryId)}
+                              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${formValues.categoryIds?.includes(category.categoryId)
+                                ? "border-[#ea4f93] bg-[#fff0f7] text-[#ea4f93]"
+                                : "border-[#f4c6da] bg-white text-[#8c7085] hover:border-[#ef6bb4]"
+                                }`}
+                            >
+                              {category.name}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-sm text-[#b2879f]">
+                            {categoryRecords.length
+                              ? (language === "vi" ? "Loại danh mục này chưa có danh mục." : "This category type has no categories.")
+                              : t("adminNailsDesignManagement.loading")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-dashed border-[#f4c6da] bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c896af]">
+                        {language === "vi" ? "Danh mục đã chọn" : "Selected Categories"}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedCategoryRecords.length ? (
+                          selectedCategoryRecords.map((category) => (
+                            <button
+                              key={category.categoryId}
+                              type="button"
+                              onClick={() => toggleCategory(category.categoryId)}
+                              className="rounded-full border border-[#ea4f93] bg-[#fff0f7] px-3 py-1.5 text-xs font-bold text-[#ea4f93]"
+                            >
+                              {category.name}
+                            </button>
+                          ))
+                        ) : (
+                          <span className="text-sm text-[#b2879f]">
+                            {language === "vi" ? "Chưa chọn danh mục nào." : "No categories selected yet."}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1202,7 +1303,7 @@ export function NailDesignManagementDetailPage() {
               <button
                 type="button"
                 onClick={() => navigate(getAdminNailVariantCreateRoute(designId))}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0 ml-210"
+                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0 ml-200"
               >
                 <Plus size={13} className="mr-1.5 inline" />
                 {t("adminNailsDesignManagement.addNailVariant")}
@@ -1237,7 +1338,6 @@ export function NailDesignManagementDetailPage() {
                   />
                 </div>
                 <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
-                <p className="mt-1 text-sm text-[#8c7085]">{variant.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Pill tone="yellow">{variant.priceDelta}</Pill>
                   <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
@@ -1264,6 +1364,23 @@ export function NailDesignManagementDetailPage() {
           { label: t("adminNailsDesignManagement.result"), value: t("adminNailsDesignManagement.revertToLastLoadedValues") },
         ]}
         warnings={[t("adminNailsDesignManagement.currentUnsavedNonpricingEditsO")]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteDesignConfirm}
+        intent="danger"
+        title={language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+        description={
+          language === "vi"
+            ? `Bạn có chắc muốn xóa thiết kế ${formValues?.heroTitle || formValues?.name || "này"} không?`
+            : `Are you sure you want to delete ${formValues?.heroTitle || formValues?.name || "this design"}?`
+        }
+        confirmText={language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        loading={isDeletingDesign}
+        onConfirm={handleDeleteDesign}
+        onCancel={() => !isDeletingDesign && setShowDeleteDesignConfirm(false)}
       />
 
       <ActionConfirmModal
