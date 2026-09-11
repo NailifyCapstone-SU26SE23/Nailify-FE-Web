@@ -42,6 +42,7 @@ function SectionCard({
   title,
   subtitle,
   icon,
+  action,
   children,
   sectionId,
   sectionRef,
@@ -56,14 +57,19 @@ function SectionCard({
         : "border-[#f8d3e2]"
         }`}
     >
-      <div className="flex items-start gap-3 border-b border-[#f8deea] pb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#fff0f6_0%,#fff8e9_100%)] text-[#ea4f93]">
-          {icon}
+      <div className="flex items-start justify-between gap-3 border-b border-[#f8deea] pb-4">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          {icon && (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,#fff0f6_0%,#fff8e9_100%)] text-[#ea4f93]">
+              {icon}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-extrabold text-[#432744]">{title}</h3>
+            {subtitle ? <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p> : null}
+          </div>
         </div>
-        <div>
-          <h3 className="font-extrabold text-[#432744]">{title}</h3>
-          {subtitle ? <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p> : null}
-        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       <div className="pt-4">{children}</div>
     </article>
@@ -73,11 +79,12 @@ function SectionCard({
 SectionCard.propTypes = {
   children: PropTypes.node,
   highlighted: PropTypes.bool,
-  icon: PropTypes.node.isRequired,
+  icon: PropTypes.node,
+  action: PropTypes.node,
   sectionId: PropTypes.string,
   sectionRef: PropTypes.shape({ current: PropTypes.any }),
   subtitle: PropTypes.string,
-  title: PropTypes.string.isRequired,
+  title: PropTypes.node.isRequired,
 };
 
 function Pill({ children, tone = "default" }) {
@@ -1062,7 +1069,7 @@ export function NailDesignManagementDetailPage() {
             <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
               {t("adminNailsDesignManagement.nailDesignDetail")}
             </h2>
-         
+
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
@@ -1294,24 +1301,19 @@ export function NailDesignManagementDetailPage() {
           </div>
         </article>
         <SectionCard
-          title={
-            <div className="flex items-center justify-between w-full" style={{ width: '100%' }}>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Copy size={18} />
-                <span>{t("adminNailsDesignManagement.designVariants")}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminNailVariantCreateRoute(designId))}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0 ml-200"
-              >
-                <Plus size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addNailVariant")}
-              </button>
-            </div>
-          }
+          title={t("adminNailsDesignManagement.designVariants")}
           subtitle={t("adminNailsDesignManagement.designVariationsHaveDifferentA")}
-          icon={null}
+          icon={<Copy size={18} />}
+          action={
+            <button
+              type="button"
+              onClick={() => navigate(getAdminNailVariantCreateRoute(designId))}
+              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] whitespace-nowrap flex-shrink-0"
+            >
+              <Plus size={13} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.addNailVariant")}
+            </button>
+          }
           sectionId="design-variants-section"
           sectionRef={designVariantsRef}
           highlighted={highlightedSection === "design-variants"}

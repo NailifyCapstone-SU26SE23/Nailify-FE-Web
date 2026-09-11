@@ -3676,6 +3676,7 @@ export const translations = {
     },
     // adminNailsDesignManagement (VI)
     adminNailsDesignManagement: {
+      editNailVariant: "Chỉnh Sửa Biến Thể",
       failedToLoadCategories: "Tải danh sách danh mục thất bại.",
       categoryNameIsRequired: "Tên danh mục là bắt buộc.",
       categoryDeleteApiIsNotConnecte: "API xóa danh mục chưa được kết nối.",

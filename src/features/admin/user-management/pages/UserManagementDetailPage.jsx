@@ -1,16 +1,15 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-import { Building2, CalendarDays, Clock3, LoaderCircle, MapPin, PencilLine, Phone, Save, Star, Trash2, X } from "lucide-react";
+import { Building2, CalendarDays, Clock3, LoaderCircle, MapPin, PencilLine, Phone, Save, Star, Trash2, X, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Calendar } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchSalonById } from "../../salon-management/services/salonsService";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
-import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
-import { UserManagementSnapshotCard } from "../components/UserManagementSnapshotCard";
 import {
   deleteAdminUser,
   fetchAdminUserDetail,
@@ -131,6 +130,7 @@ export function UserManagementDetailPage() {
   const [artistDetail, setArtistDetail] = useState(null);
   const [artistSkills, setArtistSkills] = useState([]);
   const [artistSchedules, setArtistSchedules] = useState([]);
+  const [hasImageError, setHasImageError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -245,6 +245,17 @@ export function UserManagementDetailPage() {
   const sortedSchedules = [...artistSchedules].sort(
     (left, right) => new Date(left?.workDate || 0).getTime() - new Date(right?.workDate || 0).getTime(),
   );
+
+  const hasRightColumnContent = shouldShowSalonDetail || shouldShowSkills;
+  const leftColSpan = hasRightColumnContent ? "xl:col-span-2" : "xl:col-span-3";
+
+  const avatarFallback = String(displayName || "U")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
 
   const cellRender = (current, info) => {
     if (info.type === "date") {
@@ -361,117 +372,177 @@ export function UserManagementDetailPage() {
   };
 
   return (
-    <section className="flex min-h-full flex-col gap-4">
-      <UserManagementHeroCard
-        avatarUrl={formValues.avatarUrl}
-        backLabel={t("back")}
-        backTo={ROUTES.adminUsers}
-        badge={t("menus.admin-users") || "Users"}
-        title={displayName}
-        // description={t("userManagement.detail.detailNotice")}
-        headerActions={!isEditing ? (
-          <>
-            <button
-              type="button"
-              onClick={handleStartEdit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01]"
-            >
-              <PencilLine size={16} />
-              <span>{t("userManagement.detail.editUser")}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={isDeleting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] disabled:opacity-70"
-            >
-              {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-              <span>{isDeleting ? t("userManagement.detail.deleting") : t("userManagement.detail.deleteUser")}</span>
-            </button>
-          </>
-        ) : null}
-      // panelIcon={<PencilLine size={18} className="text-[#d45b9f]" />}
-      // panelTitle={isEditing ? t("userManagement.detail.editMode") : t("userManagement.detail.viewMode")}
-      // panelDescription={t("userManagement.detail.detailDataLoadedDesc")}
-      />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
-          <div className="grid gap-5 md:grid-cols-2">
-            <UserManagementFormFields
-              formValues={formValues}
-              onFieldChange={handleChange}
-              disabled={!isEditing}
-              updateApiFieldsOnly
-            />
+    <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
+      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            to={ROUTES.adminUsers}
+            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-[28px] font-bold tracking-tight text-[#cf3d74]">
+              {displayName}
+            </h1>
           </div>
+        </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {isEditing ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowSaveConfirm(true)}
-                  disabled={isSaving}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_26px_rgba(239,93,180,0.24)] transition hover:scale-[1.01] sm:w-auto"
-                >
-                  {isSaving ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}
-                  <span>{isSaving ? (language === "vi" ? "Đang tạo..." : "Creating...") : (language === "vi" ? "Lưu thay đổi" : "Save changes")}</span>
-                </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {!isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isDeleting}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-5 text-[12px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:opacity-70"
+              >
+                {isDeleting ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                <span>{isDeleting ? t("userManagement.detail.deleting") : t("userManagement.detail.deleteUser")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleStartEdit}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+              >
+                <PencilLine size={14} />
+                <span>{t("userManagement.detail.editUser")}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(true)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-5 text-[12px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                <X size={14} />
+                <span>{t("userManagement.detail.discardChanges")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSaveConfirm(true)}
+                disabled={isSaving}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:opacity-70"
+              >
+                {isSaving ? <LoaderCircle size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{isSaving ? (language === "vi" ? "Đang lưu..." : "Saving...") : (language === "vi" ? "Lưu thay đổi" : "Save changes")}</span>
+              </button>
+            </>
+          )}
+        </div>
+      </header>
 
-                <button
-                  type="button"
-                  onClick={() => setShowCancelConfirm(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff5ef] px-5 py-3 text-sm font-semibold text-[var(--color-ink)] transition hover:bg-[#ffe9d7] sm:w-auto"
-                >
-                  <span>{t("userManagement.detail.discardChanges")}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isDeleting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#fff0f5] px-5 py-3 text-sm font-semibold text-[#d14c84] transition hover:bg-[#ffe1ec] sm:w-auto"
-                >
-                  {isDeleting ? <LoaderCircle size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                  <span>{isDeleting ? t("userManagement.detail.deleting") : t("userManagement.detail.deleteUser")}</span>
-                </button>
-              </>
-            ) : null}
-          </div>
 
-          <div className="mt-8 space-y-4">
+
+      <div className="grid gap-5 xl:grid-cols-3 items-start">
+        <div className={`space-y-5 ${leftColSpan}`}>
+          <article className="overflow-hidden rounded-[28px] bg-white shadow-[0_20px_45px_rgba(226,93,143,0.06)] border border-rose-50/50">
+            {/* Banner */}
+            <div className="h-[140px] w-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#eb5b92]/80 to-[#cf3d74]/80 mix-blend-multiply" />
+            </div>
+
+            <div className="px-6 md:px-8 pb-8 pt-[64px] relative">
+              {/* Avatar */}
+              <div className="absolute -top-12 left-6 md:left-8">
+                {formValues.avatarUrl && !hasImageError ? (
+                  <img
+                    src={formValues.avatarUrl}
+                    alt={displayName}
+                    className="h-[100px] w-[100px] rounded-[30px] border-[4px] border-white object-cover shadow-md bg-white"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={() => setHasImageError(true)}
+                  />
+                ) : (
+                  <div className="flex h-[100px] w-[100px] items-center justify-center rounded-[30px] border-[4px] border-white bg-gradient-to-br from-[#ffd9eb] to-[#ea4f93] text-3xl font-bold text-white shadow-md">
+                    {avatarFallback}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{displayName}</h2>
+                <p className="font-semibold text-[#d45b9f] mt-0.5">{formValues.role ? String(formValues.role).replace(/_/g, " ") : "User"}</p>
+                {/* <p className="mt-3 text-[13px] leading-relaxed text-slate-500 max-w-2xl">
+                  {language === "vi" ? "Hồ sơ lưu trữ thông tin cá nhân, liên lạc và vai trò của người dùng trên hệ thống Nailify. Vui lòng cập nhật đầy đủ và chính xác." : "Profile storing personal, contact and role information of the user on the Nailify system. Please keep this up to date."}
+                </p> */}
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <UserManagementFormFields
+                  formValues={formValues}
+                  onFieldChange={handleChange}
+                  disabled={!isEditing}
+                  updateApiFieldsOnly
+                />
+              </div>
+            </div>
+          </article>
+
+          {shouldShowWorkSchedule && (
+            <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
+              {formValues.staffId ? (
+                sortedSchedules.length ? (
+                  <div className="overflow-hidden rounded-2xl border border-[#f6dbe7] bg-white p-2 md:p-4 shadow-sm custom-calendar-wrapper">
+                    <Calendar cellRender={cellRender} />
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                    {t("userManagement.detail.noWorkScheduleFound")}
+                  </div>
+                )
+              ) : (
+                <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                  {t("userManagement.detail.notLinkedToArtist")}
+                </div>
+              )}
+            </InfoSection>
+          )}
+        </div>
+
+        {hasRightColumnContent && (
+          <div className="space-y-5 xl:col-span-1">
             {shouldShowSalonDetail ? (
               <InfoSection icon={Building2} title={t("userManagement.detail.assignedSalon")}>
-                <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
+                <div className="flex flex-col gap-4">
                   {salonDetail?.imageUrl ? (
-                    <img
-                      src={salonDetail.imageUrl}
-                      alt={salonDetail.name || "Salon"}
-                      className="h-40 w-full rounded-lg border border-[#f6dbe7] object-cover"
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                    />
+                    <div className="relative w-full overflow-hidden rounded-2xl border border-[#f6dbe7] aspect-[4/3]">
+                      <img
+                        src={salonDetail.imageUrl}
+                        alt={salonDetail.name || "Salon"}
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4 text-white">
+                        <p className="font-bold text-lg leading-tight shadow-sm drop-shadow-md truncate">{salonDetail?.name}</p>
+                      </div>
+                    </div>
                   ) : null}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.salonName")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{salonDetail?.name}</p>
+                  <div className="grid gap-3 grid-cols-2">
+                    {!salonDetail?.imageUrl && (
+                      <div className="col-span-2 rounded-2xl bg-white px-4 py-3 shadow-sm border border-rose-50/50">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#d39bb5] mb-1">{t("userManagement.detail.salonName")}</p>
+                        <p className="font-semibold text-slate-700 truncate">{salonDetail?.name}</p>
+                      </div>
+                    )}
+                    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm border border-rose-50/50">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#d39bb5] mb-1">{t("userManagement.detail.status")}</p>
+                      <p className="font-semibold text-slate-700 truncate">{getLocalizedStatus(salonDetail?.status, t)}</p>
                     </div>
-                    <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.status")}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{getLocalizedStatus(salonDetail?.status, t)}</p>
+                    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm border border-rose-50/50">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#d39bb5] mb-1">{t("userManagement.detail.phone")}</p>
+                      <p className="font-semibold text-slate-700 truncate">{salonDetail?.phone}</p>
                     </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 sm:col-span-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.address")}</p>
-                      <p className="mt-2 flex items-start gap-2 text-[var(--color-ink)]"><MapPin size={15} className="mt-0.5 text-[#d45b9f]" />{salonDetail?.address}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{t("userManagement.detail.phone")}</p>
-                      <p className="mt-2 flex items-center gap-2 text-[var(--color-ink)]"><Phone size={15} className="text-[#d45b9f]" />{salonDetail?.phone}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d39bb5]">{language === "vi" ? "Trạng thái nhân viên" : "Staff Artist Status"}</p>
-                      <p className="mt-2 font-semibold text-[var(--color-ink)]">{getLocalizedStatus(artistDetail?.status || formValues.status, t)}</p>
+                    <div className="rounded-2xl bg-white px-4 py-3 shadow-sm border border-rose-50/50 col-span-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#d39bb5] mb-1">{t("userManagement.detail.address")}</p>
+                      <p className="flex items-start gap-1.5 text-slate-700 text-sm font-medium leading-relaxed">
+                        <MapPin size={16} className="mt-0.5 text-[#d45b9f] shrink-0" />
+                        {salonDetail?.address}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -504,33 +575,8 @@ export function UserManagementDetailPage() {
                 )}
               </InfoSection>
             ) : null}
-
-            {shouldShowWorkSchedule ? (
-              <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
-                {formValues.staffId ? (
-                  sortedSchedules.length ? (
-                    <div className="overflow-hidden rounded-2xl border border-[#f6dbe7] bg-white p-2 md:p-4 shadow-sm custom-calendar-wrapper">
-                      <Calendar cellRender={cellRender} />
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                      {t("userManagement.detail.noWorkScheduleFound")}
-                    </div>
-                  )
-                ) : (
-                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                    {t("userManagement.detail.notLinkedToArtist")}
-                  </div>
-                )}
-              </InfoSection>
-            ) : null}
           </div>
-        </article>
-
-        <UserManagementSnapshotCard
-          formValues={formValues}
-        // notice={t("userManagement.detail.detailNotice")}
-        />
+        )}
       </div>
 
       <ActionConfirmModal
@@ -559,7 +605,7 @@ export function UserManagementDetailPage() {
         subtitle={t("userManagement.detail.discardChangesSubtitle")}
         description={t("userManagement.detail.discardChangesDesc")}
         confirmText={t("userManagement.detail.discardChanges")}
-        cancelText={t("userManagement.detail.keepEditing")}
+        cancelText={language === "vi" ? "Đóng" : "Close"}
         confirmIcon={X}
         onConfirm={handleCancelEdit}
         onCancel={() => setShowCancelConfirm(false)}
