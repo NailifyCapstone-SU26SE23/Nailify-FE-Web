@@ -344,15 +344,7 @@ function getRemainingTime(booking, language) {
   const isVi = language === "vi";
 
   const formatMinutes = (mins) => {
-    if (mins < 60) {
-      return `${mins} ${isVi ? "phút" : "min"}`;
-    }
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (m === 0) {
-      return `${h}h`;
-    }
-    return `${h}h ${m}m`;
+    return formatDurationMinutes(mins, language);
   };
 
   if (status === "Completed") {
@@ -683,7 +675,7 @@ export function ReceptionistBookingDetailPage() {
         service: displayName,
         serviceType: group.nailVariantName,
         artist: group.artist,
-        duration: group.totalDuration ? formatDurationMinutes(group.totalDuration) : "--",
+        duration: group.totalDuration ? formatDurationMinutes(group.totalDuration, language) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
         actionLabel: getServiceAction(status, language === "vi"),
@@ -1959,7 +1951,7 @@ export function ReceptionistBookingDetailPage() {
                               <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime).slice(0, 5)} - {String(procedure.estimatedEndTime).slice(0, 5)}
                             </span>
                             <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                              {formatDurationMinutes(procedure.duration || 0)}
+                              {formatDurationMinutes(procedure.duration || 0, language)}
                             </span>
                           </div>
                         </div>
@@ -2018,18 +2010,18 @@ export function ReceptionistBookingDetailPage() {
                           {/* Right: Time Breakdown & Overlap Badges */}
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                              <Zap size={12} /> {language === "vi" ? "Thao tác" : "Active"}: {procedure.activeDuration ?? 0}m
+                              <Zap size={12} /> {language === "vi" ? "Thao tác" : "Active"}: {formatDurationMinutes(procedure.activeDuration ?? 0, language)}
                             </span>
 
                             {hasPassive && (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                                <Hourglass size={12} /> {language === "vi" ? "Hơ máy / Chờ" : "Curing / Waiting"}: {procedure.passiveDuration}m
+                                <Hourglass size={12} /> {language === "vi" ? "Hơ máy / Chờ" : "Curing / Waiting"}: {formatDurationMinutes(procedure.passiveDuration, language)}
                               </span>
                             )}
 
                             {(hasPassive || procedure.canOverlap) ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {procedure.passiveDuration ?? 0}m)
+                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
@@ -2044,9 +2036,15 @@ export function ReceptionistBookingDetailPage() {
                           <div className="mt-2 text-[11px] font-semibold text-[#6D28D9] bg-[#F5F3FF] p-2 rounded-lg border border-[#E9D5FF] flex items-center gap-1.5">
                             <span><Lightbulb size={12} /></span>
                             <span>
-                              {language === "vi"
-                                ? `Trong ${<strong>${procedure.passiveDuration} phút</strong>} hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).`
-                                : `In ${<strong>${procedure.passiveDuration} minutes</strong>} of curing / waiting time, the artist is free and can take the opportunity to serve another customer (Overlap).`}
+                              {language === "vi" ? (
+                                <>
+                                  Trong <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                                </>
+                              ) : (
+                                <>
+                                  In <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> of curing / waiting time, the artist is free and can take the opportunity to serve another customer (Overlap).
+                                </>
+                              )}
                             </span>
                           </div>
                         )}

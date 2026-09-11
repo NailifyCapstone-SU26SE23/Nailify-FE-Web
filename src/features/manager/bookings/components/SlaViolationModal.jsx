@@ -4,6 +4,7 @@ import { AlertTriangle, Clock, User, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
 import { assignArtistToBooking } from "../services/bookingsService";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 export const SlaViolationModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -82,7 +83,7 @@ export const SlaViolationModal = () => {
                     <div className="flex items-center gap-3">
                       <Clock size={18} className="text-red-500" />
                       <span className="font-medium text-gray-700">Trễ dự kiến:</span>
-                      <span className="font-bold text-red-600">{alertData?.estimatedDelayMinutes || alertData?.EstimatedDelayMinutes || 0} phút</span>
+                      <span className="font-bold text-red-600">{formatDurationMinutes(alertData?.estimatedDelayMinutes || alertData?.EstimatedDelayMinutes || 0, "vi")}</span>
                     </div>
 
                     {(alertData?.availableAlternativeArtists?.length > 0 || alertData?.AvailableAlternativeArtists?.length > 0) && (

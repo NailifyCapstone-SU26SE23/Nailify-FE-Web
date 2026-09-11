@@ -289,11 +289,11 @@ export function StaffUpdateBookingDesignPage() {
             : isPrice
               ? (isVi ? `Khách đồng ý trả tổng cộng ${data.pricing.newPrice} (phát sinh ${data.pricing.additionalCost})` : `Customer agrees to pay ${data.pricing.newPrice} total (${data.pricing.additionalCost} additional charge)`)
               : isDuration
-                ? (isVi ? `Khách xác nhận quá trình làm sẽ tốn khoảng ${formatDurationLabel(data.pricing.updatedDuration)}` : `Customer acknowledges service will take approximately ${formatDurationLabel(data.pricing.updatedDuration)}`)
+                ? (isVi ? `Khách xác nhận quá trình làm sẽ tốn khoảng ${formatDurationLabel(data.pricing.updatedDuration, language)}` : `Customer acknowledges service will take approximately ${formatDurationLabel(data.pricing.updatedDuration, language)}`)
                 : item.note,
         };
       }),
-    [confirmations, isVi, data.pricing.newPrice, data.pricing.additionalCost, data.pricing.updatedDuration],
+    [confirmations, isVi, language, data.pricing.newPrice, data.pricing.additionalCost, data.pricing.updatedDuration],
   );
 
   const allConfirmed = confirmations.every((item) => item.checked);
@@ -444,7 +444,7 @@ export function StaffUpdateBookingDesignPage() {
                   <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.previousDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.previousDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration)}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration, language)}</Tag>
                   </div>
                 </div>
 
@@ -473,7 +473,7 @@ export function StaffUpdateBookingDesignPage() {
                   <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.newDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.newDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration)}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration, language)}</Tag>
                   </div>
                 </div>
               </div>

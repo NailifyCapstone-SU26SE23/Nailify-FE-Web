@@ -1,28 +1,10 @@
 import { Search, X } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
-function formatServiceDuration(value) {
-  const minutes = Number(value);
-
-  if (!Number.isFinite(minutes) || minutes < 0) {
-    return "--";
-  }
-
-  const normalizedMinutes = Math.round(minutes);
-
-  if (normalizedMinutes < 60) {
-    return `${normalizedMinutes} min`;
-  }
-
-  const hours = Math.floor(normalizedMinutes / 60);
-  const remainingMinutes = normalizedMinutes % 60;
-
-  if (!remainingMinutes) {
-    return `${hours}h`;
-  }
-
-  return `${hours}h ${remainingMinutes}m`;
+function formatServiceDuration(value, language = "en") {
+  return formatDurationMinutes(value, language);
 }
 
 export function ExtraServiceModal({
@@ -131,7 +113,7 @@ export function ExtraServiceModal({
                           {new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(service.price)} VND
                         </span>
                         <span className="rounded-full bg-[#f7efff] px-3 py-2 text-[11px] font-bold text-[#8b5cf6]">
-                          {formatServiceDuration(service.duration)}
+                          {formatServiceDuration(service.duration, language)}
                         </span>
                       </div>
                       <div className="flex items-center justify-end gap-3">
