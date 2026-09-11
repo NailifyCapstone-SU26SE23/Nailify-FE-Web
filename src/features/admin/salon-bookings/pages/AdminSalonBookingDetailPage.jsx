@@ -15,6 +15,8 @@ import {
   TrendingUp,
   UserRound,
   ChevronRight,
+  Percent,
+  Banknote,
   Eye,
   Clock,
 } from "lucide-react";
@@ -400,7 +402,7 @@ export function AdminSalonBookingDetailPage() {
         value: stats.totalRevenue.toLocaleString("vi-VN"),
         unit: "VND",
         note: isVi ? "+12.5% quý này" : "+12.5% this quarter",
-        icon: DollarSign,
+        icon: Banknote,
         color: "#ea4f93",
       },
       {
@@ -412,7 +414,7 @@ export function AdminSalonBookingDetailPage() {
         color: "#f59e0b",
       },
       {
-        label: isVi ? "Giá trị lịch hẹn TB" : "Avg. Booking Value",
+        label: isVi ? "Giá trị lịch hẹn TB" : "Avg Booking Value",
         value: Math.round(stats.avgBookingValue).toLocaleString("vi-VN"),
         unit: "VND",
         note: isVi ? "+5.2% so với tháng trước" : "+5.2% vs last month",

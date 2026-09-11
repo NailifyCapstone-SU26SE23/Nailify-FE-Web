@@ -112,7 +112,7 @@ function StaffCard({ staff, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer rounded-2xl border border-[#f0d9e8] bg-white p-5 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-all duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)]"
+      className="group cursor-pointer relative overflow-hidden rounded-2xl border border-[#f0d9e8] bg-white p-5 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-all duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)]"
     >
       <div className="flex items-start gap-3">
         <StaffAvatar
@@ -120,17 +120,21 @@ function StaffCard({ staff, onClick }) {
           className="h-12 w-12 shrink-0 rounded-full object-cover"
           fallbackClassName={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-xs font-bold text-white`}
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pr-24">
           <p className="font-bold text-[#2d1b35] truncate">{staff.name}</p>
-          <p className="text-xs text-[#a88a9f] truncate">{staff.role}</p>
+          <p className="text-xs text-[#a88a9f] truncate">{staff.role ? staff.role.replace(/_/g, ' ') : ''}</p>
           {staff.phone && <p className="mt-1 text-xs text-[#8b7382] truncate">{staff.phone}</p>}
         </div>
-        {staff.hasScheduleToday && (
-          <span className="mt-2 inline-flex rounded-full bg-green-100 px-2 py-1 text-[11px] font-semibold text-green-700">
+      </div>
+
+      {staff.hasScheduleToday && (
+        <div className="absolute top-4 right-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/50 px-2 py-1 text-[9px] uppercase tracking-wide font-bold text-emerald-600">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
             {t("adminStaffManagement.workingToday")}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -246,11 +250,11 @@ const CustomScheduleCalendar = ({ schedule }) => {
   const firstDayOfMonth = currentMonth.startOf('month').day(); // 0 is Sunday, 1 is Monday
 
   // Adjust for Monday start
-  const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1; 
+  const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
   const prevMonthDays = currentMonth.subtract(1, 'month').daysInMonth();
 
   const cells = [];
-  
+
   // Previous month trailing days
   for (let i = startOffset - 1; i >= 0; i--) {
     cells.push({
@@ -285,13 +289,13 @@ const CustomScheduleCalendar = ({ schedule }) => {
       {/* Header */}
       <div className="flex items-center justify-between bg-[#ea4f93] px-4 py-3 text-white">
         <button onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
         </button>
         <h4 className="font-bold text-sm uppercase tracking-wider text-white m-0">
           {language === 'vi' ? `Lịch làm việc - Tháng ${currentMonth.format('M/YYYY')}` : `Working Schedule - ${currentMonth.format('MMMM YYYY')}`}
         </h4>
         <button onClick={() => setCurrentMonth(prev => prev.add(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
         </button>
       </div>
 
@@ -326,32 +330,31 @@ const CustomScheduleCalendar = ({ schedule }) => {
                   {cell.date.date()}
                 </span>
                 {sched && (
-                  <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                    ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("active") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("working")) 
-                      ? "bg-[#2fa25f]" 
-                      : ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("leave") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("off"))
-                        ? "bg-[#ea4f93]"
-                        : "bg-[#8b7382]"
-                  }`} />
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${((sched.status || sched.scheduleStatus || "").toLowerCase().includes("active") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("working"))
+                    ? "bg-[#2fa25f]"
+                    : ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("leave") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("off"))
+                      ? "bg-[#ea4f93]"
+                      : "bg-[#8b7382]"
+                    }`} />
                 )}
               </div>
-              
+
               <div className="mt-auto pt-2 flex flex-col gap-1 w-full">
                 {sched && (
                   (() => {
                     const status = (sched.status || sched.scheduleStatus || "").toLowerCase();
                     const start = sched.startTime || sched.start || sched.from || sched.checkIn;
-                    
+
                     if (status.includes("active") || status.includes("working")) {
                       return (
                         <div className="bg-[#eaf9ee] border border-[#b8e6c7] text-[#2fa25f] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
-                          {start ? start : (language==='vi'?'Làm việc':'Working')}
+                          {start ? start : (language === 'vi' ? 'Làm việc' : 'Working')}
                         </div>
                       );
                     } else if (status.includes("leave") || status.includes("off")) {
                       return (
                         <div className="bg-[#fff0f8] border border-[#f0d9e8] text-[#ea4f93] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
-                          {language==='vi'?'Nghỉ phép':'On Leave'}
+                          {language === 'vi' ? 'Nghỉ phép' : 'On Leave'}
                         </div>
                       );
                     }
@@ -555,13 +558,13 @@ export function StaffManagementPage() {
         color: "#10b981",
         note: isVi ? "Trạng thái hiện tại" : "Current status",
       },
-      {
-        label: isVi ? "Đánh giá trung bình" : "Average Rating",
-        value: selectedSalon?.avgRating?.toFixed(2) || 0,
-        icon: Star,
-        color: "#f59e0b",
-        note: isVi ? "Sự hài lòng khách hàng" : "Customer satisfaction",
-      },
+      // {
+      //   label: isVi ? "Đánh giá trung bình" : "Average Rating",
+      //   value: selectedSalon?.avgRating?.toFixed(2) || 0,
+      //   icon: Star,
+      //   color: "#f59e0b",
+      //   note: isVi ? "Sự hài lòng khách hàng" : "Customer satisfaction",
+      // },
       {
         label: isVi ? "Đang nghỉ phép" : "On Leave",
         value: selectedSalon?.onLeaveStaffCount || 0,
@@ -603,7 +606,7 @@ export function StaffManagementPage() {
       )}
 
       {!loadingSalons && (
-        <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" />
+        <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3" />
       )}
 
       <div className="grid gap-4">
@@ -804,7 +807,7 @@ export function StaffManagementPage() {
               </div>
             ) : (
               <>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
                   {filteredStaff.map((staff) => (
                     <StaffCard
@@ -894,7 +897,7 @@ export function StaffManagementPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   {selectedStaff.role && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
-                      {selectedStaff.role}
+                      {selectedStaff.role.replace(/_/g, ' ')}
                     </span>
                   )}
                 </div>
@@ -920,7 +923,7 @@ export function StaffManagementPage() {
                     {t("adminStaffManagement.accountInfo")}
                   </h3>
                   <div className="space-y-4">
-                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? selectedStaff.role.replace(/_/g, ' ') : '-'}</InfoItem>
                     <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
                         {selectedStaff.status === 'Active' || !selectedStaff.status ? t("adminStaffManagement.workingToday") : selectedStaff.status}

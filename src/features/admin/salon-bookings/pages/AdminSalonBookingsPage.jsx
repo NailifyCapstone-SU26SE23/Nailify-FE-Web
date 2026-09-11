@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   MapPin,
   Phone,
-  DollarSign,
   Star,
   ChevronRight,
   Home,
@@ -14,8 +13,11 @@ import {
   XCircle,
   Clock,
   Calendar,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { Spin, Tag } from "antd";
+import dayjs from "dayjs";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { getAdminSalonBookingDetailRoute, ROUTES } from "../../../../shared/constants/routes";
@@ -252,9 +254,8 @@ function BookingCard({ booking }) {
             )}
             {booking?.totalAmount && (
               <div className="flex items-center gap-2">
-                <DollarSign size={14} className="text-[#ea4f93] shrink-0" />
                 <span className="font-extrabold text-[#3d1f3f]">
-                  ${Number(booking.totalAmount).toLocaleString()}
+                  {Number(booking.totalAmount).toLocaleString("vi-VN")} VND
                 </span>
               </div>
             )}
@@ -285,66 +286,82 @@ export function AdminSalonBookingsPage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc"); // "asc" for A-Z, "desc" for Z-A
+
   const [salons, setSalons] = useState([]);
   const [isLoadingSalons, setIsLoadingSalons] = useState(false);
-  const [isLoadingAllSalonBookings, setIsLoadingAllSalonBookings] = useState(false);
   const [error, setError] = useState("");
-  const [allSalonBookings, setAllSalonBookings] = useState({}); // salonId -> bookings array
 
-  // Calculate revenue for a specific salon
-  const calculateSalonRevenue = useCallback(
-    (salonIdToCheck) => {
-      const salonBookings = allSalonBookings[salonIdToCheck] || [];
-      return salonBookings
-        .filter((booking) => booking?.status === "Completed")
-        .reduce((sum, booking) => {
-          const totalAmount = booking?.totalAmount || 0;
-          return sum + Number(totalAmount);
-        }, 0);
-    },
-    [allSalonBookings]
-  );
+  const [pageIndex, setPageIndex] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadMore, setIsLoadMore] = useState(false);
 
-  // Load all salons on mount
+  // Debounced search term for API
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPageIndex(1); // Reset page when search changes
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   useEffect(() => {
     const loadData = async () => {
-      setIsLoadingSalons(true);
+      if (pageIndex === 1) setIsLoadingSalons(true);
+      else setIsLoadMore(true);
       setError("");
-      try {
-        const salonsData = await fetchAdminSalons({ pageSize: 1000 });
-        const salonsList = salonsData?.items || [];
-        setSalons(salonsList);
 
-        // Fetch bookings for all salons
-        setIsLoadingAllSalonBookings(true);
-        const newAllSalonBookings = {};
-        for (const salon of salonsList) {
-          const salonId = salon?.id || salon?.salonId;
-          if (salonId) {
-            try {
-              const bookingsData = await fetchBookingsBySalonId(salonId, {
-                pageSize: 1000,
-                isAdmin: true,
-              });
-              newAllSalonBookings[salonId] = bookingsData?.items || [];
-            } catch (err) {
-              console.error(`Error loading bookings for salon ${salonId}:`, err);
-              newAllSalonBookings[salonId] = [];
-            }
-          }
+      try {
+        const salonsData = await fetchAdminSalons({
+          pageIndex,
+          pageSize: 6,
+          searchTerm: debouncedSearch
+        });
+
+        const salonsList = salonsData?.items || [];
+        if (pageIndex === 1) {
+          setSalons(salonsList);
+        } else {
+          setSalons(prev => [...prev, ...salonsList]);
         }
-        setAllSalonBookings(newAllSalonBookings);
+
+        setHasMore(salonsData?.metaData?.hasNext || false);
       } catch (err) {
         console.error("Error loading salons:", err);
         setError(err?.message || "Failed to load salons");
       } finally {
         setIsLoadingSalons(false);
-        setIsLoadingAllSalonBookings(false);
+        setIsLoadMore(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [pageIndex, debouncedSearch]);
+
+  const handleLoadMore = () => {
+    if (!isLoadMore && hasMore) {
+      setPageIndex(prev => prev + 1);
+    }
+  };
+
+  const filteredAndSortedSalons = useMemo(() => {
+    let result = [...salons];
+
+    // Local sort
+    result.sort((a, b) => {
+      const nameA = a?.name || "";
+      const nameB = b?.name || "";
+      if (sortOrder === "asc") {
+        return nameA.localeCompare(nameB);
+      }
+      return nameB.localeCompare(nameA);
+    });
+
+    return result;
+  }, [salons, searchTerm, sortOrder]);
 
   const isVi = language === "vi";
 
@@ -364,80 +381,121 @@ export function AdminSalonBookingsPage() {
             </div>
           </PremiumCard>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {salons.map((salon, index) => (
-              <motion.div
-                key={salon?.id || salon?.salonId}
-                custom={index}
-                initial="hidden"
-                animate="visible"
-                variants={fadeInUpStagger}
-              >
-                <PremiumCard
-                  padded={false}
-                  hoverable
-                  onClick={() =>
-                    navigate(getAdminSalonBookingDetailRoute(salon?.id || salon?.salonId))
-                  }
+          <>
+            <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+              <div className="flex justify-between items-center gap-3 w-full">
+                <div className="relative w-full">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Search size={16} className="text-[#c28ca6]" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={isVi ? "Tìm kiếm chi nhánh..." : "Search salon..."}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-10 w-full min-w-[200px] rounded-full border border-[#f1e7ed] bg-white pl-10 pr-4 text-sm text-[#3d1f3f] placeholder-[#c28ca6] outline-none transition-all focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20"
+                  />
+                </div>
+
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <ArrowUpDown size={16} className="text-[#c28ca6]" />
+                  </div>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="h-10 appearance-none rounded-full border border-[#f1e7ed] bg-white pl-10 pr-8 text-sm text-[#3d1f3f] outline-none transition-all focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/20 cursor-pointer"
+                  >
+                    <option value="asc">{isVi ? "Tên: A đến Z" : "Name: A to Z"}</option>
+                    <option value="desc">{isVi ? "Tên: Z đến A" : "Name: Z to A"}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              {filteredAndSortedSalons.map((salon, index) => (
+                <motion.div
+                  key={salon?.id || salon?.salonId}
+                  custom={index}
+                  initial="hidden"
+                  animate="visible"
+                  variants={fadeInUpStagger}
                 >
-                  <div className="overflow-hidden rounded-t-[28px] relative h-52">
-                    <img
-                      crossOrigin="anonymous"
-                      src={salon?.imageUrl || salon?.image || SALON_PLACEHOLDER_IMAGE}
-                      alt={salon?.name || "Salon"}
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = SALON_PLACEHOLDER_IMAGE;
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm">
-                          <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                  <PremiumCard
+                    padded={false}
+                    hoverable
+                    onClick={() =>
+                      navigate(getAdminSalonBookingDetailRoute(salon?.id || salon?.salonId))
+                    }
+                  >
+                    <div className="overflow-hidden rounded-t-[28px] relative h-52">
+                      <img
+                        crossOrigin="anonymous"
+                        src={salon?.imageUrl || salon?.image || SALON_PLACEHOLDER_IMAGE}
+                        alt={salon?.name || "Salon"}
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = SALON_PLACEHOLDER_IMAGE;
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm">
+                            <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                          </div>
+                          <span className="text-white font-bold text-sm drop-shadow-md">
+                            {salon?.rating || "4.8"}
+                          </span>
                         </div>
-                        <span className="text-white font-bold text-sm drop-shadow-md">
-                          {salon?.rating || "4.8"}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-[18px] font-extrabold text-[#3d1f3f] truncate mb-2">
-                      {salon?.name || "Unknown Salon"}
-                    </h3>
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-center gap-2 text-[13px]">
-                        <MapPin size={14} className="text-[#ea4f93] shrink-0" />
-                        <span className="text-[#7f6478] truncate">{salon?.address || "No address"}</span>
-                      </div>
-                      {salon?.phone && (
+                    <div className="p-6">
+                      <h3 className="text-[18px] font-extrabold text-[#3d1f3f] truncate mb-2">
+                        {salon?.name || "Unknown Salon"}
+                      </h3>
+                      <div className="space-y-3 mb-4">
                         <div className="flex items-center gap-2 text-[13px]">
-                          <Phone size={14} className="text-[#ea4f93] shrink-0" />
-                          <span className="text-[#7f6478] truncate">{salon.phone}</span>
+                          <MapPin size={14} className="text-[#ea4f93] shrink-0" />
+                          <span className="text-[#7f6478] truncate">{salon?.address || "No address"}</span>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2 text-[13px]">
-                        <DollarSign size={14} className="text-[#16975f] shrink-0" />
-                        <span className="font-bold text-[#16975f]">
-                          ${calculateSalonRevenue(salon?.id || salon?.salonId).toLocaleString()}
-                        </span>
-                        <span className="text-[#9a5f7f] text-xs">{t("adminDashboard.table.revenue") || "Revenue"}</span>
+                        {salon?.phone && (
+                          <div className="flex items-center gap-2 text-[13px]">
+                            <Phone size={14} className="text-[#ea4f93] shrink-0" />
+                            <span className="text-[#7f6478] truncate">{salon.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between pt-4 border-t border-[#f1e7ed]">
+                        <div className="flex items-center gap-1 text-[#ea4f93] text-sm font-bold">
+                          {isVi ? "Xem lịch hẹn" : "View Bookings"}
+                          <ChevronRight size={16} />
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-4 border-t border-[#f1e7ed]">
-                      <div className="flex items-center gap-1 text-[#ea4f93] text-sm font-bold">
-                        {isVi ? "Xem lịch hẹn" : "View Bookings"}
-                        <ChevronRight size={16} />
-                      </div>
-                    </div>
-                  </div>
-                </PremiumCard>
-              </motion.div>
-            ))}
-          </div>
+                  </PremiumCard>
+                </motion.div>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="flex justify-center mt-8 pb-8">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLoadMore}
+                  disabled={isLoadMore}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-8 py-3 text-[15px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:opacity-50"
+                >
+                  {isLoadMore ? <Spin size="small" /> : isVi ? "Hiện thêm" : "View more"}
+                </motion.button>
+              </div>
+            )}
+          </>
         )}
       </motion.div>
     </div>

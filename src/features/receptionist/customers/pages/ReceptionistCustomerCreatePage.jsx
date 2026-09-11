@@ -321,7 +321,7 @@ export function ReceptionistCustomerCreatePage() {
               {[
                 [language === "vi" ? "Khách Vãng Lai Hôm Nay" : "Walk-ins Today", "14", "text-[#ea4f93]"],
                 [language === "vi" ? "Khách Hàng Đang Chờ" : "Waiting Customers", "3", "text-[#de861e]"],
-                [language === "vi" ? "Thời Gian Tạo TB" : "Avg. Registration Time", "2 min", "text-[#2f9557]"],
+                [language === "vi" ? "Thời Gian Tạo TB" : "Avg Registration Time", "2 min", "text-[#2f9557]"],
               ].map(([label, value, tone]) => (
                 <div key={label} className="flex items-center justify-between gap-3 border-b border-[#f7dce8] pb-3 last:border-b-0 last:pb-0">
                   <span className="text-[#b48ca0]">{label}</span>

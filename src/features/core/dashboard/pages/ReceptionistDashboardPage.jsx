@@ -55,6 +55,7 @@ import {
   useWaitlist,
   useStaffArtists,
 } from "../hooks/useAdminDashboard";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 const APPOINTMENTS_PAGE_SIZE = 5;
 
@@ -892,7 +893,7 @@ export function ReceptionistDashboardPage() {
     {
       label: t("receptionist.dashboard.walkInQueueSize"),
       value: String(dashboardData.currentWalkInQueueSize || "0"),
-      note: t("receptionist.dashboard.clearIn", { mins: dashboardData.estimatedTimeToClearQueueMins || 0 }),
+      note: t("receptionist.dashboard.clearIn", { mins: formatDurationMinutes(dashboardData.estimatedTimeToClearQueueMins || 0, language) }),
       icon: UserRound,
       color: "#ef4f92",
     },
@@ -906,7 +907,7 @@ export function ReceptionistDashboardPage() {
     {
       label: t("receptionist.dashboard.waitlistSize"),
       value: String(dashboardData.currentWaitlistSize || "0"),
-      note: t("receptionist.dashboard.avgWait", { mins: dashboardData.averageWaitTimeMinutes || 0 }),
+      note: t("receptionist.dashboard.avgWait", { mins: formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language) }),
       icon: Clock3,
       color: "#ff7a3d",
     },
@@ -924,7 +925,7 @@ export function ReceptionistDashboardPage() {
   const displayQuickStatus = dashboardData ? [
     [t("receptionist.dashboard.widgets.walkInQueue"), String(dashboardData.currentWalkInQueueSize || "0")],
     [t("receptionist.dashboard.widgets.waitlist"), String(dashboardData.currentWaitlistSize || "0")],
-    [t("receptionist.dashboard.avgWait", { mins: dashboardData.averageWaitTimeMinutes || 0 }), `${dashboardData.averageWaitTimeMinutes || 0} min`],
+    [t("receptionist.dashboard.avgWait", { mins: formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language) }), formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language)],
     [t("receptionist.dashboard.appointmentsLeft"), String(dashboardData.remainingAppointmentsToday || "0")],
     [t("receptionist.dashboard.staffOnDuty"), dashboardData.staffOnDutyText || "N/A"],
   ] : [];
@@ -933,7 +934,7 @@ export function ReceptionistDashboardPage() {
   const displayQueue = activeWaitlistItems.map(w => [
     typeof w.customerName === 'object' ? w.customerName?.customerName || "Walk-in" : (w.customerName || "Walk-in"),
     `Pos: ${w.position}`,
-    `${w.estimatedDuration || w.estimatedWait || 0}m`
+    formatDurationMinutes(w.estimatedDuration || w.estimatedWait || 0, language)
   ]);
 
   const displayStaff = dashboardStaff;
@@ -1144,7 +1145,7 @@ export function ReceptionistDashboardPage() {
                       </span>
                       {status.toLowerCase() !== "done" && status.toLowerCase() !== "completed" && (
                         <p className="text-lg font-black text-[#E84F93] leading-none whitespace-nowrap mt-1 sm:mt-0">
-                          {item.estimatedWait || 0} <span className="text-[10px] font-bold text-[#9E8497]">{language === "vi" ? "phút" : "minutes"}</span>
+                          {formatDurationMinutes(item.estimatedWait || 0, language)}
                         </p>
                       )}
                     </div>
@@ -1188,7 +1189,7 @@ export function ReceptionistDashboardPage() {
                       {language === "vi" ? "Đang Đợi" : "Waiting"}
                     </span>
                     <p className="text-lg font-black text-[#F59E0B] leading-none whitespace-nowrap mt-1 sm:mt-0">
-                      {wait.replace('m', '')} <span className="text-[10px] font-bold text-[#9E8497]">{language === "vi" ? "phút" : "minutes"}</span>
+                      {formatDurationMinutes(Number(wait.replace('m', '')) || 0, language)}
                     </p>
                   </div>
                 </div>
@@ -1421,7 +1422,11 @@ export function ReceptionistDashboardPage() {
                             <p className="text-sm font-bold text-[#432744]">
                               {typeof alert.customerName === 'object' ? alert.customerName?.customerName || 'Customer' : (alert.customerName || 'Customer')}
                             </p>
-                            <p className="mt-1 text-[11px] font-semibold text-[#ef4f92]">{alert.minutesLate} mins late</p>
+                            <p className="mt-1 text-[11px] font-semibold text-[#ef4f92]">
+                              {language === "vi"
+                                ? `Trễ ${formatDurationMinutes(alert.minutesLate || 0, language)}`
+                                : `${formatDurationMinutes(alert.minutesLate || 0, language)} late`}
+                            </p>
                           </div>
                         </div>
                       </div>

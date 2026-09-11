@@ -260,7 +260,7 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
   }
 }
 
-function formatOptionMeta(option) {
+function formatOptionMeta(option, language = "en") {
   if (!option) {
     return "";
   }
@@ -272,13 +272,13 @@ function formatOptionMeta(option) {
   }
 
   if (Number(option.duration || 0) > 0) {
-    meta.push(formatDurationLabel(option.duration));
+    meta.push(formatDurationLabel(option.duration, language));
   }
 
   return meta.join(" • ");
 }
 
-function buildDesignTemplateFromApi(item) {
+function buildDesignTemplateFromApi(item, language = "en") {
   const imageUrl = String(item?.imageUrl || "").trim();
   const categories = Array.isArray(item?.categories) ? item.categories.map((category) => category?.name).filter(Boolean) : [];
   const firstVariant = Array.isArray(item?.nailVariants) ? item.nailVariants[0] : null;
@@ -293,7 +293,7 @@ function buildDesignTemplateFromApi(item) {
     price: minPrice || maxPrice
       ? `${formatCurrencyValue(minPrice || maxPrice)}${minPrice !== maxPrice ? ` - ${formatCurrencyValue(maxPrice)}` : ""}`
       : "Contact for quote",
-    duration: duration > 0 ? formatDurationLabel(duration) : "Flexible",
+    duration: duration > 0 ? formatDurationLabel(duration, language) : "Flexible",
     tags: categories.length ? categories : ["Custom design"],
     accent: categories.length ? "Live" : "Ready",
     accentClassName: "rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-extrabold text-[#ea4f93]",
@@ -303,13 +303,13 @@ function buildDesignTemplateFromApi(item) {
   };
 }
 
-function buildVariantTemplateFromApi(item) {
+function buildVariantTemplateFromApi(item, language = "en") {
   return {
     id: String(item?.nailVariantId ?? ""),
     name: String(item?.name || "Untitled variant").trim(),
     image: String(item?.imageUrl || DEFAULT_DESIGN_IMAGE),
     price: formatCurrencyValue(item?.price || 0),
-    duration: Number(item?.duration || 0) > 0 ? formatDurationLabel(Number(item?.duration || 0)) : "Flexible",
+    duration: Number(item?.duration || 0) > 0 ? formatDurationLabel(Number(item?.duration || 0), language) : "Flexible",
     tags: [item?.nailShape?.name, item?.nailSurface?.name].filter(Boolean),
     raw: item,
   };
@@ -1087,7 +1087,7 @@ function getChoiceValue(item) {
   return typeof item === "string" ? item : item?.label ?? "";
 }
 
-function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
+function ChoiceGrid({ items, selected, onSelect, type = "pill", language = "en" }) {
   if (type === "color") {
     return (
       <div className="flex flex-wrap gap-3">
@@ -1118,7 +1118,7 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
       <div className="flex flex-wrap gap-3">
         {items.map((item) => {
           const value = getChoiceValue(item);
-          const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item);
+          const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item, language);
           const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
           const isActive = selected === value;
           return (
@@ -1174,7 +1174,7 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
       {items.map((item) => {
         const value = getChoiceValue(item);
         const isSelected = selected.includes(value);
-        const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item);
+        const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item, language);
         const subLabel = typeof item === "string" ? "" : item?.componentType || "";
         const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
 
@@ -1229,6 +1229,7 @@ ChoiceGrid.propTypes = {
   onSelect: PropTypes.func.isRequired,
   selected: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]).isRequired,
   type: PropTypes.oneOf(["pill", "color", "shape", "length"]),
+  language: PropTypes.string,
 };
 
 export function StaffNailDesignStudioPage() {
@@ -1388,7 +1389,7 @@ export function StaffNailDesignStudioPage() {
         },
       });
       const payload = unwrapApiResponse(response, "Failed to load nail design variants.");
-      const items = Array.isArray(payload?.items) ? payload.items.map(buildVariantTemplateFromApi) : [];
+      const items = Array.isArray(payload?.items) ? payload.items.map((item) => buildVariantTemplateFromApi(item, language)) : [];
 
       setDesignVariants(items);
     } catch (error) {
@@ -1417,7 +1418,7 @@ export function StaffNailDesignStudioPage() {
         });
 
         const payload = unwrapApiResponse(response, "Failed to load nail design templates.");
-        const items = Array.isArray(payload?.items) ? payload.items.map(buildDesignTemplateFromApi) : [];
+        const items = Array.isArray(payload?.items) ? payload.items.map((item) => buildDesignTemplateFromApi(item, language)) : [];
 
         if (!isMounted) {
           return;
@@ -1448,7 +1449,7 @@ export function StaffNailDesignStudioPage() {
     return () => {
       isMounted = false;
     };
-  }, [designQuery, selectedTemplateId]);
+  }, [designQuery, selectedTemplateId, language]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1880,8 +1881,8 @@ export function StaffNailDesignStudioPage() {
     [totalEstimatedPrice],
   );
   const totalEstimatedDurationLabel = useMemo(
-    () => formatDurationLabel(totalEstimatedDuration),
-    [totalEstimatedDuration],
+    () => formatDurationLabel(totalEstimatedDuration, language),
+    [totalEstimatedDuration, language],
   );
 
   const updateSelectedFingerColors = (updater) => {
@@ -2171,7 +2172,7 @@ export function StaffNailDesignStudioPage() {
       image: String(variantDetail?.imageUrl || DEFAULT_DESIGN_IMAGE).trim(),
       price: formatCurrencyValue(variantDetail?.price || 0),
       duration: Number(variantDetail?.duration || 0) > 0
-        ? formatDurationLabel(Number(variantDetail?.duration || 0))
+        ? formatDurationLabel(Number(variantDetail?.duration || 0), language)
         : "Flexible",
       tags: [variantDetail?.nailShape?.name, variantDetail?.nailSurface?.name].filter(Boolean),
       raw: variantDetail,
@@ -2909,6 +2910,7 @@ export function StaffNailDesignStudioPage() {
                       selected={selectedShape}
                       onSelect={handleShapeSelect}
                       type="shape"
+                      language={language}
                     />
                   </div>
 
@@ -2922,6 +2924,7 @@ export function StaffNailDesignStudioPage() {
                       selected={selectedLength}
                       onSelect={handleLengthSelect}
                       type="length"
+                      language={language}
                     />
                   </div>
 
@@ -3087,6 +3090,7 @@ export function StaffNailDesignStudioPage() {
                       items={surfaceOptions.length ? surfaceOptions : studio.builder.finishes}
                       selected={[selectedFinish]}
                       onSelect={handleFinishSelect}
+                      language={language}
                     />
                   </div>
 
@@ -3156,6 +3160,7 @@ export function StaffNailDesignStudioPage() {
                                   items={list}
                                   selected={selectedDecorations}
                                   onSelect={toggleNailDecoration}
+                                  language={language}
                                 />
                               </div>
                             );
@@ -3174,6 +3179,7 @@ export function StaffNailDesignStudioPage() {
                       items={extraServiceOptions.length ? extraServiceOptions : studio.builder.extras}
                       selected={selectedExtras}
                       onSelect={(value) => toggleArraySelection(value, selectedExtras, setSelectedExtras)}
+                      language={language}
                     />
                   </div>
                 </div>
@@ -3188,7 +3194,7 @@ export function StaffNailDesignStudioPage() {
                         <div key={item.key} className="flex items-center justify-between gap-3 border-b border-[#f6d8e7] pb-2">
                           <div>
                             <p>{item.label}</p>
-                            <p className="mt-1 text-[10px] text-[#b48aa0]">{formatDurationLabel(item.duration)}</p>
+                            <p className="mt-1 text-[10px] text-[#b48aa0]">{formatDurationLabel(item.duration, language)}</p>
                           </div>
                           <span className="font-bold text-[#ea4f93]">{formatCurrencyValue(item.price)}</span>
                         </div>
@@ -3357,7 +3363,7 @@ export function StaffNailDesignStudioPage() {
                         </div>
                       </div>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                        {proc.duration} mins
+                        {formatDurationLabel(proc.duration, language)}
                       </span>
                     </div>
                   );
@@ -3400,7 +3406,7 @@ export function StaffNailDesignStudioPage() {
                         </div>
                       </div>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                        {proc.duration} mins
+                        {formatDurationLabel(proc.duration, language)}
                       </span>
                     </div>
                   );

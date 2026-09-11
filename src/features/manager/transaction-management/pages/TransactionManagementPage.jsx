@@ -433,6 +433,7 @@ export function TransactionManagementPage() {
               options={[
                 { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
                 { value: "paid", label: language === "vi" ? "Đã thanh toán" : "Paid" },
+                { value: "refunded", label: language === "vi" ? "Đã hoàn tiền" : "Refunded" },
                 { value: "pending", label: language === "vi" ? "Đang chờ thanh toán" : "Pending" },
                 { value: "expired", label: language === "vi" ? "Hết hạn" : "Expired" },
                 { value: "canceled", label: language === "vi" ? "Đã hủy" : "Canceled" }
