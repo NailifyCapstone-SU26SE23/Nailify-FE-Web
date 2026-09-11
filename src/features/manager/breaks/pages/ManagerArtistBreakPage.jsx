@@ -31,6 +31,7 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import {
   fetchBreaks,
   deleteBreakRequest,
@@ -341,18 +342,16 @@ export function ManagerArtistBreakPage() {
     }
   };
 
-  // Calculate duration in hours/mins
+  // Calculate break duration from the slot boundaries.
   const getSlotDuration = (startTime, endTime) => {
     if (!startTime || !endTime) return "";
     const start = dayjs(`2000-01-01 ${startTime}`);
     const end = dayjs(`2000-01-01 ${endTime}`);
     const diffMins = end.diff(start, "minute");
     if (isNaN(diffMins) || diffMins <= 0) return "";
-    const hrs = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m break`;
-    if (hrs > 0) return `${hrs}h break`;
-    return `${mins}m break`;
+    return language === "vi"
+      ? `${formatDurationMinutes(diffMins, language)} nghỉ`
+      : `${formatDurationMinutes(diffMins, language)} break`;
   };
 
   return (

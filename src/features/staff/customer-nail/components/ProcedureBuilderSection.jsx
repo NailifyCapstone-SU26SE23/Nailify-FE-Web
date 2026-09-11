@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { fetchProcedures } from '../../../manager/customer-nail/services/customerNailsService';
 import { useLanguage } from '../../../../shared/hooks/useLanguage';
+import { formatDurationMinutes } from '../../../../shared/utils/formatDuration';
 
 
 export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, onSyncStats, onApplyToQuote, readOnly = false }) {
@@ -455,7 +456,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                           <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 py-0.2 rounded">{language === "vi" ? "Riêng" : "Specific"}</span>
                         )}
                         <span className="text-[10px] font-bold text-[#ea4f93] bg-pink-50 px-1.5 py-0.5 rounded">
-                          {p.activeDuration || p.duration || 15}m
+                          {formatDurationMinutes(p.activeDuration || p.duration || 15, language)}
                         </span>
                       </div>
                     </div>
@@ -543,7 +544,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
         <div className="flex flex-wrap items-center gap-5">
           <div className="text-right">
             <span className="text-[9px] font-bold uppercase tracking-widest text-pink-200 block">{language === "vi" ? "Tổng Thời Gian Kỹ Thuật" : "Total Technical Time"}</span>
-            <span className="text-xl font-black text-white">{totalDuration} {language === "vi" ? "phút" : "min"}</span>
+            <span className="text-xl font-black text-white">{formatDurationMinutes(totalDuration, language)}</span>
           </div>
 
           {onApplyToQuote && (
@@ -619,7 +620,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                     : "bg-pink-50 text-[#ea4f93] hover:bg-pink-100"
                     }`}
                 >
-                  {mins} {language === "vi" ? "phút" : "min"}
+                  {formatDurationMinutes(mins, language)}
                 </button>
               ))}
             </div>
