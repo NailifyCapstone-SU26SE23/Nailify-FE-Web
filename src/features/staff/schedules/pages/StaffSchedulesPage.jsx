@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { fetchStaffSchedules } from "../services/staffScheduleService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOUR_MARKERS = Array.from({ length: 12 }, (_, index) => 7 + index);
@@ -63,24 +64,13 @@ function formatTimeLabel(value) {
   return value ? dayjs(value).format("HH:mm") : "--:--";
 }
 
-function formatDurationLabel(startValue, endValue) {
+function formatDurationLabel(startValue, endValue, language = "en") {
   if (!startValue || !endValue) {
     return "--";
   }
 
   const minutes = Math.max(dayjs(endValue).diff(dayjs(startValue), "minute"), 0);
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (hours > 0 && remainingMinutes > 0) {
-    return `${hours}h ${remainingMinutes}m`;
-  }
-
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-
-  return `${remainingMinutes}m`;
+  return formatDurationMinutes(minutes, language);
 }
 
 function getScheduleBlockStyle(schedule) {
@@ -117,12 +107,12 @@ function SideNavItem({ active, icon: Icon, label, meta }) {
   );
 }
 
-function EventCard({ schedule, paletteClass }) {
+function EventCard({ schedule, paletteClass, language = "en" }) {
   return (
     <div className={`rounded-lg px-4 py-4 shadow-[0_12px_24px_rgba(26,32,60,0.06)] ${paletteClass}`}>
       <p className="text-[13px] font-semibold">{formatTimeLabel(schedule.shiftStart)} - {formatTimeLabel(schedule.shiftEnd)}</p>
       <p className="mt-2 text-[15px] font-bold">{schedule.status || "Shift"}</p>
-      <p className="mt-2 text-[13px] opacity-70">{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd)}</p>
+      <p className="mt-2 text-[13px] opacity-70">{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd, language)}</p>
     </div>
   );
 }
@@ -386,7 +376,7 @@ export function StaffSchedulesPage() {
                                     <p className="mt-1 text-sm font-bold">{schedule.status || "Shift"}</p>
                                     <div className="mt-1 flex items-center gap-2 text-[11px] opacity-80">
                                       <span className={`h-2 w-2 rounded-full ${getStatusDotClass(schedule.status)}`} />
-                                      <span>{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd)}</span>
+                                      <span>{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd, language)}</span>
                                     </div>
                                   </div>
                                 </div>

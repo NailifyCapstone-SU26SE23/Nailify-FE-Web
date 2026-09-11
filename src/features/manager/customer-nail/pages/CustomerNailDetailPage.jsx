@@ -3,7 +3,6 @@ import {
   Palette,
   Heart,
   Eye,
-  Calendar,
   CheckCircle2,
   XCircle,
   ChevronLeft,
@@ -25,6 +24,8 @@ import { ProcedureBuilderSection } from "../../../staff/customer-nail/components
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { fetchUserById } from "../../bookings/services/bookingsService";
+import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 
 function Card({ className = "", children }) {
@@ -55,23 +56,6 @@ SectionHeading.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string,
 };
-
-function getStatusTone(status) {
-  switch (status) {
-    case "Approved":
-    case "Reviewed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "Pending":
-    case "PendingReview":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Draft":
-      return "bg-[#f3f4f6] text-[#6b7280]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
-}
 
 // 🎨 Parse & render surface effects from config JSON (Backend format)
 function renderSurfaceEffects(surfaceName, effectsConfigJson) {
@@ -309,14 +293,14 @@ function formatVND(amount, status) {
   }).format(amount);
 }
 
-function formatDuration(duration, status) {
+function formatDuration(duration, status, language = "en") {
   if (duration === null || duration === undefined || duration === "" || duration === 0) {
     if (status === "PendingReview" || status === "Assigned") {
-      return "Pending Quote";
+      return language === "vi" ? "Chờ báo giá" : "Pending Quote";
     }
-    return "0 mins";
+    return formatDurationMinutes(0, language);
   }
-  return `${duration} mins`;
+  return formatDurationMinutes(duration, language);
 }
 
 function formatOptionalVND(amount, emptyLabel = "N/A") {
@@ -329,11 +313,11 @@ function formatOptionalVND(amount, emptyLabel = "N/A") {
   }).format(amount);
 }
 
-function formatOptionalDuration(duration, emptyLabel = "N/A") {
+function formatOptionalDuration(duration, emptyLabel = "N/A", language = "en") {
   if (duration === null || duration === undefined || duration === "") {
     return emptyLabel;
   }
-  return `${duration} mins`;
+  return formatDurationMinutes(duration, language);
 }
 
 function getSystemPrice(nail) {
@@ -1119,20 +1103,12 @@ export function CustomerNailDetailPage() {
                   <h2 className="text-3xl font-bold tracking-tight text-[#3f2240] xl:max-w-[260px] xl:truncate">
                     {nail?.name || "Untitled Design"}
                   </h2>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${getStatusTone(
-                      nail?.status
-                    )}`}
-                  >
-                    {nail?.status === "Approved" ? (
-                      <CheckCircle2 size={12} />
-                    ) : nail?.status === "Rejected" ? (
-                      <XCircle size={12} />
-                    ) : (
-                      <Calendar size={12} />
-                    )}
-                    {nail?.status || "Draft"}
-                  </span>
+                  <CustomerNailStatusBadge
+                    status={nail?.status}
+                    language={language}
+                    iconSize={12}
+                    className="gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm"
+                  />
                 </div>
 
                 <div className="mt-3 flex flex-wrap justify-center sm:justify-start items-center gap-3">
@@ -1194,7 +1170,7 @@ export function CustomerNailDetailPage() {
                     {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
-                    {formatDuration(getSystemDuration(nail), nail?.status)}
+                    {formatDuration(getSystemDuration(nail), nail?.status, language)}
                   </span>
                 </div>
                 {/* Additional Price card */}
@@ -1212,7 +1188,7 @@ export function CustomerNailDetailPage() {
                     {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
-                    {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A")}
+                    {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}
                   </span>
                 </div>
                 {/* Created Date card */}
@@ -1371,7 +1347,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status)}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
                 </div>
               </div>
 
@@ -1393,7 +1369,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b9db8]">{language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
+                  <p className="mt-1 text-sm font-extrabold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}</p>
                 </div>
               </div>
             </div>
@@ -1911,7 +1887,7 @@ export function CustomerNailDetailPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7c3aed]">
                 {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#7c3aed]">{formatDuration(getSystemDuration(nail), nail?.status)}</p>
+              <p className="mt-1 text-sm font-extrabold text-[#7c3aed]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
             </div>
           </div>
           <div className="rounded-2xl border border-[#d8efdf] bg-[#f8fffa] p-4">

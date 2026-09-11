@@ -9,6 +9,7 @@ import { ROUTES } from "../../../../shared/constants/routes";
 import { fetchCustomerNails, getManagerSalonId } from "../services/customerNailsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
 
 function Card({ className = "", children }) {
   return (
@@ -38,23 +39,6 @@ SectionHeading.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string,
 };
-
-function getStatusTone(status) {
-  switch (status) {
-    case "Approved":
-    case "Reviewed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "Pending":
-    case "PendingReview":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Draft":
-      return "bg-[#f3f4f6] text-[#6b7280]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
-}
 
 // 🎨 Parse & render surface effects from config JSON (Backend format)
 function renderSurfaceEffects(surfaceName, effectsConfigJson) {
@@ -297,16 +281,6 @@ function formatVND(amount, status) {
   }).format(amount);
 }
 
-function formatDuration(duration, status) {
-  if (duration === null || duration === undefined || duration === "" || duration === 0) {
-    if (status === "PendingReview" || status === "Assigned") {
-      return "Pending Quote";
-    }
-    return "0 mins";
-  }
-  return `${duration} mins`;
-}
-
 function getCardColorStyle(customColor) {
   if (!customColor) return { backgroundColor: '#fdf2f8' };
   try {
@@ -412,9 +386,8 @@ StatCard.propTypes = {
   toneClassName: PropTypes.string.isRequired,
 };
 
-function CustomerNailCard({ nail }) {
+function CustomerNailCard({ nail, language }) {
   const initials = nail.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "CN";
-  const isPreset = nail.basedOnNailVariantId !== null;
   const cardColorStyle = getCardColorStyle(nail.customColor);
 
   const maskStyle = nail.nailShape?.imageUrl ? {
@@ -425,82 +398,6 @@ function CustomerNailCard({ nail }) {
     maskRepeat: 'no-repeat',
     WebkitMaskRepeat: 'no-repeat',
   } : {};
-
-  const getStatusMessage = (status) => {
-    switch (status) {
-      case "PendingReview": return "Ready for manager review";
-      case "Reviewed":
-      case "Quoted": return "Ready for final decision";
-      case "Approved": return "Approved for customer";
-      case "Rejected": return "Needs revision";
-      case "Assigned": return "Assigned to artist";
-      default: return "Open request";
-    }
-  };
-
-  const renderMiniPalette = () => {
-    if (!nail.customColor) return null;
-    try {
-      const parsed = typeof nail.customColor === 'string'
-        ? JSON.parse(nail.customColor)
-        : nail.customColor;
-
-      if (!parsed) return null;
-
-      if (parsed.mode === 'solid' && parsed.color) {
-        return (
-          <div className="flex items-center gap-1.5 mt-2 bg-[#fff5f8]/80 px-2.5 py-1 rounded-full border border-[#fde8f1] w-fit">
-            <span className="h-3 w-3 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: parsed.color }} />
-            <span className="text-[10px] font-extrabold text-[#ea4f93] font-mono">{parsed.color}</span>
-          </div>
-        );
-      }
-
-      if (parsed.mode === 'gradient') {
-        const stops = Array.isArray(parsed.gradient) ? parsed.gradient : (parsed.gradient?.stops || []);
-        if (stops.length > 0) {
-          return (
-            <div className="flex items-center gap-1.5 mt-2 bg-[#fff5f8]/80 px-2.5 py-1 rounded-full border border-[#fde8f1] w-fit">
-              <span className="h-3 w-3 rounded-full border border-white shadow-sm shrink-0" style={{ background: `linear-gradient(to right, ${stops.join(', ')})` }} />
-              <span className="text-[10px] font-extrabold text-[#ea4f93] font-mono">Gradient</span>
-            </div>
-          );
-        }
-      }
-
-      if (parsed.mode === 'perFinger' && Array.isArray(parsed.fingers)) {
-        return (
-          <div className="flex flex-col gap-1 mt-2.5">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Color Theme</p>
-            <div className="flex items-center gap-1">
-              {parsed.fingers.slice(0, 5).map((finger, idx) => {
-                let fingerBg = { backgroundColor: '#f3f4f6' };
-                if (finger.mode === 'gradient' && finger.primaryColor && finger.secondaryColor) {
-                  fingerBg = { background: `linear-gradient(to top, ${finger.primaryColor}, ${finger.secondaryColor})` };
-                } else if (finger.gradient && finger.gradient.enabled && Array.isArray(finger.gradient.stops)) {
-                  fingerBg = { background: `linear-gradient(to top, ${finger.gradient.stops.join(', ')})` };
-                } else {
-                  fingerBg = { backgroundColor: finger.color || finger.primaryColor || '#f3f4f6' };
-                }
-                return (
-                  <div
-                    key={idx}
-                    className="h-3.5 w-3.5 rounded-full border border-white shadow-[0_2px_4px_rgba(0,0,0,0.06)] shrink-0 transition-transform duration-300 hover:scale-125"
-                    style={fingerBg}
-                    title={`Finger ${finger.fingerIndex || idx + 1}`}
-                  />
-                );
-              })}
-              <span className="text-[9px] font-extrabold text-[#ea4f93] ml-1">Per Finger</span>
-            </div>
-          </div>
-        );
-      }
-    } catch (e) {
-      console.warn("Failed to render mini palette:", e);
-    }
-    return null;
-  };
 
   return (
     <div className="group relative overflow-hidden rounded-[24px] border border-[#fdf7f9] bg-white shadow-[0_8px_30px_rgba(236,72,153,0.04)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
@@ -540,13 +437,11 @@ function CustomerNailCard({ nail }) {
 
         {/* Status Badge */}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5 z-10">
-          <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold shadow-sm backdrop-blur-md bg-white/90 ${getStatusTone(nail.status)}`}>
-            {nail.status === "Approved" ? <CheckCircle2 size={10} /> : nail.status === "Rejected" ? <XCircle size={10} /> : <Calendar size={10} />}
-            {nail.status || "Draft"}
-          </span>
-          <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold shadow-sm backdrop-blur-md bg-white/90 ${isPreset ? "text-[#4755b8]" : "text-[#d97706]"}`}>
-            {isPreset ? "Preset" : "Custom"}
-          </span>
+          <CustomerNailStatusBadge
+            status={nail.status}
+            language={language}
+            className="w-fit px-2.5 py-1 text-[9px] shadow-sm backdrop-blur-md bg-white/90"
+          />
         </div>
       </div>
 
@@ -557,26 +452,6 @@ function CustomerNailCard({ nail }) {
             <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
               {nail.name || "Untitled Design"}
             </h4>
-            <p className="mt-0.5 text-[11px] font-medium text-[#a988a0]">
-              {nail.nailShape?.name || "Custom Shape"} • {nail.nailSurface?.name || "Custom Surface"}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            {nail.isFavorite && <Heart size={16} className="fill-[#d4af37] text-[#d4af37]" />}
-            {nail.isPublic && <Eye size={16} className="text-[#a988a0]" />}
-          </div>
-        </div>
-
-        <div className="mt-2">{renderMiniPalette()}</div>
-
-        <div className="mt-4 flex items-center justify-between border-t border-[#fdf0f5] pt-4">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">Price</p>
-            <p className="mt-0.5 text-xs font-bold text-[#d4af37]">{formatVND(nail.price, nail.status)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">Duration</p>
-            <p className="mt-0.5 text-xs font-bold text-[#3f2240]">{formatDuration(nail.duration, nail.status)}</p>
           </div>
         </div>
       </div>
@@ -599,6 +474,7 @@ CustomerNailCard.propTypes = {
     nailShape: PropTypes.shape({ name: PropTypes.string }),
     nailSurface: PropTypes.shape({ name: PropTypes.string }),
   }).isRequired,
+  language: PropTypes.string.isRequired,
 };
 
 export function CustomerNailPage() {
@@ -911,7 +787,7 @@ export function CustomerNailPage() {
                         to={`${ROUTES.managerCustomerNails}/${nail.customerNailRequestId || nail.customerNailId || nail.id}`}
                         className="block h-full"
                       >
-                        <CustomerNailCard nail={nail} />
+                        <CustomerNailCard nail={nail} language={language} />
                       </Link>
                     </div>
                   ))}

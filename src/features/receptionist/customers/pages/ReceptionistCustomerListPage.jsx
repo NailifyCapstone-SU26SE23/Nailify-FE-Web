@@ -46,6 +46,7 @@ import { getReceptionistSalonId } from "../../bookings/services/receptionistBook
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { AssignChairModal } from "../../bookings/components/AssignChairModal";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 function formatDate(dateString, language) {
   if (!dateString) return language === "vi" ? "Chưa cập nhật" : "Not updated";
@@ -141,7 +142,7 @@ export function ReceptionistCustomerListPage() {
   const [rawQueueItems, setRawQueueItems] = useState([]);
   const [walkInService, setWalkInService] = useState("Sơn Gel Ombre Pink Rose");
   const [walkInArtist, setWalkInArtist] = useState("Olivia Lê");
-  const [walkInDuration, setWalkInDuration] = useState("20 phút");
+  const [walkInDuration, setWalkInDuration] = useState(formatDurationMinutes(20, "vi"));
   const [isSubmittingWalkIn, setIsSubmittingWalkIn] = useState(false);
 
   // Dynamic DB Services & Nail Variants & Suggested Artists
@@ -626,7 +627,7 @@ export function ReceptionistCustomerListPage() {
           assignedNailArtistId: artistId,
           chairId: item.chairId,
           chairName: item.chairName,
-          duration: item.estimatedWait ? `${item.estimatedWait} phút` : "20 phút",
+          duration: formatDurationMinutes(item.estimatedWait || 20, language),
           status: statusKey,
           checkInTime: item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "Vừa xong",
           userId: item.customerId,
@@ -766,7 +767,7 @@ export function ReceptionistCustomerListPage() {
         serviceName: requestNoteText,
         assignedArtist: assignedArtistName,
         assignedNailArtistId: selectedArtistIdForWalkIn || null,
-        duration: language === "vi" ? `${calculatedDuration} phút` : `${calculatedDuration} mins`,
+        duration: formatDurationMinutes(calculatedDuration, language),
         status: "lobby",
         checkInTime: new Date().toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit" }),
         userId: foundUserId,
@@ -1664,7 +1665,7 @@ export function ReceptionistCustomerListPage() {
               {walkInTab === "late_arrival" && (
                 <div className="space-y-2 p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200">
                   <label className="block text-xs font-bold text-amber-900">
-                    {language === "vi" ? "Chọn Lịch Đặt Trước Tới Trễ ≥ 15 Phút" : "Select Pre-booked Appointment Late ≥ 15 mins"}
+                    {language === "vi" ? "Chọn Lịch Đặt Trước Tới Trễ ≥ 15 Phút" : "Select Pre-booked Appointment Late ≥ 15 min"}
                   </label>
                   <Select
                     value={selectedLateBookingId}
@@ -1886,7 +1887,7 @@ export function ReceptionistCustomerListPage() {
                     <Clock size={13} />
                   </div>
                   <span className="font-bold text-xs text-emerald-900">
-                    {calculatedDuration} {language === "vi" ? "phút" : "mins"}
+                    {formatDurationMinutes(calculatedDuration, language)}
                   </span>
                 </div>
               </div>
