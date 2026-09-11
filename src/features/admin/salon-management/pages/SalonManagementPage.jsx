@@ -28,6 +28,7 @@ import SetOperatingHoursModal from "../components/SetOperatingHoursModal";
 import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip, Table } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -42,6 +43,7 @@ import { fetchSalonsPaginated, deleteSalon, fetchSalonRatings } from "../service
 import { fetchSalonStaffCount } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
@@ -195,8 +197,8 @@ function BranchCard({ branch, onClick }) {
     return () => { isMounted = false; };
   }, [branch.id]);
 
-  const displayStatus = branch.status.toLowerCase() === "open" 
-    ? (language === "vi" ? "Mở cửa" : "Open") 
+  const displayStatus = branch.status.toLowerCase() === "open"
+    ? (language === "vi" ? "Mở cửa" : "Open")
     : (language === "vi" ? "Đóng cửa" : "Closed");
 
   return (
@@ -241,10 +243,7 @@ function BranchCard({ branch, onClick }) {
             <Phone size={16} className="shrink-0 text-[#ea4f93]" />
             <span className="truncate">{t("adminSalonManagement.phone")} {branch.phone}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock3 size={16} className="shrink-0 text-[#ea4f93]" />
-            <span className="truncate">{t("adminSalonManagement.hours")} {branch.hours}</span>
-          </div>
+
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
           <div className="flex items-center gap-1 text-[#f59e0b]">
@@ -383,13 +382,13 @@ export function SalonManagementPage() {
   const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState("All");
   const [pageIndex, setPageIndex] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadMore, setIsLoadMore] = useState(false);
   const { t, language } = useLanguage();
   const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [salons, setSalons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -415,7 +414,7 @@ export function SalonManagementPage() {
     if (page === 1) setIsLoading(true);
     else setIsLoadMore(true);
     setError("");
-    
+
     try {
       const data = await fetchSalonsPaginated({
         pageNumber: page,
@@ -423,20 +422,20 @@ export function SalonManagementPage() {
         name: search.trim() || undefined,
         status: status !== "All" ? status : undefined
       });
-      
+
       const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
-      
+
       if (page === 1) {
         setSalons(newItems);
       } else {
         setSalons(prev => [...prev, ...newItems]);
       }
-      
+
       setHasMore(data?.metaData?.hasNext || false);
       setPageIndex(page);
     } catch (err) {
       console.error("Failed to load salons:", err);
-      setError(err.message || "Failed to load salons.");
+      toast.error(err.message || "Failed to load salons.");
     } finally {
       setIsLoading(false);
       setIsLoadMore(false);
@@ -453,16 +452,18 @@ export function SalonManagementPage() {
       }
     };
     loadInitialDeps();
-    loadSalons(1, searchTerm, statusFilter);
-  }, [salonsRefreshKey]);
+  }, []);
 
   useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
+    loadSalons(1, debouncedSearchTerm, statusFilter);
+  }, [debouncedSearchTerm, statusFilter, salonsRefreshKey]);
 
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+  useEffect(() => {
+    if (location.state?.flashMessage) {
+      toast.success(location.state.flashMessage, { id: "salon-flash-msg" });
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state?.flashMessage, navigate]);
 
   // Load managers when assign manager modal opens
   useEffect(() => {
@@ -534,16 +535,11 @@ export function SalonManagementPage() {
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
-    loadSalons(1, "", "All");
-  };
-
-  const handleSearch = () => {
-    loadSalons(1, searchTerm, statusFilter);
   };
 
   const handleLoadMore = () => {
     if (hasMore && !isLoadMore) {
-      loadSalons(pageIndex + 1, searchTerm, statusFilter);
+      loadSalons(pageIndex + 1, debouncedSearchTerm, statusFilter);
     }
   };
 
@@ -644,7 +640,7 @@ export function SalonManagementPage() {
         color: "#f59e0b",
       },
       {
-        label: isVi ? "Đánh giá trung bình" : "Avg. Rating",
+        label: isVi ? "Đánh giá trung bình" : "Avg Rating",
         value: "4.8",
         unit: "/ 5.0",
         note: isVi ? "+0.2 so với tháng trước" : "+0.2 vs last month",
@@ -681,22 +677,6 @@ export function SalonManagementPage() {
   return (
     <section className="w-full text-slate-700">
       {/*  */}
-      {flashMessage ? (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 rounded-lg bg-[#edfdf4] px-6 py-4 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </motion.div>
-      ) : null}
-
-      {error ? (
-        <div className="mb-6">
-          <Alert
-            message="Error Loading Salons"
-            description={error}
-            type="error"
-            showIcon
-          />
-        </div>
-      ) : null}
 
       {isLoading ? (
         <div className="mb-8 flex min-h-[200px] items-center justify-center">
@@ -711,20 +691,28 @@ export function SalonManagementPage() {
       {!isLoading ? (
         <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="space-y-6">
           <PremiumCard className="p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
                 <SectionHeading
                   title={t("adminSalonManagement.branchOverview")}
                   subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
                 />
+                <div className="flex items-center gap-3">
+                  <Link
+                    to={ROUTES.adminSalonsCreate}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
+                  >
+                    <Plus size={20} />
+                    {t("adminSalonManagement.addSalon")}
+                  </Link>
+                </div>
               </div>
-              <div className="flex flex-col gap-4 xl:ml-auto xl:min-w-[640px] xl:items-end">
-                <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between bg-slate-50/50 rounded-2xl p-4 border border-slate-100/60">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                   <Select
                     value={statusFilter}
                     onChange={(value) => {
                       setStatusFilter(value);
-                      loadSalons(1, searchTerm, value);
                     }}
                     className="w-full sm:w-[150px] min-w-[150px] custom-select"
                     style={{ height: "46px" }}
@@ -734,19 +722,14 @@ export function SalonManagementPage() {
                       { value: "Closed", label: language === "vi" ? "Đóng cửa" : "Closed" },
                     ]}
                   />
-                  <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-5 py-3 shadow-inner shadow-[#fff0f8] sm:max-w-[340px]">
-                    <Search size={18} className="text-[#ea4f93]" />
+                  <div className="flex flex-1 sm:flex-none items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-inner shadow-slate-50 sm:w-[340px] focus-within:border-[#ea4f93] focus-within:ring-2 focus-within:ring-[#ea4f93]/20 transition-all">
+                    <Search size={18} className="text-[#a88a9f]" />
                     <input
                       type="text"
                       placeholder={t("adminSalonManagement.searchSalons")}
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSearch();
-                        }
-                      }}
-                      className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#c8b0bf]"
+                      className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f]"
                     />
                     {searchTerm ? (
                       <motion.button
@@ -754,27 +737,20 @@ export function SalonManagementPage() {
                         whileTap={{ scale: 0.9 }}
                         type="button"
                         onClick={clearFilters}
-                        className="rounded-full bg-[#fde7ef] p-2 text-[#ea4f93] transition-all duration-300 hover:bg-[#f0b7cf]"
+                        className="rounded-full bg-[#fde7ef] p-1.5 text-[#ea4f93] transition-all duration-300 hover:bg-[#f0b7cf]"
                       >
-                        <X size={14} />
+                        <X size={12} strokeWidth={2.5} />
                       </motion.button>
                     ) : null}
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-3">
-                    <Link
-                      to={ROUTES.adminSalonsCreate}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
-                    >
-                      <Plus size={20} />
-                      {t("adminSalonManagement.addSalon")}
-                    </Link>
-                  </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0 pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-200/60 xl:border-l xl:pl-4">
                   <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
+                    <UserRound size={14} className="mr-1.5 inline" />
                     {t("adminSalonManagement.assignManager")}
                   </SmallActionButton>
                   <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
+                    <Calendar size={14} className="mr-1.5 inline" />
                     {t("adminSalonManagement.holidayClosure")}
                   </SmallActionButton>
                   <SmallActionButton onClick={() => {
@@ -787,6 +763,7 @@ export function SalonManagementPage() {
                     setSelectedSalonId(null);
                     setShowSetHoursModal(true);
                   }}>
+                    <Clock3 size={14} className="mr-1.5 inline" />
                     {t("adminSalonManagement.setHours")}
                   </SmallActionButton>
                 </div>
@@ -822,7 +799,7 @@ export function SalonManagementPage() {
                 disabled={isLoadMore}
                 className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-8 py-3 text-[15px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:opacity-50"
               >
-                {isLoadMore ? <Spin size="small" /> : "Hiện thêm"}
+                {isLoadMore ? <Spin size="small" /> : language === 'vi' ? "Hiện thêm" : "View more"}
               </motion.button>
             </div>
           )}
