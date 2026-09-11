@@ -81,6 +81,19 @@ export function TransactionOverviewPage() {
   const [salonMetrics, setSalonMetrics] = useState({});
   const [loadingMetrics, setLoadingMetrics] = useState(false);
 
+  const [salonPageIndex, setSalonPageIndex] = useState(1);
+  const [hasMoreSalons, setHasMoreSalons] = useState(false);
+  const [isLoadMoreSalons, setIsLoadMoreSalons] = useState(false);
+  const [debouncedSalonSearchQuery, setDebouncedSalonSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSalonSearchQuery(salonSearchQuery);
+      setSalonPageIndex(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [salonSearchQuery]);
+
   // Transactions state for selected salon
   const [transactionsData, setTransactionsData] = useState({ items: [], totalCount: 0, totalPages: 1 });
   const [loadingTransactions, setLoadingTransactions] = useState(false);
@@ -97,7 +110,7 @@ export function TransactionOverviewPage() {
   const [loadingBooking, setLoadingBooking] = useState(false);
   const [transactionDetails, setTransactionDetails] = useState(null);
 
-  const loadSalonMetrics = async (salonsList) => {
+  const loadSalonMetrics = async (salonsList, isAppend = false) => {
     setLoadingMetrics(true);
     const metricsMap = {};
     try {
@@ -125,7 +138,7 @@ export function TransactionOverviewPage() {
           }
         })
       );
-      setSalonMetrics(metricsMap);
+      setSalonMetrics(prev => isAppend ? { ...prev, ...metricsMap } : metricsMap);
     } catch (err) {
       console.error("Error aggregating salon metrics:", err);
     } finally {
@@ -135,23 +148,41 @@ export function TransactionOverviewPage() {
 
   // Load Salons
   const loadSalons = async () => {
-    setLoadingSalons(true);
+    if (salonPageIndex === 1) setLoadingSalons(true);
+    else setIsLoadMoreSalons(true);
     setSalonsError(null);
     try {
-      const response = await fetchAdminSalons({ pageIndex: 1, pageSize: 10 });
+      const response = await fetchAdminSalons({
+        pageIndex: salonPageIndex,
+        pageSize: 6,
+        searchTerm: debouncedSalonSearchQuery
+      });
       const items = response.items || [];
-      setSalons(items);
-      loadSalonMetrics(items);
+      if (salonPageIndex === 1) {
+        setSalons(items);
+        loadSalonMetrics(items, false);
+      } else {
+        setSalons(prev => [...prev, ...items]);
+        loadSalonMetrics(items, true);
+      }
+      setHasMoreSalons(response?.metaData?.hasNext || false);
     } catch (err) {
       setSalonsError(err.message || "Failed to load salons list.");
     } finally {
       setLoadingSalons(false);
+      setIsLoadMoreSalons(false);
     }
   };
 
   useEffect(() => {
     loadSalons();
-  }, []);
+  }, [salonPageIndex, debouncedSalonSearchQuery]);
+
+  const handleLoadMoreSalons = () => {
+    if (!isLoadMoreSalons && hasMoreSalons) {
+      setSalonPageIndex(prev => prev + 1);
+    }
+  };
 
   // Load Transactions when Selected Salon or Page changes
   const loadTransactions = async () => {
@@ -239,15 +270,15 @@ export function TransactionOverviewPage() {
       );
     }
 
-    // Filter search query
-    if (salonSearchQuery.trim()) {
-      const query = salonSearchQuery.toLowerCase();
-      items = items.filter(
-        (s) =>
-          s.name?.toLowerCase().includes(query) ||
-          s.address?.toLowerCase().includes(query)
-      );
-    }
+    // Filter search query (local filtering removed since API handles it)
+    // if (salonSearchQuery.trim()) {
+    //   const query = salonSearchQuery.toLowerCase();
+    //   items = items.filter(
+    //     (s) =>
+    //       s.name?.toLowerCase().includes(query) ||
+    //       s.address?.toLowerCase().includes(query)
+    //   );
+    // }
 
     // Sort options
     if (salonSortOption === "name") {
@@ -377,6 +408,13 @@ export function TransactionOverviewPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
             {isVi ? "Đã hủy" : "Canceled"}
+          </span>
+        );
+      case "refunded":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+            {isVi ? "Đã hoàn tiền" : "Refunded"}
           </span>
         );
       default:
@@ -741,135 +779,151 @@ export function TransactionOverviewPage() {
                 </p>
               </div>
             ) : (
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              >
-                {filteredSalons.map((salon) => {
-                  const salonMetric = salonMetrics[salon.id] || { txCount: 0, successRate: 100, totalRevenue: 0 };
-                  const isMetricLoading = loadingMetrics && !salonMetrics[salon.id];
-                  return (
-                    <motion.div
-                      key={salon.id}
-                      variants={fadeInUp}
-                      whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                      onClick={() => setSelectedSalon(salon)}
-                      className="group bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
-                    >
-                      <div className="space-y-4">
-                        {/* Salon image / initials placeholder */}
-                        <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/50">
-                          {salon.image ? (
-                            <img
-                              src={salon.image}
-                              alt={salon.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
-                              {getInitials(salon.name)}
-                            </div>
-                          )}
-
-                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : salon.status === "Busy"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
-                            }`}>
-                            {language === "vi"
-                              ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
-                              : (salon.status)
-                            }
-                          </span>
-
-                          <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
-                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {t("adminTransactions.reviews")})
-                          </div>
-                        </div>
-
-                        {/* Salon Details */}
-                        <div className="space-y-2.5">
-                          <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
-                            {salon.name}
-                          </h3>
-                          <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <MapPin size={12} className="shrink-0 text-slate-400" />
-                              <span className="truncate">{salon.address}</span>
-                            </div>
-                            {salon.phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone size={12} className="shrink-0 text-slate-400" />
-                                <span>{salon.phone}</span>
+              <>
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {filteredSalons.map((salon) => {
+                    const salonMetric = salonMetrics[salon.id] || { txCount: 0, successRate: 100, totalRevenue: 0 };
+                    const isMetricLoading = loadingMetrics && !salonMetrics[salon.id];
+                    return (
+                      <motion.div
+                        key={salon.id}
+                        variants={fadeInUp}
+                        whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                        onClick={() => setSelectedSalon(salon)}
+                        className="group bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+                      >
+                        <div className="space-y-4">
+                          {/* Salon image / initials placeholder */}
+                          <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/50">
+                            {salon.image ? (
+                              <img
+                                src={salon.image}
+                                alt={salon.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
+                                {getInitials(salon.name)}
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
-                              <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || (t("adminTransactions.hoursNotListed"))}</span>
+
+                            <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : salon.status === "Busy"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
+                              }`}>
+                              {language === "vi"
+                                ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
+                                : (salon.status)
+                              }
+                            </span>
+
+                            <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
+                              ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {t("adminTransactions.reviews")})
                             </div>
                           </div>
 
-                          {/* Audit Metrics Panel inside Card */}
-                          <div className="space-y-3 pt-1">
-                            {/* Miniature success rate bar */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-[10px] font-bold text-[#7f6478]">
-                                <span>{t("adminTransactions.auditSuccessRate")}</span>
-                                <span className="font-mono text-[#ea4f93]">
-                                  {isMetricLoading ? (
-                                    <Spin size="small" className="scale-75" />
-                                  ) : salonMetric.txCount === 0 ? (
-                                    "N/A"
-                                  ) : (
-                                    `${salonMetric.successRate}%`
-                                  )}
-                                </span>
+                          {/* Salon Details */}
+                          <div className="space-y-2.5">
+                            <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
+                              {salon.name}
+                            </h3>
+                            <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
+                              <div className="flex items-center gap-2">
+                                <MapPin size={12} className="shrink-0 text-slate-400" />
+                                <span className="truncate">{salon.address}</span>
                               </div>
-                              <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
-                                <div
-                                  className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500"
-                                  style={{ width: `${isMetricLoading || salonMetric.txCount === 0 ? 0 : salonMetric.successRate}%` }}
-                                />
+                              {salon.phone && (
+                                <div className="flex items-center gap-2">
+                                  <Phone size={12} className="shrink-0 text-slate-400" />
+                                  <span>{salon.phone}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2">
+                                <Clock size={12} className="shrink-0 text-slate-400" />
+                                <span>{salon.hours || (t("adminTransactions.hoursNotListed"))}</span>
                               </div>
                             </div>
 
-                            {/* Quick stats columns */}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
-                                  {t("adminTransactions.auditedRev")}
-                                </span>
-                                <span className="font-mono text-xs font-bold text-[#2d1b35]">
-                                  {isMetricLoading ? "..." : formatCurrency(salonMetric.totalRevenue)}
-                                </span>
+                            {/* Audit Metrics Panel inside Card */}
+                            <div className="space-y-3 pt-1">
+                              {/* Miniature success rate bar */}
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-bold text-[#7f6478]">
+                                  <span>{t("adminTransactions.auditSuccessRate")}</span>
+                                  <span className="font-mono text-[#ea4f93]">
+                                    {isMetricLoading ? (
+                                      <Spin size="small" className="scale-75" />
+                                    ) : salonMetric.txCount === 0 ? (
+                                      "N/A"
+                                    ) : (
+                                      `${salonMetric.successRate}%`
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
+                                  <div
+                                    className="bg-gradient-to-r from-[#ea4f93] to-[#ffa26f] h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${isMetricLoading || salonMetric.txCount === 0 ? 0 : salonMetric.successRate}%` }}
+                                  />
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
-                                  {t("adminTransactions.volumeLogs")}
-                                </span>
-                                <span className="font-mono text-xs font-bold text-[#2d1b35]">
-                                  {isMetricLoading ? "..." : (t("adminTransactions.filesCount", { count: salonMetric.txCount }))}
-                                </span>
+
+                              {/* Quick stats columns */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
+                                    {t("adminTransactions.auditedRev")}
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-[#2d1b35]">
+                                    {isMetricLoading ? "..." : formatCurrency(salonMetric.totalRevenue)}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[9px] uppercase tracking-wider text-[#a88a9f] block mb-0.5">
+                                    {t("adminTransactions.volumeLogs")}
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-[#2d1b35]">
+                                    {isMetricLoading ? "..." : (t("adminTransactions.filesCount", { count: salonMetric.txCount }))}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+
                           </div>
-
                         </div>
-                      </div>
 
-                      <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea4f93]">
-                        <span>{t("adminTransactions.reviewTransactions")}</span>
-                        <span className="h-8 w-8 rounded-full bg-[#ea4f93]/10 text-[#ea4f93] flex items-center justify-center group-hover:bg-[#ea4f93] group-hover:text-white transition-colors duration-300 shadow-2xs">
-                          →
-                        </span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
+                        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#ea4f93]">
+                          <span>{t("adminTransactions.reviewTransactions")}</span>
+                          <span className="h-8 w-8 rounded-full bg-[#ea4f93]/10 text-[#ea4f93] flex items-center justify-center group-hover:bg-[#ea4f93] group-hover:text-white transition-colors duration-300 shadow-2xs">
+                            →
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                {hasMoreSalons && (
+                  <div className="flex justify-center mt-8 pb-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleLoadMoreSalons}
+                      disabled={isLoadMoreSalons}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-8 py-3 text-[15px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:opacity-50"
+                    >
+                      {isLoadMoreSalons ? <Spin size="small" /> : language === 'vi' ? "Hiện thêm" : "View more"}
+                    </motion.button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (
@@ -964,6 +1018,10 @@ export function TransactionOverviewPage() {
                       value: "canceled",
                       label: t("adminTransactions.canceled"),
                     },
+                    {
+                      value: "refunded",
+                      label: language === "vi" ? "Đã hoàn tiền" : "Refunded",
+                    }
                   ]}
                 />
               </div>

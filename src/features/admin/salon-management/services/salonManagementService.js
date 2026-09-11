@@ -172,11 +172,11 @@ export async function fetchAdminSalons({
   const response = await axiosClient.get("/Salons", {
     headers: getAuthHeaders(),
     params: {
-      PageIndex: pageIndex,
-      PageSize: pageSize,
-      Name: normalizedSearch || undefined,
-      Address: normalizedSearch || undefined,
-      OrderBy: orderBy || undefined,
+      pageNumber: pageIndex,
+      pageSize: pageSize,
+      name: normalizedSearch || undefined,
+      address: normalizedSearch || undefined,
+      orderBy: orderBy || undefined,
     },
   });
 
@@ -259,5 +259,23 @@ export async function fetchAdminSalonDetail(salonId) {
     }
 
     throw error;
+  }
+}
+
+export async function deleteAdminSalon(salonId) {
+  const normalizedSalonId = String(salonId || "").trim();
+
+  if (!normalizedSalonId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.delete(`/Salons/${normalizedSalonId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to delete salon.");
+  } catch (error) {
+    throw error?.response?.data || error;
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer, Modal, message, Select, Spin, Alert, Table } from "antd";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Eye,
@@ -25,6 +26,7 @@ import { RefundConfirmModal } from "../components/RefundConfirmModal";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { getManagerBookingDetailRoute } from "../../../../shared/constants/routes";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -68,6 +70,7 @@ const getAvatarColor = (name) => {
 
 export function TransactionManagementPage() {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [transactionsData, setTransactionsData] = useState({
@@ -156,6 +159,13 @@ export function TransactionManagementPage() {
   const handleRefresh = () => {
     setCurrentPage(1);
     loadTransactions();
+  };
+
+  const handleViewBookingDetail = () => {
+    if (!selectedTransaction?.bookingId) return;
+
+    setDrawerVisible(false);
+    navigate(getManagerBookingDetailRoute(selectedTransaction.bookingId));
   };
 
   // Client side filtering for query and status to match premium instant feel
@@ -423,6 +433,7 @@ export function TransactionManagementPage() {
               options={[
                 { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
                 { value: "paid", label: language === "vi" ? "Đã thanh toán" : "Paid" },
+                { value: "refunded", label: language === "vi" ? "Đã hoàn tiền" : "Refunded" },
                 { value: "pending", label: language === "vi" ? "Đang chờ thanh toán" : "Pending" },
                 { value: "expired", label: language === "vi" ? "Hết hạn" : "Expired" },
                 { value: "canceled", label: language === "vi" ? "Đã hủy" : "Canceled" }
@@ -551,38 +562,14 @@ export function TransactionManagementPage() {
                       )
                     },
                     {
-                      title: language === "vi" ? "Tổng giá" : "Total Price",
-                      dataIndex: "totalPrice",
-                      key: "totalPrice",
+                      title: language === "vi" ? "Số tiền" : "Amount",
+                      dataIndex: "amount",
+                      key: "amount",
                       sorter: true,
-                      sortOrder: selectedSort === "totalPrice-asc" ? "ascend" : selectedSort === "totalPrice-desc" ? "descend" : null,
+                      sortOrder: selectedSort === "amount-asc" ? "ascend" : selectedSort === "amount-desc" ? "descend" : null,
                       render: (_, tx) => (
                         <span className="font-mono font-bold text-[#2d1b35] text-sm">
-                          {tx.booking?.totalPrice != null ? formatCurrency(tx.booking.totalPrice) : formatCurrency(tx.amount)}
-                        </span>
-                      )
-                    },
-                    {
-                      title: language === "vi" ? "Tiền đặt cọc" : "Deposit Paid",
-                      dataIndex: "deposit",
-                      key: "deposit",
-                      sorter: true,
-                      sortOrder: selectedSort === "deposit-asc" ? "ascend" : selectedSort === "deposit-desc" ? "descend" : null,
-                      render: (_, tx) => (
-                        <span className="font-mono font-bold text-[#ea4f93] text-sm">
-                          {tx.amountDue != null ? formatCurrency(tx.amountDue) : (tx.booking?.amountDue != null ? formatCurrency(tx.booking.amountDue) : "-")}
-                        </span>
-                      )
-                    },
-                    {
-                      title: language === "vi" ? "Số dư còn lại" : "Remaining Balance",
-                      dataIndex: "balance",
-                      key: "balance",
-                      sorter: true,
-                      sortOrder: selectedSort === "balance-asc" ? "ascend" : selectedSort === "balance-desc" ? "descend" : null,
-                      render: (_, tx) => (
-                        <span className="font-mono font-bold text-[#2fa25f] text-sm">
-                          {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "-")}
+                          {formatCurrency(tx.amount)}
                         </span>
                       )
                     },
@@ -655,7 +642,7 @@ export function TransactionManagementPage() {
               {processedTransactions.length > 0 && (
                 <div className="flex justify-between items-center px-6 py-4.5 border-t border-slate-100 bg-slate-50/30">
                   <span className="text-xs text-[#a88a9f]">
-                    {language === "vi" 
+                    {language === "vi"
                       ? <span>Hiển thị <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> / <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> kết quả</span>
                       : <span>Showing <span className="font-bold text-[#2d1b35]">{displayedTransactions.length}</span> of <span className="font-bold text-[#2d1b35]">{transactionsData.metaData?.totalItems || transactionsData.totalCount || processedTransactions.length}</span> items</span>
                     }
@@ -714,24 +701,6 @@ export function TransactionManagementPage() {
               <div className="text-center space-y-2.5 pb-1">
                 <div className="flex justify-center items-center gap-2">
                   {renderStatusBadge(selectedTransaction.status)}
-                  {bookingDetails && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${selectedTransaction.amount === bookingDetails.amountDue
-                      ? "bg-[#fff2f7] text-[#ea4f93] border-[#ea4f93]/20"
-                      : selectedTransaction.amount === bookingDetails.amountPaid
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-500/20"
-                        : selectedTransaction.amount === bookingDetails.totalPrice
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-500/20"
-                          : "bg-slate-50 text-slate-600 border-slate-200"
-                      }`}>
-                      {selectedTransaction.amount === bookingDetails.amountDue
-                        ? "Đặt cọc (Deposit)"
-                        : selectedTransaction.amount === bookingDetails.amountPaid
-                          ? "Thanh toán còn lại"
-                          : selectedTransaction.amount === bookingDetails.totalPrice
-                            ? "Thanh toán 100%"
-                            : "Thanh toán"}
-                    </span>
-                  )}
                 </div>
                 <h2 className="text-4xl font-mono font-bold text-[#2d1b35] tracking-tight">
                   {formatCurrency(selectedTransaction.amount)}
@@ -752,77 +721,28 @@ export function TransactionManagementPage() {
                 </div>
 
                 {/* Customer & Salon Details inside Receipt */}
-                <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
+                <div className="py-3.5 space-y-2 text-xs">
                   <div className="flex justify-between gap-3">
                     <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Khách hàng" : "Customer"}</span>
                     <span className="font-bold text-[#2d1b35] text-right truncate">{selectedTransaction.customerName}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Salon" : "Salon"}</span>
+                    <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Chi nhánh" : "Salon"}</span>
                     <span className="font-bold text-[#ea4f93] text-right truncate">{selectedTransaction.salonName || "Nailify Salon"}</span>
                   </div>
-                  {bookingDetails && (
-                    <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
-                      <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Loại thanh toán" : "Payment Type"}</span>
-                      <span className="font-bold text-[#2d1b35] text-right">
-                        {selectedTransaction.amount === bookingDetails.amountDue
-                          ? "Đặt cọc (Deposit)"
-                          : selectedTransaction.amount === bookingDetails.amountPaid
-                            ? "Thanh toán còn lại"
-                            : selectedTransaction.amount === bookingDetails.totalPrice
-                              ? "Thanh toán 100%"
-                              : "Thanh toán đơn hàng"}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Billing Breakdown inside Receipt */}
-                <div className="py-3.5">
+                <div>
                   {loadingBooking ? (
                     <div className="flex justify-center items-center py-6">
                       <Spin size="small" />
                     </div>
                   ) : bookingDetails ? (
                     <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">Subtotal</span>
-                        <span className="font-mono font-semibold text-[#2d1b35]">{formatCurrency(bookingDetails.price)}</span>
-                      </div>
-
-                      {bookingDetails.discounts && bookingDetails.discounts.length > 0 ? (
-                        bookingDetails.discounts.map((d, index) => (
-                          <div key={d.id ?? index} className="flex justify-between pl-2.5 text-[11px]">
-                            <span className="text-[#a88a9f] italic">↳ {d.type}: {d.name}</span>
-                            <span className="font-mono text-emerald-600 font-medium">
-                              {d.amountDisplay || `-${formatCurrency(d.amount)}`}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        bookingDetails.discount !== 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-[#a88a9f]">{language === "vi" ? "Giảm giá" : "Discount"}</span>
-                            <span className="font-mono text-emerald-600 font-medium">
-                              {bookingDetails.discount > 0 ? "-" : ""}{formatCurrency(Math.abs(bookingDetails.discount))}
-                            </span>
-                          </div>
-                        )
-                      )}
-
                       <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
-                        <span className="text-[#a88a9f] font-bold">{language === "vi" ? "Tổng giá tiền" : "Total Price"}</span>
-                        <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(bookingDetails.totalPrice)}</span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">{language === "vi" ? "Tiền đặt cọc" : "Deposit paid"}</span>
-                        <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(bookingDetails.amountDue)}</span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-[#a88a9f]">{language === "vi" ? "Số dư còn lại" : "Remaining balance"}</span>
-                        <span className="font-mono text-[#2d1b35] font-semibold">{formatCurrency(bookingDetails.amountPaid)}</span>
+                        <span className="text-[#a88a9f] font-bold">{language === "vi" ? "Số tiền" : "Amount"}</span>
+                        <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(selectedTransaction.amount)}</span>
                       </div>
                     </div>
                   ) : (
@@ -833,20 +753,7 @@ export function TransactionManagementPage() {
                     </p>
                   )}
                 </div>
-
-                {/* Barcode footer */}
-                <div className="border-t border-dashed border-[#e6decb] pt-3.5 text-center space-y-1.5">
-                  <div className="flex justify-center items-center gap-[2px] opacity-25 h-6 select-none">
-                    {[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6].map((w, i) => (
-                      <div key={i} className="bg-black h-full" style={{ width: `${w}px` }} />
-                    ))}
-                  </div>
-                  <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
-                    {language === "vi" ? "Nailify Inc — Xin Cảm ơn" : "Nailify Inc — Thank You"}
-                  </div>
-                </div>
               </div>
-
               {/* Timeline */}
               <div className="bg-white rounded-2xl border border-slate-200/60 p-4 space-y-2.5 shadow-xs">
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">{language === "vi" ? "Thời gian" : "Timeline"}</h4>
@@ -917,35 +824,16 @@ export function TransactionManagementPage() {
                   </div>
                 </div>
               )}
-
-              {/* Policy Notes */}
-              <div className="bg-white rounded-2xl p-4 text-xs text-[#7f6478] space-y-1.5 border border-[#f1e7ed]">
-                <div className="flex items-center gap-1.5 font-bold text-[#2d1b35]">
-                  <AlertCircle size={14} className="text-[#ea4f93]" />
-                  <span>{language === "vi" ? "Chính sách giao dịch Nailify" : "Nailify Transaction Policy"}</span>
-                </div>
-                <p className="leading-relaxed text-[#7f6478]">
-                  {language === "vi" ? "Tất cả các khoản thanh toán được xử lý thông qua cổng PayOS/VietQR của bên thứ ba. Các chính sách hoàn tiền đặt trước đặt chỗ tiêu chuẩn được áp dụng theo hướng dẫn của Chi nhánh Nailify." : "All payments processed via third-party PayOS/VietQR gateways. Standard booking reservation refund policies apply according to Nailify Branch guidelines."}
-                </p>
-              </div>
-
-              {/* Close Modal Footer */}
-              <div className="flex gap-3">
+              {selectedTransaction.bookingId && (
                 <button
-                  onClick={() => setDrawerVisible(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 rounded-xl transition active:scale-[0.98]"
+                  type="button"
+                  onClick={handleViewBookingDetail}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-3xl border border-[#f1e7ed] bg-white px-4 py-2.5 text-xs font-bold text-[#2d1b35] shadow-xs transition hover:border-[#ea4f93]/40 hover:bg-[#fff7fb] hover:text-[#ea4f93] active:scale-[0.98]"
                 >
-                  {language === "vi" ? "Đóng hóa đơn" : "Close Receipt"}
+                  <ExternalLink size={13} />
+                  {language === "vi" ? "Xem chi tiết lịch hẹn" : "View Booking Detail"}
                 </button>
-                {selectedTransaction.status?.toLowerCase() === "paid" && (
-                  <button
-                    onClick={() => setRefundConfirmVisible(true)}
-                    className="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-bold text-rose-600 rounded-xl transition active:scale-[0.98]"
-                  >
-                    {language === "vi" ? "Hoàn tiền" : "Refund Payment"}
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

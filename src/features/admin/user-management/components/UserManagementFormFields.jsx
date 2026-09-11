@@ -13,10 +13,10 @@ const isSalonRole = (role) => {
   return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
 };
 
-const FORM_STATUS_OPTIONS = USER_STATUS_FILTERS.filter((item) => item !== "All");
+const FORM_STATUS_OPTIONS = ["Active", "Inactive"];
 const INPUT_CLASSNAME =
-  "w-full rounded-2xl border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4]";
-const DISABLED_INPUT_CLASSNAME = "cursor-not-allowed bg-[#f9f1ea] text-[#8f7c6d]";
+  "w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3 text-[14px] text-slate-800 outline-none transition-all duration-300 placeholder:text-rose-300 font-medium hover:border-rose-200 hover:bg-[#fff5f9] focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+const DISABLED_INPUT_CLASSNAME = "cursor-not-allowed bg-[#f9f1ea]/50 text-slate-400 border-rose-100/50 hover:border-rose-100/50 hover:bg-[#f9f1ea]/50";
 
 const getRoleLabel = (role, t) => {
   switch (String(role).trim().toLowerCase()) {
@@ -81,7 +81,7 @@ export function UserManagementFormFields({
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.firstName")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.firstName")}</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
@@ -92,7 +92,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.lastName")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.lastName")}</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
@@ -103,7 +103,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
@@ -114,7 +114,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.password")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.password")}</span>
           <input
             type="password"
             value={formValues.password}
@@ -126,7 +126,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
@@ -137,7 +137,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">
+          <span className="text-[13px] font-bold text-slate-700">
             {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
           </span>
           <input
@@ -153,7 +153,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <select
             value={formValues.role}
             onChange={onFieldChange("role")}
@@ -170,7 +170,7 @@ export function UserManagementFormFields({
 
         {isSalonRole(formValues.role) && (
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm font-medium text-[var(--color-ink)]">
+            <span className="text-[13px] font-bold text-slate-700">
               {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
             </span>
             <select
@@ -198,7 +198,7 @@ export function UserManagementFormFields({
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.firstName")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.firstName")}</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
@@ -209,7 +209,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.lastName")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.lastName")}</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
@@ -220,7 +220,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
@@ -231,7 +231,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
@@ -242,7 +242,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.statusLabel")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.statusLabel")}</span>
           <select
             value={formValues.status}
             onChange={onFieldChange("status")}
@@ -258,7 +258,7 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <input
             value={getRoleLabel(formValues.role, t)}
             disabled
@@ -269,7 +269,7 @@ export function UserManagementFormFields({
 
         {isSalonRole(formValues.role) && (
           <label className="space-y-2">
-            <span className="text-sm font-medium text-[var(--color-ink)]">
+            <span className="text-[13px] font-bold text-slate-700">
               {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
             </span>
             <select
@@ -296,7 +296,7 @@ export function UserManagementFormFields({
   return (
     <>
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
+        <span className="text-[13px] font-bold text-slate-700">
           {t("userManagement.detail.fullName")}
         </span>
         <input
@@ -309,7 +309,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.email")}</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
         <input
           value={formValues.email}
           onChange={onFieldChange("email")}
@@ -320,7 +320,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.phoneLabel")}</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
         <input
           value={formValues.phone}
           onChange={onFieldChange("phone")}
@@ -332,7 +332,7 @@ export function UserManagementFormFields({
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.password")}</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.password")}</span>
           <input
             type="password"
             value={formValues.password}
@@ -346,7 +346,7 @@ export function UserManagementFormFields({
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">
+          <span className="text-[13px] font-bold text-slate-700">
             {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
           </span>
           <input
@@ -363,7 +363,7 @@ export function UserManagementFormFields({
       ) : null}
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
+        <span className="text-[13px] font-bold text-slate-700">
           {t("userManagement.detail.joinedDate")}
         </span>
         <input
@@ -376,7 +376,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.role")}</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
         <select
           value={formValues.role}
           onChange={onFieldChange("role")}
@@ -393,7 +393,7 @@ export function UserManagementFormFields({
 
       {isSalonRole(formValues.role) && (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">
+          <span className="text-[13px] font-bold text-slate-700">
             {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
           </span>
           <select
@@ -415,7 +415,7 @@ export function UserManagementFormFields({
       )}
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.statusLabel")}</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.statusLabel")}</span>
         <select
           value={formValues.status}
           onChange={onFieldChange("status")}
@@ -431,7 +431,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
+        <span className="text-[13px] font-bold text-slate-700">
           {t("userManagement.detail.lastActive")}
         </span>
         <input
@@ -444,13 +444,13 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2 md:col-span-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">{t("userManagement.detail.notes")}</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.notes")}</span>
         <textarea
           value={formValues.notes}
           onChange={onFieldChange("notes")}
           rows={5}
           disabled={disabled}
-          className={`w-full rounded-[22px] border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          className={`${INPUT_CLASSNAME} rounded-[22px] resize-y ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           placeholder={t("userManagement.detail.addInternalNotes")}
         />
       </label>

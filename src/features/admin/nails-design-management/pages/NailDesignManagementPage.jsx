@@ -398,8 +398,7 @@ export function NailDesignManagementPage() {
     {
       key: "name-desc",
       label: language === "vi" ? "Tên (Z - A)" : "Name (Z - A)",
-    },
-
+    }
   ];
 
   const sortMenu = {

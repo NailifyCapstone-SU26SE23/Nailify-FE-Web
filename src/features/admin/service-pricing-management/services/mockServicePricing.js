@@ -135,7 +135,7 @@ export const buildServicePricingSummary = (services, addOns) => {
       color: "#8b5cf6",
     },
     {
-      label: "Avg. Service Price",
+      label: "Avg Service Price",
       value: formatVndCurrency(avgPrice),
       note: `${services.filter((item) => item.price >= avgPrice).length} above avg.`,
       icon: Wallet,
