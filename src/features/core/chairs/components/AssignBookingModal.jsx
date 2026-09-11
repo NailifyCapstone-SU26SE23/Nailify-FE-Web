@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import dayjs from "dayjs";
 import { chairsService } from "../services/chairsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -144,7 +145,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       title: language === "vi" ? "Thời lượng" : "Duration",
       dataIndex: "totalDuration",
       key: "totalDuration",
-      render: (mins) => <span className="text-slate-600">{mins} {language === "vi" ? "phút" : "minutes"}</span>,
+      render: (mins) => <span className="text-slate-600">{formatDurationMinutes(mins, language)}</span>,
     },
     {
       title: language === "vi" ? "Trạng thái" : "Status",

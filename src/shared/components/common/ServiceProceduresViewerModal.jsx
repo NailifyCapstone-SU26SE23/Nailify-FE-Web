@@ -3,6 +3,7 @@ import { Modal, Button } from "antd";
 import { BriefcaseBusiness, Mail, Phone, Calendar, Clock, FileText, Palette, Star, DollarSign, BrushCleaning, X, Info, Check, Play, User, AlertCircle, AlarmClock, Zap, LockKeyhole, Hourglass, Sparkles } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
 import { useLanguage } from "../../hooks/useLanguage";
+import { formatDurationMinutes } from "../../utils/formatDuration";
 
 function getProcedureStatusTone(status) {
   const normalizedStatus = String(status || "").trim().toLowerCase();
@@ -113,7 +114,7 @@ export function ServiceProceduresViewerModal({
                   {isVi ? `Số lượng: x${service.quantity || 1}` : `Qty: x${service.quantity || 1}`}
                 </span>
                 <span className="flex items-center justify-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white px-3 py-1.5 font-bold text-[#E84F93]">
-                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {totalEstimatedDuration} {isVi ? "phút" : "min"}
+                  <AlarmClock size={12} /> {isVi ? "Tổng thời gian:" : "Total duration:"} {formatDurationMinutes(totalEstimatedDuration, language)}
                 </span>
               </div>
             </div>
@@ -186,7 +187,7 @@ export function ServiceProceduresViewerModal({
                             <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
                           </span>
                           <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                            {procedure.duration ?? 0} {isVi ? "phút" : "min"}
+                            {formatDurationMinutes(procedure.duration ?? 0, language)}
                           </span>
                         </div>
                       </div>
@@ -270,18 +271,18 @@ export function ServiceProceduresViewerModal({
                         {/* Right: Time Breakdown & Overlap Badges */}
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
-                            <Zap size={12} /> {isVi ? `Thao tác trực tiếp: ${procedure.activeDuration ?? 0}m` : `Direct operation: ${procedure.activeDuration ?? 0}m`}
+                            <Zap size={12} /> {isVi ? "Thao tác trực tiếp" : "Direct operation"}: {formatDurationMinutes(procedure.activeDuration ?? 0, language)}
                           </span>
 
                           {hasPassive && (
                             <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
-                              <Hourglass size={12} /> {isVi ? `Hơ máy / Chờ khô: ${procedure.passiveDuration}m` : `Curing / Waiting: ${procedure.passiveDuration}m`}
+                              <Hourglass size={12} /> {isVi ? "Hơ máy / Chờ khô" : "Curing / Waiting"}: {formatDurationMinutes(procedure.passiveDuration, language)}
                             </span>
                           )}
 
                           {(hasPassive || procedure.canOverlap) ? (
                             <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                              <Sparkles size={12} /> Overlap ({isVi ? `Rảnh ${procedure.passiveDuration ?? 0}m` : `Free ${procedure.passiveDuration ?? 0}m`})
+                              <Sparkles size={12} /> Overlap ({isVi ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
                             </span>
                           ) : (
                             <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
@@ -298,11 +299,11 @@ export function ServiceProceduresViewerModal({
                           <span>
                             {isVi ? (
                               <>
-                                Trong <strong>{procedure.passiveDuration} phút</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                                Trong <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
                               </>
                             ) : (
                               <>
-                                During this <strong>{procedure.passiveDuration} min</strong> curing/drying time, the artist is free and can work on other customers (Overlap).
+                                During this <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> curing/drying time, the artist is free and can work on other customers (Overlap).
                               </>
                             )}
                           </span>

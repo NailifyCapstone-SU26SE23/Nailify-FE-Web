@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { confirmOnsiteAddon } from "../services/bookingProceduresService";
 import { axiosClient } from "../../../../lib/axiosClient";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess }) {
   const [activeTab, setActiveTab] = useState("services"); // 'services' | 'variants' | 'custom'
@@ -288,7 +289,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
                             +{Number((s.price || 0) * (qty || 1)).toLocaleString("vi-VN")} VND
                           </span>
                           <span className="text-[10px] text-[#64748B] font-semibold bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                            +{(s.duration || 15) * (qty || 1)} {isVi ? "phút" : "minutes"}
+                            +{formatDurationMinutes((s.duration || 15) * (qty || 1), language)}
                           </span>
                         </div>
                       </div>
