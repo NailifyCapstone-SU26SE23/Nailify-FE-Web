@@ -18,7 +18,7 @@ import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
-import { updateSalon } from "../services/salonsService";
+import { updateSalon, updateSalonOperatingHours } from "../services/salonsService";
 import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
 
 const SALON_DAYS_OF_WEEK = [
@@ -37,13 +37,13 @@ const SALON_STATUS_OPTIONS = [
 ];
 
 const DEFAULT_OPERATING_HOURS = {
-  monday: { open: "09:00", close: "20:00" },
-  tuesday: { open: "09:00", close: "20:00" },
-  wednesday: { open: "09:00", close: "20:00" },
-  thursday: { open: "09:00", close: "20:00" },
-  friday: { open: "09:00", close: "20:00" },
-  saturday: { open: "09:00", close: "18:00" },
-  sunday: { open: "10:00", close: "16:00" },
+  monday: { open: "09:00", close: "20:00", closed: false },
+  tuesday: { open: "09:00", close: "20:00", closed: false },
+  wednesday: { open: "09:00", close: "20:00", closed: false },
+  thursday: { open: "09:00", close: "20:00", closed: false },
+  friday: { open: "09:00", close: "20:00", closed: false },
+  saturday: { open: "09:00", close: "18:00", closed: false },
+  sunday: { open: "10:00", close: "16:00", closed: false },
 };
 
 const createEmptySalonForm = () => ({
@@ -283,6 +283,22 @@ export function SalonUpdatePage() {
 
       await updateSalon(salonId, formData, selectedImage);
 
+      const operatingHoursPayload = SALON_DAYS_OF_WEEK.map((day) => {
+        const dayMapIndex = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+        const dayData = formData.operatingHours[day.key] || { open: "09:00", close: "20:00", closed: false };
+        const openTimeFormatted = dayData.open && dayData.open.length === 5 ? `${dayData.open}:00` : dayData.open || "00:00:00";
+        const closeTimeFormatted = dayData.close && dayData.close.length === 5 ? `${dayData.close}:00` : dayData.close || "00:00:00";
+        return {
+          dayOfWeek: dayMapIndex[day.key],
+          dayName: day.label,
+          openTime: dayData.closed ? "00:00:00" : openTimeFormatted,
+          closeTime: dayData.closed ? "00:00:00" : closeTimeFormatted,
+          isClosed: !!dayData.closed,
+        };
+      });
+
+      await updateSalonOperatingHours(salonId, operatingHoursPayload);
+
       setSaveResult({
         success: true,
         message: language === "vi"
@@ -305,12 +321,12 @@ export function SalonUpdatePage() {
   };
 
   const handleSuccessComplete = useCallback(() => {
-    navigate(ROUTES.adminSalons, {
+    navigate(getAdminSalonDetailRoute(salonId), {
       state: {
         flashMessage: saveResult?.message,
       },
     });
-  }, [navigate, saveResult?.message]);
+  }, [navigate, saveResult?.message, salonId]);
 
   const handleCancel = () => {
     setShowCancelModal(true);
@@ -561,20 +577,34 @@ export function SalonUpdatePage() {
                           <span className="text-[13px] font-bold text-[#2d1b35]">{language === "vi" ? daysMap[day.key] || day.label : day.label}</span>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                          <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
-                          <TimePicker
-                            value={formData.operatingHours[day.key].open}
-                            onChange={(value) => handleHoursChange(day.key, "open", value)}
-                            placeholder={t("adminSalonManagement.openTime")}
-                            className="w-full min-w-[7rem] sm:w-28"
-                          />
-                          <span className="text-sm text-[#a88a9f] font-semibold">{t("adminSalonManagement.to")}</span>
-                          <TimePicker
-                            value={formData.operatingHours[day.key].close}
-                            onChange={(value) => handleHoursChange(day.key, "close", value)}
-                            placeholder={t("adminSalonManagement.closeTime")}
-                            className="w-full min-w-[7rem] sm:w-28"
-                          />
+                          <label className="flex items-center gap-2 cursor-pointer mr-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.operatingHours[day.key]?.closed || false}
+                              onChange={(e) => handleHoursChange(day.key, "closed", e.target.checked)}
+                              className="h-4 w-4 rounded border-[#f1e7ed] text-[#ea4f93] focus:ring-[#ea4f93]"
+                            />
+                            <span className="text-[13px] font-medium text-[#a88a9f]">{language === "vi" ? "Đóng cửa" : "Closed"}</span>
+                          </label>
+
+                          {!formData.operatingHours[day.key]?.closed && (
+                            <>
+                              <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
+                              <TimePicker
+                                value={formData.operatingHours[day.key].open}
+                                onChange={(value) => handleHoursChange(day.key, "open", value)}
+                                placeholder={t("adminSalonManagement.openTime")}
+                                className="w-full min-w-[7rem] sm:w-28"
+                              />
+                              <span className="text-sm text-[#a88a9f] font-semibold">{t("adminSalonManagement.to")}</span>
+                              <TimePicker
+                                value={formData.operatingHours[day.key].close}
+                                onChange={(value) => handleHoursChange(day.key, "close", value)}
+                                placeholder={t("adminSalonManagement.closeTime")}
+                                className="w-full min-w-[7rem] sm:w-28"
+                              />
+                            </>
+                          )}
                         </div>
                       </motion.div>
                     );

@@ -16,7 +16,8 @@ import {
   Percent,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -24,7 +25,7 @@ import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
-import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail } from "../services/salonManagementService";
+import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail, deleteAdminSalon } from "../services/salonManagementService";
 import { uploadSalonImage } from "../services/salonsService";
 import { fetchAdminUsers } from "../../user-management/services/userManagementService";
 
@@ -117,10 +118,12 @@ function SalonDetailLoadingState() {
 export function SalonDetailPage() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const { salonId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [salonForm, setSalonForm] = useState(null);
   const [salonRow, setSalonRow] = useState(null);
   const [managers, setManagers] = useState([]);
@@ -131,6 +134,7 @@ export function SalonDetailPage() {
   const [showUpdateAvatarModal, setShowUpdateAvatarModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const menuRef = useRef(null);
 
@@ -208,7 +212,7 @@ export function SalonDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [salonId]);
+  }, [salonId, refreshKey]);
 
   const detailItems = useMemo(() => {
     if (!salonDetail) {
@@ -246,16 +250,28 @@ export function SalonDetailPage() {
     [salonDetail?.operatingHours],
   );
 
-  const handleDeleteSalon = () => {
-    if (!salonRow) {
+  const handleDeleteSalon = async () => {
+    if (!salonRow || !salonId) {
       return;
     }
-    // TODO: Connect to delete API
-    navigate(ROUTES.adminSalons, {
-      state: {
-        flashMessage: `${salonRow.name} has been deleted successfully.`,
-      },
-    });
+    
+    setIsDeleting(true);
+    try {
+      await deleteAdminSalon(salonId);
+      toast.success(
+        language === "vi" 
+          ? `Chi nhánh ${salonRow.name} đã được đóng cửa thành công.` 
+          : `${salonRow.name} has been closed successfully.`, 
+        { id: "salon-detail-flash-msg" }
+      );
+      setRefreshKey(prev => prev + 1);
+    } catch (err) {
+      console.error("Failed to delete salon:", err);
+      toast.error(err.message || (language === "vi" ? "Đóng cửa chi nhánh thất bại." : "Failed to close salon."));
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   // Close menu when clicking outside
@@ -271,6 +287,14 @@ export function SalonDetailPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Handle flash messages
+  useEffect(() => {
+    if (location.state?.flashMessage) {
+      toast.success(location.state.flashMessage, { id: "salon-detail-flash-msg" });
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state?.flashMessage, navigate]);
 
   const handleImageSelect = (event) => {
     const file = event.target.files[0];
@@ -557,6 +581,7 @@ export function SalonDetailPage() {
         confirmIcon={Trash2}
         onConfirm={handleDeleteSalon}
         onCancel={() => setShowDeleteModal(false)}
+        loading={isDeleting}
         item={
           salonDetail
             ? {
@@ -569,8 +594,8 @@ export function SalonDetailPage() {
         }
         warnings={
           language === "vi"
-            ? ["API xóa chi nhánh chưa kết nối thực tế.", "Thao tác này hiện tại chỉ hiển thị thông báo mô phỏng."]
-            : ["Delete salon API is not connected yet.", "This action currently shows a placeholder notification only."]
+            ? ["Thao tác này không thể hoàn tác.", "Tất cả dữ liệu liên quan sẽ bị xóa."]
+            : ["This action cannot be undone.", "All related data will be deleted."]
         }
       />
 

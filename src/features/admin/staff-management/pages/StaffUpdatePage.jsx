@@ -28,6 +28,7 @@ import {
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { updateUser } from "../services/staffManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const inputWrapperClassName =
   "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
@@ -378,29 +379,35 @@ export function StaffUpdatePage() {
         <StaffUpdateLoadingState />
       ) : (
         <>
-          <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <InfoChip
-              icon={Users}
-              title={t("adminStaffManagement.currentTeam")}
-              value={t("adminStaffManagement.activeProfiles", { count: 84 })}
-            />
-            <InfoChip
-              icon={BriefcaseBusiness}
-              title={t("adminStaffManagement.assignedSalon")}
-              value={formData.assignedSalon || (t("adminStaffManagement.unknown"))}
-              tone="text-sky-500"
-            />
-            <InfoChip
-              icon={ShieldCheck}
-              title={t("adminStaffManagement.role")}
-              value={formData.role || "-"}
-              tone="text-violet-500"
-            />
-            <InfoChip
-              icon={Sparkles}
-              title={t("adminStaffManagement.status")}
-              value={formData.status || "-"}
-              tone="text-emerald-500"
+          <div className="mb-5">
+            <TopMetricsRow
+              metrics={[
+                {
+                  label: t("adminStaffManagement.currentTeam"),
+                  value: t("adminStaffManagement.activeProfiles", { count: 84 }),
+                  icon: Users,
+                  color: "#ea4f93"
+                },
+                {
+                  label: t("adminStaffManagement.assignedSalon"),
+                  value: formData.assignedSalon || t("adminStaffManagement.unknown"),
+                  icon: BriefcaseBusiness,
+                  color: "#0ea5e9"
+                },
+                {
+                  label: t("adminStaffManagement.role"),
+                  value: formData.role ? formData.role.replace(/_/g, ' ') : "-",
+                  icon: ShieldCheck,
+                  color: "#8b5cf6"
+                },
+                {
+                  label: t("adminStaffManagement.status"),
+                  value: formData.status || "-",
+                  icon: Sparkles,
+                  color: "#10b981"
+                }
+              ]}
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
             />
           </div>
 
@@ -475,7 +482,7 @@ export function StaffUpdatePage() {
                         { value: "Admin", label: "Admin" },
                         { value: "Manager", label: "Manager" },
                         { value: "Receptionist", label: "Receptionist" },
-                        { value: "Staff_Artist", label: "Staff_Artist" },
+                        { value: "Staff_Artist", label: "Staff Artist" },
                       ]}
                       className="w-full"
                       size="large"
@@ -592,7 +599,7 @@ export function StaffUpdatePage() {
                     {formData.fullName || (t("adminStaffManagement.staffMember"))}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-400">
-                    {formData.role || (t("adminStaffManagement.role"))}
+                    {formData.role ? formData.role.replace(/_/g, ' ') : (t("adminStaffManagement.role"))}
                   </p>
                   <p className="mt-4 text-[11px] font-medium text-slate-400">
                     {t("adminStaffManagement.assignedSalon") + ":"}{" "}

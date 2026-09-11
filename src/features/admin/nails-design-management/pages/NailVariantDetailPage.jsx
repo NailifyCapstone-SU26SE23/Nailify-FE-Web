@@ -15,6 +15,12 @@ import {
   RotateCcw,
   Sliders,
   X,
+  Clock,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  GripVertical,
+  ChevronDown
 } from "lucide-react";
 import manHandImg from "../../../../shared/assets/images/manHand.png";
 import womanHandImg from "../../../../shared/assets/images/womanHand.png";
@@ -335,19 +341,19 @@ function getFingerAlignmentClass(fingerName) {
 
 // Default coordinates for nails on the hand images
 const DEFAULT_COORDINATES = {
-  woman: {
-    1: { left: 14.4, top: 43.2, width: 7.4, height: 17.5, rotation: -54 }, // Thumb
-    2: { left: 26.9, top: 10.6, width: 9.8, height: 24.3, rotation: -19 }, // Index
-    3: { left: 46.8, top: 4.6, width: 10.1, height: 23.4, rotation: -2 }, // Middle
-    4: { left: 63.5, top: 11.2, width: 10.4, height: 22.5, rotation: 4 }, // Ring
-    5: { left: 75.2, top: 23.6, width: 8.0, height: 17.4, rotation: 4 }, // Pinky
+  "woman": {
+    "1": { "left": 14.27, "top": 44.34, "width": 7.4, "height": 17.5, "rotation": -54 },
+    "2": { "left": 27.65, "top": 12.58, "width": 9.8, "height": 24.3, "rotation": -19 },
+    "3": { "left": 46.52, "top": 5.84, "width": 10.1, "height": 23.4, "rotation": -2 },
+    "4": { "left": 63.27, "top": 12.34, "width": 10.4, "height": 22.5, "rotation": 4 },
+    "5": { "left": 74.52, "top": 25.59, "width": 8, "height": 17.4, "rotation": 4 }
   },
-  man: {
-    1: { left: 14.4, top: 43.2, width: 7.4, height: 17.5, rotation: -54 }, // Thumb
-    2: { left: 26.9, top: 10.6, width: 9.8, height: 24.3, rotation: -19 }, // Index
-    3: { left: 46.8, top: 4.6, width: 10.1, height: 23.4, rotation: -2 }, // Middle
-    4: { left: 63.5, top: 11.2, width: 10.4, height: 22.5, rotation: 4 }, // Ring
-    5: { left: 75.2, top: 23.6, width: 8.0, height: 17.4, rotation: 4 }, // Pinky
+  "man": {
+    "1": { "left": 14.37, "top": 45.02, "width": 7.4, "height": 17.5, "rotation": -54 },
+    "2": { "left": 27.65, "top": 12.63, "width": 9.8, "height": 24.3, "rotation": -19 },
+    "3": { "left": 46.62, "top": 5.91, "width": 10.1, "height": 23.4, "rotation": -2 },
+    "4": { "left": 63.12, "top": 12.91, "width": 10.4, "height": 22.5, "rotation": 4 },
+    "5": { "left": 74.87, "top": 24.7, "width": 8, "height": 17.4, "rotation": 4 }
   }
 };
 
@@ -362,6 +368,7 @@ const EMPTY_SUMMARY = {
 };
 
 function NailVariantHandPreview({ variantDetail }) {
+  const { language } = useLanguage();
   const [viewMode, setViewMode] = useState("tips"); // "tips" or "hand"
   const [handType, setHandType] = useState("woman"); // "woman" or "man"
   const [zoom, setZoom] = useState(1);
@@ -370,6 +377,7 @@ function NailVariantHandPreview({ variantDetail }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const [coords, setCoords] = useState(DEFAULT_COORDINATES);
+  const [draggingFinger, setDraggingFinger] = useState(null);
   const [selectedFinger, setSelectedFinger] = useState(1);
   const [showCalibration, setShowCalibration] = useState(false);
   const [clickToPlace, setClickToPlace] = useState(false);
@@ -432,6 +440,24 @@ function NailVariantHandPreview({ variantDetail }) {
   };
 
   const handleMouseMove = (e) => {
+    if (draggingFinger && handImgRef.current) {
+      const rect = handImgRef.current.getBoundingClientRect();
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+      setCoords(prev => ({
+        ...prev,
+        [handType]: {
+          ...prev[handType],
+          [draggingFinger]: {
+            ...prev[handType][draggingFinger],
+            left: parseFloat(xPct.toFixed(2)),
+            top: parseFloat(yPct.toFixed(2)),
+          }
+        }
+      }));
+      return;
+    }
+
     if (!isDragging) return;
     setPan({
       x: e.clientX - dragStart.x,
@@ -441,6 +467,7 @@ function NailVariantHandPreview({ variantDetail }) {
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setDraggingFinger(null);
   };
 
   const handleZoom = (direction) => {
@@ -459,7 +486,7 @@ function NailVariantHandPreview({ variantDetail }) {
   const handDimensions = HAND_VIEW_FRAME;
 
   return (
-    <div className="rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+    <div className="rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       {/* View Switch Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#fce6f3] pb-4">
         <div className="flex rounded-full bg-[#ffeef5]/60 p-1 border border-[#fce6f3]">
@@ -467,14 +494,14 @@ function NailVariantHandPreview({ variantDetail }) {
             onClick={() => setViewMode("tips")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ${viewMode === "tips" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
-            Individual Nails
+            {language === "vi" ? "Móng lẻ" : "Individual Nails"}
           </button>
           <button
             onClick={() => setViewMode("hand")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${viewMode === "hand" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            View on Hand
+            {language === "vi" ? "Tay mẫu" : "View on Hand"}
           </button>
         </div>
 
@@ -610,7 +637,7 @@ function NailVariantHandPreview({ variantDetail }) {
         <div className="space-y-4">
           <div
             ref={handContainerRef}
-            className={`relative h-[520px] w-full overflow-hidden rounded-lg border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : 'cursor-grab bg-[#ffeef5]/35'}`}
+            className={`relative h-[520px] w-full overflow-hidden rounded-lg border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : (draggingFinger ? 'cursor-grabbing' : 'cursor-grab bg-[#ffeef5]/35')}`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -662,13 +689,21 @@ function NailVariantHandPreview({ variantDetail }) {
                 return (
                   <div
                     key={finger.label}
-                    className="absolute"
+                    className={`absolute transition-none ${showCalibration ? (draggingFinger === finger.fingerIndex ? "cursor-grabbing z-20" : "cursor-grab z-10") : ""}`}
                     style={{
                       left: `${coord.left}%`,
                       top: `${coord.top}%`,
                       width: `${coord.width * HAND_VIEW_NAIL_SCALE}%`,
                       height: `${coord.height * HAND_VIEW_NAIL_SCALE}%`,
                       transform: `translate(-50%, -50%) rotate(${coord.rotation}deg)`,
+                    }}
+                    onMouseDown={(e) => {
+                      if (showCalibration && !clickToPlace) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDraggingFinger(finger.fingerIndex);
+                        setSelectedFinger(finger.fingerIndex);
+                      }
                     }}
                   >
                     <div className="relative w-full h-full overflow-hidden">
@@ -737,7 +772,7 @@ function NailVariantHandPreview({ variantDetail }) {
                   <p className="text-[10px] text-[#c694ad]">
                     {clickToPlace
                       ? `Click on the fingernail in the image to place nail ${fingerDefinitions.find(f => f.fingerIndex === selectedFinger)?.label}. (${selectedFinger}/5)`
-                      : 'Enable Click-to-Place then click each fingertip in the image. Or use sliders.'}
+                      : 'Drag the nails directly on the image, or use the sliders below to adjust.'}
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -820,6 +855,79 @@ function NailVariantHandPreview({ variantDetail }) {
   );
 }
 
+function CustomProcedureSelect({ value, onChange, availableProcedures, t, language }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedProc = availableProcedures.find(p => p.id === value || p.procedureId === value);
+  const commonProcs = availableProcedures.filter(p => p?.procedureType === "Common" || String(p?.procedureType).includes("Common"));
+  const specificProcs = availableProcedures.filter(p => p?.procedureType !== "Common" && !String(p?.procedureType).includes("Common"));
+
+  return (
+    <div className="relative w-full" ref={selectRef}>
+      <div
+        className={`w-full cursor-pointer flex items-center justify-between rounded-2xl border-2 ${isOpen ? 'border-[#ea4f93] bg-white ring-4 ring-[#ea4f93]/10' : 'border-[#f4d4e2] bg-[#fffafb]'} px-5 py-3 text-sm font-bold text-[#432744] outline-none transition hover:bg-white`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate mr-2 text-left">{selectedProc ? selectedProc.name : t("adminNailsDesignManagement.selectAProcedure")}</span>
+        <ChevronDown size={18} className={`flex-shrink-0 text-[#ea4f93] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full max-h-[300px] overflow-y-auto rounded-2xl border border-[#f4d4e2] bg-white py-2 shadow-[0_8px_30px_rgba(236,72,153,0.15)] animate-in fade-in slide-in-from-top-2">
+          {commonProcs.length > 0 && (
+            <div className="mb-2">
+              <div className="px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
+                {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
+              </div>
+              {commonProcs.map(proc => (
+                <div
+                  key={proc.id || proc.procedureId}
+                  className={`cursor-pointer px-5 py-2.5 text-sm font-semibold transition hover:bg-[#fff0f7] hover:text-[#ea4f93] ${value === (proc.id || proc.procedureId) ? "bg-[#fff0f7] text-[#ea4f93]" : "text-[#432744]"}`}
+                  onClick={() => {
+                    onChange(proc.id || proc.procedureId);
+                    setIsOpen(false);
+                  }}
+                >
+                  {proc.name}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {specificProcs.length > 0 && (
+            <div className="mb-2">
+
+              {specificProcs.map(proc => (
+                <div
+                  key={proc.id || proc.procedureId}
+                  className={`cursor-pointer px-5 py-2.5 text-sm font-semibold transition hover:bg-[#fff0f7] hover:text-[#ea4f93] ${value === (proc.id || proc.procedureId) ? "bg-[#fff0f7] text-[#ea4f93]" : "text-[#432744]"}`}
+                  onClick={() => {
+                    onChange(proc.id || proc.procedureId);
+                    setIsOpen(false);
+                  }}
+                >
+                  {proc.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function NailVariantDetailPage() {
   const { designId, variantId } = useParams();
   const navigate = useNavigate();
@@ -828,6 +936,7 @@ export function NailVariantDetailPage() {
   const [variant, setVariant] = useState(null);
   const [procedures, setProcedures] = useState([]);
   const [availableProcedures, setAvailableProcedures] = useState([]);
+  const [editingProcedureIndex, setEditingProcedureIndex] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProcedures, setIsSavingProcedures] = useState(false);
   const [isSavingTryOn, setIsSavingTryOn] = useState(false);
@@ -933,22 +1042,26 @@ export function NailVariantDetailPage() {
   };
 
   const addProcedureDraft = () => {
-    setProcedures((current) => [
-      ...current,
-      {
-        procedureId: "",
-        name: "",
-        description: "",
-        duration: 0,
-        durationLabel: "--",
-        status: "--",
-        isRequired: false,
-        stepOrder: current.length + 1,
-      },
-    ]);
+    setProcedures((current) => {
+      const newIndex = current.length;
+      setEditingProcedureIndex(newIndex);
+      return [
+        ...current,
+        {
+          procedureId: "",
+          name: "",
+          description: "",
+          duration: 0,
+          durationLabel: "--",
+          status: "--",
+          isRequired: false,
+          stepOrder: current.length + 1,
+        },
+      ];
+    });
   };
 
-  const saveProcedureSteps = async () => {
+  const saveProcedureSteps = async (draftToSave = procedures) => {
     if (!variant?.nailVariantId) return;
 
     setIsSavingProcedures(true);
@@ -957,17 +1070,32 @@ export function NailVariantDetailPage() {
     try {
       await assignProceduresToVariant(
         variant.nailVariantId,
-        procedures.map((item, index) => ({
+        draftToSave.map((item, index) => ({
           procedureId: item.procedureId,
           stepOrder: Number(item.stepOrder || index + 1),
         })),
       );
       setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
+      setEditingProcedureIndex(null);
+      toast.success(t("adminNailsDesignManagement.procedureStepsSavedSuccessfully"));
     } catch (saveError) {
+      setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
+      setEditingProcedureIndex(null);
       setError(saveError instanceof Error ? saveError.message : (t("adminNailsDesignManagement.failedToSaveProcedureSteps")));
     } finally {
       setIsSavingProcedures(false);
     }
+  };
+
+  const removeProcedureDraft = async (index) => {
+    const newDraft = procedures.filter((_, itemIndex) => itemIndex !== index);
+    setProcedures(newDraft);
+    if (editingProcedureIndex === index) {
+      setEditingProcedureIndex(null);
+    } else if (editingProcedureIndex > index) {
+      setEditingProcedureIndex(editingProcedureIndex - 1);
+    }
+    await saveProcedureSteps(newDraft);
   };
 
   const openTryOn = (mode) => {
@@ -1314,65 +1442,189 @@ export function NailVariantDetailPage() {
               <button
                 type="button"
                 onClick={addProcedureDraft}
-                disabled={isSavingProcedures}
-                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
+                disabled={isSavingProcedures || editingProcedureIndex !== null}
+                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:opacity-50"
               >
                 <Plus size={13} className="mr-1.5 inline" />
                 {t("adminNailsDesignManagement.addStep")}
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveProcedureSteps()}
-                disabled={isSavingProcedures}
-                className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
-              >
-                <Save size={13} className="mr-1.5 inline" />
-                {isSavingProcedures ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveSteps"))}
               </button>
             </div>
           </div>
 
           {procedures.length ? (
             <div className="mt-4 space-y-3">
-              {procedures.map((item, index) => (
-                <div key={`${item.procedureId || "draft"}-${index}`} className="rounded-[18px] border border-[#f1d7e3] bg-[#fffafb] p-4">
-                  <div className="grid gap-3 md:grid-cols-[110px_minmax(0,1fr)]">
-                    <label className="space-y-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                        {t("adminNailsDesignManagement.stepOrder")}
-                      </span>
-                      <input
-                        value={String(item.stepOrder || index + 1)}
-                        onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
-                        className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
-                      />
-                    </label>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
-                        {t("adminNailsDesignManagement.procedure")}
-                      </span>
-                      <select
-                        value={item.procedureId || ""}
-                        onChange={(e) => updateProcedureDraft(index, "procedureId", e.target.value)}
-                        className="w-full rounded-2xl border border-[#f4d4e2] bg-white px-4 py-3 text-sm font-semibold text-[#432744] outline-none focus:border-[#ea4f93]"
-                      >
-                        <option value="">{t("adminNailsDesignManagement.selectAProcedure")}</option>
-                        {availableProcedures.map((proc) => (
-                          <option key={proc.id || proc.procedureId} value={proc.id || proc.procedureId}>
-                            {proc.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
-                        <span>{t("adminNailsDesignManagement.duration")}: <b>{item.durationLabel || item.duration}</b></span>
-                        <span>{t("adminNailsDesignManagement.status")}: <b>{item.status}</b></span>
-                        <span>{t("adminNailsDesignManagement.required")}: <b>{item.isRequired ? (t("adminNailsDesignManagement.yes")) : (t("adminNailsDesignManagement.no"))}</b></span>
-                      </div>
+              {(() => {
+                const groupedProcs = {
+                  Common: [],
+                  ModelSpecific: []
+                };
+                procedures.forEach((item, index) => {
+                  const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
+                  if (type === "Common" || String(type).includes("Common")) {
+                    groupedProcs.Common.push({ item, index });
+                  } else {
+                    groupedProcs.ModelSpecific.push({ item, index });
+                  }
+                });
+
+                const renderProcedureCard = ({ item, index }) => {
+                  const isEditing = editingProcedureIndex === index;
+
+                  return (
+                    <div key={`${item.procedureId || "draft"}-${index}`} className="group relative overflow-visible rounded-[24px] border border-[#f4d4e2] bg-white p-5 shadow-[0_4px_20px_rgba(236,72,153,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(236,72,153,0.08)] hover:border-[#fcd5e6]">
+                      {isEditing ? (
+                        <div className="grid gap-5 md:grid-cols-[80px_minmax(0,1fr)]">
+                          <label className="space-y-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c694ad]">
+                              Order
+                            </span>
+                            <input
+                              value={String(item.stepOrder || index + 1)}
+                              onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
+                              className="w-full rounded-2xl border-2 border-[#f4d4e2] bg-[#fffafb] px-4 py-3 text-center text-lg font-black text-[#ea4f93] outline-none transition focus:border-[#ea4f93] focus:bg-white focus:ring-4 focus:ring-[#ea4f93]/10"
+                            />
+                          </label>
+                          <div className="flex flex-col gap-4">
+                            <label className="space-y-2 relative block">
+                              <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c694ad] block">
+                                {t("adminNailsDesignManagement.procedure")}
+                              </span>
+                              <CustomProcedureSelect
+                                value={item.procedureId || ""}
+                                onChange={(val) => updateProcedureDraft(index, "procedureId", val)}
+                                availableProcedures={availableProcedures}
+                                t={t}
+                                language={language}
+                              />
+                            </label>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#f8f9fa] px-3 py-1.5 text-xs font-semibold text-[#6d5669]">
+                                <Clock size={14} className="text-[#a1909e]" />
+                                {item.durationLabel || item.duration}
+                              </div>
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-3 py-1.5 text-xs font-semibold text-[#4a72d8]">
+                                <Activity size={14} className="text-[#84a3f3]" />
+                                {item.status}
+                              </div>
+                              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${item.isRequired ? 'bg-[#fff0f7] text-[#ea4f93]' : 'bg-[#f3f4f6] text-[#9ca3af]'}`}>
+                                {item.isRequired ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                {item.isRequired ? t("adminNailsDesignManagement.yes") : t("adminNailsDesignManagement.no")}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-2 flex flex-wrap gap-3 justify-end mt-2 border-t border-[#fce6f3] pt-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!item.procedureId) {
+                                  const newDraft = procedures.filter((_, itemIndex) => itemIndex !== index);
+                                  setProcedures(newDraft);
+                                  setEditingProcedureIndex(null);
+                                } else {
+                                  fetchProceduresByVariant(variant.nailVariantId).then(res => {
+                                    setProcedures(res);
+                                    setEditingProcedureIndex(null);
+                                  });
+                                }
+                              }}
+                              className="rounded-full border border-[#f4c6da] bg-white px-5 py-2.5 text-xs font-extrabold text-[#8c7085] hover:bg-[#fff0f7] hover:text-[#ea4f93] transition"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void saveProcedureSteps()}
+                              disabled={isSavingProcedures || !item.procedureId}
+                              className="flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_25px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
+                            >
+                              {isSavingProcedures ? <LoaderCircle size={14} className="animate-spin" /> : <Save size={14} />}
+                              Save Step
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+                          <div className="flex gap-4 items-start">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#fff0f7] to-[#ffe3ef] shadow-[inset_0_2px_4px_rgba(255,255,255,0.8)] border border-[#ffcce1]">
+                                <span className="text-xl font-black text-[#ea4f93]">{item.stepOrder || index + 1}</span>
+                              </div>
+                              <GripVertical size={16} className="text-[#f4c6da] mt-1" />
+                            </div>
+
+                            <div className="flex flex-col mt-0.5">
+                              <span className="font-extrabold text-[#432744] text-lg mb-2">{item.name || "Unnamed Step"}</span>
+                              <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#f8f9fa] px-2.5 py-1 text-[#6d5669]">
+                                  <Clock size={12} className="text-[#a1909e]" />
+                                  {item.durationLabel || item.duration}
+                                </span>
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#eef4ff] px-2.5 py-1 text-[#4a72d8]">
+                                  <Activity size={12} className="text-[#84a3f3]" />
+                                  {item.status}
+                                </span>
+                                {item.isRequired && (
+                                  <span className="flex items-center gap-1.5 rounded-lg bg-[#fff0f7] px-2.5 py-1 text-[#ea4f93]">
+                                    <CheckCircle2 size={12} />
+                                    Required
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity self-end sm:self-start">
+                            <button
+                              type="button"
+                              onClick={() => setEditingProcedureIndex(index)}
+                              disabled={isSavingProcedures || editingProcedureIndex !== null}
+                              className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#f4d4e2] text-[#ea4f93] shadow-sm hover:bg-[#ea4f93] hover:text-white hover:border-[#ea4f93] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Edit step"
+                            >
+                              <PencilLine size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void removeProcedureDraft(index)}
+                              disabled={isSavingProcedures || editingProcedureIndex !== null}
+                              className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#fecdd3] text-rose-500 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Remove step"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isEditing && item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
                     </div>
+                  );
+                };
+
+                return (
+                  <div className="space-y-6">
+                    {groupedProcs.Common.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
+                          {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
+                          <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
+                        </h4>
+                        {groupedProcs.Common.map(renderProcedureCard)}
+                      </div>
+                    )}
+                    {groupedProcs.ModelSpecific.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
+                          {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
+                          <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
+                        </h4>
+                        {groupedProcs.ModelSpecific.map(renderProcedureCard)}
+                      </div>
+                    )}
                   </div>
-                  {item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
-                </div>
-              ))}
+                );
+              })()}
             </div>
           ) : (
             <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
