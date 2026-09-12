@@ -48,6 +48,7 @@ import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
@@ -313,13 +314,8 @@ function formatVND(amount) {
   }).format(amount);
 }
 
-function formatDuration(totalMinutes) {
-  if (!totalMinutes) return "0m";
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h`;
-  return `${minutes}m`;
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
 }
 
 function getArtistDisplayName(booking) {
@@ -977,7 +973,7 @@ export function ManagerBookingDetailPage() {
                 <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
-                  <span>{booking?.totalDuration ? formatDuration(booking.totalDuration) : "60m"}</span>
+                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
                 </div>
               </div>
             </div>
@@ -1044,7 +1040,7 @@ export function ManagerBookingDetailPage() {
                       key: 'duration',
                       align: 'center',
                       width: 120,
-                      render: (dur) => <span className="font-bold text-[#4B5563] text-sm">{dur !== undefined ? formatDuration(dur) : "-"}</span>,
+                      render: (dur) => <span className="font-bold text-[#4B5563] text-sm">{dur !== undefined ? formatDuration(dur, language) : "-"}</span>,
                     },
                     {
                       title: language === "vi" ? "Giá tiền" : "Price",

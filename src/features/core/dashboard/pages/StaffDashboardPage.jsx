@@ -31,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
 import {
   getStaffBookingDetailRoute,
@@ -496,7 +497,7 @@ export function StaffDashboardPage() {
       yAxis: {
         type: 'value',
         max: (val) => val.max === 0 ? 60 : null,
-        axisLabel: { formatter: language === "vi" ? '{value} phút' : '{value} mins' }
+        axisLabel: { formatter: (value) => formatDurationMinutes(value, language) }
       },
       series: [
         {
@@ -843,7 +844,7 @@ export function StaffDashboardPage() {
                                     <div><strong className="text-[#ea4f93]">{language === "vi" ? "Ngày:" : "Date:"}</strong> {dayjs(scheduleItem.date).format("DD/MM/YYYY")}</div>
                                     <div><strong className="text-[#ea4f93]">{language === "vi" ? "Loại:" : "Type:"}</strong> {scheduleItem.type}</div>
                                     {scheduleItem.type === 'Booking' && <div><strong className="text-[#ea4f93]">{language === "vi" ? "Khách hàng:" : "Customer:"}</strong> {scheduleItem.customerName}</div>}
-                                    <div><strong className="text-[#ea4f93]">{language === "vi" ? "Thời lượng:" : "Duration:"}</strong> {scheduleItem.durationMinutes} {language === "vi" ? "phút" : "min"}</div>
+                                    <div><strong className="text-[#ea4f93]">{language === "vi" ? "Thời lượng:" : "Duration:"}</strong> {formatDurationMinutes(scheduleItem.durationMinutes, language)}</div>
                                   </div>
                                 }
                               >

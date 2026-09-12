@@ -40,6 +40,7 @@ import {
 } from "../services/walkInQueueService";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 // Helper to load current user's salonId
 const getSalonId = () => {
@@ -565,8 +566,7 @@ export function WalkInQueuePage() {
             <div className="rounded-xl bg-[#fffdf9] p-3 border border-[#e2e8f0] flex flex-col justify-between h-18 transition hover:bg-gray-50/50">
               <span className="text-[9px] font-bold uppercase text-[#e85d9b] tracking-wider">{language === "vi" ? "Chờ trung bình" : "Avg Wait"}</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-[#e85d9b]">~{stats.avgWait}</span>
-                <span className="text-[9px] text-[#e85d9b] font-bold"> {language === "vi" ? "phút" : "mins"}</span>
+                <span className="text-xl font-bold text-[#e85d9b]">~{formatDurationMinutes(stats.avgWait, language)}</span>
               </div>
             </div>
           </div>
@@ -1117,7 +1117,7 @@ export function WalkInQueuePage() {
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
               >
-                {language === "vi" ? "Khách Trễ Hẹn (>15')" : "Late Customer (>15 mins)"}
+                {language === "vi" ? "Khách Trễ Hẹn (>15 phút)" : "Late Customer (>15 min)"}
               </button>
             </div>
           </div>
@@ -1154,7 +1154,7 @@ export function WalkInQueuePage() {
                     >
                       <span>{service.name}</span>
                       <span className="text-[10px] opacity-75 font-semibold">
-                        {service.duration}m • {service.price.toLocaleString("vi-VN")} VND
+                        {formatDurationMinutes(service.duration, language)} • {service.price.toLocaleString("vi-VN")} VND
                       </span>
                     </button>
                   );
@@ -1201,7 +1201,7 @@ export function WalkInQueuePage() {
               </p>
               <div className="flex justify-between text-[#806579] font-medium">
                 <span>{language === "vi" ? "Tổng thời gian dự kiến:" : "Estimated total duration:"}</span>
-                <span className="font-bold text-[#321735]">{totalEstDuration} {language === "vi" ? "phút" : "mins"}</span>
+                <span className="font-bold text-[#321735]">{formatDurationMinutes(totalEstDuration, language)}</span>
               </div>
               <div className="flex justify-between text-[#806579] font-medium">
                 <span>{language === "vi" ? "Tổng chi phí dự kiến:" : "Estimated total price:"}</span>
@@ -1372,7 +1372,7 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
           {item.status === "Waiting" && item.estimatedWait !== null && (
             <div className="mt-3 flex items-center gap-1.5 text-[9px] text-[#d89b1d] font-bold bg-[#d89b1d]/10 border border-[#d89b1d]/15 px-2 py-0.5 rounded-lg w-max shadow-sm">
               <Clock size={10} className="text-[#d89b1d]" />
-              <span>{language === "vi" ? `Chờ: ${item.estimatedWait} phút` : `Wait: ${item.estimatedWait} mins`}</span>
+              <span>{language === "vi" ? `Chờ: ${formatDurationMinutes(item.estimatedWait, language)}` : `Wait: ${formatDurationMinutes(item.estimatedWait, language)}`}</span>
             </div>
           )}
         </div>

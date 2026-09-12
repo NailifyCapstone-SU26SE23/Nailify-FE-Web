@@ -1,12 +1,13 @@
 import toast from 'react-hot-toast';
 import { Spin, Alert, Pagination, ConfigProvider } from "antd";
-import { Palette, CheckCircle2, XCircle, RefreshCw, Sparkles, Clock3, Eye, ArrowRight } from "lucide-react";
+import { Palette, CheckCircle2, RefreshCw, Sparkles, Clock3, Eye, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getStaffArtistId } from "../../bookings/services/staffBookingService";
 import { fetchCustomerNailRequests, fetchStaffCustomerNailRequests } from "../../../manager/customer-nail/services/customerNailsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
 
 function Card({ className = "", children }) {
   return (
@@ -27,24 +28,6 @@ function SectionHeading({ title, subtitle }) {
   );
 }
 
-function getStatusTone(status) {
-  switch (status) {
-    case "Approved":
-    case "Reviewed":
-    case "Quoted":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "Pending":
-    case "PendingReview":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Assigned":
-      return "bg-[#e0f2fe] text-[#0369a1]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
-}
-
 function formatDate(dateString) {
   if (!dateString) return "N/A";
   const date = new Date(dateString);
@@ -57,11 +40,6 @@ function formatVND(amount) {
     style: "currency",
     currency: "VND",
   }).format(amount);
-}
-
-function formatDuration(duration) {
-  if (!duration) return "N/A";
-  return `${duration} mins`;
 }
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
@@ -103,16 +81,11 @@ function RequestCard({ request, language }) {
           </div>
         )}
         <div className="absolute left-3 top-3 flex gap-1.5 z-10">
-          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-bold shadow-sm backdrop-blur-md bg-white/90 ${getStatusTone(statusLabel)}`}>
-            {statusLabel === "Approved" || statusLabel === "Reviewed" || statusLabel === "Quoted" ? (
-              <CheckCircle2 size={10} />
-            ) : statusLabel === "Rejected" ? (
-              <XCircle size={10} />
-            ) : (
-              <Clock3 size={10} />
-            )}
-            {statusLabel}
-          </span>
+          <CustomerNailStatusBadge
+            status={statusLabel}
+            language={language}
+            className="px-2.5 py-1 text-[9px] shadow-sm backdrop-blur-md bg-white/90"
+          />
         </div>
       </div>
 
@@ -120,28 +93,7 @@ function RequestCard({ request, language }) {
         <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
           {nail.name || "Untitled Design"}
         </h4>
-        <p className="mt-0.5 text-[11px] font-medium text-[#a988a0]">
-          {nail.nailShape?.name || "Custom Shape"} • {nail.nailSurface?.name || "Custom Surface"}
-        </p>
-
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-[#fff0f6] border border-[#fbcfe8] p-2.5">
-          <span className="text-[10px] font-bold text-[#c08aa4]">{language === "vi" ? "Thành phần tùy chỉnh" : "Custom Components"}</span>
-          <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-extrabold text-[#ea4f93] shadow-2xs">
-            {(nail.customerNailComponents || nail.nailComponents || []).length} {language === "vi" ? "Phụ kiện" : "Add-ons"}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#fdf0f5] pt-4">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">{language === "vi" ? "Giá ước tính" : "Est. Price"}</p>
-            <p className="mt-0.5 text-xs font-bold text-[#d4af37]">{formatVND(request.price || nail.price)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#c08aa4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-            <p className="mt-0.5 text-xs font-bold text-[#3f2240]">{formatDuration(request.duration || nail.duration)}</p>
-          </div>
-        </div>
-
+     
         <div className="mt-4 flex justify-end">
           <span className="flex items-center gap-1 text-[11px] font-bold text-[#ea4f93] transition-all group-hover:gap-1.5">
             {statusLabel === "Assigned" ? (language === "vi" ? "Bắt đầu đánh giá" : "Start Review") : (language === "vi" ? "Xem đánh giá" : "View Review")}

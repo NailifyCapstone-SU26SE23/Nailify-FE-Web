@@ -16,24 +16,8 @@ import { fetchCustomerNailRequestById, staffSubmitArtistQuote } from "../../../m
 import { ProcedureBuilderSection } from "../components/ProcedureBuilderSection";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
-
-function getStatusTone(status) {
-  switch (status) {
-    case "Approved":
-    case "Reviewed":
-    case "Quoted":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "Pending":
-    case "PendingReview":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Assigned":
-      return "bg-[#e0f2fe] text-[#0369a1]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
-}
+import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
@@ -43,9 +27,9 @@ function formatVND(amount) {
   }).format(amount);
 }
 
-function formatDuration(duration) {
+function formatDuration(duration, language = "en") {
   if (duration === null || duration === undefined || duration === "") return "N/A";
-  return `${duration} mins`;
+  return formatDurationMinutes(duration, language);
 }
 
 function InfoTile({ label, value, valueClassName = "text-[#3f2240]" }) {
@@ -539,11 +523,6 @@ function NailBlueprint({ nail, componentsList }) {
 
   return (
     <div className="space-y-4">
-      <SectionHeading
-        title="Custom Design Live Preview"
-        subtitle="Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."
-      />
-      {/* Hidden SVG Defs for 3D Nail Shapes */}
       <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
         <defs>
           <clipPath id="clip-nail-almond" clipPathUnits="objectBoundingBox">
@@ -571,30 +550,12 @@ function NailBlueprint({ nail, componentsList }) {
           {renderNailPreview(4, "Ring")}
           {renderNailPreview(5, "Pinky")}
         </div>
-
-        {/* <div className="absolute right-6 top-6 flex flex-col gap-2 rounded-2xl border border-white/70 bg-white/90 p-3 shadow-lg backdrop-blur-sm">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-[#c08aa4]">Design Info</span>
-          <div className="flex items-center gap-2">
-            <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-              {nail?.nailShape?.name || "Custom"}
-            </span>
-            <span className="rounded-lg bg-[#fff0f8] px-2 py-1 text-[10px] font-bold text-[#ea4f93]">
-              {nail?.nailSurface?.name || "Glossy"}
-            </span>
-          </div>
-          <span className="text-[10px] font-semibold text-[#9c6f87]">
-            {(componentsList || []).length} add-ons
-          </span>
-        </div> */}
       </div>
 
       {/* Selected Components / Accessories */}
       {componentsList.length > 0 && (
         <div className="mt-6">
-          <SectionHeading
-            title="Components & Ornaments"
-            subtitle="Individual stickers, gems, and 3D decors requested. Click any card to highlight it on the nail preview."
-          />
+         
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {componentsList.map((itemComponent, idx) => {
               const comp = itemComponent.component || itemComponent.customerComponent;
@@ -900,10 +861,12 @@ export function StaffCustomerNailReviewPage() {
                     <h2 className="text-2xl font-extrabold text-[#402542]">
                       {nail.name || (language === "vi" ? "Thiết kế chưa đặt tên" : "Untitled Design")}
                     </h2>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${getStatusTone(statusLabel)}`}>
-                      <Clock size={12} />
-                      {statusLabel}
-                    </span>
+                    <CustomerNailStatusBadge
+                      status={statusLabel}
+                      language={language}
+                      iconSize={12}
+                      className="gap-1.5 px-3 py-1.5 text-[11px]"
+                    />
                   </div>
                   <p className="mt-2 text-sm text-[#9c6f87]">
                     {language === "vi" ? "Đánh giá các lớp thiết kế, thành phần tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
@@ -928,7 +891,7 @@ export function StaffCustomerNailReviewPage() {
                     </span>
                     <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
                   </div>
-                  <p className="mt-2 text-xl font-black text-[#402542]">{formatDuration(recommendedStats.duration)}</p>
+                  <p className="mt-2 text-xl font-black text-[#402542]">{formatDuration(recommendedStats.duration, language)}</p>
                 </div>
               </div>
             </div>
@@ -1025,7 +988,7 @@ export function StaffCustomerNailReviewPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#2b6141]/80">{language === "vi" ? "Thời lượng:" : "Duration:"}</span>
-                        <span className="font-bold">{formatDuration(request?.duration || nail?.duration)}</span>
+                        <span className="font-bold">{formatDuration(request?.duration || nail?.duration, language)}</span>
                       </div>
                     </div>
                   )}
@@ -1074,7 +1037,7 @@ export function StaffCustomerNailReviewPage() {
                   <span className="block text-[10px] font-extrabold uppercase tracking-widest text-pink-100">{language === "vi" ? "Giá hệ thống" : "System Price"}</span>
                   <div className="flex items-center justify-center gap-2">
                     <span className="text-2xl font-black">{formatVND(recommendedStats.price)}</span>
-                    <span className="text-xs font-semibold text-pink-100">• {formatDuration(recommendedStats.duration)}</span>
+                    <span className="text-xs font-semibold text-pink-100">• {formatDuration(recommendedStats.duration, language)}</span>
                   </div>
                 </div>
               </div>
@@ -1202,7 +1165,7 @@ export function StaffCustomerNailReviewPage() {
             </div>
             <span className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#a988a0]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#402542]"></span>
-              {language === "vi" ? "Thời gian hệ thống: " : "System duration: "} <span className="font-bold text-[#402542]">{formatDuration(recommendedStats.duration)}</span>
+              {language === "vi" ? "Thời gian hệ thống: " : "System duration: "} <span className="font-bold text-[#402542]">{formatDuration(recommendedStats.duration, language)}</span>
             </span>
           </div>
 

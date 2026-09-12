@@ -52,6 +52,7 @@ import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -349,13 +350,8 @@ function formatVND(amount) {
   }).format(amount);
 }
 
-function formatDuration(totalMinutes) {
-  if (!totalMinutes) return "0m";
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-  if (hours > 0) return `${hours}h`;
-  return `${minutes}m`;
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
 }
 
 function getArtistDisplayName(artist) {
@@ -382,7 +378,7 @@ function getQrCodeSrc(qrCode) {
   return trimmed;
 }
 
-function mapBookingForDrawer(rawBooking) {
+function mapBookingForDrawer(rawBooking, language = "en") {
   const artistName = getArtistDisplayName(rawBooking);
   const artistId = rawBooking.staffId || rawBooking.nailArtistId || rawBooking.staffArtistId || rawBooking.artistId || null;
   return {
@@ -457,7 +453,7 @@ function mapApiBookingToUiFormat(apiBooking, index) {
     date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
     time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
-    duration: formatDuration(apiBooking.totalDuration || 60),
+    duration: formatDuration(apiBooking.totalDuration || 60, language),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
     customerName: customerName,
@@ -1091,7 +1087,7 @@ export function ManagerBookingListPage() {
     setIsLoadingDrawer(true);
     try {
       const rawBooking = await fetchBookingById(bookingId);
-      const mappedBooking = mapBookingForDrawer(rawBooking);
+      const mappedBooking = mapBookingForDrawer(rawBooking, language);
       setSelectedBookingForDrawer(mappedBooking);
       if (mappedBooking.customerId) {
         try {
@@ -1816,7 +1812,7 @@ export function ManagerBookingListPage() {
                                     <p className="text-xs font-bold truncate">{b.customerName || b.customer}</p>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
-                                      <span>{formatDuration(b.totalDuration || 60)}</span>
+                                      <span>{formatDuration(b.totalDuration || 60, language)}</span>
                                     </div>
                                   </div>
                                 );

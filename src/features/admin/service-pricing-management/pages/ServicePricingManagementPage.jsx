@@ -312,7 +312,7 @@ function ServiceDetailModal({ service, onClose }) {
               {language === "vi" ? "Thời lượng" : "Duration"}
             </p>
             <p className="mt-1 text-sm font-extrabold text-[#8b5cf6]">
-              {service.duration} {language === "vi" ? "phút" : "min"}
+              {formatDurationMinutes(service.duration, language)}
             </p>
           </div>
           <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
@@ -651,7 +651,7 @@ export function ServicePricingManagementPage() {
       dataIndex: "duration",
       key: "duration",
       sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
-      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
+      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value, language)}</span>,
     },
     {
       title: t("servicePricing.table.status"),

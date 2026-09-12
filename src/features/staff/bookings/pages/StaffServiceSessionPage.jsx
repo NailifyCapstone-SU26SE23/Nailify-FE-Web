@@ -30,6 +30,7 @@ import {
   ROUTES,
 } from "../../../../shared/constants/routes";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 
 import {
@@ -753,7 +754,7 @@ function buildProcedureStepMeta(procedure, language = "en") {
   const estimatedEndTime = formatTimeValue(procedure?.estimatedEndTime);
   const duration = Number(procedure?.duration || 0);
 
-  return `${isVi ? "Thợ:" : "Artist:"} ${assignedArtistName} | ${isVi ? "Thời lượng:" : "Duration:"} ${duration} ${isVi ? "phút" : "min"} | ${isVi ? "Thời gian:" : "Time:"} ${estimatedStartTime} - ${estimatedEndTime}`;
+  return `${isVi ? "Thợ:" : "Artist:"} ${assignedArtistName} | ${isVi ? "Thời lượng:" : "Duration:"} ${formatDurationMinutes(duration, language)} | ${isVi ? "Thời gian:" : "Time:"} ${estimatedStartTime} - ${estimatedEndTime}`;
 }
 
 function getSessionBookingItemIds(value) {
@@ -2909,9 +2910,7 @@ export function StaffServiceSessionPage() {
                                   <div className="flex flex-col items-start">
                                     <span className="rounded bg-purple-100 px-2 py-0.5 text-sm font-bold text-purple-900">{procedure.time}</span>
                                     <span className="mt-1 text-[11px] font-semibold text-green-500">
-                                      {procedure.duration >= 60
-                                        ? `${Math.floor(procedure.duration / 60)}${isVi ? "giờ" : "h"}${procedure.duration % 60 > 0 ? ` ${procedure.duration % 60}${isVi ? "phút" : "m"}` : ""}`
-                                        : `${procedure.duration} ${isVi ? "phút" : "min"}`}
+                                      {formatDurationMinutes(procedure.duration, language)}
                                     </span>
                                   </div>
                                 </td>

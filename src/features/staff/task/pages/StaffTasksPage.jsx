@@ -564,7 +564,7 @@ function BoardTaskCard({
           />
           <MiniInfo
             label={isVi ? "Tổng thời gian" : "Total Time"}
-            value={formatDurationMinutes(task.duration)}
+            value={formatDurationMinutes(task.duration, language)}
             className={theme.infoClassName}
           />
         </div>
@@ -574,19 +574,19 @@ function BoardTaskCard({
           <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] font-bold">
             <span className="inline-flex items-center gap-1 text-yellow-600">
               <Zap size={13} strokeWidth={2.5} />
-              {isVi ? "Hoạt động:" : "Active:"} {activeDuration}m
+              {isVi ? "Hoạt động:" : "Active:"} {formatDurationMinutes(activeDuration, language)}
             </span>
 
             {hasPassive && (
               <span className="inline-flex items-center gap-1 text-[#0284C7]">
                 <Hourglass size={13} strokeWidth={2.5} />
-                {isVi ? "Thụ động" : "Passive"}: {passiveDuration}m
+                {isVi ? "Thụ động" : "Passive"}: {formatDurationMinutes(passiveDuration, language)}
               </span>
             )}
             {(hasPassive || task.canOverlap) ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#047857] border border-[#A7F3D0]">
                 <Sparkles size={12} />
-                {isVi ? "Thực hiện chéo" : "Overlap"} ({passiveDuration}m free)
+                {isVi ? "Thực hiện chéo" : "Overlap"} ({formatDurationMinutes(passiveDuration, language)} {isVi ? "rảnh" : "free"})
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-600">

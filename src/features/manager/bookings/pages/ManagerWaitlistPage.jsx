@@ -27,6 +27,7 @@ import duration from "dayjs/plugin/duration";
 import { fetchSalonWaitlist } from "../services/bookingsService";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 dayjs.extend(duration);
 
@@ -98,7 +99,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
       // Format time left
       const mins = Math.floor(diffSeconds / 60);
       const secs = diffSeconds % 60;
-      setTimeLeft(language === "vi" ? `${mins}phút ${secs.toString().padStart(2, "0")}giây` : `${mins}m ${secs.toString().padStart(2, "0")}s`);
+      setTimeLeft(language === "vi" ? `${mins} phút ${secs.toString().padStart(2, "0")} giây` : `${mins}m ${secs.toString().padStart(2, "0")}s`);
 
       // Progress bar percentage
       const pct = Math.min(100, Math.max(0, (diffSeconds / totalWindowSeconds) * 100));
@@ -259,7 +260,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
           </div>
           <div className="lg:hidden">
             <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-            <p className="mt-1 font-bold text-[#321735]">{item.estimatedDuration ? `${item.estimatedDuration}m` : "--"}</p>
+            <p className="mt-1 font-bold text-[#321735]">{item.estimatedDuration ? formatDurationMinutes(item.estimatedDuration, language) : "--"}</p>
           </div>
           <div className="lg:hidden">
             <p className="font-bold uppercase text-[10px] tracking-wider text-[#b38da4]">{language === "vi" ? "Thợ yêu cầu" : "Requested Artist"}</p>
@@ -278,7 +279,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-xs font-bold text-[#7e4fe6]">
             <Timer size={13} />
-            {item.estimatedDuration ? `${item.estimatedDuration} ${language === "vi" ? "phút" : "mins"}` : (language === "vi" ? "Không ước tính" : "Not estimated")}
+            {item.estimatedDuration ? formatDurationMinutes(item.estimatedDuration, language) : (language === "vi" ? "Không ước tính" : "Not estimated")}
           </p>
         </div>
 
@@ -542,7 +543,7 @@ export function ManagerWaitlistPage() {
                     {dayjs(nextGuest.requestedDate).format("DD MMM")} - {formatTimeSpan(nextGuest.requestedStartTime)}
                   </p>
                   <p className="mt-0.5 truncate text-[10px] font-semibold text-[#a77f98]">
-                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {nextGuest.estimatedDuration}m
+                    {language === "vi" ? "Yêu cầu" : "Requested"}: {nextGuest.preferredNailArtistName || (language === "vi" ? "Bất kỳ thợ nào" : "Any Artist")} · {formatDurationMinutes(nextGuest.estimatedDuration, language)}
                   </p>
                 </div>
               </div>
@@ -794,7 +795,7 @@ export function ManagerWaitlistPage() {
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="font-semibold text-[#8b7382]">{language === "vi" ? "Thời lượng dự kiến:" : "Estimated Duration:"}</span>
-                  <span className="font-bold text-[#ea4f93]">{selectedEntry.estimatedDuration} {language === "vi" ? "phút" : "minutes"}</span>
+                  <span className="font-bold text-[#ea4f93]">{formatDurationMinutes(selectedEntry.estimatedDuration, language)}</span>
                 </div>
               </div>
             </div>

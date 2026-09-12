@@ -260,16 +260,14 @@ export function ReceptionistBookingListPage() {
       const matchesDate =
         (!appliedDateFrom || booking.bookingDateValue >= appliedDateFrom) &&
         (!appliedDateTo || booking.bookingDateValue <= appliedDateTo);
-      const matchesSalon =
-        appliedSalonFilter === "All salons" || booking.salonName === appliedSalonFilter;
       const matchesStatus =
         appliedStatusFilter === "All" || booking.status === appliedStatusFilter;
       const matchesStaff =
         appliedStaffFilter === "All staff" || booking.artistName === appliedStaffFilter;
 
-      return matchesQuery && matchesDate && matchesSalon && matchesStatus && matchesStaff;
+      return matchesQuery && matchesDate && matchesStatus && matchesStaff;
     });
-  }, [appliedDateFrom, appliedDateTo, appliedQuery, appliedSalonFilter, appliedStaffFilter, appliedStatusFilter, bookings]);
+  }, [appliedDateFrom, appliedDateTo, appliedQuery, appliedStaffFilter, appliedStatusFilter, bookings]);
 
   const {
     currentPage,
@@ -678,7 +676,7 @@ export function ReceptionistBookingListPage() {
           </div>
 
           <div className="mt-4 rounded-lg border border-[#F7D8E6] bg-white p-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 grid-cols-3">
 
               <div>
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
@@ -709,26 +707,6 @@ export function ReceptionistBookingListPage() {
                   format="DD/MM/YYYY"
                   className="w-full"
                   size="large"
-                />
-              </div>
-
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
-                  Salon
-                </p>
-
-                <Select
-                  value={salonFilter}
-                  onChange={setSalonFilter}
-                  size="large"
-                  className="w-full"
-                  options={salonOptions.map((item) => ({
-                    value: item,
-                    label:
-                      item === "All salons"
-                        ? t("receptionist.bookings.allSalons")
-                        : item,
-                  }))}
                 />
               </div>
 
