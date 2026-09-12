@@ -158,6 +158,12 @@ export function PromotionDetailPage() {
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -180,10 +186,7 @@ export function PromotionDetailPage() {
   }, [navigate, promotionId]);
 
   useEffect(() => {
-    if (!location.state?.flashMessage && !location.state?.startInEdit) {
-      return;
-    }
-
+    if (!location.state?.flashMessage && !location.state?.startInEdit) { return; }
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -485,17 +488,9 @@ export function PromotionDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
+      
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
+      
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">

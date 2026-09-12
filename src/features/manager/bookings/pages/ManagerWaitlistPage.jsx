@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import {
   Clock,
   Search,
@@ -309,6 +310,12 @@ export function ManagerWaitlistPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState("");

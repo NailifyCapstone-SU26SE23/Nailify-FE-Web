@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { Spin, Alert, Pagination, ConfigProvider } from "antd";
 import { Palette, CheckCircle2, XCircle, RefreshCw, Sparkles, Clock3, Eye, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -159,6 +160,12 @@ export function StaffCustomerNailsListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 

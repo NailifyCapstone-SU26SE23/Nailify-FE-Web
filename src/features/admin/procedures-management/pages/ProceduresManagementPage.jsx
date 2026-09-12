@@ -79,18 +79,23 @@ export function ProceduresManagementPage() {
     lastRowOnPage: 0,
   });
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedProcedureType, setSelectedProcedureType] = useState("");
   const [selectedRequired, setSelectedRequired] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
-  useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
 
+  useEffect(() => {
+    if (!location.state?.flashMessage) { return; }
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -117,6 +122,8 @@ export function ProceduresManagementPage() {
         const response = await fetchAdminProcedures({
           pageIndex: metaData.currentPage,
           pageSize: metaData.pageSize,
+          status: selectedStatus,
+          procedureType: selectedProcedureType,
         });
 
         if (!isMounted) {
@@ -144,7 +151,7 @@ export function ProceduresManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [metaData.currentPage, metaData.pageSize]);
+  }, [metaData.currentPage, metaData.pageSize, selectedStatus, selectedProcedureType]);
 
   const summaryCards = useMemo(() => {
     const activeCount = procedures.filter((item) => item.status === "Active").length;
@@ -214,19 +221,17 @@ export function ProceduresManagementPage() {
 
   const filteredProcedures = useMemo(() => {
     return procedures.filter((procedure) => {
-      const normalizedStatus = String(procedure.status || "").toLowerCase();
       const matchesQuery =
         !debouncedQuery ||
         String(procedure.name || "").toLowerCase().includes(debouncedQuery) ||
         String(procedure.description || "").toLowerCase().includes(debouncedQuery);
-      const matchesStatus = !selectedStatus || normalizedStatus === selectedStatus.toLowerCase();
       const matchesRequired =
         !selectedRequired ||
         (selectedRequired === "required" ? procedure.isRequired : !procedure.isRequired);
 
-      return matchesQuery && matchesStatus && matchesRequired;
+      return matchesQuery && matchesRequired;
     });
-  }, [debouncedQuery, procedures, selectedRequired, selectedStatus]);
+  }, [debouncedQuery, procedures, selectedRequired]);
 
   const columns = useMemo(
     () => [
@@ -257,6 +262,28 @@ export function ProceduresManagementPage() {
         key: "isRequired",
         sorter: (a, b) => (a.isRequired === b.isRequired ? 0 : a.isRequired ? -1 : 1),
         render: (value) => <ProcedureRequiredBadge isRequired={value} />,
+      },
+      {
+        title: language === "vi" ? "Loại" : "Type",
+        dataIndex: "procedureType",
+        key: "procedureType",
+        sorter: (a, b) => (a.procedureType || "").localeCompare(b.procedureType || ""),
+        render: (value) => (
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${value === 'Common' ? 'bg-[#e0f2fe] text-[#0284c7]' : 'bg-[#fef3c7] text-[#d97706]'}`}>
+            {value === 'Common' ? (language === "vi" ? "Chung" : "Common") : (language === "vi" ? "Riêng" : "Model Specific")}
+          </span>
+        ),
+      },
+      {
+        title: language === "vi" ? "Bước chính" : "Main Step",
+        dataIndex: "isMainStep",
+        key: "isMainStep",
+        sorter: (a, b) => (a.isMainStep === b.isMainStep ? 0 : a.isMainStep ? -1 : 1),
+        render: (value) => (
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${value ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#f3f4f6] text-[#4b5563]'}`}>
+            {value ? (language === "vi" ? "Bước chính" : "Main") : (language === "vi" ? "Bước phụ" : "Sub")}
+          </span>
+        ),
       },
       {
         title: t("adminProcedures.status"),
@@ -308,7 +335,7 @@ export function ProceduresManagementPage() {
           </div>
         ),
       },
-    ], [navigate, t],
+    ], [navigate, t, language],
   );
 
   const handleDeleteProcedure = async () => {
@@ -342,17 +369,9 @@ export function ProceduresManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        {flashMessage ? (
-          <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
 
-        {error ? (
-          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-            {error}
-          </div>
-        ) : null}
+
+
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
@@ -397,8 +416,24 @@ export function ProceduresManagementPage() {
             </select>
 
             <select
+              value={selectedProcedureType}
+              onChange={(event) => {
+                setSelectedProcedureType(event.target.value);
+                setMetaData((current) => ({ ...current, currentPage: 1 }));
+              }}
+              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            >
+              <option value="">{language === "vi" ? "Tất cả loại" : "All Types"}</option>
+              <option value="Common">{language === "vi" ? "Chung" : "Common"}</option>
+              <option value="ModelSpecific">{language === "vi" ? "Riêng" : "Model Specific"}</option>
+            </select>
+
+            <select
               value={selectedStatus}
-              onChange={(event) => setSelectedStatus(event.target.value)}
+              onChange={(event) => {
+                setSelectedStatus(event.target.value);
+                setMetaData((current) => ({ ...current, currentPage: 1 }));
+              }}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
               <option value="">{t("adminProcedures.allStatuses")}</option>

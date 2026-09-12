@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import dayjs from "dayjs";
 import {
   ArrowLeft,
@@ -133,6 +134,12 @@ export function StaffSchedulesPage() {
   const [scheduleRows, setScheduleRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [now, setNow] = useState(() => dayjs());
   const { language } = useLanguage();
 
@@ -269,11 +276,7 @@ export function StaffSchedulesPage() {
             </div>
 
             <div className="px-6 py-6 bg-[linear-gradient(135deg,#fff6f1_0%,#fffaf7_42%,#ffe3dc_100%)]">
-              {error ? (
-                <div className="mb-4 rounded-2xl border border-[#ffd9d3] bg-[#fff5f2] px-4 py-3 text-sm font-medium text-[#d36557]">
-                  {error}
-                </div>
-              ) : null}
+              
 
               <div className="overflow-hidden rounded-[24px] border border-[#eef0f5] bg-[#fbfcff]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef0f5] px-4 py-4">

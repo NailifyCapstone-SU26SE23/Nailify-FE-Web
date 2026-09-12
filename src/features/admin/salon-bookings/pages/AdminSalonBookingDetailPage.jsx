@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -218,6 +219,12 @@ export function AdminSalonBookingDetailPage() {
   const [isLoadingSalon, setIsLoadingSalon] = useState(true);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState(null);
 

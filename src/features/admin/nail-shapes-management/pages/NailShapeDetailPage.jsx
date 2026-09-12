@@ -46,6 +46,12 @@ export function NailShapeDetailPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -133,10 +139,7 @@ export function NailShapeDetailPage() {
   };
 
   useEffect(() => {
-    if (!location.state?.flashMessage && !location.state?.startInEdit) {
-      return;
-    }
-
+    if (!location.state?.flashMessage && !location.state?.startInEdit) { return; }
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -383,17 +386,9 @@ export function NailShapeDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
+      
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
+      
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
@@ -514,7 +509,7 @@ export function NailShapeDetailPage() {
                   sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {val}
+                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
                     </span>
                   )
                 },

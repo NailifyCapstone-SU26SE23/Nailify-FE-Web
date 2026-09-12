@@ -129,6 +129,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(location.state?.booking ?? null);
   const [customerProfile, setCustomerProfile] = useState(location.state?.customerProfile ?? null);
   const [salonProfile, setSalonProfile] = useState(null);

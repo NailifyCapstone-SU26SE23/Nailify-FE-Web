@@ -158,6 +158,12 @@ export function NailDesignManagementPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [globalMetrics, setGlobalMetrics] = useState({
     activeDesigns: 0,
     tryOnReady: 0,
@@ -248,7 +254,6 @@ export function NailDesignManagementPage() {
       return;
     }
 
-    toast.success(location.state.flashMessage);
     flashMessageShownRef.current = true;
 
     navigate(location.pathname, { replace: true, state: null });
@@ -576,11 +581,7 @@ export function NailDesignManagementPage() {
 
 
 
-          {error ? (
-            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+          
 
           <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
