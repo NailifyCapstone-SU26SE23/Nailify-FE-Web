@@ -32,7 +32,6 @@ export function ScheduleModals({
   const { language } = useLanguage();
   const isVi = language === "vi";
   const [form] = Form.useForm();
-
   useEffect(() => {
     form.setFieldsValue({
       artistId: formArtistId,

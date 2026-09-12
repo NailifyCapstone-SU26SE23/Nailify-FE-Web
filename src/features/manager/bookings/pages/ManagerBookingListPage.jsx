@@ -1244,7 +1244,7 @@ export function ManagerBookingListPage() {
                               const count = filter.value === "All"
                                 ? bookings.length
                                 : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
-                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, t);
+                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, language);
                               return (
                                 <option key={filter.value} value={filter.value} className="text-sm font-medium text-[#2B182B]">
                                   {displayLabel} ({count})

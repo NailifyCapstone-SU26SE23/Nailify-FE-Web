@@ -46,6 +46,12 @@ export function NailShapeDetailPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -514,7 +520,7 @@ export function NailShapeDetailPage() {
                   sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {val}
+                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
                     </span>
                   )
                 },

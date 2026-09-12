@@ -641,6 +641,12 @@ export function NailDesignManagementDetailPage() {
   const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isNotFound, setIsNotFound] = useState(false);
   const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState("");
 
@@ -1583,7 +1589,7 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.procedureSteps")}</p>
+                    <p className="font-bold text-[#432744]">{language === 'vi' ? `Bước quy trình` : `Procedure Steps`}</p>
 
                   </div>
                   <div className="flex gap-2">

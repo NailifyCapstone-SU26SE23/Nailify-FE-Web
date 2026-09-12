@@ -129,6 +129,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(location.state?.booking ?? null);
   const [customerProfile, setCustomerProfile] = useState(location.state?.customerProfile ?? null);
   const [salonProfile, setSalonProfile] = useState(null);
@@ -800,17 +806,6 @@ export function ReceptionistCheckoutPaymentPage() {
               ))}
             </div>
           </SummaryCard>
-
-          {/* <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
-            <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
-              <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
-              <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
-              <p className="mt-1 text-xs text-[#8f7b88]">{language === "vi" ? "Tích lũy từ lượt xem này" : "Earned from this visit"}</p>
-            </div>
-            <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
-              {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
-            </div>
-          </SummaryCard> */}
 
           <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Tooltip, Button } from 'antd';
 import { Edit3, Trash2 } from 'lucide-react';
 import { getShiftTheme, formatTimeSpan } from '../utils/scheduleUtils';

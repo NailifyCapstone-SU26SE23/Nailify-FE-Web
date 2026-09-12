@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import dayjs from "dayjs";
 import {
   ArrowLeft,
@@ -123,6 +124,12 @@ export function StaffSchedulesPage() {
   const [scheduleRows, setScheduleRows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [now, setNow] = useState(() => dayjs());
   const { language } = useLanguage();
 

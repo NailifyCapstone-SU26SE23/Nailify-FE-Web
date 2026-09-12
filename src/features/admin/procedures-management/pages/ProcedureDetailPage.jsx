@@ -9,6 +9,8 @@ import {
   ShieldCheck,
   Trash2,
   X,
+  Sparkles,
+  ListTree,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -53,6 +55,12 @@ export function ProcedureDetailPage() {
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -89,6 +97,8 @@ export function ProcedureDetailPage() {
           duration: String(response.duration),
           status: response.status,
           isRequired: response.isRequired,
+          procedureType: response.procedureType,
+          isMainStep: response.isMainStep,
         });
       } catch (loadError) {
         if (!isMounted) {
@@ -146,6 +156,8 @@ export function ProcedureDetailPage() {
       duration: String(procedure.duration),
       status: procedure.status,
       isRequired: procedure.isRequired,
+      procedureType: procedure.procedureType,
+      isMainStep: procedure.isMainStep,
     });
     setError("");
     setIsEditing(true);
@@ -162,6 +174,8 @@ export function ProcedureDetailPage() {
       duration: String(procedure.duration),
       status: procedure.status,
       isRequired: procedure.isRequired,
+      procedureType: procedure.procedureType,
+      isMainStep: procedure.isMainStep,
     });
     setError("");
     setIsEditing(false);
@@ -198,6 +212,8 @@ export function ProcedureDetailPage() {
         duration: String(updatedProcedure.duration),
         status: updatedProcedure.status,
         isRequired: updatedProcedure.isRequired,
+        procedureType: updatedProcedure.procedureType,
+        isMainStep: updatedProcedure.isMainStep,
       });
       setIsEditing(false);
       toast.success(t("adminProcedures.updateSuccess", { name: updatedProcedure.name }));
@@ -318,46 +334,82 @@ export function ProcedureDetailPage() {
         </div>
       ) : (
         <div className="grid gap-4 ">
-          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+          <section className="rounded-[24px] border border-rose-50 bg-white/90 p-8 shadow-[0_24px_60px_rgba(226,93,143,0.08)] backdrop-blur">
+            <h2 className="mb-8 flex items-center gap-3 text-[22px] font-bold text-slate-800">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#eb5b92] to-[#cf3d74] text-white shadow-lg shadow-rose-200">
+                <FileText size={18} />
+              </div>
               {t("adminProcedures.procedureInformation")}
             </h2>
 
-            <div className="grid gap-5">
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.procedureName")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <ClipboardList size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={draft?.name || ""}
-                    onChange={(event) => handleFieldChange("name", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
-                </div>
-              </label>
+            <div className="grid gap-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2.5 md:col-span-2">
+                  <span className="text-[13px] font-bold text-slate-700">{t("adminProcedures.procedureName")}</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <ClipboardList size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
+                    <input
+                      type="text"
+                      value={draft?.name || ""}
+                      onChange={(event) => handleFieldChange("name", event.target.value)}
+                      disabled={!isEditing}
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    />
+                  </div>
+                </label>
 
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.description")}</span>
-                <div className="flex items-start gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <FileText size={14} className="mt-0.5 shrink-0 text-rose-300" />
-                  <textarea
-                    rows={5}
-                    value={draft?.description || ""}
-                    onChange={(event) => handleFieldChange("description", event.target.value)}
-                    disabled={!isEditing}
-                    className="w-full resize-none bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  />
-                </div>
-              </label>
+                <label className="space-y-2.5 md:col-span-2">
+                  <span className="text-[13px] font-bold text-slate-700">{t("adminProcedures.description")}</span>
+                  <div className={`flex items-start gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <FileText size={16} className={`mt-0.5 shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
+                    <textarea
+                      rows={4}
+                      value={draft?.description || ""}
+                      onChange={(event) => handleFieldChange("description", event.target.value)}
+                      disabled={!isEditing}
+                      className="w-full resize-none bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    />
+                  </div>
+                </label>
+              </div>
 
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                 <label className="space-y-2.5">
-                  <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.duration")}</span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                    <Clock3 size={14} className="shrink-0 text-rose-300" />
+                  <span className="text-[13px] font-bold text-slate-700">{language === "vi" ? "Loại quy trình" : "Procedure Type"}</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <ListTree size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
+                    <select
+                      value={draft?.procedureType || "Common"}
+                      onChange={(event) => handleFieldChange("procedureType", event.target.value)}
+                      disabled={!isEditing}
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    >
+                      <option value="Common">{language === "vi" ? "Chung" : "Common"}</option>
+                      <option value="ModelSpecific">{language === "vi" ? "Riêng theo mẫu" : "Model Specific"}</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label className="space-y-2.5">
+                  <span className="text-[13px] font-bold text-slate-700">{language === "vi" ? "Loại bước" : "Step Type"}</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <Sparkles size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
+                    <select
+                      value={draft?.isMainStep ? "true" : "false"}
+                      onChange={(event) => handleFieldChange("isMainStep", event.target.value === "true")}
+                      disabled={!isEditing}
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    >
+                      <option value="true">{language === "vi" ? "Bước chính" : "Main Step"}</option>
+                      <option value="false">{language === "vi" ? "Bước phụ" : "Sub Step"}</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label className="space-y-2.5">
+                  <span className="text-[13px] font-bold text-slate-700">{t("adminProcedures.duration")} (phút)</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <Clock3 size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
                     <input
                       type="number"
                       min="0"
@@ -371,9 +423,25 @@ export function ProcedureDetailPage() {
                 </label>
 
                 <label className="space-y-2.5">
-                  <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.status")}</span>
-                  <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                    <ShieldCheck size={14} className="shrink-0 text-rose-300" />
+                  <span className="text-[13px] font-bold text-slate-700">{t("adminProcedures.requirement")}</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <ShieldCheck size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
+                    <select
+                      value={draft?.isRequired ? "true" : "false"}
+                      onChange={(event) => handleFieldChange("isRequired", event.target.value === "true")}
+                      disabled={!isEditing}
+                      className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    >
+                      <option value="true">{t("adminProcedures.required")}</option>
+                      <option value="false">{t("adminProcedures.optional")}</option>
+                    </select>
+                  </div>
+                </label>
+
+                <label className="space-y-2.5 md:col-span-2">
+                  <span className="text-[13px] font-bold text-slate-700">{t("adminProcedures.status")}</span>
+                  <div className={`flex items-center gap-2 rounded-2xl border ${isEditing ? 'border-rose-300 bg-white shadow-[0_4px_20px_rgba(226,93,143,0.08)]' : 'border-rose-100 bg-[#fff8fb]'} px-4 py-3.5 transition-all`}>
+                    <ShieldCheck size={16} className={`shrink-0 ${isEditing ? 'text-rose-500' : 'text-rose-300'}`} />
                     <select
                       value={draft?.status || PROCEDURE_STATUS_OPTIONS[0]}
                       onChange={(event) => handleFieldChange("status", event.target.value)}
@@ -382,49 +450,15 @@ export function ProcedureDetailPage() {
                     >
                       {PROCEDURE_STATUS_OPTIONS.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (language === 'vi' ? 'Ngưng hoạt động' : 'Inactive')}
                         </option>
                       ))}
                     </select>
                   </div>
                 </label>
               </div>
-
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">{t("adminProcedures.requirement")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
-                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
-                  <select
-                    value={draft?.isRequired ? "true" : "false"}
-                    onChange={(event) => handleFieldChange("isRequired", event.target.value === "true")}
-                    disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  >
-                    <option value="true">{t("adminProcedures.required")}</option>
-                    <option value="false">{t("adminProcedures.optional")}</option>
-                  </select>
-                </div>
-              </label>
             </div>
           </section>
-
-          {/* <aside className="space-y-4">
-            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                Summary
-              </h2>
-
-              <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                {summaryItems.map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 text-sm">
-                    <span className="font-semibold text-slate-500">{label}</span>
-                    <span className="text-right font-bold text-slate-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside> */}
         </div>
       )}
 

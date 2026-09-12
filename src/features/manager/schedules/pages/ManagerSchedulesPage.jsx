@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Spin, Alert } from 'antd';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
@@ -34,6 +34,7 @@ export function ManagerSchedulesPage() {
     selectedWeekStart,
     setSelectedWeekStart,
     staffList,
+    schedulesList,
     scheduleMatrix,
     isLoading,
     error,
@@ -44,7 +45,7 @@ export function ManagerSchedulesPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showShiftTimes, setShowShiftTimes] = useState(true);
-  const [selectedDayKey] = useState("ALL");
+  const [selectedDayKey, setSelectedDayKey] = useState("ALL");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -109,7 +110,7 @@ export function ManagerSchedulesPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleCreateScheduleSubmit = async () => {
+  const handleCreateScheduleSubmit = async (values) => {
     if (!formArtistId) {
       toast.error("Please select a staff artist");
       return;
@@ -134,7 +135,7 @@ export function ManagerSchedulesPage() {
     }
   };
 
-  const handleEditScheduleSubmit = async () => {
+  const handleEditScheduleSubmit = async (values) => {
     if (!selectedScheduleForEdit) return;
     setIsSubmitting(true);
     try {
