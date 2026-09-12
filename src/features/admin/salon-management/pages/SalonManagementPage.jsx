@@ -392,6 +392,12 @@ export function SalonManagementPage() {
   const [salons, setSalons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [selectedSlots, setSelectedSlots] = useState({
     morning: TIME_SLOTS.morning.slots,
     afternoon: TIME_SLOTS.afternoon.slots,
@@ -460,7 +466,6 @@ export function SalonManagementPage() {
 
   useEffect(() => {
     if (location.state?.flashMessage) {
-      toast.success(location.state.flashMessage, { id: "salon-flash-msg" });
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.pathname, location.state?.flashMessage, navigate]);

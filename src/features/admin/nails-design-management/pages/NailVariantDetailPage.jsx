@@ -55,6 +55,7 @@ import { fetchAdminProcedures } from "../../procedures-management/services/proce
 import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -948,6 +949,12 @@ export function NailVariantDetailPage() {
   const [variantDraftImagePreviewUrl, setVariantDraftImagePreviewUrl] = useState("");
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isNotFound, setIsNotFound] = useState(false);
   const colors = extractVariantColors(variant?.colorJson);
 
@@ -1077,11 +1084,11 @@ export function NailVariantDetailPage() {
       );
       setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
       setEditingProcedureIndex(null);
-      toast.success(t("adminNailsDesignManagement.procedureStepsSavedSuccessfully"));
+      toast.success(language === 'vi' ? `Lưu bước quy trình thành công` : `Save procedure steps successfully`);
     } catch (saveError) {
       setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
       setEditingProcedureIndex(null);
-      setError(saveError instanceof Error ? saveError.message : (t("adminNailsDesignManagement.failedToSaveProcedureSteps")));
+      setError(saveError instanceof Error ? saveError.message : (language === 'vi' ? `Không thể lưu bước quy trình` : `Failed to save procedure steps`));
     } finally {
       setIsSavingProcedures(false);
     }
@@ -1380,11 +1387,7 @@ export function NailVariantDetailPage() {
           </pre>
         )}
       </DetailCard>
-      {error ? (
-        <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
-          {error}
-        </div>
-      ) : null}
+      
 
       {pendingTryOnConfig && !error ? (
         <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
@@ -1435,9 +1438,9 @@ export function NailVariantDetailPage() {
           </div>
         </DetailCard>
 
-        <DetailCard title={t("adminNailsDesignManagement.procedureSteps")}>
+        <DetailCard title={language === 'vi' ? `Bước quy trình` : `Procedure Steps`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[#8c7085]">{t("adminNailsDesignManagement.stepOrderIsInitializedFromTheC")}</p>
+            <p className="text-sm text-[#8c7085]">{language === 'vi' ? `Thứ tự các bước được khởi tạo từ đầu` : `Step order is initialized from the beginning`}</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -1550,7 +1553,7 @@ export function NailVariantDetailPage() {
                               <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#fff0f7] to-[#ffe3ef] shadow-[inset_0_2px_4px_rgba(255,255,255,0.8)] border border-[#ffcce1]">
                                 <span className="text-xl font-black text-[#ea4f93]">{item.stepOrder || index + 1}</span>
                               </div>
-                              <GripVertical size={16} className="text-[#f4c6da] mt-1" />
+                              <GripVertical size={16} className="text-[#f4c6da] mt-1 cursor-grab" />
                             </div>
 
                             <div className="flex flex-col mt-0.5">
@@ -1602,6 +1605,28 @@ export function NailVariantDetailPage() {
                   );
                 };
 
+                const handleDragEnd = async (result) => {
+                  if (!result.destination) return;
+                  const sourceIndex = result.source.index;
+                  const destinationIndex = result.destination.index;
+                  if (sourceIndex === destinationIndex) return;
+                  if (editingProcedureIndex !== null) return;
+
+                  const modelSpecificProcs = groupedProcs.ModelSpecific.map(g => g.item);
+                  const commonProcs = groupedProcs.Common.map(g => g.item);
+                  
+                  const [reorderedItem] = modelSpecificProcs.splice(sourceIndex, 1);
+                  modelSpecificProcs.splice(destinationIndex, 0, reorderedItem);
+
+                  const newProcedures = [...commonProcs, ...modelSpecificProcs].map((p, idx) => ({
+                    ...p,
+                    stepOrder: idx + 1
+                  }));
+
+                  setProcedures(newProcedures);
+                  await saveProcedureSteps(newProcedures);
+                };
+
                 return (
                   <div className="space-y-6">
                     {groupedProcs.Common.length > 0 && (
@@ -1614,13 +1639,43 @@ export function NailVariantDetailPage() {
                       </div>
                     )}
                     {groupedProcs.ModelSpecific.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
-                          {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
-                          <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
-                        </h4>
-                        {groupedProcs.ModelSpecific.map(renderProcedureCard)}
-                      </div>
+                      <DragDropContext onDragEnd={handleDragEnd}>
+                        <Droppable droppableId="modelSpecificDroppable">
+                          {(provided) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className="space-y-3"
+                            >
+                              <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
+                                {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
+                                <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
+                              </h4>
+                              {groupedProcs.ModelSpecific.map((data, idx) => {
+                                const draggableId = `${data.item.procedureId || "draft"}-${data.index}`;
+                                return (
+                                  <Draggable key={draggableId} draggableId={draggableId} index={idx} isDragDisabled={editingProcedureIndex !== null}>
+                                    {(providedDrag, snapshot) => (
+                                      <div
+                                        ref={providedDrag.innerRef}
+                                        {...providedDrag.draggableProps}
+                                        {...providedDrag.dragHandleProps}
+                                        style={{
+                                          ...providedDrag.draggableProps.style,
+                                          ...(snapshot.isDragging ? { zIndex: 50 } : {})
+                                        }}
+                                      >
+                                        {renderProcedureCard(data)}
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                     )}
                   </div>
                 );

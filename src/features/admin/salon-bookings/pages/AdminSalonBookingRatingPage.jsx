@@ -248,7 +248,7 @@ export function AdminSalonBookingRatingPage() {
     // Filter status
     if (salonStatusFilter !== "all") {
       items = items.filter(
-        (s) => (s.status || "Active").toLowerCase() === salonStatusFilter.toLowerCase()
+        (s) => (s.status || "open").toLowerCase() === salonStatusFilter.toLowerCase()
       );
     }
 
@@ -439,7 +439,7 @@ export function AdminSalonBookingRatingPage() {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
-                  {["all", "active", "busy", "closed"].map((st) => (
+                  {["all", "open", "closed"].map((st) => (
                     <button
                       key={st}
                       type="button"
@@ -449,7 +449,7 @@ export function AdminSalonBookingRatingPage() {
                         : "text-[#7f6478] hover:text-[#2d1b35] hover:bg-[#ea4f93]/5"
                         }`}
                     >
-                      {st === "all" ? (isVi ? "Tất cả" : "all") : st === "active" ? (isVi ? "Hoạt động" : "active") : st === "busy" ? (isVi ? "Bận" : "busy") : (isVi ? "Đóng cửa" : "closed")}
+                      {st === "all" ? (isVi ? "Tất cả" : "all") : st === "open" ? (isVi ? "Mở cửa" : "open") : (isVi ? "Đóng cửa" : "closed")}
                     </button>
                   ))}
                 </div>
@@ -533,18 +533,17 @@ export function AdminSalonBookingRatingPage() {
                             </div>
                           )}
 
-                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : salon.status === "Busy"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
+                          <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs 
+                          ${salon.status === "open" || salon.status === "Open"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-slate-50 text-red-600 border-red-200"
                             }`}>
-                            {salon.status || "Active"}
+                            {salon.status === "open" || salon.status === "Open" ? (isVi ? "Mở cửa" : "Open") : (isVi ? "Đóng cửa" : "Closed")}
                           </span>
 
-                          <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
-                            ★ {salon.rating || "4.8"} ({salon.reviews || "120"} reviews)
-                          </div>
+                          {/* <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
+                            ★ {salon.rating} ({salon.reviews} {isVi ? "đánh giá" : "reviews"})
+                          </div> */}
                         </div>
 
                         {/* Salon Details */}
@@ -563,19 +562,19 @@ export function AdminSalonBookingRatingPage() {
                                 <span>{salon.phone}</span>
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
+                            {/* <div className="flex items-center gap-2">
                               <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || "Operating hours not listed"}</span>
-                            </div>
+                              <span>{salon.hours || (isVi ? "Chưa có thông tin giờ mở cửa" : "Operating hours not listed")}</span>
+                            </div> */}
                           </div>
 
                           {/* Audit Metrics Panel inside Card */}
                           <div className="space-y-3 pt-1">
                             <div className="space-y-1">
                               <div className="flex justify-between text-[10px] font-bold text-[#7f6478]">
-                                <span>Audited Average Rating</span>
+                                <span>{isVi ? "Điểm trung bình đánh giá đã kiểm toán" : "Audited Average Rating"}</span>
                                 <span className="font-mono text-[#ea4f93]">
-                                  {isMetricLoading ? <Spin size="small" className="scale-75" /> : metric.count === 0 ? "N/A" : `${metric.average} / 5`}
+                                  {isMetricLoading ? <Spin size="small" className="scale-75" /> : metric.count === 0 ? "0 / 5 ★" : `${metric.average} / 5 ★`}
                                 </span>
                               </div>
                               <div className="w-full bg-[#fcf9fb] h-1.5 rounded-full overflow-hidden border border-[#f1e7ed]">
@@ -589,7 +588,7 @@ export function AdminSalonBookingRatingPage() {
                             <div className="flex justify-between items-center text-[10px] text-[#a88a9f]">
                               <span>{isVi ? "Số lượng đánh giá đã kiểm toán" : "Audited Reviews Count"}</span>
                               <span className="font-bold text-[#2d1b35] font-mono">
-                                {isMetricLoading ? "..." : (isVi ? `${metric.count} bản ghi` : `${metric.count} logs`)}
+                                {isMetricLoading ? "..." : (isVi ? `${metric.count} lượt đánh giá` : `${metric.count} reviews`)}
                               </span>
                             </div>
                           </div>

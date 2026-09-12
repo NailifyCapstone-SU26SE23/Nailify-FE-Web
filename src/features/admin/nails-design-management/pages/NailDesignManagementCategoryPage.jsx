@@ -67,6 +67,12 @@ export function NailDesignManagementCategoryPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -458,11 +464,7 @@ export function NailDesignManagementCategoryPage() {
 
 
 
-          {error ? (
-            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+          
 
           <label className="relative mb-4 block max-w-md">
             <Search

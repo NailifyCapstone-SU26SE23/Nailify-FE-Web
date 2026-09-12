@@ -71,6 +71,12 @@ export function WalkInQueuePage() {
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [isServicesLoading, setIsServicesLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   // View switch: "kanban" (default) or "timeline"
   const [viewMode, setViewMode] = useState("kanban");

@@ -221,10 +221,7 @@ export function ReceptionistBookingListPage() {
   }, [loadBookings]);
 
   useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
-
+    if (!location.state?.flashMessage) { return; }
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -828,17 +825,9 @@ export function ReceptionistBookingListPage() {
             </div>
           </div>
 
-          {error ? (
-            <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+          
 
-          {flashMessage ? (
-            <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
+          
 
           {isLoading ? (
             <div className="mt-6 flex min-h-56 items-center justify-center rounded-lg border border-[#f7dce8] bg-[#fffafd]">

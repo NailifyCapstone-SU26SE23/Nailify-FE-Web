@@ -263,6 +263,12 @@ export function StaffDashboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [bookings, setBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
   const [bookingPagination, setBookingPagination] = useState({
@@ -1122,11 +1128,7 @@ export function StaffDashboardPage() {
                         bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
                       ">
 
-          {error ? (
-            <div className="rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+          
 
           <TopMetricsRow metrics={metrics} />
 

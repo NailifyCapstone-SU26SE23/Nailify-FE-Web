@@ -687,11 +687,7 @@ export function ServicePricingManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        {flashMessage ? (
-          <div className="rounded-[18px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
+        
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />

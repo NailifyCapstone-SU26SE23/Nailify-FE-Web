@@ -354,6 +354,12 @@ export function ManagerBookingDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   const [isRefundWarningOpen, setIsRefundWarningOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);

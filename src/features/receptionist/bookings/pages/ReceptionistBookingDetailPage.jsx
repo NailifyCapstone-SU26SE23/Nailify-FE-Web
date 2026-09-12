@@ -467,6 +467,12 @@ export function ReceptionistBookingDetailPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
