@@ -409,7 +409,7 @@ function mapBookingForDrawer(rawBooking, language = "en") {
   };
 }
 
-function mapApiBookingToUiFormat(apiBooking, index) {
+function mapApiBookingToUiFormat(apiBooking, index, language) {
   const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
@@ -601,8 +601,8 @@ export function ManagerBookingListPage() {
 
   // Compute UI bookings from raw Redux bookings
   const bookings = useMemo(() => {
-    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
-  }, [rawBookings]);
+    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx, language));
+  }, [rawBookings, language]);
 
   // Set viewMode via Redux
   const setViewMode = (mode) => dispatch(setFilter({ key: "viewMode", value: mode }));
