@@ -158,6 +158,12 @@ export function PromotionDetailPage() {
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);

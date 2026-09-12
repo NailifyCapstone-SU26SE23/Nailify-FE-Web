@@ -761,6 +761,12 @@ export function StaffTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [claimingTaskId, setClaimingTaskId] = useState("");
   const [draggingTask, setDraggingTask] = useState(null);
   const [draggingSource, setDraggingSource] = useState("");

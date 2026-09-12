@@ -148,6 +148,12 @@ export function ProfilePage() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [successMessage, setSuccessMessage] = useState("");
   const [formValues, setFormValues] = useState({
     email: "",

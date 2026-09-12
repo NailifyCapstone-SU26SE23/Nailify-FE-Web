@@ -538,6 +538,12 @@ export function CustomerNailDetailPage() {
   const [customer, setCustomer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [errorType, setErrorType] = useState(""); // 'auth', 'notfound', 'network', 'unknown'
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");

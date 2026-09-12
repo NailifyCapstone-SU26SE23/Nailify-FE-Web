@@ -197,13 +197,11 @@ export function NailDesignManagementCreatePage() {
         image: designImageFile,
       });
 
-      navigate(ROUTES.adminNailDesigns, {
-        state: {
-          flashMessage: isVi
-            ? `Tao thanh cong ${normalizedName}.`
-            : `Created ${normalizedName} successfully.`,
-        },
-      });
+      const message = isVi
+        ? `Tạo thành công ${normalizedName}.`
+        : `Created ${normalizedName} successfully.`;
+      toast.success(message);
+      navigate(ROUTES.adminNailDesigns);
     } catch (createError) {
       setSubmitError(
         createError instanceof Error ? createError.message : t("adminNailsDesignManagement.failedToCreateNailDesign"),

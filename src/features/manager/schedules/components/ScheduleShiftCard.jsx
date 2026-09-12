@@ -3,8 +3,9 @@ import { Tooltip, Button } from 'antd';
 import { Edit3, Trash2 } from 'lucide-react';
 import { getShiftTheme, formatTimeSpan } from '../utils/scheduleUtils';
 
-export function ScheduleShiftCard({ shift, showShiftTimes, onEdit, onDelete }) {
-  const theme = getShiftTheme(shift.shiftStart, shift.shiftEnd);
+export function ScheduleShiftCard({ shift, showShiftTimes, onEdit, onDelete, language = "en" }) {
+  const isVi = language === "vi";
+  const theme = getShiftTheme(shift.shiftStart, shift.shiftEnd, language);
   const IconComponent = theme.icon;
 
   return (
@@ -13,7 +14,7 @@ export function ScheduleShiftCard({ shift, showShiftTimes, onEdit, onDelete }) {
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className={`h-1.5 w-1.5 rounded-full ${theme.dot}`} />
           <span className="text-[11px] font-bold">
-            {formatTimeSpan(shift.shiftStart)} – {formatTimeSpan(shift.shiftEnd)}
+            {formatTimeSpan(shift.shiftStart, language)} – {formatTimeSpan(shift.shiftEnd, language)}
           </span>
         </div>
       )}
@@ -24,8 +25,8 @@ export function ScheduleShiftCard({ shift, showShiftTimes, onEdit, onDelete }) {
           {theme.label}
         </span>
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-          <Tooltip title="Edit">
+        <div className="flex items-center gap-1">
+          <Tooltip title={isVi ? "Chỉnh sửa" : "Edit"}>
             <Button
               type="text"
               size="small"
@@ -34,13 +35,13 @@ export function ScheduleShiftCard({ shift, showShiftTimes, onEdit, onDelete }) {
               style={{ color: '#2B182B', minWidth: 24, padding: 0 }}
             />
           </Tooltip>
-          <Tooltip title="Delete">
+          <Tooltip title={isVi ? "Xóa" : "Delete"}>
             <Button
               type="text"
               size="small"
               danger
               icon={<Trash2 size={12} />}
-              onClick={(e) => { e.stopPropagation(); onDelete(shift.scheduleId || shift.id); }}
+              onClick={(e) => { e.stopPropagation(); onDelete(shift); }}
               style={{ minWidth: 24, padding: 0 }}
             />
           </Tooltip>

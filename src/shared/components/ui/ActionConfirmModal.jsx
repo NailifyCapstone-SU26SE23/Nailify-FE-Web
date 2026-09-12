@@ -97,6 +97,7 @@ export function ActionConfirmModal({
   const { t, language } = useLanguage();
   const useCompactLayout = compact || intent === "danger";
   const modalWidth = useCompactLayout ? Math.min(width, 420) : width;
+  const isVi = language === "vi";
 
   if (useCompactLayout) {
     return (
@@ -134,10 +135,10 @@ export function ActionConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
           >
             {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
-            {loading ? "Processing..." : confirmText}
+            {loading ? (isVi ? "Đang xử lý..." : "Processing...") : confirmText}
           </button>
         </div>
       </Modal>
