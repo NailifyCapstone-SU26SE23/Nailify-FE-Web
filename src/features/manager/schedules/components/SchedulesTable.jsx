@@ -1,4 +1,3 @@
-import React from 'react';
 import { Table, Button, Empty } from 'antd';
 import { Plus, ShieldAlert, Users } from 'lucide-react';
 import { useLanguage } from '../../../../shared/hooks/useLanguage';
@@ -16,7 +15,7 @@ export function SchedulesTable({
   onDeleteSchedule,
   onEmergencyOff
 }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const isVi = language === "vi";
 
   const displayedWeekDays = selectedDayKey === "ALL" 
@@ -106,6 +105,7 @@ export function SchedulesTable({
                     showShiftTimes={showShiftTimes}
                     onEdit={onEditSchedule}
                     onDelete={onDeleteSchedule}
+                    language={language}
                   />
                 ))
               )}

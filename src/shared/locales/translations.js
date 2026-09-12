@@ -2180,7 +2180,7 @@ export const translations = {
         statusWaiting: "Waiting",
         statusCalled: "Checked In",
         statusInService: "In Service",
-        statusDone: "Completed",
+        statusCompleted: "Completed",
         statusLeft: "Absent / Left",
         scannerTitle: "Scan QR Code",
         scannerStarting: "Initializing camera...",
@@ -2424,7 +2424,7 @@ export const translations = {
           statusCalled: "Checked In",
           statusInService: "In Service",
           statusWaiting: "Waiting",
-          statusDone: "Done"
+          statusCompleted: "Completed"
         },
         resetLayout: "Reset Layout",
         pinWidget: "Pin to top",
@@ -2436,20 +2436,20 @@ export const translations = {
         customize: "Customize",
         statusWaiting: "Waiting",
         statusCalled: "Checked In",
-        statusDone: "Done",
+        statusCompleted: "Completed",
         today: "Today",
         appointmentsLeft: "Appointments Left",
         //this
         appointmentsLeft: "Appointments Left",
         statusCalled: "Checked In",
-        statusDone: "Done",
+        statusCompleted: "Completed",
         statusInService: "In Service",
         statusWaiting: "Waiting",
         today: "Today",
         statusCalled: "Checked In",
         statusInService: "In Service",
         statusWaiting: "Waiting",
-        statusDone: "Done"
+        statusCompleted: "Completed"
       },
       bookings: {
         title: "Salon Bookings",
@@ -2516,6 +2516,8 @@ export const translations = {
         title: "Staff Schedules & Rosters",
         desc: "Assign shifts and manage employee working times.",
         editShift: "Edit Shift",
+        deleteShift: "Delete Shift",
+        keepShift: "Keep Shift",
         emergencyOff: "Emergency Off",
         transferStaff: "Transfer Staff"
       },
@@ -4645,7 +4647,7 @@ export const translations = {
         statusWaiting: "Đang chờ",
         statusCalled: "Tại quầy",
         statusInService: "Đang làm",
-        statusDone: "Hoàn thành",
+        statusCompleted: "Hoàn thành",
         statusLeft: "Vắng mặt / Rời đi",
         scannerTitle: "Quét mã QR",
         scannerStarting: "Đang khởi động camera...",
@@ -4890,7 +4892,7 @@ export const translations = {
           statusCalled: "Called",
           statusInService: "In Service",
           statusWaiting: "Waiting",
-          statusDone: "Done"
+          statusCompleted: "Completed"
         },
         resetLayout: "Đặt lại bố cục",
         pinWidget: "Ghim lên đầu",
@@ -4902,13 +4904,12 @@ export const translations = {
         customize: "Tùy chỉnh",
         statusWaiting: "Đang chờ",
         statusCalled: "Đã check in",
-        statusDone: "Đã hoàn thành",
         today: "Hôm nay",
         appointmentsLeft: "Lịch hẹn còn lại",
         //this
         appointmentsLeft: "Lịch hẹn còn lại",
         statusCalled: "Đã check in",
-        statusDone: "Đã hoàn thành",
+        statusCompleted: "Đã hoàn thành",
         statusInService: "Đang phục vụ",
         statusWaiting: "Đang chờ",
         today: "Hôm nay"
@@ -4977,6 +4978,8 @@ export const translations = {
         title: "Lịch làm việc của nhân viên",
         desc: "Phân ca làm việc và theo dõi sơ đồ trực ca salon.",
         editShift: "Chỉnh sửa ca trực",
+        deleteShift: "Xóa ca làm việc",
+        keepShift: "Giữ ca làm việc",
         emergencyOff: "Nghỉ khẩn cấp",
         transferStaff: "Điều chuyển nhân sự"
       },

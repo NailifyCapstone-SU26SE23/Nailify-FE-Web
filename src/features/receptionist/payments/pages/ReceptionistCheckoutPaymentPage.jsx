@@ -417,7 +417,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </span>
             <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${paymentBadgeClassName}`}>
               {paymentStage === "paid"
-                ? (t("receptionist.dashboard.statusDone") || "Paid")
+                ? (t("receptionist.dashboard.statusCompleted") || "Paid")
                 : paymentStage === "processing"
                   ? (language === "vi" ? "Đang xử lý" : "Processing")
                   : paymentStage === "cancelled"
@@ -453,7 +453,7 @@ export function ReceptionistCheckoutPaymentPage() {
                       {language === "vi" ? "Thành viên Vàng" : "Gold Member"}
                     </span>
                     <span className="rounded-full bg-[#e8f8ef] px-3 py-1 text-[10px] font-bold text-[#1f9d61]">
-                      {t("receptionist.dashboard.statusDone") || "Service Completed"}
+                      {t("receptionist.dashboard.statusCompleted") || "Service Completed"}
                     </span>
                   </div>
                 </div>
@@ -469,7 +469,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.chairName || (language === "vi" ? "Chưa có ghế" : "No chair")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusCompleted") || "Completed"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{completedTime}</p>
                 </div>
 
@@ -786,8 +786,8 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-5 space-y-3 text-sm">
               {[
-                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusDone") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
-                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusDone") || "Paid") : paymentBadge, paymentBadgeClassName],
+                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusCompleted") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
+                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusCompleted") || "Paid") : paymentBadge, paymentBadgeClassName],
                 [language === "vi" ? "Hóa đơn" : "Receipt", paymentStage === "paid" ? (language === "vi" ? "Sẵn sàng" : "Ready") : (language === "vi" ? "Chưa in" : "Not Printed"), paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
                 [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName, ""],
               ].map(([label, value, className]) => (

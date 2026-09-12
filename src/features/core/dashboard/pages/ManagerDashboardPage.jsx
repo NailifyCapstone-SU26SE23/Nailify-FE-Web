@@ -300,7 +300,7 @@ export function ManagerDashboardPage() {
       icon: Wallet,
     },
     {
-      label: t("receptionist.dashboard.statusDone"),
+      label: t("receptionist.dashboard.statusCompleted"),
       value: `${completed}`,
       color: "#f59e0b",
       icon: CalendarCheck2,
