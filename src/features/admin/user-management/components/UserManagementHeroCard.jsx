@@ -53,13 +53,13 @@ export function UserManagementHeroCard({
                 <img
                   src={normalizedAvatarUrl}
                   alt={`${title} avatar`}
-                  className="h-16 w-16 rounded-3xl border border-[#f6dbe7] object-cover shadow-[0_14px_28px_rgba(94,76,62,0.08)]"
+                  className="h-16 w-16 rounded-lg border border-[#f6dbe7] object-cover shadow-[0_14px_28px_rgba(94,76,62,0.08)]"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                   onError={() => setHasImageError(true)}
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[linear-gradient(180deg,#ffd9eb_0%,#ea4f93_100%)] text-lg font-bold text-white shadow-[0_14px_28px_rgba(94,76,62,0.08)]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[linear-gradient(180deg,#ffd9eb_0%,#ea4f93_100%)] text-lg font-bold text-white shadow-[0_14px_28px_rgba(94,76,62,0.08)]">
                   {avatarFallback}
                 </div>
               )}

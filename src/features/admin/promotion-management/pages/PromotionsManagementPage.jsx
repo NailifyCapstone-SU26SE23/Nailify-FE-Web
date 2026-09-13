@@ -397,15 +397,9 @@ export function PromotionsManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        {flashMessage ? (
-          <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
 
-        {error ? (
-          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
-        ) : null}
+
+
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
@@ -468,7 +462,7 @@ export function PromotionsManagementPage() {
 
         <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("promotions.title")}</h2>
+            <h2 className="text-sm font-bold text-[#432744]">{t("promotions.title")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
               {t("userManagement.table.actions") === "Thao tác"
                 ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trong số ${metaData.totalItems} khuyến mãi`

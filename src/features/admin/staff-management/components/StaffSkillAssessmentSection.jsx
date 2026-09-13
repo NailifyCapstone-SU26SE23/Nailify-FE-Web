@@ -22,7 +22,7 @@ function SkillRatingCard({ item, onRatingChange, rating }) {
           </p>
           <p className="mt-0.5 text-[11px] font-medium text-slate-400">{item.description || item.subtitle || "Specialty skill"}</p>
         </div>
-        <span className="inline-flex rounded-full bg-pink-50 px-2.5 py-0.5 text-[10px] font-extrabold text-[#E84F93] border border-[#F3D6E5]">
+        <span className="inline-flex rounded-full bg-pink-50 px-2.5 py-0.5 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
           {normalizedRating}★ {SKILL_LEVEL_LABELS[normalizedRating] ?? "Not rated"}
         </span>
       </div>
@@ -79,7 +79,7 @@ export function StaffSkillAssessmentSection({ onRatingChange, ratings, skillType
           <Sparkles size={20} />
         </div>
         <div>
-          <h2 className="text-base font-extrabold text-slate-900 ">{language === "vi" ? "Kỹ năng và chuyên môn" : "Skills & Specialties"}</h2>
+          <h2 className="text-base font-bold text-slate-900 ">{language === "vi" ? "Kỹ năng và chuyên môn" : "Skills & Specialties"}</h2>
           <p className="text-xs text-slate-500 font-medium">
             {language === "vi" ? "Đánh giá từng kỹ năng cốt lõi để xác định chuyên môn và trình độ của nhân viên." : "Rate each core skill to map the staff member's artisan specialties and level."}
           </p>

@@ -76,7 +76,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 15, scale: 0.95 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border border-[#f1e7ed] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.16)] z-50 overflow-hidden flex flex-col max-h-[500px]"
+        className="absolute right-0 mt-3 w-80 sm:w-96 rounded-lg border border-[#f1e7ed] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.16)] z-50 overflow-hidden flex flex-col max-h-[500px]"
       >
         {/* Header */}
         <div className="border-b border-[#f7dfeb] px-5 py-4 bg-[#fff9fc] flex items-center justify-between">
@@ -157,7 +157,7 @@ export function NotificationDropdown({ isOpen, onClose }) {
 
                 <div className="flex-1 min-w-0 pl-1">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`text-xs truncate ${item.isRead ? "font-semibold text-slate-700" : "font-extrabold text-[#3f2b3f]"}`}>
+                    <p className={`text-xs truncate ${item.isRead ? "font-semibold text-slate-700" : "font-bold text-[#3f2b3f]"}`}>
                       {item.title}
                     </p>
                     <span className="text-[10px] text-slate-400 shrink-0 font-medium mt-0.5">

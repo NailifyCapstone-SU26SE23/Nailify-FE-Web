@@ -1081,7 +1081,7 @@ export function CustomerNailDetailPage() {
     <div className="flex min-h-full flex-col gap-6">
       <Card className="overflow-hidden rounded-lg">
         {/* Premium Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#fff2f7] via-[#fff9fc] to-[#FAF5F9] p-8 rounded-3xl border-b border-[#f3e3ec]/50">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#fff2f7] via-[#fff9fc] to-[#FAF5F9] p-8 rounded-lg border-b border-[#f3e3ec]/50">
           {/* Decorative background glow blobs */}
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gradient-radial from-[#ffd4e4]/30 to-transparent blur-3xl pointer-events-none" />
           <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-gradient-radial from-[#f3e8ff]/30 to-transparent blur-3xl pointer-events-none" />
@@ -1113,7 +1113,7 @@ export function CustomerNailDetailPage() {
                     status={nail?.status}
                     language={language}
                     iconSize={12}
-                    className="gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm"
+                    className="gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider shadow-sm"
                   />
                 </div>
 
@@ -1138,17 +1138,17 @@ export function CustomerNailDetailPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap justify-center sm:justify-start items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${nail?.basedOnNailVariantId !== null ? "bg-[#eef2ff] text-[#4f46e5] border border-blue-100" : "bg-[#fffbeb] text-[#d97706] border border-amber-100"}`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm ${nail?.basedOnNailVariantId !== null ? "bg-[#eef2ff] text-[#4f46e5] border border-blue-100" : "bg-[#fffbeb] text-[#d97706] border border-amber-100"}`}>
                     {nail?.basedOnNailVariantId !== null ? language === "vi" ? "Mẫu có sẵn" : "Preset template" : language === "vi" ? "Thiết kế độc đáo" : "Custom Unique Design"}
                   </span>
                   {nail?.isFavorite ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1f5] border border-pink-100 px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] uppercase tracking-wider shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1f5] border border-pink-100 px-3 py-1 text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider shadow-sm">
                       <Heart size={11} fill="currentColor" />
                       {language === "vi" ? "Yêu thích" : "Favorite"}
                     </span>
                   ) : null}
                   {nail?.isPublic ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#f9fafb] border border-gray-100 px-3 py-1 text-[10px] font-extrabold text-[#6b7280] uppercase tracking-wider shadow-sm">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#f9fafb] border border-gray-100 px-3 py-1 text-[10px] font-bold text-[#6b7280] uppercase tracking-wider shadow-sm">
                       <Eye size={11} />
                       {language === "vi" ? "Công khai" : "Public"}
                     </span>
@@ -1163,7 +1163,7 @@ export function CustomerNailDetailPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                 {/* System Price card */}
                 <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#d97706]">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#d97706]">
                     {language === "vi" ? "Giá hệ thống" : "System Price"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#d97706] truncate">
@@ -1172,7 +1172,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 {/* System Duration card */}
                 <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#7c3aed]">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#7c3aed]">
                     {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#7c3aed] truncate">
@@ -1181,7 +1181,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 {/* Additional Price card */}
                 <div className="rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#2fa25f]">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2fa25f]">
                     {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
@@ -1190,7 +1190,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 {/* Additional Duration card */}
                 <div className="rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#0369a1]">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#0369a1]">
                     {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
                   </span>
                   <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
@@ -1199,7 +1199,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 {/* Created Date card */}
                 <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-[#db2777]">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#db2777]">
                     {language === "vi" ? "Ngày tạo" : "Created"}
                   </span>
                   <span className="mt-2 text-[11px] font-bold text-[#db2777] leading-snug">
@@ -1312,7 +1312,7 @@ export function CustomerNailDetailPage() {
                 )}
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Kiểu móng" : "Nail Shape"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailShape?.name || language === "vi" ? "Kiểu móng tùy chỉnh" : "Custom Shape"}</p>
+                  <p className="mt-1 text-sm font-bold text-[#3f2240]">{nail?.nailShape?.name || language === "vi" ? "Kiểu móng tùy chỉnh" : "Custom Shape"}</p>
                 </div>
               </div>
 
@@ -1331,7 +1331,7 @@ export function CustomerNailDetailPage() {
                 )}
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Bề mặt móng" : "Nail Surface"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{nail?.nailSurface?.name}</p>
+                  <p className="mt-1 text-sm font-bold text-[#3f2240]">{nail?.nailSurface?.name}</p>
                 </div>
               </div>
 
@@ -1342,7 +1342,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-green-700">{formatVND(getSystemPrice(nail), nail?.status)}</p>
+                  <p className="mt-1 text-sm font-bold text-green-700">{formatVND(getSystemPrice(nail), nail?.status)}</p>
                 </div>
               </div>
 
@@ -1353,7 +1353,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
+                  <p className="mt-1 text-sm font-bold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
                 </div>
               </div>
 
@@ -1364,7 +1364,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7aa98a]">{language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#15803d]">{formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
+                  <p className="mt-1 text-sm font-bold text-[#15803d]">{formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
                 </div>
               </div>
 
@@ -1375,7 +1375,7 @@ export function CustomerNailDetailPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b9db8]">{language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}</p>
-                  <p className="mt-1 text-sm font-extrabold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}</p>
+                  <p className="mt-1 text-sm font-bold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}</p>
                 </div>
               </div>
             </div>
@@ -1496,7 +1496,7 @@ export function CustomerNailDetailPage() {
                         return (
                           <div
                             onClick={() => copyToClipboard(colorData.color)}
-                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-3xl border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
+                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-lg border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
                           >
                             <div className="relative flex items-center justify-center p-3 rounded-2xl bg-white/40 border border-white/60 shadow-inner w-24 h-32 shrink-0 transition-all duration-300 group-hover/card:bg-white/90">
                               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-[#ea4f93]/10" />
@@ -1506,10 +1506,10 @@ export function CustomerNailDetailPage() {
                               <span className="inline-flex rounded-full bg-[#ffe6f1] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider">
                                 {language === "vi" ? "Màu sắc" : "Solid Color"}
                               </span>
-                              <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-2">
+                              <h4 className="mt-2.5 text-base font-bold text-[#3f2240] flex items-center gap-2">
                                 <span className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-full border border-[#f5cee1] shadow-sm">
                                   <span className="h-3 w-3 rounded-full border border-white shadow-sm inline-block shrink-0" style={{ backgroundColor: colorData.color }} />
-                                  <span className="font-mono text-sm font-extrabold text-[#5c3b5d]">{colorData.color}</span>
+                                  <span className="font-mono text-sm font-bold text-[#5c3b5d]">{colorData.color}</span>
                                 </span>
                                 <span className="text-[10px] font-medium text-[#c08aa4] opacity-0 group-hover/card:opacity-100 transition-opacity">{language === "vi" ? "Bấm để sao chép" : "(Click to copy)"}</span>
                               </h4>
@@ -1537,7 +1537,7 @@ export function CustomerNailDetailPage() {
                         return (
                           <div
                             onClick={() => copyToClipboard(stopsLabel)}
-                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-3xl border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
+                            className="group/card flex flex-col gap-5 sm:flex-row sm:items-center cursor-pointer rounded-lg border border-[#f5cee1]/60 bg-white/50 p-5 transition-all duration-300 hover:bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_28px_rgba(236,72,153,0.06)]"
                           >
                             <div className="relative flex items-center justify-center p-3 rounded-2xl bg-white/40 border border-white/60 shadow-inner w-24 h-32 shrink-0 transition-all duration-300 group-hover/card:bg-white/90">
                               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-[#ea4f93]/10" />
@@ -1547,12 +1547,12 @@ export function CustomerNailDetailPage() {
                               <span className="inline-flex rounded-full bg-[#eef2ff] px-2.5 py-1 text-[10px] font-bold text-[#4f46e5] uppercase tracking-wider">
                                 {language === "vi" ? "Màu chuyển sắc" : "Linear Gradient"}
                               </span>
-                              <h4 className="mt-2.5 text-base font-extrabold text-[#3f2240] flex items-center gap-3 flex-wrap">
+                              <h4 className="mt-2.5 text-base font-bold text-[#3f2240] flex items-center gap-3 flex-wrap">
                                 {gradientStops.map((stop, sidx) => (
                                   <span key={sidx} className="flex items-center gap-2">
                                     <span className="flex items-center gap-1.5 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm">
                                       <span className="h-3 w-3 rounded-full border border-white shadow-sm inline-block shrink-0" style={{ backgroundColor: stop }} />
-                                      <span className="font-mono text-sm font-extrabold text-[#5c3b5d]">{stop}</span>
+                                      <span className="font-mono text-sm font-bold text-[#5c3b5d]">{stop}</span>
                                     </span>
                                     {sidx < gradientStops.length - 1 && <span className="text-xs text-[#a5b4fc] font-bold">→</span>}
                                   </span>
@@ -1614,7 +1614,7 @@ export function CustomerNailDetailPage() {
                                         : `linear-gradient(180deg, ${primaryColor}0d 0%, ${primaryColor}04 100%)`,
                                       borderColor: `${primaryColor}38`,
                                     }}
-                                    className="group/card relative flex flex-col items-center gap-4 rounded-3xl border p-5 shadow-[0_8px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_36px_rgba(0,0,0,0.06)] cursor-pointer"
+                                    className="group/card relative flex flex-col items-center gap-4 rounded-lg border p-5 shadow-[0_8px_20px_rgba(0,0,0,0.01)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_36px_rgba(0,0,0,0.06)] cursor-pointer"
                                     onMouseEnter={(e) => {
                                       e.currentTarget.style.borderColor = primaryColor;
                                       e.currentTarget.style.backgroundColor = '#ffffff';
@@ -1639,19 +1639,19 @@ export function CustomerNailDetailPage() {
                                         <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">
                                           <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm shrink-0">
                                             <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: primaryColor }} />
-                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{primaryColor}</span>
+                                            <span className="text-[9px] font-bold text-[#5c3b5d] font-mono">{primaryColor}</span>
                                           </span>
                                           <span className="text-[9px] text-[#c08aa4] font-bold">→</span>
                                           <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-full border border-[#f5cee1] shadow-sm shrink-0">
                                             <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: secondaryColor }} />
-                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{secondaryColor}</span>
+                                            <span className="text-[9px] font-bold text-[#5c3b5d] font-mono">{secondaryColor}</span>
                                           </span>
                                         </div>
                                       ) : (
                                         <div className="mt-2.5 flex items-center justify-center">
                                           <span className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-full border border-[#f5cee1] shadow-sm">
                                             <span className="h-2 w-2 rounded-full border border-white shadow-sm shrink-0" style={{ backgroundColor: primaryColor }} />
-                                            <span className="text-[9px] font-extrabold text-[#5c3b5d] font-mono">{primaryColor}</span>
+                                            <span className="text-[9px] font-bold text-[#5c3b5d] font-mono">{primaryColor}</span>
                                           </span>
                                         </div>
                                       )}
@@ -1730,7 +1730,7 @@ export function CustomerNailDetailPage() {
                         {getStaffInitials(nail.assignedStaff)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg font-extrabold text-[#246c48]">
+                        <p className="text-lg font-bold text-[#246c48]">
                           {assignedStaffName}
                         </p>
                         <p className="text-sm text-[#3b8d5f]">
@@ -1747,7 +1747,7 @@ export function CustomerNailDetailPage() {
                   {/* Right: Real Skill Matrix */}
                   <div className="rounded-[24px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-3">
                     <div className="flex items-center justify-between border-b border-[#fde7f3] pb-2">
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1.5">
                         <Sparkles size={13} className="text-[#ea4f93]" />
                         {language === "vi" ? "Kỹ năng & Năng lực của nghệ sĩ" : "Artist Skills & Capabilities"}
                       </span>
@@ -1819,7 +1819,7 @@ export function CustomerNailDetailPage() {
               <XCircle size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#402542]">{language === "vi" ? "Từ chối yêu cầu làm nail của khách hàng" : "Reject Customer Nail"}</h3>
+              <h3 className="text-xl font-bold text-[#402542]">{language === "vi" ? "Từ chối yêu cầu làm nail của khách hàng" : "Reject Customer Nail"}</h3>
               <p className="mt-1 text-sm text-[#b35f82]">
                 {language === "vi" ? "Đưa ra lý do rõ ràng để lần sửa tiếp theo dễ xử lý hơn." : "Give the customer a clear reason so the next revision is easier to handle."}
               </p>
@@ -1874,7 +1874,7 @@ export function CustomerNailDetailPage() {
               <CheckCircle2 size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#31543f]">{language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}</h3>
+              <h3 className="text-xl font-bold text-[#31543f]">{language === "vi" ? "Xác nhận báo giá" : "Confirm Quote"}</h3>
               <p className="mt-1 text-sm text-[#5d8b70]">
                 {language === "vi" ? "Nhập chi tiết báo giá cuối cùng đã được phê duyệt cho thiết kế tùy chỉnh này." : "Enter the final approved quote details for this custom design."}
               </p>
@@ -1887,13 +1887,13 @@ export function CustomerNailDetailPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#d97706]">
                 {language === "vi" ? "Giá hệ thống" : "System Price"}
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#d97706]">{formatVND(getSystemPrice(nail), nail?.status)}</p>
+              <p className="mt-1 text-sm font-bold text-[#d97706]">{formatVND(getSystemPrice(nail), nail?.status)}</p>
             </div>
             <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#7c3aed]">
                 {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
               </p>
-              <p className="mt-1 text-sm font-extrabold text-[#7c3aed]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
+              <p className="mt-1 text-sm font-bold text-[#7c3aed]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
             </div>
           </div>
           <div className="rounded-2xl border border-[#d8efdf] bg-[#f8fffa] p-4">
@@ -1945,7 +1945,7 @@ export function CustomerNailDetailPage() {
               <AlertTriangle size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#5a3821]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff First"}</h3>
+              <h3 className="text-xl font-bold text-[#5a3821]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff First"}</h3>
               <p className="mt-1 text-sm text-[#9a6a40]">
                 {language === "vi" ? "Bạn cần giao nhiệm vụ cho nghệ sĩ trước khi phê duyệt yêu cầu làm nail của khách hàng." : "You need to assign a staff artist before approving this customer nail request."}
               </p>
@@ -2012,7 +2012,7 @@ export function CustomerNailDetailPage() {
               <UserRound size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-extrabold text-[#402542]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff Artist"}</h3>
+              <h3 className="text-xl font-bold text-[#402542]">{language === "vi" ? "Giao nhiệm vụ cho nghệ sĩ" : "Assign Staff Artist"}</h3>
               <p className="mt-1 text-sm text-[#b06484]">
                 {language === "vi" ? "Chọn nghệ sĩ phù hợp nhất để chịu trách nhiệm cho yêu cầu này." : "Choose the best staff artist to take ownership of this request."}
               </p>
@@ -2058,7 +2058,7 @@ export function CustomerNailDetailPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-extrabold text-[#3f2240]">
+                            <p className="text-sm font-bold text-[#3f2240]">
                               {getStaffDisplayName(staff)}
                             </p>
                             {staff.role ? (
@@ -2074,7 +2074,7 @@ export function CustomerNailDetailPage() {
                               {staff.skills.map((sk) => (
                                 <span
                                   key={sk.nailArtistSkillId || sk.skillTypeName}
-                                  className="inline-flex items-center gap-0.5 rounded-full bg-[#fdf2f8] border border-[#fbe5ee] px-2 py-0.5 text-[9px] font-extrabold text-[#db2777] shadow-[0_2px_6px_rgba(219,39,119,0.02)]"
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-[#fdf2f8] border border-[#fbe5ee] px-2 py-0.5 text-[9px] font-bold text-[#db2777] shadow-[0_2px_6px_rgba(219,39,119,0.02)]"
                                 >
                                   {sk.skillTypeName}: {sk.level}★
                                 </span>

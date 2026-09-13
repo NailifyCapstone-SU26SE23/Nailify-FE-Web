@@ -64,7 +64,7 @@ const MonthCard = ({ monthIndex, year, onClick, selected, hasSelectedDays }) => 
         {MONTH_NAMES[monthIndex]}
       </span>
       {hasSelectedDays && (
-        <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#c9799f]">
+        <span className="text-[9px] font-bold uppercase tracking-wider text-[#c9799f]">
           Days selected
         </span>
       )}
@@ -98,7 +98,7 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="flex items-center gap-1 text-xs font-extrabold text-[#c95b90] hover:text-[#ea4f93]"
+          className="flex items-center gap-1 text-xs font-bold text-[#c95b90] hover:text-[#ea4f93]"
         >
           <ChevronLeft size={16} />
           Back to Year
@@ -111,7 +111,7 @@ const MonthView = ({ monthIndex, year, onBack, onSelectDay, selectedDays = [] })
 
       <div className="grid grid-cols-7 gap-2">
         {WEEK_DAYS.map((day, i) => (
-          <div key={i} className="text-center text-[10px] font-extrabold uppercase text-[#c9799f]">
+          <div key={i} className="text-center text-[10px] font-bold uppercase text-[#c9799f]">
             {day}
           </div>
         ))}
@@ -567,7 +567,7 @@ export default function HolidayClosureModal({
                 <Calendar size={20} />
               </div>
               <div>
-                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
+                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] bg-white/20 text-white">
                   Schedule
                 </span>
                 <h3 className=" mt-3 text-2xl font-semibold">Holiday Closure</h3>
@@ -610,7 +610,7 @@ export default function HolidayClosureModal({
                         <Pencil size={14} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#c9799f]">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#c9799f]">
                           Editing closure
                         </p>
                         <p className="text-xs font-bold text-[#3f2034] truncate">
@@ -623,7 +623,7 @@ export default function HolidayClosureModal({
                     <button
                       type="button"
                       onClick={handleCancelEdit}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#ea4f93]/30 bg-white px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#c95b90] transition hover:bg-[#fff5f8]"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#ea4f93]/30 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#c95b90] transition hover:bg-[#fff5f8]"
                     >
                       <PenOff size={11} />
                       Stop editing
@@ -686,13 +686,13 @@ export default function HolidayClosureModal({
                     {selectedDays.length > 0 && (
                       <div className="rounded-2xl border border-[#f5cbdc] bg-white p-3.5">
                         <div className="mb-2 flex items-center justify-between">
-                          <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#a6869a]">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#a6869a]">
                             Selected days — tap to remove
                           </p>
                           <button
                             type="button"
                             onClick={handleClearSelectedDays}
-                            className="text-[10px] font-extrabold uppercase tracking-wider text-[#c9799f] hover:text-[#ea4f93]"
+                            className="text-[10px] font-bold uppercase tracking-wider text-[#c9799f] hover:text-[#ea4f93]"
                           >
                             Clear
                           </button>
@@ -731,13 +731,13 @@ export default function HolidayClosureModal({
               <div className="rounded-[22px] border border-[#f5cbdc] bg-white p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <h4 className=" text-lg font-semibold text-[#3f2034] flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0f6] text-[11px] font-extrabold text-[#ea4f93]">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0f6] text-[11px] font-bold text-[#ea4f93]">
                       L
                     </span>
                     Scheduled Closures Ledger
                   </h4>
                   {offDatesList.length > 0 && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#a6869a]">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#a6869a]">
                       {offDatesList.length} {offDatesList.length === 1 ? "entry" : "entries"}
                     </span>
                   )}
@@ -780,7 +780,7 @@ export default function HolidayClosureModal({
                                   {formatDateRange(offDate.startDate, offDate.endDate)}
                                 </p>
                                 <span
-                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${meta.badge}`}
+                                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${meta.badge}`}
                                 >
                                   <StatusIcon size={10} />
                                   {meta.label}
@@ -801,7 +801,7 @@ export default function HolidayClosureModal({
                                 type="button"
                                 disabled={isDeleting}
                                 onClick={() => handleEditOffDate(offDate)}
-                                className={`inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border text-[10px] font-extrabold transition-colors disabled:opacity-50 ${isEditingThis
+                                className={`inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border text-[10px] font-bold transition-colors disabled:opacity-50 ${isEditingThis
                                   ? "border-[#ea4f93] bg-[#ea4f93] text-white hover:bg-[#e0428a]"
                                   : "border-[#f5cbdc] bg-white text-[#b95d88] hover:bg-[#fff5f8]"
                                   }`}
@@ -813,7 +813,7 @@ export default function HolidayClosureModal({
                                 type="button"
                                 disabled={isDeleting}
                                 onClick={() => handleDeleteOffDate(offDate)}
-                                className="inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border border-[#ffe0e6] bg-white text-[10px] font-extrabold text-[#d14c84] hover:bg-[#fff0f3] active:scale-[0.98] transition-colors disabled:opacity-50"
+                                className="inline-flex h-6 px-2.5 items-center justify-center gap-1 rounded-full border border-[#ffe0e6] bg-white text-[10px] font-bold text-[#d14c84] hover:bg-[#fff0f3] active:scale-[0.98] transition-colors disabled:opacity-50"
                               >
                                 {isDeleting ? "Removing..." : "Remove"}
                               </button>
@@ -838,7 +838,7 @@ export default function HolidayClosureModal({
             type="button"
             disabled={isSubmitting}
             onClick={editingClosureId ? handleCancelEdit : onCancel}
-            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
           >
             {editingClosureId ? "Cancel Edit" : "Cancel"}
           </button>
@@ -846,7 +846,7 @@ export default function HolidayClosureModal({
             type="button"
             disabled={isSubmitting}
             onClick={handleScheduleClosure}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(235,90,153,0.2)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(235,90,153,0.2)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
@@ -883,7 +883,7 @@ export default function HolidayClosureModal({
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.92, y: 12, opacity: 0 }}
               transition={{ type: "spring", stiffness: 320, damping: 26 }}
-              className="w-full max-w-sm overflow-hidden rounded-[2rem] border border-[#fcecf4] bg-white shadow-2xl"
+              className="w-full max-w-sm overflow-hidden rounded-lg border border-[#fcecf4] bg-white shadow-2xl"
             >
               {/* Soft rose header strip, echoing the modal's main gradient
                   header without competing with it */}
@@ -954,7 +954,7 @@ export default function HolidayClosureModal({
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-sm overflow-hidden rounded-[2rem] border border-[#fcecf4] bg-white p-6 shadow-2xl text-center"
+              className="w-full max-w-sm overflow-hidden rounded-lg border border-[#fcecf4] bg-white p-6 shadow-2xl text-center"
             >
               {notificationModal.type === "success" ? (
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8fdf2] text-[#16975f] shadow-inner">

@@ -63,7 +63,7 @@ function MetricCard({ item }) {
       <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
         {item.label}
       </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
+      <p className="mt-1 text-[1.9rem] font-bold leading-none text-[#3f2741]">
         {item.value}
       </p>
       <p className="mt-2 text-xs font-medium text-[#cf96b0]">{item.note}</p>
@@ -541,7 +541,7 @@ export function StaffBookingListPage() {
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
       render: (_, booking) => (
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
             {booking.avatar}
           </div>
           <div className="min-w-0">
@@ -666,7 +666,7 @@ export function StaffBookingListPage() {
             <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-extrabold text-[#462a45]">
+                  <p className="text-sm font-bold text-[#462a45]">
                     {isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings")}
                   </p>
                   <p className="mt-1 text-[11px] text-[#d197b0]">
@@ -713,7 +713,7 @@ export function StaffBookingListPage() {
 
               <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
                 <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-                  <p className="text-sm font-extrabold text-[#462a45]">
+                  <p className="text-sm font-bold text-[#462a45]">
                     {isSalonScopeForStaff ? (language === "vi" ? "Lịch Hẹn Toàn Tiệm" : "Salon Bookings") : (language === "vi" ? "Lịch Hẹn Của Tôi" : "My Bookings")}
                   </p>
                 </div>
@@ -753,7 +753,7 @@ export function StaffBookingListPage() {
                           className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
                               {booking.avatar}
                             </div>
                             <div className="min-w-0 flex-1">

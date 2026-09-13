@@ -295,7 +295,7 @@ export function CreateQuiz() {
                 {/* FORM */}
                 <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
                     {/* Section 1 */}
-                    <section className="rounded-[2rem] border border-white/60 bg-white/60 p-7 shadow-[0_16px_40px_-16px_rgba(224,188,206,0.35)] backdrop-blur-md space-y-6 transition-all duration-300 hover:shadow-[0_24px_48px_-12px_rgba(234,79,147,0.2)] hover:bg-white/80">
+                    <section className="rounded-lg border border-white/60 bg-white/60 p-7 shadow-[0_16px_40px_-16px_rgba(224,188,206,0.35)] backdrop-blur-md space-y-6 transition-all duration-300 hover:shadow-[0_24px_48px_-12px_rgba(234,79,147,0.2)] hover:bg-white/80">
                         <header className="flex items-center justify-between border-b border-[#fcecf4] pb-4">
                             <div className="flex items-center gap-3">
                                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#fff0f6] text-xs font-bold text-[#ea4f93] shadow-[0_4px_10px_rgba(234,79,147,0.15)]">
@@ -457,7 +457,7 @@ export function CreateQuiz() {
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: "auto" }}
                                             exit={{ opacity: 0, height: 0 }}
-                                            className="overflow-hidden rounded-3xl border border-[#f0dde8] bg-[#fffbfc]"
+                                            className="overflow-hidden rounded-lg border border-[#f0dde8] bg-[#fffbfc]"
                                         >
                                             <div className="flex items-start gap-3 p-4">
                                                 <GripVertical size={14} className="mt-2 shrink-0 text-[#d8c1cf]" />
@@ -609,7 +609,7 @@ export function CreateQuiz() {
 
                     <div className="relative mx-auto w-full max-w-[300px] rounded-[2.75rem] border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
                         <div className="absolute left-1/2 top-2.5 z-10 h-3.5 w-24 -translate-x-1/2 rounded-full bg-[#321c29]" />
-                        <div className="flex min-h-[480px] flex-col justify-between rounded-[2.25rem] bg-white p-5 pt-8">
+                        <div className="flex min-h-[480px] flex-col justify-between rounded-lg bg-white p-5 pt-8">
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">

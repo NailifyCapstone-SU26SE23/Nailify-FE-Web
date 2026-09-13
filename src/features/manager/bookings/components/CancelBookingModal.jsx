@@ -101,7 +101,7 @@ export function CancelBookingModal({
         <div className="flex gap-3 rounded-2xl border border-[#ffecca] bg-[#fffbf4] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.03)]">
           <AlertCircle size={18} className="shrink-0 text-[#db8520] mt-0.5" />
           <div>
-            <p className="text-xs font-extrabold text-[#7c4d16]">{isVi ? "Thông báo quan trọng" : "Important Notice"}</p>
+            <p className="text-xs font-bold text-[#7c4d16]">{isVi ? "Thông báo quan trọng" : "Important Notice"}</p>
             <p className="mt-1 text-xs text-[#a3723b] leading-relaxed font-medium">
               {isVi ? "Hủy lịch hẹn sẽ gửi thông báo tự động đến khách hàng và có thể ảnh hưởng đến trải nghiệm dịch vụ của họ." : "Cancelling an appointment will trigger an automated notification to the customer and may impact their service experience."}
             </p>
@@ -122,7 +122,7 @@ export function CancelBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Khách hàng" : "Customer"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
               )}
@@ -133,7 +133,7 @@ export function CancelBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Thời gian" : "Time Slot"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
@@ -183,13 +183,13 @@ export function CancelBookingModal({
             }}
           />
           <div className="flex justify-end">
-            <span className="text-[9px] font-extrabold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">{details.length}/300</span>
+            <span className="text-[9px] font-bold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">{details.length}/300</span>
           </div>
         </div>
 
         {/* Info Box */}
         <div className="space-y-2 rounded-2xl border border-[#ffdcb5]/60 bg-[#fffdfb] p-4 shadow-[0_2px_8px_rgba(219,133,32,0.02)]">
-          <p className="text-xs font-extrabold text-[#7c4d16]">{isVi ? "Sau khi hủy:" : "After cancellation:"}</p>
+          <p className="text-xs font-bold text-[#7c4d16]">{isVi ? "Sau khi hủy:" : "After cancellation:"}</p>
           <ul className="space-y-1 text-xs text-[#a3723b] font-medium leading-relaxed">
             <li>{isVi ? "Khách hàng sẽ nhận được thông báo hủy lịch hẹn" : "Customer will receive a cancellation update notification"}</li>
             <li>{isVi ? "Trạng thái lịch hẹn sẽ được đặt là Hủy vĩnh viễn" : "Booking status will be set to Cancelled permanently"}</li>
@@ -205,7 +205,7 @@ export function CancelBookingModal({
           className="text-xs"
         >
           <span className="text-[#7a6176] font-medium">
-            {isVi ? "Tôi đã đọc, hiểu và đồng ý hủy lịch hẹn này" : "I have read, understood, and agree to cancel this booking"} <span className="font-extrabold text-[#db8520]"></span>
+            {isVi ? "Tôi đã đọc, hiểu và đồng ý hủy lịch hẹn này" : "I have read, understood, and agree to cancel this booking"} <span className="font-bold text-[#db8520]"></span>
           </span>
         </Checkbox>
 

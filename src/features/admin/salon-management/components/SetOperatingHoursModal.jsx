@@ -266,7 +266,7 @@ export default function SetOperatingHoursModal({
                 <Clock3 size={20} />
               </div>
               <div>
-                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/18 text-white">
+                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] bg-white/18 text-white">
                   Hours
                 </span>
                 <h3 className="mt-3 text-lg font-bold">Set Operating Hours</h3>
@@ -360,7 +360,7 @@ export default function SetOperatingHoursModal({
                             </div>
                             <div className="flex-1">
                               <h5
-                                className={`text-[13px] font-extrabold ${selectedSalonId
+                                className={`text-[13px] font-bold ${selectedSalonId
                                   ? "text-[#2d1b35]"
                                   : "text-slate-400"
                                   }`}
@@ -408,7 +408,7 @@ export default function SetOperatingHoursModal({
                             const Icon = TIME_SLOTS[activePeriod].icon;
                             return <Icon size={18} className="text-[#ea4f93]" />;
                           })()}
-                          <h4 className="text-[14px] font-extrabold text-[#2d1b35]">
+                          <h4 className="text-[14px] font-bold text-[#2d1b35]">
                             {TIME_SLOTS[activePeriod].label} Slots
                           </h4>
                         </div>
@@ -445,7 +445,7 @@ export default function SetOperatingHoursModal({
             type="button"
             disabled={isSubmitting || isLoadingHours}
             onClick={onCancel}
-            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
           >
             Cancel
           </button>
@@ -453,7 +453,7 @@ export default function SetOperatingHoursModal({
             type="button"
             disabled={isSubmitting || isLoadingHours || !selectedSalonId}
             onClick={handleUpdateHours}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#ec4899_0%,#db2777_100%)] px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(219,39,119,0.18)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#ec4899_0%,#db2777_100%)] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(219,39,119,0.18)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <Spin size="small" className="mr-1" />
@@ -477,7 +477,7 @@ export default function SetOperatingHoursModal({
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="w-full max-w-sm overflow-hidden rounded-[2rem] border border-[#fcecf4] bg-white p-6 shadow-2xl text-center"
+                className="w-full max-w-sm overflow-hidden rounded-lg border border-[#fcecf4] bg-white p-6 shadow-2xl text-center"
               >
                 {notificationModal.type === "success" ? (
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#e8fdf2] text-[#16975f] shadow-inner">

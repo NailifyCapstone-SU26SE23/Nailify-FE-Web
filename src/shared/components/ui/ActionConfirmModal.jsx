@@ -127,7 +127,7 @@ export function ActionConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
+            className={`inline-flex items-center justify-center rounded-full border px-4 py-2 font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
           >
             {cancelText}
           </button>
@@ -135,7 +135,7 @@ export function ActionConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 font-bold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
           >
             {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
             {loading ? (isVi ? "Đang xử lý..." : "Processing...") : confirmText}
@@ -165,7 +165,7 @@ export function ActionConfirmModal({
                 <HeaderIcon size={20} />
               </div>
               <div>
-                <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
+                <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
                   {language === "vi" ? "Xác nhận hành động" : "Confirm Action"}
                 </span>
                 <h3 className="mt-3 text-lg font-bold">{title}</h3>
@@ -223,7 +223,7 @@ export function ActionConfirmModal({
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-extrabold text-slate-800">{item.title}</p>
+                  <p className="truncate text-[13px] font-bold text-slate-800">{item.title}</p>
                   {item.meta ? <p className="mt-1 text-[11px] text-slate-500">{item.meta}</p> : null}
                   {item.note ? <p className="mt-1 text-[11px] text-slate-400">{item.note}</p> : null}
                 </div>
@@ -248,7 +248,7 @@ export function ActionConfirmModal({
             <div className={`rounded-[22px] border p-4 ${palette.warningClassName}`}>
               <div className="mb-3 flex items-center gap-2">
                 <AlertTriangle size={15} />
-                <p className="text-[12px] font-extrabold uppercase tracking-[0.08em]">
+                <p className="text-[12px] font-bold uppercase tracking-[0.08em]">
                   {language === "vi" ? "Xin lưu ý" : "Please Note"}
                 </p>
               </div>
@@ -269,7 +269,7 @@ export function ActionConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
+            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
           >
             {cancelText}
           </button>
@@ -277,7 +277,7 @@ export function ActionConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
           >
             {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
             {loading ? "Processing..." : confirmText}

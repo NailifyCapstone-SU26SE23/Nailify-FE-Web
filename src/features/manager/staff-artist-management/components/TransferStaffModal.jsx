@@ -205,7 +205,7 @@ export function TransferStaffModal({
             <UserRound size={24} />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Chuyển nhân viên" : "Transfer Staff"}</h3>
+            <h3 className="text-2xl font-bold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Chuyển nhân viên" : "Transfer Staff"}</h3>
             <p className="mt-2 text-sm text-[#9a5f7f]">
               {language === "vi" ? "Chọn nhân viên và salon đích để chuyển." : "Select a staff member and target salon to transfer."}
             </p>
@@ -270,13 +270,13 @@ export function TransferStaffModal({
                                   initials: getStaffInitials(staff),
                                 }}
                                 className="h-14 w-14 shrink-0 rounded-2xl object-cover"
-                                fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
+                                fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-bold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)]"
                               />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
+                                  <p className="text-base font-bold text-[#3d1f3f] truncate">{name}</p>
                                   {staff?.role ? (
-                                    <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
+                                    <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-bold text-[#e1447f]">
                                       {staff.role}
                                     </span>
                                   ) : null}
@@ -332,12 +332,12 @@ export function TransferStaffModal({
                         initials: getStaffInitials(selectedStaff),
                       }}
                       className="h-14 w-14 shrink-0 rounded-2xl object-cover"
-                      fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(234,79,147,0.2)]"
+                      fallbackClassName="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-base font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.2)]"
                     />
                     <div>
-                      <p className="text-base font-extrabold text-[#3d1f3f]">{selectedStaffName}</p>
+                      <p className="text-base font-bold text-[#3d1f3f]">{selectedStaffName}</p>
                       {selectedStaff?.role ? (
-                        <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-extrabold text-[#e1447f]">
+                        <span className="inline-flex items-center rounded-full bg-[#fde7f3] px-3 py-1 text-[10px] font-bold text-[#e1447f]">
                           {selectedStaff.role}
                         </span>
                       ) : null}
@@ -352,7 +352,7 @@ export function TransferStaffModal({
                       setTargetSalonId(null);
                       setCurrentPage(1);
                     }}
-                    className="px-4 py-2 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
+                    className="px-4 py-2 text-xs font-bold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
                   >
                     ← {language === "vi" ? "Thay đổi nhân viên" : "Change staff"}
                   </motion.button>
@@ -369,7 +369,7 @@ export function TransferStaffModal({
 
                 <div className="space-y-6">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-widest text-[#ea4f93] mb-4 flex items-center gap-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#ea4f93] mb-4 flex items-center gap-2">
                       <MapPin size={16} />
                       {language === "vi" ? "Chọn Salon đích" : "Select Target Salon"}
                     </p>
@@ -393,7 +393,7 @@ export function TransferStaffModal({
                                 : "border-[#f0cfe1] bg-white hover:border-[#ea4f93] hover:shadow-[0_8px_20px_rgba(234,79,147,0.1)]"
                                 }`}
                             >
-                              <p className="text-sm font-extrabold text-[#3d1f3f]">{salon.name}</p>
+                              <p className="text-sm font-bold text-[#3d1f3f]">{salon.name}</p>
                               <p className="text-xs text-[#7f6478] mt-1">{salon.address}</p>
                               {salon.phone && (
                                 <p className="text-xs text-[#7f6478] mt-1 flex items-center gap-1">

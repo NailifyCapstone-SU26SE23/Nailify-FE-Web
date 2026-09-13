@@ -81,49 +81,49 @@ export function AssignArtistModal({
       try {
         setIsLoadingStaff(true);
         setSelectedStaff(null);
-        
+
         const data = await fetchAvailableArtistsForBooking(normalizedBookingId);
         if (isCancelled) return;
-        
+
         let fetchedStaffList = Array.isArray(data) ? data : [];
         const queryDate = bookingDate ? dayjs(bookingDate).format("YYYY-MM-DD") : null;
         const duration = booking?.totalDuration || 60;
-        
-        if (queryDate && startTime) {
-           const bookingStart = dayjs(`${queryDate}T${startTime}`);
-           const bookingEnd = bookingStart.add(duration, 'minute');
 
-           fetchedStaffList = await Promise.all(fetchedStaffList.map(async (staff) => {
-             try {
-               const staffKey = getStaffKey(staff);
-               if (!staffKey) return { ...staff, isBusy: false };
-               
-               const slotsData = await fetchArtistBusySlots(staffKey, queryDate);
-               const timeSlots = slotsData?.timeSlots || [];
-               
-               const isBusy = timeSlots.some(slot => {
-                 const slotStart = dayjs(`${queryDate}T${slot.startTime}`);
-                 const slotEnd = dayjs(`${queryDate}T${slot.endTime}`);
-                 if (slotStart.isBefore(bookingEnd) && bookingStart.isBefore(slotEnd)) {
-                   return slot.isAvailable === false;
-                 }
-                 return false;
-               });
-               
-               return { ...staff, isBusy };
-             } catch (err) {
-               console.warn("Could not fetch availability for staff", getStaffKey(staff), err);
-               // If error is because they are off today
-               if (err.message && err.message.includes("không có lịch làm việc")) {
-                 return { ...staff, isBusy: true };
-               }
-             }
-             return { ...staff, isBusy: false };
-           }));
+        if (queryDate && startTime) {
+          const bookingStart = dayjs(`${queryDate}T${startTime}`);
+          const bookingEnd = bookingStart.add(duration, 'minute');
+
+          fetchedStaffList = await Promise.all(fetchedStaffList.map(async (staff) => {
+            try {
+              const staffKey = getStaffKey(staff);
+              if (!staffKey) return { ...staff, isBusy: false };
+
+              const slotsData = await fetchArtistBusySlots(staffKey, queryDate);
+              const timeSlots = slotsData?.timeSlots || [];
+
+              const isBusy = timeSlots.some(slot => {
+                const slotStart = dayjs(`${queryDate}T${slot.startTime}`);
+                const slotEnd = dayjs(`${queryDate}T${slot.endTime}`);
+                if (slotStart.isBefore(bookingEnd) && bookingStart.isBefore(slotEnd)) {
+                  return slot.isAvailable === false;
+                }
+                return false;
+              });
+
+              return { ...staff, isBusy };
+            } catch (err) {
+              console.warn("Could not fetch availability for staff", getStaffKey(staff), err);
+              // If error is because they are off today
+              if (err.message && err.message.includes("không có lịch làm việc")) {
+                return { ...staff, isBusy: true };
+              }
+            }
+            return { ...staff, isBusy: false };
+          }));
         }
-        
+
         if (isCancelled) return;
-        
+
         setStaffList(fetchedStaffList);
       } catch (err) {
         console.error("Failed to load staff artists:", err);
@@ -239,7 +239,7 @@ export function AssignArtistModal({
             <UserRound size={24} />
           </motion.div>
           <div>
-            <h3 className="text-2xl font-extrabold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Phân công thợ làm móng" : "Assign Staff Artist"}</h3>
+            <h3 className="text-2xl font-bold text-[#3d1f3f] tracking-tight">{language === "vi" ? "Phân công thợ làm móng" : "Assign Staff Artist"}</h3>
             <p className="mt-2 text-sm text-[#9a5f7f]">
               {language === "vi" ? "Chọn thợ làm móng để phân công cho lịch hẹn này." : "Select an artist to assign to this booking."}
             </p>
@@ -290,18 +290,17 @@ export function AssignArtistModal({
                         setSelectedStaff(staff);
                       }
                     }}
-                    className={`cursor-pointer rounded-[28px] border p-5 transition-all duration-300 ${
-                      staff.isBusy
+                    className={`cursor-pointer rounded-[28px] border p-5 transition-all duration-300 ${staff.isBusy
                         ? "opacity-60 grayscale-[30%] cursor-not-allowed border-[#f5e6eb] bg-[#fcf9fa]"
                         : isSelected
-                        ? "border-[#ea4f93] bg-gradient-to-br from-white to-[#fff0f8] shadow-[0_15px_35px_rgba(234,79,147,0.15)]"
-                        : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
-                    }`}
+                          ? "border-[#ea4f93] bg-gradient-to-br from-white to-[#fff0f8] shadow-[0_15px_35px_rgba(234,79,147,0.15)]"
+                          : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
+                      }`}
                   >
                     <div className="flex items-start gap-4">
                       <motion.div
                         whileHover={{ scale: 1.08 }}
-                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-extrabold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)] overflow-hidden"
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6] text-base font-bold text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)] overflow-hidden"
                       >
                         {staff?.avatarUrl ? (
                           <img
@@ -316,7 +315,7 @@ export function AssignArtistModal({
                       </motion.div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-base font-extrabold text-[#3d1f3f] truncate">{name}</p>
+                          <p className="text-base font-bold text-[#3d1f3f] truncate">{name}</p>
                           <div className="flex items-center gap-2 shrink-0">
                             {staff.isBusy && (
                               <span className="rounded-full bg-[#FEF2F2] border border-[#FECACA] px-2.5 py-0.5 text-[10px] font-bold text-[#DC2626]">

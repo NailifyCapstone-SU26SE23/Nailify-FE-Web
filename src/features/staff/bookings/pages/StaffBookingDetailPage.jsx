@@ -978,7 +978,7 @@ export function StaffBookingDetailPage() {
   if (staffLoadError || !staffBookingDetail) {
     return (
       <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-extrabold text-[#412643]">{isVi ? "Lịch hẹn không khả dụng" : "Booking detail unavailable"}</p>
+        <p className="text-lg font-bold text-[#412643]">{isVi ? "Lịch hẹn không khả dụng" : "Booking detail unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{staffLoadError || (isVi ? "Không thể lấy dữ liệu lịch hẹn." : "This booking could not be loaded.")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button

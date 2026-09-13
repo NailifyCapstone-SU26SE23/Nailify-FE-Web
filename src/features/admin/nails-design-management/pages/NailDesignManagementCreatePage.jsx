@@ -15,7 +15,7 @@ function SectionCard({ title, subtitle, icon, children }) {
       <div className="flex items-start gap-3">
         <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">{icon}</div>
         <div>
-          <h3 className="text-lg font-extrabold text-[#432744]">{title}</h3>
+          <h3 className="text-lg font-bold text-[#432744]">{title}</h3>
           {subtitle ? <p className="mt-1 text-sm text-[#a88a9d]">{subtitle}</p> : null}
         </div>
       </div>
@@ -84,7 +84,7 @@ function LivePreview({ variant, title }) {
           ))}
         </div>
       </div>
-      <p className="mt-4 text-sm font-extrabold text-[#432744]">{title}</p>
+      <p className="mt-4 text-sm font-bold text-[#432744]">{title}</p>
       <p className="mt-1 text-xs text-[#a88a9d]">
         {variant?.shape} / {variant?.finish}
       </p>
@@ -216,7 +216,7 @@ export function NailDesignManagementCreatePage() {
       <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-[1.7rem] font-extrabold text-[#432744]">
+            <h2 className="text-[1.7rem] font-bold text-[#432744]">
               {t("adminNailsDesignManagement.createNewNailDesign")}
             </h2>
             <p className="mt-1 text-sm text-[#c694ad]">

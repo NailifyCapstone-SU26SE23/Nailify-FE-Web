@@ -748,7 +748,7 @@ export function ManagerWaitlistPage() {
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
               <Sparkles size={16} />
             </div>
-            <span className="font-extrabold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
+            <span className="font-bold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
           </div>
         }
         placement="right"
@@ -763,7 +763,7 @@ export function ManagerWaitlistPage() {
           <div className="space-y-6">
             <div className="rounded-lg bg-gradient-to-br from-[#fff7fb] to-[#fffbfc] p-5 border border-[#fcd5e6]/50 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-sm font-extrabold text-white">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-sm font-bold text-white">
                   {(selectedEntry.customerName || "??")
                     .split(" ")
                     .map((p) => p[0])
@@ -772,7 +772,7 @@ export function ManagerWaitlistPage() {
                     .toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="text-base font-extrabold text-[#402542]">{selectedEntry.customerName}</h4>
+                  <h4 className="text-base font-bold text-[#402542]">{selectedEntry.customerName}</h4>
                   <div className="mt-1 flex items-center gap-1.5">
                     {getStatusBadge(selectedEntry.status)}
                     <span className="text-[11px] font-bold text-[#ea4f93] bg-[#fff0f5] border border-[#fbe1ec] rounded-full px-2">

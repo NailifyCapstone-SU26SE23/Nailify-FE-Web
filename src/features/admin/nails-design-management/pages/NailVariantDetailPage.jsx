@@ -174,7 +174,7 @@ function Pill({ children, tone = "default" }) {
 function DetailCard({ title, children }) {
   return (
     <article className="rounded-lg border border-[#f7d7e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-      <h2 className="font-extrabold text-[#432744]">{title}</h2>
+      <h2 className="font-bold text-[#432744]">{title}</h2>
       <div className="mt-4">{children}</div>
     </article>
   );
@@ -627,7 +627,7 @@ function NailVariantHandPreview({ variantDetail }) {
                   </div>
                 </div>
 
-                <span className="rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
+                <span className="rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
                   {finger.label}
                 </span>
               </div>
@@ -769,7 +769,7 @@ function NailVariantHandPreview({ variantDetail }) {
               {/* Header */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <h4 className="text-xs font-extrabold uppercase tracking-[0.08em] text-[#ea4f93]">Calibrate Nail Positions</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-[#ea4f93]">Calibrate Nail Positions</h4>
                   <p className="text-[10px] text-[#c694ad]">
                     {clickToPlace
                       ? `Click on the fingernail in the image to place nail ${fingerDefinitions.find(f => f.fingerIndex === selectedFinger)?.label}. (${selectedFinger}/5)`
@@ -821,7 +821,7 @@ function NailVariantHandPreview({ variantDetail }) {
                     <div key={prop} className="flex flex-col gap-1.5 rounded-[12px] bg-[#fffafb] p-3 border border-[#fdf0f5]">
                       <span className="text-[10px] font-bold text-[#c694ad] uppercase flex justify-between">
                         <span>{prop}</span>
-                        <span className="text-[#ea4f93] font-extrabold">{value}{prop === "rotation" ? "°" : "%"}</span>
+                        <span className="text-[#ea4f93] font-bold">{value}{prop === "rotation" ? "°" : "%"}</span>
                       </span>
                       <input
                         type="range"
@@ -888,7 +888,7 @@ function CustomProcedureSelect({ value, onChange, availableProcedures, t, langua
         <div className="absolute z-50 mt-2 w-full max-h-[300px] overflow-y-auto rounded-2xl border border-[#f4d4e2] bg-white py-2 shadow-[0_8px_30px_rgba(236,72,153,0.15)] animate-in fade-in slide-in-from-top-2">
           {commonProcs.length > 0 && (
             <div className="mb-2">
-              <div className="px-4 py-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
+              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
                 {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
               </div>
               {commonProcs.map(proc => (
@@ -1331,7 +1331,7 @@ export function NailVariantDetailPage() {
           ].map(([label, value]) => (
             <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
               <p className="text-xs font-semibold text-[#c694af]">{label}</p>
-              <p className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{value}</p>
+              <p className="mt-2 text-2xl font-bold text-[#ea4f93]">{value}</p>
             </div>
           ))}
         </div>
@@ -1354,7 +1354,7 @@ export function NailVariantDetailPage() {
                 <Icon size={18} />
               </span>
               <span>
-                <span className="block text-sm font-extrabold text-[#432744]">{label}</span>
+                <span className="block text-sm font-bold text-[#432744]">{label}</span>
                 <span className="mt-1 block text-xs text-[#8c7085]">{note}</span>
               </span>
             </button>
@@ -1387,11 +1387,7 @@ export function NailVariantDetailPage() {
           </pre>
         )}
       </DetailCard>
-      {error ? (
-        <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
-          {error}
-        </div>
-      ) : null}
+
 
       {pendingTryOnConfig && !error ? (
         <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
@@ -1482,7 +1478,7 @@ export function NailVariantDetailPage() {
                       {isEditing ? (
                         <div className="grid gap-5 md:grid-cols-[80px_minmax(0,1fr)]">
                           <label className="space-y-2">
-                            <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c694ad]">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c694ad]">
                               Order
                             </span>
                             <input
@@ -1493,7 +1489,7 @@ export function NailVariantDetailPage() {
                           </label>
                           <div className="flex flex-col gap-4">
                             <label className="space-y-2 relative block">
-                              <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c694ad] block">
+                              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c694ad] block">
                                 {t("adminNailsDesignManagement.procedure")}
                               </span>
                               <CustomProcedureSelect
@@ -1535,7 +1531,7 @@ export function NailVariantDetailPage() {
                                   });
                                 }
                               }}
-                              className="rounded-full border border-[#f4c6da] bg-white px-5 py-2.5 text-xs font-extrabold text-[#8c7085] hover:bg-[#fff0f7] hover:text-[#ea4f93] transition"
+                              className="rounded-full border border-[#f4c6da] bg-white px-5 py-2.5 text-xs font-bold text-[#8c7085] hover:bg-[#fff0f7] hover:text-[#ea4f93] transition"
                             >
                               Cancel
                             </button>
@@ -1543,7 +1539,7 @@ export function NailVariantDetailPage() {
                               type="button"
                               onClick={() => void saveProcedureSteps()}
                               disabled={isSavingProcedures || !item.procedureId}
-                              className="flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_25px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
+                              className="flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_25px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
                             >
                               {isSavingProcedures ? <LoaderCircle size={14} className="animate-spin" /> : <Save size={14} />}
                               Save Step
@@ -1561,7 +1557,7 @@ export function NailVariantDetailPage() {
                             </div>
 
                             <div className="flex flex-col mt-0.5">
-                              <span className="font-extrabold text-[#432744] text-lg mb-2">{item.name || "Unnamed Step"}</span>
+                              <span className="font-bold text-[#432744] text-lg mb-2">{item.name || "Unnamed Step"}</span>
                               <div className="flex flex-wrap gap-2 text-[11px] font-bold">
                                 <span className="flex items-center gap-1.5 rounded-lg bg-[#f8f9fa] px-2.5 py-1 text-[#6d5669]">
                                   <Clock size={12} className="text-[#a1909e]" />
@@ -1618,7 +1614,7 @@ export function NailVariantDetailPage() {
 
                   const modelSpecificProcs = groupedProcs.ModelSpecific.map(g => g.item);
                   const commonProcs = groupedProcs.Common.map(g => g.item);
-                  
+
                   const [reorderedItem] = modelSpecificProcs.splice(sourceIndex, 1);
                   modelSpecificProcs.splice(destinationIndex, 0, reorderedItem);
 
@@ -1635,7 +1631,7 @@ export function NailVariantDetailPage() {
                   <div className="space-y-6">
                     {groupedProcs.Common.length > 0 && (
                       <div className="space-y-3">
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
+                        <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
                           {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
                           <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
                         </h4>
@@ -1651,7 +1647,7 @@ export function NailVariantDetailPage() {
                               ref={provided.innerRef}
                               className="space-y-3"
                             >
-                              <h4 className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
+                              <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
                                 {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
                                 <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
                               </h4>
@@ -1710,7 +1706,7 @@ export function NailVariantDetailPage() {
         <div className="bg-[linear-gradient(135deg,#fff0f6_0%,#fff8e9_100%)] px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b25784]">
                 {t("adminNailsDesignManagement.variantDetail")}
               </p>
               <h2 className="mt-2 text-lg font-bold text-[#432744]">

@@ -121,7 +121,7 @@ function DesignPreview({ design }) {
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_top,#fff6fb_0%,#f9e6ef_45%,#f3d7e6_100%)] text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/75 text-lg font-extrabold text-[#d85b96] shadow-[0_12px_24px_rgba(216,91,150,0.16)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/75 text-lg font-bold text-[#d85b96] shadow-[0_12px_24px_rgba(216,91,150,0.16)]">
             {design.initials || "ND"}
           </div>
           <p className="px-4 text-xs font-semibold text-[#a76f8c]">No preview image</p>
@@ -580,11 +580,9 @@ export function NailDesignManagementPage() {
             </div>
           </div>
 
-          {error ? (
-            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+
+
+
 
           <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
@@ -611,7 +609,7 @@ export function NailDesignManagementPage() {
                       <div>
                         <Link
                           to={getAdminNailDesignDetailRoute(design.id)}
-                          className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
+                          className="font-bold text-[#432744] transition hover:text-[#ea4f93]"
                         >
                           {design.uiTitle}
                         </Link>

@@ -781,7 +781,7 @@ export function LoyaltyTierManagement() {
 
                                 <form onSubmit={handleSaveTier} className="mt-5 space-y-4">
                                     {/* Card Style: live preview mirrors the exact catalog card */}
-                                    <div className="flex flex-col gap-4 rounded-3xl border border-[#f5e3ed] bg-[#fffbfc] p-4">
+                                    <div className="flex flex-col gap-4 rounded-lg border border-[#f5e3ed] bg-[#fffbfc] p-4">
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-bold uppercase tracking-wider text-[#7a6473]">
                                                 {t("adminLoyaltyTiersManagement.cardStyle")}

@@ -1,6 +1,5 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -18,7 +17,6 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
   getAdminCategoryTypeDetailRoute,
@@ -32,7 +30,7 @@ import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 
 function CategoryTypeStatusBadge({ status }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
   const isStatusActive = normalizedStatus === "active";
   const className = isStatusActive
@@ -45,7 +43,7 @@ function CategoryTypeStatusBadge({ status }) {
 }
 
 export function CategoryTypesManagementPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -72,8 +70,6 @@ export function CategoryTypesManagementPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
-
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
@@ -133,7 +129,7 @@ export function CategoryTypesManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, t]);
 
   const summaryCards = useMemo(() => {
     const activeCount = categoryTypes.filter((item) => String(item.status).toLowerCase() === "active").length;
@@ -169,7 +165,7 @@ export function CategoryTypesManagementPage() {
         color: "#8b5cf6",
       },
     ];
-  }, [categoryTypes, debouncedQuery, metaData.totalItems, metaData.totalPages]);
+  }, [categoryTypes, debouncedQuery, metaData.totalItems, metaData.totalPages, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -313,15 +309,9 @@ export function CategoryTypesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        {flashMessage ? (
-          <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
 
-        {error ? (
-          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
-        ) : null}
+
+
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
@@ -377,7 +367,7 @@ export function CategoryTypesManagementPage() {
 
         <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminCategoryTypes.categoryTypes")}</h2>
+            <h2 className="text-sm font-bold text-[#432744]">{t("adminCategoryTypes.categoryTypes")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
               {t("adminCategoryTypes.showingCategoryTypes", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
             </p>

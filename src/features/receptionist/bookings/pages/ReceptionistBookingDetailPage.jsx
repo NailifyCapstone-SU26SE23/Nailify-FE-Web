@@ -489,7 +489,7 @@ export function ReceptionistBookingDetailPage() {
   );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
-  
+
   const [transactions, setTransactions] = useState([]);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [selectedTransactionDetail, setSelectedTransactionDetail] = useState(null);
@@ -560,7 +560,7 @@ export function ReceptionistBookingDetailPage() {
           } else {
             setCustomerProfile(null);
           }
-          
+
           // Fetch transactions
           try {
             const txs = await fetchTransactionsByBookingId(bookingId);
@@ -737,7 +737,7 @@ export function ReceptionistBookingDetailPage() {
       } else {
         setCustomerProfile(null);
       }
-      
+
       // Fetch transactions
       try {
         const txs = await fetchTransactionsByBookingId(bookingId);
@@ -745,7 +745,7 @@ export function ReceptionistBookingDetailPage() {
       } catch (err) {
         console.warn("Failed to load transactions:", err);
       }
-      
+
       toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
       await loadBookingHistories();
     } catch (loadError) {
@@ -1424,8 +1424,8 @@ export function ReceptionistBookingDetailPage() {
                           <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-extrabold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
-                       
+                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
+
                         </div>
                       </div>
 
@@ -2289,7 +2289,7 @@ export function ReceptionistBookingDetailPage() {
       >
         <div className="bg-[#FAF6F8] font-sans max-h-[85vh] overflow-y-auto">
           <div className="flex items-center justify-between p-5 border-b border-[#F3E2EC] bg-white sticky top-0 z-10">
-            <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#2B182B] flex items-center gap-2">
               <CreditCard size={18} className="text-[#E84F93]" /> {language === "vi" ? "Chi tiết giao dịch" : "Transaction Details"}
             </h3>
             <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
@@ -2307,7 +2307,7 @@ export function ReceptionistBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-extrabold text-[#E84F93] mb-2">{formatCurrency(selectedTransactionDetail.amount)}</p>
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(selectedTransactionDetail.amount)}</p>
                   <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'

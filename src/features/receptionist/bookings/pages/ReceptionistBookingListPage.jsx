@@ -375,7 +375,7 @@ export function ReceptionistBookingListPage() {
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (status) => (
-        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
+        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${getStatusTone(status)}`}>
           {formatDisplay(status)}
         </span>
       ),
@@ -641,7 +641,7 @@ export function ReceptionistBookingListPage() {
         <article className="rounded-[24px] border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-lg font-extrabold text-[#412643]">
+              <p className="text-lg font-bold text-[#412643]">
                 {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
               </p>
               <p className="mt-1 text-sm text-[#b38a9f]">
@@ -806,17 +806,9 @@ export function ReceptionistBookingListPage() {
             </div>
           </div>
 
-          {error ? (
-            <div className="mt-4 rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
 
-          {flashMessage ? (
-            <div className="mt-4 rounded-[16px] border border-[#d8f0e0] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
+
+
 
           {isLoading ? (
             <div className="mt-6 flex min-h-56 items-center justify-center rounded-lg border border-[#f7dce8] bg-[#fffafd]">
@@ -846,7 +838,7 @@ export function ReceptionistBookingListPage() {
                         <p className="text-sm font-bold text-[#412643]">{booking.customerName}</p>
                         <p className="mt-1 text-[11px] text-[#b38a9f]">{booking.artistName}</p>
                       </div>
-                      <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold ${getStatusTone(booking.status)}`}>
+                      <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${getStatusTone(booking.status)}`}>
                         {formatDisplay(booking.status)}
                       </span>
                     </div>
@@ -965,7 +957,7 @@ export function ReceptionistBookingListPage() {
               padding: 16,
             },
           }}
-          title={<span className="text-base font-extrabold text-[#432744]">{language === "vi" ? "Quét mã QR khách hàng để làm thủ tục" : "Customer QR Check-in"}</span>}
+          title={<span className="text-base font-bold text-[#432744]">{language === "vi" ? "Quét mã QR khách hàng để làm thủ tục" : "Customer QR Check-in"}</span>}
         >
           <div className="space-y-4 overflow-hidden">
             <p className="text-sm text-[#8f7484]">

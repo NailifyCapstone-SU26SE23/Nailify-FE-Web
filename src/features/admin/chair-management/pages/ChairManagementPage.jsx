@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Button, Select, Popconfirm, message, Tooltip, Spin, Modal } from 'antd';
+import { useCallback, useEffect, useState } from 'react';
+import { Button, Select, Popconfirm, Tooltip, Spin, Modal } from 'antd';
 import { Plus, Edit2, Trash2, Armchair, Building2, Eye } from 'lucide-react';
 import { chairManagementService } from '../services/chairManagementService';
 import { useLanguage } from '../../../../shared/hooks/useLanguage';
@@ -11,7 +11,7 @@ import ChairMap from '../../../../shared/components/ui/ChairMap';
 const { Option } = Select;
 
 export default function ChairManagementPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [salons, setSalons] = useState([]);
   const [selectedSalonId, setSelectedSalonId] = useState(null);
 
@@ -24,22 +24,7 @@ export default function ChairManagementPage() {
 
   const [detailChair, setDetailChair] = useState(null);
 
-  useEffect(() => {
-    const loadSalons = async () => {
-      try {
-        const data = await fetchSalons({ PageSize: 100 });
-        setSalons(data || []);
-        if (data && data.length > 0) {
-          setSelectedSalonId(data[0].salonId || data[0].id);
-        }
-      } catch (error) {
-        toast.error(t("adminChairs.failedToLoadSalons"));
-      }
-    };
-    loadSalons();
-  }, []);
-
-  const loadChairs = async (salonId) => {
+  const loadChairs = useCallback(async (salonId) => {
     if (!salonId) return;
     setLoading(true);
     try {
@@ -55,13 +40,24 @@ export default function ChairManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    if (selectedSalonId) {
-      loadChairs(selectedSalonId);
-    }
-  }, [selectedSalonId]);
+    const loadSalons = async () => {
+      try {
+        const data = await fetchSalons({ PageSize: 100 });
+        setSalons(data || []);
+        if (data && data.length > 0) {
+          const firstSalonId = data[0].salonId || data[0].id;
+          setSelectedSalonId(firstSalonId);
+          await loadChairs(firstSalonId);
+        }
+      } catch {
+        toast.error(t("adminChairs.failedToLoadSalons"));
+      }
+    };
+    loadSalons();
+  }, [loadChairs, t]);
 
   const handleDelete = async (chairId) => {
     try {
@@ -93,8 +89,10 @@ export default function ChairManagementPage() {
     loadChairs(selectedSalonId);
   };
 
-  const rows = ['A', 'B', 'C', 'D', 'E'];
-  const cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const handleSalonChange = (salonId) => {
+    setSelectedSalonId(salonId);
+    loadChairs(salonId);
+  };
 
   const getStatusColor = (status) => {
     if (status === 'Active') return 'bg-emerald-50 text-emerald-600 border-emerald-200';
@@ -177,7 +175,7 @@ export default function ChairManagementPage() {
             {/* Select */}
             <Select
               value={selectedSalonId}
-              onChange={setSelectedSalonId}
+              onChange={handleSalonChange}
               bordered={false}
               placeholder={t("adminChairs.selectSalon")}
               className="
@@ -214,7 +212,7 @@ export default function ChairManagementPage() {
       </div>
 
       <div className="p-8 mx-auto w-full max-w-7xl">
-        <div className="bg-white/70 backdrop-blur-md border border-white/60 rounded-3xl shadow-xl shadow-pink-500/5 p-8">
+        <div className="bg-white/70 backdrop-blur-md border border-white/60 rounded-lg shadow-xl shadow-pink-500/5 p-8">
           {salons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <Building2 size={48} className="text-slate-200 mb-4" />

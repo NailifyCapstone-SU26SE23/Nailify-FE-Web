@@ -3,15 +3,12 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Award,
-  Sparkles,
   Percent,
   Layers,
   Users,
   AlertCircle,
-  Calendar,
   Lock,
   ChevronRight,
-  TrendingUp,
   CheckCircle2,
   Clock
 } from "lucide-react";
@@ -48,7 +45,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
       };
       void getDetail();
     }
-  }, [isOpen, tierId]);
+  }, [isOpen, tierId, t]);
+
+  const memberCount = React.useMemo(() => {
+    if (!tier || !customers.length) return 0;
+    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
+  }, [tier, customers]);
 
   if (!isOpen) return null;
 
@@ -60,13 +62,11 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
       const colors = typeof tier.colorJson === "string" ? JSON.parse(tier.colorJson) : tier.colorJson;
       startColor = colors.gradientStart || colors.primary || tier.backgroundColor;
       endColor = colors.gradientEnd || colors.primary || tier.backgroundColor;
-    } catch (e) { }
+    } catch {
+      startColor = tier.backgroundColor || startColor;
+      endColor = tier.backgroundColor || endColor;
+    }
   }
-
-  const memberCount = React.useMemo(() => {
-    if (!tier || !customers.length) return 0;
-    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
-  }, [tier, customers]);
 
   return (
     <AnimatePresence>
@@ -144,10 +144,10 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
                   background: `linear-gradient(135deg, ${startColor}, ${endColor})`,
                   color: tier.textColor
                 }}
-                className="relative rounded-3xl p-6 shadow-md overflow-hidden"
+                className="relative rounded-lg p-6 shadow-md overflow-hidden"
               >
                 {/* Glassmorphism overlays */}
-                <div className="absolute inset-0 border border-white/10 rounded-3xl pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
+                <div className="absolute inset-0 border border-white/10 rounded-lg pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
                 <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
 
                 <div className="relative z-10 flex justify-between items-start">
@@ -316,7 +316,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
               <div className="flex gap-2 border-t border-[#fcecf4] pt-4 mt-5">
                 <button
                   onClick={onClose}
-                  className="w-full inline-flex h-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white font-extrabold text-xs shadow-[0_8px_18px_rgba(235,90,153,0.18)] active:scale-[0.98] transition-transform cursor-pointer"
+                  className="w-full inline-flex h-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white font-bold text-xs shadow-[0_8px_18px_rgba(235,90,153,0.18)] active:scale-[0.98] transition-transform cursor-pointer"
                 >
                   {t("adminLoyaltyTiersManagement.dismissDetails")}
                 </button>

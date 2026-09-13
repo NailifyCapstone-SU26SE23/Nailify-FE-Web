@@ -47,7 +47,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
               Staff Booking Notes
             </p>
-            <h3 className="mt-2 text-2xl font-extrabold text-[#ea4f93]">
+            <h3 className="mt-2 text-2xl font-bold text-[#ea4f93]">
               {booking?.customerName || "Booking Notes"}
             </h3>
             <p className="mt-1 text-sm text-[#a88a9d]">
@@ -71,7 +71,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <UserRound size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Customer</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.customerName}</p>
+              <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.customerName}</p>
             </article>
 
             <article className="rounded-[18px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
@@ -79,7 +79,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <FileText size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.uiService}</p>
+              <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.uiService}</p>
             </article>
 
             <article className="rounded-[18px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
@@ -87,7 +87,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 <Sparkles size={18} />
               </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Staff Artist</p>
-              <p className="mt-2 text-sm font-extrabold text-[#3f2b3f]">{booking?.staffName}</p>
+              <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.staffName}</p>
             </article>
           </div>
 

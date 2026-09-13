@@ -219,7 +219,7 @@ export function NailVariantCreatePage() {
                 <FileImage size={18} />
               </div>
               <div>
-                <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.variantInformation")}</h2>
+                <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.variantInformation")}</h2>
                 <p className="mt-1 text-sm text-[#a88a9d]">
                   {t("adminNailsDesignManagement.nameAndImageFileAreRequired")}
                 </p>
@@ -270,7 +270,7 @@ export function NailVariantCreatePage() {
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.nailTryonSetup")}</h2>
+                  <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailTryonSetup")}</h2>
                   <p className="mt-1 text-sm text-[#a88a9d]">
                     {t("adminNailsDesignManagement.cachedInBrowserRouteStateUntil")
                     }
@@ -301,11 +301,7 @@ export function NailVariantCreatePage() {
             </div>
           </section>
 
-          {error ? (
-            <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+
 
           <div className="flex flex-wrap gap-3">
             <button
@@ -330,7 +326,7 @@ export function NailVariantCreatePage() {
 
         <aside className="space-y-4">
           <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-            <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
+            <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (
                 <img
@@ -345,7 +341,7 @@ export function NailVariantCreatePage() {
                 </div>
               )}
             </div>
-            <p className="mt-4 text-sm font-extrabold text-[#432744]">{formValues.name || (t("adminNailsDesignManagement.unnamedVariant"))}</p>
+            <p className="mt-4 text-sm font-bold text-[#432744]">{formValues.name || (t("adminNailsDesignManagement.unnamedVariant"))}</p>
             <p className="mt-1 text-xs text-[#a88a9d]">
               {t("adminNailsDesignManagement.theUploadedImageAndCachedTryon")
               }

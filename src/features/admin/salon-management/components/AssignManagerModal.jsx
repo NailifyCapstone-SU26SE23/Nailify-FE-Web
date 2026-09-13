@@ -96,7 +96,7 @@ export default function AssignManagerModal({
                 <Users size={20} />
               </div>
               <div>
-                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
+                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] bg-white/20 text-white">
                   Management
                 </span>
                 <h3 className=" mt-3 text-2xl font-semibold">Assign Salon Manager</h3>
@@ -142,7 +142,7 @@ export default function AssignManagerModal({
                     exit={{ opacity: 0, x: 10 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f] mb-3">
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#9a5f7f] mb-3">
                       Select Salon
                     </p>
                     {isLoading ? (
@@ -197,7 +197,7 @@ export default function AssignManagerModal({
                                     />
                                   </motion.div>
                                   <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-extrabold text-[#3d1f3f] truncate">
+                                    <p className="text-sm font-bold text-[#3d1f3f] truncate">
                                       {salon.name}
                                     </p>
                                     <div className="mt-2 flex items-center gap-2 text-xs text-[#7f6478]">
@@ -222,7 +222,7 @@ export default function AssignManagerModal({
                     transition={{ duration: 0.3 }}
                   >
                     <div className="mb-4 flex items-center justify-between">
-                      <p className="text-xs font-extrabold uppercase tracking-widest text-[#9a5f7f]">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#9a5f7f]">
                         Select Manager
                       </p>
                       <motion.button
@@ -236,7 +236,7 @@ export default function AssignManagerModal({
                             managerId: "",
                           }));
                         }}
-                        className="px-3 py-1.5 text-xs font-extrabold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
+                        className="px-3 py-1.5 text-xs font-bold text-[#9a5f7f] hover:text-[#ea4f93] bg-[#fff0f8] rounded-full transition-all duration-200 hover:bg-[#fde7f3]"
                       >
                         ← Change salon
                       </motion.button>
@@ -275,7 +275,7 @@ export default function AssignManagerModal({
                                 <div className="flex items-start gap-3">
                                   <motion.div
                                     whileHover={{ scale: 1.08 }}
-                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-extrabold text-white shadow-[0_4px_12px ${isSelected
+                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-bold text-white shadow-[0_4px_12px ${isSelected
                                       ? "bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93]"
                                       : "bg-gradient-to-br from-[#d6c1ff] to-[#8b5cf6]"
                                       }`}
@@ -290,10 +290,10 @@ export default function AssignManagerModal({
                                   </motion.div>
                                   <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-2 min-w-0">
-                                      <p className="min-w-0 flex-1 truncate text-sm font-extrabold text-[#3d1f3f]">
+                                      <p className="min-w-0 flex-1 truncate text-sm font-bold text-[#3d1f3f]">
                                         {manager.name}
                                       </p>
-                                      <span className="inline-flex shrink-0 items-center rounded-full bg-[#fde7f3] px-2.5 py-0.5 text-[10px] font-extrabold text-[#e1447f]">
+                                      <span className="inline-flex shrink-0 items-center rounded-full bg-[#fde7f3] px-2.5 py-0.5 text-[10px] font-bold text-[#e1447f]">
                                         {manager.role}
                                       </span>
                                     </div>
@@ -332,7 +332,7 @@ export default function AssignManagerModal({
             type="button"
             disabled={confirmLoading}
             onClick={handleReset}
-            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-full border border-[#f5cbdc] bg-white px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#b95d88] transition hover:bg-[#fff5f8] disabled:opacity-50"
           >
             Cancel
           </button>
@@ -340,7 +340,7 @@ export default function AssignManagerModal({
             type="button"
             disabled={confirmLoading || !assignManagerForm.salonId || !assignManagerForm.managerId}
             onClick={() => onConfirm(assignManagerForm)}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(235,90,153,0.2)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white shadow-[0_16px_28px_rgba(235,90,153,0.2)] transition hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmLoading ? "Assigning..." : "Assign Manager"}
           </button>

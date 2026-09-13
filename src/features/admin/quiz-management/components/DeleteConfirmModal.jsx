@@ -62,7 +62,7 @@ export function DeleteConfirmModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.92, y: 12 }}
                         transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                        className="fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-[400px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[2rem] border border-[#f5e3ed] bg-white shadow-[0_32px_64px_-16px_rgba(50,28,41,0.35)]"
+                        className="fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-[400px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg border border-[#f5e3ed] bg-white shadow-[0_32px_64px_-16px_rgba(50,28,41,0.35)]"
                     >
                         {/* Accent bar */}
                         <div className="h-1.5 w-full bg-gradient-to-r from-[#ea4f93] to-[#f97bb7]" />
@@ -111,7 +111,7 @@ export function DeleteConfirmModal({
                                     type="button"
                                     onClick={onConfirm}
                                     disabled={isDeleting}
-                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#d14c84] to-[#ea4f93] py-2.5 text-[13px] font-extrabold text-white shadow-[0_8px_16px_-4px_rgba(234,79,147,0.45)] transition hover:from-[#bb4476] hover:to-[#d14c84] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#d14c84] to-[#ea4f93] py-2.5 text-[13px] font-bold text-white shadow-[0_8px_16px_-4px_rgba(234,79,147,0.45)] transition hover:from-[#bb4476] hover:to-[#d14c84] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isDeleting ? (
                                         <>

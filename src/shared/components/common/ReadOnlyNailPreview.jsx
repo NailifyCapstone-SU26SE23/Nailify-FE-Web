@@ -386,7 +386,7 @@ function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compac
           </div>
         </div>
       </div>
-      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
+      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
         }`}>
         {label}
       </span>
@@ -432,7 +432,7 @@ export function ReadOnlyNailPreview({
       {showHeader ? (
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-[#ea4f93]" />
-          <h3 className="text-xs font-extrabold text-[#ea4f93]">{title}</h3>
+          <h3 className="text-xs font-bold text-[#ea4f93]">{title}</h3>
         </div>
       ) : null}
 

@@ -31,7 +31,6 @@ import {
   QUICK_ACTIONS,
   SCHEDULE_DAY_KEYS,
   SCHEDULE_STATUS_STYLES,
-  STAFF_FILTER_TABS,
   STAFF_ON_LEAVE,
   STAFF_STATUS_STYLES,
   filterStaffByStatus,
@@ -39,6 +38,7 @@ import {
 } from "../services/mockStaffArtists";
 import { fetchBookingsBySalonId } from "../../bookings/services/bookingsService";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
+import { axiosClient } from "../../../../lib/axiosClient";
 import {
   fetchNailArtists,
   fetchNailArtistById,
@@ -81,6 +81,12 @@ const staggerContainer = {
   },
 };
 
+const STAFF_FILTER_TABS = [
+  { label: "All", labelVi: "Tất cả", key: "all" },
+  { label: "Active", labelVi: "Hoạt động", key: "active" },
+  { label: "Inactive", labelVi: "Ngừng hoạt động", key: "inactive" },
+];
+
 // Status metadata for the Create Shift modal's segmented control
 const SHIFT_STATUS_META = {
   Active: {
@@ -106,11 +112,8 @@ const SHIFT_DURATION_PRESETS = [
   { label: "8h", hours: 8 },
 ];
 
-// Guard rail: the create-shift endpoint only accepts one date per call, so a
-// date range is expanded into one request per day. Cap the range so a
-// misclick (e.g. picking a whole year) can't fire off hundreds of requests.
+
 const MAX_BULK_SHIFT_DAYS = 31;
-const HIGH_RATING_THRESHOLD = 4.5;
 
 function getBookingArtistId(booking) {
   const artistId = booking?.staffId || booking?.nailArtistId || booking?.staffArtistId || booking?.artistId;
@@ -139,7 +142,7 @@ function parseBookingDate(booking) {
   return rawDate ? dayjs(rawDate) : null;
 }
 
-function buildArtistBookingStats(bookings = []) {
+function buildArtistBookingStats(bookings = [], ratings = []) {
   const today = dayjs().startOf("day");
   const monthStart = dayjs().startOf("month");
   const statsMap = new Map();
@@ -157,7 +160,6 @@ function buildArtistBookingStats(bookings = []) {
         totalCompleted: 0,
         ratedCount: 0,
         ratingSum: 0,
-        highRatedCount: 0,
       });
     }
 
@@ -165,7 +167,6 @@ function buildArtistBookingStats(bookings = []) {
     const bookingDate = parseBookingDate(booking);
     const completed = isCompletedBooking(booking.status);
     const totalPrice = Number(booking.totalPrice) || 0;
-    const bookingRating = getBookingRating(booking);
 
     if (completed) {
       stats.totalCompleted += 1;
@@ -179,13 +180,29 @@ function buildArtistBookingStats(bookings = []) {
         stats.monthRevenue += totalPrice;
       }
     }
+  });
 
-    if (bookingRating !== null) {
+  ratings.forEach((rating) => {
+    const artistId = String(rating.nailArtistId || rating.staffId || rating.artistId);
+    if (!artistId || artistId === "undefined") return;
+
+    if (!statsMap.has(artistId)) {
+      statsMap.set(artistId, {
+        artistId,
+        todayCount: 0,
+        monthCompleted: 0,
+        monthRevenue: 0,
+        totalCompleted: 0,
+        ratedCount: 0,
+        ratingSum: 0,
+      });
+    }
+
+    const stats = statsMap.get(artistId);
+    const score = Number(rating.overallScore);
+    if (Number.isFinite(score) && score > 0) {
       stats.ratedCount += 1;
-      stats.ratingSum += bookingRating;
-      if (bookingRating >= HIGH_RATING_THRESHOLD) {
-        stats.highRatedCount += 1;
-      }
+      stats.ratingSum += score;
     }
   });
 
@@ -203,8 +220,8 @@ function formatCompactRevenue(amount) {
   return formatCurrency(value);
 }
 
-function buildPerformanceInsights(staffArtists = [], bookings = []) {
-  const bookingStats = buildArtistBookingStats(bookings);
+function buildPerformanceInsights(staffArtists = [], bookings = [], ratings = []) {
+  const bookingStats = buildArtistBookingStats(bookings, ratings);
   const performers = staffArtists.map((staff) => {
     const artistId = String(staff.id);
     const stats = bookingStats.get(artistId) || {
@@ -214,7 +231,6 @@ function buildPerformanceInsights(staffArtists = [], bookings = []) {
       totalCompleted: 0,
       ratedCount: 0,
       ratingSum: 0,
-      highRatedCount: 0,
     };
 
     const bookingAvgRating = stats.ratedCount > 0
@@ -222,7 +238,7 @@ function buildPerformanceInsights(staffArtists = [], bookings = []) {
       : null;
     const effectiveRating = bookingAvgRating ?? (Number(staff.rating) || 0);
     const satisfaction = stats.ratedCount > 0
-      ? `${Math.round((stats.highRatedCount / stats.ratedCount) * 100)}%`
+      ? `${Math.round((effectiveRating / 5) * 100)}%`
       : "—";
 
     return {
@@ -329,7 +345,7 @@ const TIME_SLOTS_30MIN = [
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border border-[#f1e7ed] bg-white shadow-[0_8px_30px_-12px_rgba(45,27,53,0.08)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-12px_rgba(45,27,53,0.12)]" : ""} ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-[#f1e7ed] bg-white shadow-[0_8px_30px_-12px_rgba(45,27,53,0.08)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-12px_rgba(45,27,53,0.12)]" : ""} ${className}`}
     >
       {children}
     </article>
@@ -370,11 +386,32 @@ InfoItem.propTypes = {
   children: PropTypes.node,
 };
 
+function formatRole(role, language) {
+  if (role === "Staff_Artist" || role === "Staff Artist") {
+    return language === "vi" ? "Nhân viên làm móng" : "Staff Artist";
+  }
+  return role;
+}
+
+function formatShiftStatus(status, language) {
+  const s = status || "Active";
+  if (language === "vi") {
+    if (s === "Active") return "Hoạt động";
+    if (s === "Inactive") return "Không hoạt động";
+  }
+  return s;
+}
+
 function StatusPill({ status }) {
+  const { language } = useLanguage();
   const isActive = status === "Active";
+  const displayStatus = language === "vi"
+    ? (isActive ? "Hoạt động" : (status === "Inactive" ? "Ngừng hoạt động" : status))
+    : status;
+
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${isActive ? "bg-[#eaf9ee] text-[#2fa25f] border-transparent" : "bg-[#fff0dd] text-[#db8520] border-transparent"}`}>
-      {status}
+      {displayStatus}
     </span>
   );
 }
@@ -384,6 +421,7 @@ StatusPill.propTypes = {
 };
 
 function StaffArtistCard({ staff, onOpenDrawer }) {
+  const { language } = useLanguage();
   // Extract skill names from skill objects
   const skillNames = staff.skills.map(skill => skill.skillTypeName || skill.name || "Skill");
   const visibleSkills = skillNames.slice(0, 2);
@@ -412,7 +450,7 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
       role="button"
       tabIndex={0}
       aria-label={`View details for ${staff.name}`}
-      className="group flex h-full min-w-0 cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:border-[#E84F93]/40 hover:shadow-md focus:outline-none"
+      className="group flex h-full min-w-0 cursor-pointer flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-xs transition-all duration-200 hover:border-[#E84F93]/40 hover:shadow-md focus:outline-none"
     >
       <div className="flex items-start gap-4">
         {/* Clean Circular Avatar with Green Status Dot */}
@@ -432,17 +470,17 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-base font-extrabold leading-snug text-slate-900 ">
+            <h3 className="line-clamp-1 text-base font-bold leading-snug text-slate-900 ">
               {staff.name}
             </h3>
             <StatusPill status={staff.status} />
           </div>
-          <p className="mt-0.5 text-xs font-semibold text-slate-500">{staff.role}</p>
+          <p className="mt-0.5 text-xs font-semibold text-slate-500">{formatRole(staff.role, language)}</p>
 
           {/* Clean Rating Stars with Dark Text */}
           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-100 px-2.5 py-0.5">
             <Star size={13} fill="#EAB308" className="text-amber-500 shrink-0" />
-            <span className="text-xs font-extrabold text-slate-900">
+            <span className="text-xs font-bold text-slate-900">
               {staff.rating.toFixed(1)} <span className="text-slate-400 font-normal">/ 5.0</span>
             </span>
           </div>
@@ -469,21 +507,21 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
           </>
         ) : (
           <span className="rounded-full bg-slate-50 border border-dashed border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-400">
-            Skills not assigned
+            {language === "vi" ? "Chưa có kỹ năng" : "Skills not assigned"}
           </span>
         )}
       </div>
 
       {/* Mini Performance Stats Bar */}
-      <div className="mt-4 flex divide-x divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
+      <div className="mt-4 flex divide-x divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
         {[
-          [Clock3, staff.stats.today, "Today"],
-          [CalendarDays, staff.stats.month, "This Month"],
-          [TrendingUp, staff.stats.revenue, "Revenue"],
+          [Clock3, staff.stats.today, language === "vi" ? "Hôm nay" : "Today"],
+          [CalendarDays, staff.stats.month, language === "vi" ? "Tháng này" : "This Month"],
+          [TrendingUp, staff.stats.revenue, language === "vi" ? "Doanh thu" : "Revenue"],
         ].map(([Icon, value, label]) => (
           <div key={label} className="flex flex-1 flex-col items-center px-1">
             <Icon size={13} className="mb-0.5 text-[#E84F93]" />
-            <p className="text-xs font-extrabold text-slate-900">{value}</p>
+            <p className="text-xs font-bold text-slate-900">{value}</p>
             <p className="text-[10px] font-medium text-slate-400">{label}</p>
           </div>
         ))}
@@ -494,10 +532,10 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
         <Link
           to={getManagerStaffUpdateRoute(staff.id)}
           onClick={(event) => event.stopPropagation()}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2 px-4 text-xs font-bold text-slate-700 hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF0F5]/50 transition-all shadow-2xs"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 px-4 text-xs font-bold text-slate-700 hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF0F5]/50 transition-all shadow-2xs"
         >
           <UserCog size={14} />
-          <span>Edit Profile</span>
+          <span>{language === "vi" ? "Chỉnh sửa thông tin" : "Edit Profile"}</span>
         </Link>
       </div>
     </motion.article>
@@ -532,7 +570,7 @@ function InsightStrip({ mostCompletedStaff, leastCompletedStaff, loadingBookings
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <PremiumCard className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#ffedd5] to-[#d69e2e] text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#ffedd5] to-[#d69e2e] text-white">
             <Star size={18} fill="currentColor" />
           </div>
           <div className="min-w-0 flex-1">
@@ -714,6 +752,7 @@ function TimelineSchedule({
   onEditSchedule
 }) {
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayNamesVi = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
   const { language } = useLanguage();
   const isVi = language === "vi";
@@ -723,13 +762,13 @@ function TimelineSchedule({
       const d = monday.add(i, 'day');
       days.push({
         key: dayNames[i],
-        label: dayNames[i],
-        dateStr: d.format("MMM DD"),
+        label: isVi ? dayNamesVi[i] : dayNames[i],
+        dateStr: isVi ? d.format("DD/MM") : d.format("MMM DD"),
         date: d,
       });
     }
     return days;
-  }, [monday]);
+  }, [monday, isVi]);
 
   return (
     <PremiumCard className="p-5">
@@ -775,14 +814,14 @@ function TimelineSchedule({
         <div className="overflow-x-auto">
           <div className="min-w-[1100px]">
             {/* Header Row */}
-            <div className="flex border-b border-[#f0e8f0]/80 pb-3 mb-1">
-              <div className="w-48 shrink-0" />
+            <div className="flex border-b border-[#f0e8f0]/80 mb-1 relative">
+              <div className="sticky left-0 z-10 w-48 shrink-0 bg-white pb-3" />
               {weekDays.map((day) => {
-                const isToday = day.dateStr === dayjs().format("MMM DD");
+                const isToday = day.dateStr === dayjs().format("MMM DD") || day.dateStr === dayjs().format("DD/MM");
                 return (
-                  <div key={day.key} className="flex-1 text-center">
+                  <div key={day.key} className="flex-1 text-center pb-3">
                     <p className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isToday ? "text-[#ea4f93]" : "text-[#b3a0ae]"}`}>{day.label}</p>
-                    <span className={`inline-flex items-center justify-center rounded-xl px-2 py-0.5 text-[11px] font-extrabold shadow-sm ${isToday
+                    <span className={`inline-flex items-center justify-center rounded-lg px-2 py-0.5 text-[11px] font-bold shadow-sm ${isToday
                       ? "bg-gradient-to-br from-[#ff7ab8] to-[#ea4f93] text-white shadow-[0_2px_8px_rgba(234,79,147,0.3)]"
                       : "bg-[#f9f3f8] text-[#8d7a8a] border border-[#f0e8f0]"
                       }`}>{day.dateStr}</span>
@@ -798,21 +837,21 @@ function TimelineSchedule({
               </div>
             ) : (
               weeklySchedules.map((staff) => (
-                <div key={staff.id} className="flex py-3 border-b border-[#f6eff5]/90 last:border-0 items-center hover:bg-[#fdf9fc]/60 rounded-xl transition-colors">
+                <div key={staff.id} className="group/row flex border-b border-[#f6eff5]/90 last:border-0 items-center hover:bg-[#fdf9fc]/60 rounded-lg transition-colors relative">
                   {/* Staff Info */}
-                  <div className="w-48 shrink-0 flex items-center gap-2.5 pr-3">
+                  <div className="sticky left-0 z-10 w-48 shrink-0 flex items-center gap-2.5 pr-3 py-15 bg-white group-hover/row:bg-[#fdf9fc] rounded-l-lg transition-colors">
                     <div className="relative shrink-0">
                       <StaffAvatar
                         staff={{ ...staff, initials: getStaffInitials(staff.name) }}
-                        className="h-10 w-10 shrink-0 rounded-2xl object-cover ring-2 ring-white shadow-sm"
-                        fallbackClassName={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white shadow-sm`}
+                        className="h-10 w-10 shrink-0 rounded-lg object-cover ring-2 ring-white shadow-sm"
+                        fallbackClassName={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${staff.avatarTone} text-[12px] font-bold text-white shadow-sm`}
                       />
                       <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-white shadow-sm" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[12px] font-bold text-[#2d1b35] truncate leading-tight">{staff.name}</p>
                       <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide ${SCHEDULE_STATUS_STYLES[staff.status] || "bg-gray-100 text-gray-600"}`}>
-                        {staff.status}
+                        {formatShiftStatus(staff.status, language)}
                       </span>
                     </div>
                   </div>
@@ -829,7 +868,7 @@ function TimelineSchedule({
                     const isSplitShift = shiftLabels.length > 1;
 
                     // Determine card style
-                    let containerClass = "relative min-h-[84px] rounded-2xl flex flex-col items-center justify-center text-center transition-all duration-200 p-2 group/cell overflow-hidden ";
+                    let containerClass = "relative min-h-[84px] rounded-lg flex flex-col items-center justify-center text-center transition-all duration-200 p-2 group/cell overflow-hidden ";
                     if (hasSchedule) {
                       if (isOff) {
                         if (isLeave) {
@@ -845,7 +884,7 @@ function TimelineSchedule({
                     }
 
                     return (
-                      <div key={day.key} className="flex-1 px-0.5">
+                      <div key={day.key} className="flex-1 px-0.5 py-3">
                         <div
                           onClick={() => onEditSchedule && onEditSchedule(staff, day.key, dayData)}
                           className={containerClass}
@@ -865,7 +904,7 @@ function TimelineSchedule({
                               ) : (
                                 <>
                                   <span className="text-[9px] font-semibold text-slate-300 tracking-wide group-hover/cell:opacity-0 transition-opacity">— Off —</span>
-                                  <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-bold text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-2xl border border-pink-200/60 gap-1">
+                                  <span className="absolute inset-0 flex flex-col items-center justify-center text-[9px] font-bold text-[#E84F93] opacity-0 group-hover/cell:opacity-100 transition-opacity bg-pink-50/95 rounded-lg border border-pink-200/60 gap-1">
                                     <span className="text-[16px] leading-none">✦</span>
                                     {language === "vi" ? "Phân công" : "Assign Shift"}
                                   </span>
@@ -883,7 +922,7 @@ function TimelineSchedule({
                                 {shiftLabels.map((shift, sIdx) => (
                                   <span
                                     key={sIdx}
-                                    className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-xl bg-white/90 backdrop-blur-sm text-emerald-800 text-[9.5px] font-extrabold tracking-tight border border-emerald-200/80 shadow-sm w-full text-center"
+                                    className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-white/90 backdrop-blur-sm text-emerald-800 text-[9.5px] font-bold tracking-tight border border-emerald-200/80 shadow-sm w-full text-center"
                                   >
                                     <Clock size={9} className="text-emerald-500 shrink-0" />
                                     <span>{shift}</span>
@@ -892,7 +931,7 @@ function TimelineSchedule({
                               </div>
                               {!isSplitShift && (
                                 <span className="text-[7.5px] font-bold text-emerald-600 uppercase tracking-widest block leading-none mt-0.5">
-                                  {dayData?.duration ? `${dayData.duration}h` : dayData?.status || "Active"}
+                                  {dayData?.duration ? `${dayData.duration}h` : formatShiftStatus(dayData?.status, language)}
                                 </span>
                               )}
                             </div>
@@ -1355,29 +1394,39 @@ export function StaffManagementPage() {
     loadNailArtists();
   }, []);
 
-  const loadBookings = useCallback(async () => {
+  const [ratings, setRatings] = useState([]);
+
+  const loadBookingsAndRatings = useCallback(async () => {
     if (!salonId) return;
 
     try {
       setLoadingBookings(true);
-      const result = await fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000, isAdmin: true });
-      const apiBookings = result?.items || (Array.isArray(result) ? result : []);
+      const [bookingsResult, ratingsResult] = await Promise.all([
+        fetchBookingsBySalonId(salonId, { pageNumber: 1, pageSize: 1000, isAdmin: true }).catch(() => []),
+        axiosClient.get("/BookingRatings", { params: { PageIndex: 1, PageSize: 500 } }).catch(() => ({ data: { data: { items: [] } } }))
+      ]);
+
+      const apiBookings = bookingsResult?.items || (Array.isArray(bookingsResult) ? bookingsResult : []);
       setBookings(apiBookings);
+
+      const apiRatings = ratingsResult?.data?.data?.items || [];
+      setRatings(apiRatings);
     } catch (err) {
-      console.error("Failed to load bookings for performance insights:", err);
+      console.error("Failed to load bookings or ratings for performance insights:", err);
       setBookings([]);
+      setRatings([]);
     } finally {
       setLoadingBookings(false);
     }
   }, [salonId]);
 
   useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+    loadBookingsAndRatings();
+  }, [loadBookingsAndRatings]);
 
   const performanceInsights = useMemo(
-    () => buildPerformanceInsights(staffArtists, bookings),
-    [staffArtists, bookings],
+    () => buildPerformanceInsights(staffArtists, bookings, ratings),
+    [staffArtists, bookings, ratings],
   );
 
   const staffArtistsWithStats = useMemo(() => {
@@ -1391,6 +1440,8 @@ export function StaffManagementPage() {
 
       return {
         ...staff,
+        rating: performer.rating,
+        metrics: performer.metrics,
         stats: performer.stats,
       };
     });
@@ -1485,7 +1536,7 @@ export function StaffManagementPage() {
         <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-6">
           {/* Luxury Rose Pink Hero Header */}
           <motion.div variants={fadeInUp}>
-            <div className="relative overflow-hidden rounded-[32px] border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFE4EE] p-6 lg:p-8 text-[#2B182B] shadow-[0_15px_40px_rgba(232,79,147,0.12)]">
+            <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFE4EE] p-6 lg:p-8 text-[#2B182B] shadow-[0_15px_40px_rgba(232,79,147,0.12)]">
               {/* Ambient Glow Elements */}
               <div className="pointer-events-none absolute -right-20 -top-20 h-96 w-96 rounded-full bg-gradient-to-br from-[#E84F93]/20 via-[#FF75A8]/15 to-transparent blur-3xl" />
               <div className="pointer-events-none absolute -left-20 -bottom-20 h-96 w-96 rounded-full bg-gradient-to-tr from-[#E5C158]/20 via-[#C99635]/10 to-transparent blur-3xl" />
@@ -1496,11 +1547,11 @@ export function StaffManagementPage() {
                     <Users size={30} className="drop-shadow-md text-white" />
                   </div>
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-extrabold text-[#E84F93] backdrop-blur-md shadow-xs">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-[#E84F93]/30 bg-[#E84F93]/10 px-3.5 py-1 text-[11px] font-bold text-[#E84F93] backdrop-blur-md shadow-xs">
                       <Sparkles size={13} className="text-[#E84F93] animate-pulse" />
                       <span>{language === "vi" ? "Danh sách nhân viên" : "Salon Staff & Artisan Roster"}</span>
                     </div>
-                    <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] mt-1.5 tracking-tight ">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight ">
                       {language === "vi" ? "Danh sách nhân viên" : "Staff Artists"}
                     </h1>
                     <p className="mt-1 text-xs lg:text-sm text-[#8C6682] font-semibold leading-relaxed">
@@ -1524,10 +1575,10 @@ export function StaffManagementPage() {
                         key={action.label}
                         type="button"
                         onClick={handler}
-                        className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white/90 px-4 py-2.5 text-xs font-extrabold text-[#E84F93] shadow-2xs hover:bg-[#FFF0F5] transition"
+                        className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white/90 px-4 py-2.5 text-xs font-bold text-[#E84F93] shadow-2xs hover:bg-[#FFF0F5] transition"
                       >
                         <Icon size={14} />
-                        <span>{action.label}</span>
+                        <span>{isVi ? action.labelVi : action.label}</span>
                       </button>
                     );
                   })}
@@ -1556,20 +1607,21 @@ export function StaffManagementPage() {
                     subtitle={language === "vi" ? "Xem và quản lý nhân viên của bạn" : "View and manage your Staff Artists"}
                   />
                   <div className="flex flex-wrap gap-2">
-                    {STAFF_FILTER_TABS.map((filter) => {
-                      const count = filter === "All" ? staffArtists.length : staffArtists.filter(s => s.status === filter).length;
-                      const isActive = activeFilter === filter;
+                    {STAFF_FILTER_TABS.map((filterObj) => {
+                      const filterName = filterObj.label;
+                      const count = filterName === "All" ? staffArtists.length : staffArtists.filter(s => s.status === filterName).length;
+                      const isActive = activeFilter === filterName;
                       return (
                         <button
-                          key={filter}
+                          key={filterObj.key}
                           type="button"
-                          onClick={() => { setActiveFilter(filter); setCurrentPage(1); }}
+                          onClick={() => { setActiveFilter(filterName); setCurrentPage(1); }}
                           className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${isActive
                             ? "bg-[#ea4f93] text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)]"
                             : "border border-[#f3d7e4] bg-white text-[#7f6478] hover:border-[#ea4f93]/30 hover:text-[#ea4f93]"
                             }`}
                         >
-                          {filter}
+                          {language === "vi" ? filterObj.labelVi : filterObj.label}
                           <span className={isActive ? "rounded bg-white/20 px-1.5 py-0.5 text-[10px]" : "rounded bg-[#fff0f6] px-1.5 py-0.5 text-[10px] text-[#c86d98]"}>
                             {count}
                           </span>
@@ -1586,7 +1638,7 @@ export function StaffManagementPage() {
                       value={query}
                       onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
                       placeholder={language === "vi" ? "Tìm kiếm" : "Search"}
-                      className="h-10 w-full rounded-xl border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
+                      className="h-10 w-full rounded-lg border border-[#f3d7e4] bg-white pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#c8b0bf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
                     />
                   </label>
 
@@ -1594,7 +1646,7 @@ export function StaffManagementPage() {
                     value={selectedDate}
                     onChange={(d) => setSelectedDate(d)}
                     placeholder={language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
-                    className="h-10 w-full rounded-xl border border-[#f3d7e4]"
+                    className="h-10 w-full rounded-lg border border-[#f3d7e4]"
                     suffixIcon={<Calendar size={14} className="text-[#a88a9f]" />}
                   />
 
@@ -1602,7 +1654,7 @@ export function StaffManagementPage() {
                     type="button"
                     onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
                     disabled={!query.trim() && !selectedDate && activeFilter === "All"}
-                    className={`h-10 rounded-xl border px-4 text-sm font-semibold transition ${query.trim() || selectedDate || activeFilter !== "All"
+                    className={`h-10 rounded-lg border px-4 text-sm font-semibold transition ${query.trim() || selectedDate || activeFilter !== "All"
                       ? "border-[#f3d7e4] bg-white text-[#ea4f93] hover:bg-[#fff5fa]"
                       : "cursor-not-allowed border-[#f5e8ef] bg-[#fffafb] text-[#d6b9c8]"
                       }`}
@@ -1625,7 +1677,7 @@ export function StaffManagementPage() {
                     <button
                       type="button"
                       onClick={() => { setQuery(""); setSelectedDate(null); setActiveFilter("All"); setCurrentPage(1); }}
-                      className="mt-4 rounded-xl bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white transition active:scale-[0.98]"
+                      className="mt-4 rounded-lg bg-[#ea4f93] px-4 py-2 text-xs font-semibold text-white transition active:scale-[0.98]"
                     >
                       {language === "vi" ? "Xóa bộ lọc" : "Clear filters"}
                     </button>
@@ -1680,7 +1732,7 @@ export function StaffManagementPage() {
                 />
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded-xl border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93]"
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#f1c6dd] bg-[#fffafd] px-4 py-2 text-[11px] font-semibold text-[#ea4f93]"
                 >
                   <TrendingUp size={14} />
                   {language === "vi" ? "Tháng này" : "This Month"}
@@ -1695,25 +1747,25 @@ export function StaffManagementPage() {
                   performanceInsights.topCompletedPerformers.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-xl border border-[#f1e7ed] bg-[#fffafd] p-4"
+                      className="rounded-lg border border-[#f1e7ed] bg-[#fffafd] p-4"
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.avatarTone} text-sm font-bold text-white`}
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${item.avatarTone} text-sm font-bold text-white`}
                         >
                           {getStaffInitials(item.name)}
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-[#2d1b35]">{item.name}</p>
-                          <p className="text-[12px] text-[#a88a9f]">{item.role}</p>
+                          <p className="text-[12px] text-[#a88a9f]">{formatRole(item.role)}</p>
                         </div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {[
-                          [item.metrics.completed, "Bookings"],
-                          [item.metrics.rating, "Rating"],
-                          [item.metrics.revenue, "Revenue"],
-                          [item.metrics.satisfaction, "Satisfaction"],
+                          [item.metrics.completed, (language === "vi" ? "Số lượt đã hoàn" : "Bookings")],
+                          [item.metrics.rating, (language === "vi" ? "Đánh giá" : "Rating")],
+                          [item.metrics.revenue, (language === "vi" ? "Doanh thu" : "Revenue")],
+                          [item.metrics.satisfaction, (language === "vi" ? "Độ hài lòng" : "Satisfaction")],
                         ].map(([value, label]) => (
                           <div
                             key={label}
@@ -1727,7 +1779,7 @@ export function StaffManagementPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-full rounded-xl border border-dashed border-[#f1c6dd] bg-[#fffafd] px-4 py-8 text-center text-sm text-[#a88a9f]">
+                  <div className="col-span-full rounded-lg border border-dashed border-[#f1c6dd] bg-[#fffafd] px-4 py-8 text-center text-sm text-[#a88a9f]">
                     {language === "vi" ? "Chưa có lịch hoàn thành tháng này" : "No completed bookings this month yet"}
                   </div>
                 )}
@@ -1800,7 +1852,7 @@ export function StaffManagementPage() {
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {selectedStaff.role && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
-                    {selectedStaff.role}
+                    {formatRole(selectedStaff.role, language)}
                   </span>
                 )}
               </div>
@@ -1808,7 +1860,7 @@ export function StaffManagementPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Personal Information */}
-              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+              <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
                 <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin cá nhân" : "Personal Information"}</h3>
                 <div className="space-y-4">
                   <InfoItem label={language === "vi" ? "Tên" : "Name"}>{selectedStaff.name || '-'}</InfoItem>
@@ -1818,20 +1870,18 @@ export function StaffManagementPage() {
               </div>
 
               {/* Account Information */}
-              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+              <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
                 <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin tài khoản" : "Account Information"}</h3>
                 <div className="space-y-4">
-                  <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{selectedStaff.role || '-'}</InfoItem>
+                  <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{formatRole(selectedStaff.role, language) || '-'}</InfoItem>
                   <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
-                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold bg-[#eaf9ee] text-[#2fa25f]">
-                      {selectedStaff.status || 'Active'}
-                    </span>
+                    <StatusPill status={selectedStaff.status || 'Active'} />
                   </InfoItem>
                 </div>
               </div>
 
               {/* Skills Section */}
-              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f1e7ed]">
+              <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
                 <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}</h3>
                 {isLoadingSkills ? (
                   <div className="flex justify-center py-4">
@@ -1844,7 +1894,7 @@ export function StaffManagementPage() {
                       return (
                         <div
                           key={skill.id || index}
-                          className="flex items-center justify-between rounded-xl bg-[#fff8fc] px-4 py-3 border border-[#f1e7ed]"
+                          className="flex items-center justify-between rounded-lg bg-[#fff8fc] px-4 py-3 border border-[#f1e7ed]"
                         >
                           <span className="text-sm font-semibold text-[#2d1b35]">
                             {skill.skillTypeName || skill.name || 'Skill'}
@@ -1925,7 +1975,7 @@ export function StaffManagementPage() {
             <X size={16} />
           </button>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/20 text-white">
               <CalendarDays size={20} />
             </div>
             <div className="min-w-0">
@@ -1940,7 +1990,7 @@ export function StaffManagementPage() {
           <div className={`grid gap-6 ${newShiftStatus === "Active" ? "grid-cols-1 md:grid-cols-[1.15fr_1fr]" : "grid-cols-1"}`}>
             {/* Column 1: Days & Status */}
             <div className="space-y-5">
-              <div className="rounded-2xl border border-rose-100 bg-[#fffafd] p-4">
+              <div className="rounded-lg border border-rose-100 bg-[#fffafd] p-4">
                 {/* Week navigation */}
                 <div className="mb-4 flex items-center justify-between gap-2">
                   <button
@@ -1988,7 +2038,7 @@ export function StaffManagementPage() {
                       return (
                         <label
                           key={day.key}
-                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center transition-all duration-200 ${hasExisting
+                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition-all duration-200 ${hasExisting
                             ? "cursor-not-allowed border-[#f1e7ed] bg-[#f6f6f6]"
                             : isChecked
                               ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm ring-1 ring-[#ea4f93]/25"
@@ -2041,7 +2091,7 @@ export function StaffManagementPage() {
                         key={key}
                         type="button"
                         onClick={() => setNewShiftStatus(key)}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${isActive
+                        className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2.5 text-xs font-semibold transition ${isActive
                           ? `${meta.color} ring-2 ring-offset-1 ring-current`
                           : "border-[#f1e7ed] bg-white text-[#a88a9f] hover:border-[#ea4f93]/30"
                           }`}
@@ -2114,7 +2164,7 @@ export function StaffManagementPage() {
                                 : [...prev, idx]
                             );
                           }}
-                          className={`rounded-xl border py-1.5 text-center text-[9.5px] font-bold tracking-tight transition-all duration-150 ${isSelected
+                          className={`rounded-lg border py-1.5 text-center text-[9.5px] font-bold tracking-tight transition-all duration-150 ${isSelected
                             ? "border-[#ea4f93] bg-[#fff5fa] text-[#ea4f93] shadow-sm"
                             : "border-slate-100 bg-[#fafafa] text-slate-500 hover:border-[#ea4f93]/30 hover:bg-[#fffbfc]"
                             }`}
@@ -2154,7 +2204,7 @@ export function StaffManagementPage() {
                 setIsCreateShiftModalOpen(false);
                 resetShiftForm();
               }}
-              className="rounded-xl px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
+              className="rounded-lg px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
             >
               {language === "vi" ? "Hủy" : "Cancel"}
             </button>
@@ -2162,7 +2212,7 @@ export function StaffManagementPage() {
               type="button"
               onClick={handleCreateShift}
               disabled={isCreatingShift || isShiftTimeInvalid}
-              className="flex min-w-[140px] items-center justify-center gap-2 rounded-xl bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
+              className="flex min-w-[140px] items-center justify-center gap-2 rounded-lg bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
             >
               {isCreatingShift ? <Spin size="small" className="brightness-200" /> : isVi ? "Tạo lịch hẹn" : "Create Schedule"}
             </button>

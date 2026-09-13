@@ -1,6 +1,6 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -26,7 +26,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryTypeDetailPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryTypeId } = useParams();
@@ -45,7 +45,6 @@ export function CategoryTypeDetailPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [createCategoryError, setCreateCategoryError] = useState("");
@@ -98,20 +97,7 @@ export function CategoryTypeDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [categoryTypeId]);
-
-  const summaryItems = useMemo(() => {
-    if (!categoryType || !draft) {
-      return [];
-    }
-
-    return [
-      [t("adminCategoryTypes.categoryTypeIdLabel"), String(categoryType.categoryTypeId)],
-      [t("adminCategoryTypes.status"), draft.status],
-      [t("adminCategoryTypes.categoriesCountLabel"), String(categoryType.categoriesCount)],
-      [t("adminCategoryTypes.categoriesLabel"), categoryType.categoriesLabel],
-    ];
-  }, [categoryType, draft]);
+  }, [categoryTypeId, t]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
@@ -314,17 +300,9 @@ export function CategoryTypeDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
+
+
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
@@ -450,7 +428,7 @@ export function CategoryTypeDetailPage() {
           <div className="w-full max-w-lg rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
+                <h3 className="text-lg font-bold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
                 <p className="mt-1 text-sm text-[#b1859d]">
                   {t("adminCategoryTypes.addNestedCategoryDesc", { name: categoryType?.name || "this category type" })}
                 </p>
