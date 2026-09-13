@@ -3,15 +3,12 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Award,
-  Sparkles,
   Percent,
   Layers,
   Users,
   AlertCircle,
-  Calendar,
   Lock,
   ChevronRight,
-  TrendingUp,
   CheckCircle2,
   Clock
 } from "lucide-react";
@@ -48,7 +45,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
       };
       void getDetail();
     }
-  }, [isOpen, tierId]);
+  }, [isOpen, tierId, t]);
+
+  const memberCount = React.useMemo(() => {
+    if (!tier || !customers.length) return 0;
+    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
+  }, [tier, customers]);
 
   if (!isOpen) return null;
 
@@ -60,13 +62,11 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
       const colors = typeof tier.colorJson === "string" ? JSON.parse(tier.colorJson) : tier.colorJson;
       startColor = colors.gradientStart || colors.primary || tier.backgroundColor;
       endColor = colors.gradientEnd || colors.primary || tier.backgroundColor;
-    } catch (e) { }
+    } catch {
+      startColor = tier.backgroundColor || startColor;
+      endColor = tier.backgroundColor || endColor;
+    }
   }
-
-  const memberCount = React.useMemo(() => {
-    if (!tier || !customers.length) return 0;
-    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
-  }, [tier, customers]);
 
   return (
     <AnimatePresence>
