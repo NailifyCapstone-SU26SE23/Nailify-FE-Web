@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { ArrowLeft, FileImage, LoaderCircle, Save, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -43,6 +44,12 @@ export function NailVariantCreatePage() {
   const [isLoadingReferences, setIsLoadingReferences] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const previewImageUrl = useMemo(
     () => (formValues.image ? URL.createObjectURL(formValues.image) : ""),
     [formValues.image],

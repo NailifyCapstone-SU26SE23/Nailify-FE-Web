@@ -67,6 +67,12 @@ export function NailDesignManagementCategoryPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -455,8 +461,6 @@ export function NailDesignManagementCategoryPage() {
             </div>
             <Pill>{metaData.totalItems} {t("adminNailsDesignManagement.items")}</Pill>
           </div>
-
-
 
           {error ? (
             <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">

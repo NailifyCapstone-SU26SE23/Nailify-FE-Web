@@ -619,6 +619,12 @@ export function StaffCustomerNailReviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states

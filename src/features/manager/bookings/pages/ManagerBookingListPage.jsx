@@ -409,7 +409,7 @@ function mapBookingForDrawer(rawBooking, language = "en") {
   };
 }
 
-function mapApiBookingToUiFormat(apiBooking, index) {
+function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
   const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
@@ -601,8 +601,8 @@ export function ManagerBookingListPage() {
 
   // Compute UI bookings from raw Redux bookings
   const bookings = useMemo(() => {
-    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx));
-  }, [rawBookings]);
+    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx, language));
+  }, [rawBookings, language]);
 
   // Set viewMode via Redux
   const setViewMode = (mode) => dispatch(setFilter({ key: "viewMode", value: mode }));
@@ -836,7 +836,7 @@ export function ManagerBookingListPage() {
         color: "#4F46E5",
       },
       {
-        label: t("manager.dashboard.statusDone") || "Completed",
+        label: t("manager.dashboard.statusCompleted") || "Completed",
         value: completed,
         note: t("manager.bookings.finishedToday") || "Finished today",
         icon: Sparkles,
@@ -905,7 +905,7 @@ export function ManagerBookingListPage() {
       const tone = value > 80 ? "from-[#F59E0B] to-[#D97706]" : value > 50 ? "from-[#8B5CF6] to-[#7C3AED]" : "from-[#FF75A8] to-[#E84F93]";
       return { ...period, value, tone };
     });
-  }, [scheduleDateBookings]);
+  }, [scheduleDateBookings, language]);
 
   const staffWorkloadData = useMemo(() => {
     const staffMap = new Map();
@@ -1102,7 +1102,7 @@ export function ManagerBookingListPage() {
     } finally {
       setIsLoadingDrawer(false);
     }
-  }, []);
+  }, [language]);
 
   const handleViewBooking = (bookingId) => {
     navigate(roleConfig.getDetailRoute(bookingId));
@@ -1244,7 +1244,7 @@ export function ManagerBookingListPage() {
                               const count = filter.value === "All"
                                 ? bookings.length
                                 : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
-                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, t);
+                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, language);
                               return (
                                 <option key={filter.value} value={filter.value} className="text-sm font-medium text-[#2B182B]">
                                   {displayLabel} ({count})

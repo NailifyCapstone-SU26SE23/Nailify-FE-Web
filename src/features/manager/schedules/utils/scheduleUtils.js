@@ -1,15 +1,15 @@
 import { Zap, Star, Sun, Moon } from "lucide-react";
 
-export function formatTimeSpan(timeSpanStr) {
+export function formatTimeSpan(timeSpanStr, language = "en") {
   if (!timeSpanStr) return "N/A";
   const parts = String(timeSpanStr).trim().split(":");
   if (parts.length < 2) return timeSpanStr;
   const hours = parseInt(parts[0], 10);
   const minutes = parseInt(parts[1], 10);
-  return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString("en-US", {
+  return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString(language === "vi" ? "vi-VN" : "en-US", {
     hour: "numeric",
     minute: "2-digit",
-    hour12: true,
+    hour12: language !== "vi",
   });
 }
 
@@ -23,9 +23,10 @@ export function calculateShiftHours(shiftStart, shiftEnd) {
 }
 
 // Determine shift badge styling based on start/end hours
-export function getShiftTheme(shiftStart, shiftEnd) {
+export function getShiftTheme(shiftStart, shiftEnd, language = "en") {
   const startHour = parseInt(String(shiftStart).split(":")[0], 10) || 8;
   const hours = calculateShiftHours(shiftStart, shiftEnd);
+  const isVi = language === "vi";
 
   if (hours <= 2 && hours > 0) {
     return {
@@ -34,7 +35,7 @@ export function getShiftTheme(shiftStart, shiftEnd) {
       text: "text-[#5B21B6]",
       badgeBg: "bg-[#7C3AED]/15 text-[#6D28D9]",
       dot: "bg-[#8B5CF6]",
-      label: "Short Shift",
+      label: isVi ? "Ca ngắn" : "Short Shift",
       icon: Zap,
     };
   } else if (hours >= 10) {
@@ -44,7 +45,7 @@ export function getShiftTheme(shiftStart, shiftEnd) {
       text: "text-[#065F46]",
       badgeBg: "bg-[#059669]/15 text-[#047857]",
       dot: "bg-[#10B981]",
-      label: "Full Day Shift",
+      label: isVi ? "Ca cả ngày" : "Full Day Shift",
       icon: Star,
     };
   } else if (startHour < 11) {
@@ -54,7 +55,7 @@ export function getShiftTheme(shiftStart, shiftEnd) {
       text: "text-[#1E40AF]",
       badgeBg: "bg-[#2563EB]/15 text-[#1D4ED8]",
       dot: "bg-[#3B82F6]",
-      label: "Morning Shift",
+      label: isVi ? "Ca sáng" : "Morning Shift",
       icon: Sun,
     };
   } else {
@@ -64,7 +65,7 @@ export function getShiftTheme(shiftStart, shiftEnd) {
       text: "text-[#92400E]",
       badgeBg: "bg-[#D97706]/15 text-[#B45309]",
       dot: "bg-[#F59E0B]",
-      label: "Evening Shift",
+      label: isVi ? "Ca chiều" : "Evening Shift",
       icon: Moon,
     };
   }

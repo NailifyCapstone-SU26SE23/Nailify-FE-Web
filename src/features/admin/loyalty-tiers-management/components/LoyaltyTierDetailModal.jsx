@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from "react";
 import {
   X,
@@ -23,6 +24,12 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
   const [tier, setTier] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   useEffect(() => {
     if (isOpen && tierId) {

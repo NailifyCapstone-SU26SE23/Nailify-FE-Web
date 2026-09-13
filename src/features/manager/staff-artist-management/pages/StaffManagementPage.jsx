@@ -939,6 +939,12 @@ export function StaffManagementPage() {
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);

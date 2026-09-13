@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
@@ -171,6 +172,12 @@ export function BookingRatingListPage() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;

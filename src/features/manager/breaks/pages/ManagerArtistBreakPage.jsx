@@ -662,7 +662,7 @@ export function ManagerArtistBreakPage() {
                             </>
                           ) : (
                             <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg">
-                              {t("manager.dashboard.statusDone") || "Processed"}
+                              {t("manager.dashboard.statusCompleted") || "Processed"}
                             </span>
                           )}
 

@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import {
   CalendarDays,
   CircleDollarSign,
@@ -293,14 +294,14 @@ export function ManagerDashboardPage() {
       icon: CircleDollarSign,
     },
     {
-      label: t("receptionist.payments.tierDiscount"),
+      label: t("receptionist.payments.averageTicketValue"),
       value: `${(data?.averageTicketValue || 0).toLocaleString("vi-VN")}`,
       unit: "VND",
       color: "#10b981",
       icon: Wallet,
     },
     {
-      label: t("receptionist.dashboard.statusDone"),
+      label: t("receptionist.dashboard.statusCompleted"),
       value: `${completed}`,
       color: "#f59e0b",
       icon: CalendarCheck2,
@@ -427,7 +428,7 @@ export function ManagerDashboardPage() {
     ]
   };
 
-  const renderWidgetContent = (id, isPinned) => {
+  const renderWidgetContent = (id, isPinned, isVi) => {
     switch (id) {
       case 'revenueBreakdown':
         return <ReactECharts option={revenueBreakdownOption} style={{ height: isPinned ? '350px' : '280px', width: '100%' }} opts={{ renderer: 'svg' }} />;
@@ -436,15 +437,15 @@ export function ManagerDashboardPage() {
           <div className={`flex ${isPinned ? 'h-[350px]' : 'h-[280px]'} items-center justify-around w-full`}>
             <div className="flex flex-col items-center w-1/3">
               <ReactECharts option={staffUtilOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Staff Util</span>
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">{isVi ? "Hiệu suất nhân viên" : "Staff Util"}</span>
             </div>
             <div className="flex flex-col items-center w-1/3">
               <ReactECharts option={cancelRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Cancel Rate</span>
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">{isVi ? "Tỷ lệ hủy" : "Cancel Rate"}</span>
             </div>
             <div className="flex flex-col items-center w-1/3">
               <ReactECharts option={completionRateOption} style={{ height: isPinned ? '250px' : '200px', width: '100%' }} opts={{ renderer: 'svg' }} />
-              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">Completion</span>
+              <span className="text-[13px] font-bold text-slate-600 mt-[-20px]">{isVi ? "Tỷ lệ hoàn thành" : "Completion"}</span>
             </div>
           </div>
         );
@@ -505,18 +506,18 @@ export function ManagerDashboardPage() {
                   <div>
                     <p className="font-bold text-sm">{alert.artistName}</p>
                     <div className="mt-1 flex items-center gap-4 text-xs font-medium">
-                      <span>Date: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
-                      <span>Time: {alert.startTime} - {alert.endTime}</span>
+                      <span>{isVi ? "Ngày" : "Date"}: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
+                      <span>{isVi ? "Thời gian" : "Time"}: {alert.startTime} - {alert.endTime}</span>
                     </div>
                     <p className="mt-1 text-xs opacity-90 truncate max-w-[400px]" title={alert.reason}>
-                      Reason: {alert.reason}
+                      {isVi ? "Lý do" : "Reason"}: {alert.reason}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="py-6 text-center text-sm font-medium text-slate-500 w-full">
-                No leave alerts for this period.
+                {isVi ? "Không có lịch nghỉ" : "No leave alerts"}
               </div>
             )}
           </div>
@@ -584,6 +585,7 @@ export function ManagerDashboardPage() {
 
   const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
   const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
+  const isVi = language === "vi";
 
   return (
     <div className="flex min-h-screen flex-col text-slate-800 font-sans">
@@ -672,7 +674,7 @@ export function ManagerDashboardPage() {
               onDrop={handleDrop}
               fullWidth={widget.id === 'staffDirectory'}
             >
-              {renderWidgetContent(widget.id, false)}
+              {renderWidgetContent(widget.id, false, isVi)}
             </WidgetWrapper>
           ))}
         </div>
@@ -691,6 +693,12 @@ export function ManagerDashboardPage() {
 
 const StaffAvatar = ({ staff, size = 56, className }) => {
   const [error, setError] = useState(false);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const getInitials = (f, l) => `${f?.[0] || ""}${l?.[0] || ""}`.toUpperCase();
 
   useEffect(() => {
@@ -715,6 +723,7 @@ const StaffAvatar = ({ staff, size = 56, className }) => {
 // Staff Detail Modal Component
 function StaffDetailModal({ staff, startDate, endDate, onClose }) {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const { data: userDetail, isLoading: isUserLoading } = useUserDetail(staff?.userId);
   const { data: dashboard, isLoading: isDashboardLoading } = useNailArtistDashboard(staff?.staffId, startDate, endDate);
 
@@ -762,7 +771,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
 
   return (
     <Modal
-      title={<span className="text-slate-800 font-bold">Staff Information</span>}
+      title={<span className="text-slate-800 font-bold">{isVi ? "Thông tin thợ nail" : "Staff Information"}</span>}
       open={!!staff}
       onCancel={onClose}
       footer={null}
@@ -819,7 +828,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
 
           {dashboard && (
             <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
-              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">{t("manager.dashboard.widgets.earningsTracker")}</h4>
+              <h4 className="text-[13px] font-bold text-slate-500 mb-3 uppercase tracking-wider">{isVi ? "Theo dõi doanh thu" : "Earnings Tracker"}</h4>
               <ReactECharts
                 option={{
                   color: ['#10b981'],

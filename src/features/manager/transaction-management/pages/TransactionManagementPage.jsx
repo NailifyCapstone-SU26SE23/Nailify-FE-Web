@@ -73,6 +73,12 @@ export function TransactionManagementPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [transactionsData, setTransactionsData] = useState({
     items: [],
     totalCount: 0,

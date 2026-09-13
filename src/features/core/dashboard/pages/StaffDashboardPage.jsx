@@ -264,6 +264,12 @@ export function StaffDashboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [bookings, setBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
   const [bookingPagination, setBookingPagination] = useState({

@@ -79,9 +79,16 @@ export function ProceduresManagementPage() {
     lastRowOnPage: 0,
   });
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedProcedureType, setSelectedProcedureType] = useState("");
   const [selectedRequired, setSelectedRequired] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
@@ -117,6 +124,8 @@ export function ProceduresManagementPage() {
         const response = await fetchAdminProcedures({
           pageIndex: metaData.currentPage,
           pageSize: metaData.pageSize,
+          status: selectedStatus,
+          procedureType: selectedProcedureType,
         });
 
         if (!isMounted) {
@@ -144,7 +153,7 @@ export function ProceduresManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [metaData.currentPage, metaData.pageSize]);
+  }, [metaData.currentPage, metaData.pageSize, selectedStatus, selectedProcedureType]);
 
   const summaryCards = useMemo(() => {
     const activeCount = procedures.filter((item) => item.status === "Active").length;
@@ -259,6 +268,28 @@ export function ProceduresManagementPage() {
         render: (value) => <ProcedureRequiredBadge isRequired={value} />,
       },
       {
+        title: language === "vi" ? "Loại" : "Type",
+        dataIndex: "procedureType",
+        key: "procedureType",
+        sorter: (a, b) => (a.procedureType || "").localeCompare(b.procedureType || ""),
+        render: (value) => (
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${value === 'Common' ? 'bg-[#e0f2fe] text-[#0284c7]' : 'bg-[#fef3c7] text-[#d97706]'}`}>
+            {value === 'Common' ? (language === "vi" ? "Chung" : "Common") : (language === "vi" ? "Riêng" : "Model Specific")}
+          </span>
+        ),
+      },
+      {
+        title: language === "vi" ? "Bước chính" : "Main Step",
+        dataIndex: "isMainStep",
+        key: "isMainStep",
+        sorter: (a, b) => (a.isMainStep === b.isMainStep ? 0 : a.isMainStep ? -1 : 1),
+        render: (value) => (
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${value ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#f3f4f6] text-[#4b5563]'}`}>
+            {value ? (language === "vi" ? "Bước chính" : "Main") : (language === "vi" ? "Bước phụ" : "Sub")}
+          </span>
+        ),
+      },
+      {
         title: t("adminProcedures.status"),
         dataIndex: "status",
         key: "status",
@@ -308,7 +339,7 @@ export function ProceduresManagementPage() {
           </div>
         ),
       },
-    ], [navigate, t],
+    ], [navigate, t, language],
   );
 
   const handleDeleteProcedure = async () => {
@@ -397,13 +428,16 @@ export function ProceduresManagementPage() {
             </select>
 
             <select
-              value={selectedStatus}
-              onChange={(event) => setSelectedStatus(event.target.value)}
+              value={selectedProcedureType}
+              onChange={(event) => {
+                setSelectedProcedureType(event.target.value);
+                setMetaData((current) => ({ ...current, currentPage: 1 }));
+              }}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
-              <option value="">{t("adminProcedures.allStatuses")}</option>
-              <option value="Active">{t("adminProcedures.active")}</option>
-              <option value="Inactive">{t("adminProcedures.inactive")}</option>
+              <option value="">{language === "vi" ? "Tất cả loại" : "All Types"}</option>
+              <option value="Common">{language === "vi" ? "Chung" : "Common"}</option>
+              <option value="ModelSpecific">{language === "vi" ? "Riêng" : "Model Specific"}</option>
             </select>
           </div>
           <div className="w-auto min-w-[150px]">

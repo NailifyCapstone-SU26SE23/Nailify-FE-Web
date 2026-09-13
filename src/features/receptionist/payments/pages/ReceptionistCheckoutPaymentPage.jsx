@@ -129,6 +129,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(location.state?.booking ?? null);
   const [customerProfile, setCustomerProfile] = useState(location.state?.customerProfile ?? null);
   const [salonProfile, setSalonProfile] = useState(null);
@@ -417,7 +423,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </span>
             <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${paymentBadgeClassName}`}>
               {paymentStage === "paid"
-                ? (t("receptionist.dashboard.statusDone") || "Paid")
+                ? (t("receptionist.dashboard.statusCompleted") || "Paid")
                 : paymentStage === "processing"
                   ? (language === "vi" ? "Đang xử lý" : "Processing")
                   : paymentStage === "cancelled"
@@ -453,7 +459,7 @@ export function ReceptionistCheckoutPaymentPage() {
                       {language === "vi" ? "Thành viên Vàng" : "Gold Member"}
                     </span>
                     <span className="rounded-full bg-[#e8f8ef] px-3 py-1 text-[10px] font-bold text-[#1f9d61]">
-                      {t("receptionist.dashboard.statusDone") || "Service Completed"}
+                      {t("receptionist.dashboard.statusCompleted") || "Service Completed"}
                     </span>
                   </div>
                 </div>
@@ -469,7 +475,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.chairName || (language === "vi" ? "Chưa có ghế" : "No chair")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusCompleted") || "Completed"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{completedTime}</p>
                 </div>
 
@@ -786,8 +792,8 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-5 space-y-3 text-sm">
               {[
-                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusDone") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
-                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusDone") || "Paid") : paymentBadge, paymentBadgeClassName],
+                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusCompleted") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
+                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusCompleted") || "Paid") : paymentBadge, paymentBadgeClassName],
                 [language === "vi" ? "Hóa đơn" : "Receipt", paymentStage === "paid" ? (language === "vi" ? "Sẵn sàng" : "Ready") : (language === "vi" ? "Chưa in" : "Not Printed"), paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
                 [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName, ""],
               ].map(([label, value, className]) => (
@@ -800,17 +806,6 @@ export function ReceptionistCheckoutPaymentPage() {
               ))}
             </div>
           </SummaryCard>
-
-          {/* <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
-            <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
-              <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
-              <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
-              <p className="mt-1 text-xs text-[#8f7b88]">{language === "vi" ? "Tích lũy từ lượt xem này" : "Earned from this visit"}</p>
-            </div>
-            <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
-              {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
-            </div>
-          </SummaryCard> */}
 
           <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">
