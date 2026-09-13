@@ -1,6 +1,5 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -18,7 +17,6 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
   getAdminCategoryTypeDetailRoute,
@@ -32,7 +30,7 @@ import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 
 function CategoryTypeStatusBadge({ status }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
   const isStatusActive = normalizedStatus === "active";
   const className = isStatusActive
@@ -45,7 +43,7 @@ function CategoryTypeStatusBadge({ status }) {
 }
 
 export function CategoryTypesManagementPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -72,8 +70,6 @@ export function CategoryTypesManagementPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
-
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
@@ -169,7 +165,7 @@ export function CategoryTypesManagementPage() {
         color: "#8b5cf6",
       },
     ];
-  }, [categoryTypes, debouncedQuery, metaData.totalItems, metaData.totalPages]);
+  }, [categoryTypes, debouncedQuery, metaData.totalItems, metaData.totalPages, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;

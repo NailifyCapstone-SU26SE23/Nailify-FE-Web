@@ -1,6 +1,6 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -26,7 +26,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryTypeDetailPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryTypeId } = useParams();
@@ -45,7 +45,6 @@ export function CategoryTypeDetailPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [createCategoryError, setCreateCategoryError] = useState("");
@@ -99,19 +98,6 @@ export function CategoryTypeDetailPage() {
       isMounted = false;
     };
   }, [categoryTypeId, t]);
-
-  const summaryItems = useMemo(() => {
-    if (!categoryType || !draft) {
-      return [];
-    }
-
-    return [
-      [t("adminCategoryTypes.categoryTypeIdLabel"), String(categoryType.categoryTypeId)],
-      [t("adminCategoryTypes.status"), draft.status],
-      [t("adminCategoryTypes.categoriesCountLabel"), String(categoryType.categoriesCount)],
-      [t("adminCategoryTypes.categoriesLabel"), categoryType.categoriesLabel],
-    ];
-  }, [categoryType, draft]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
