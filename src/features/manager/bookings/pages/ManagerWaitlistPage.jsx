@@ -307,6 +307,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
 }
 
 export function ManagerWaitlistPage() {
+  const { language } = useLanguage();
   const [waitlistData, setWaitlistData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);

@@ -82,7 +82,10 @@ export function NailShapesManagementPage() {
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
-    if (!location.state?.flashMessage) { return; }
+    if (!location.state?.flashMessage) {
+      return;
+    }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 

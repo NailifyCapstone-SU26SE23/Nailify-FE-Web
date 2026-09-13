@@ -343,6 +343,7 @@ export function StaffBookingListPage() {
   /* STREAMING_CHUNK: Effects */
   useEffect(() => {
     if (!location.state?.flashMessage) return;
+    toast.success(location.state.flashMessage);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 

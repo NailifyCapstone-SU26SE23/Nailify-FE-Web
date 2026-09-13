@@ -69,7 +69,10 @@ export function ProcedureDetailPage() {
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
   useEffect(() => {
-    if (!location.state?.flashMessage && !location.state?.startInEdit) { return; }
+    if (!location.state?.flashMessage && !location.state?.startInEdit) {
+      return;
+    }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -313,9 +316,17 @@ export function ProcedureDetailPage() {
         </div>
       </header>
 
-      
+      {flashMessage ? (
+        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
+          {flashMessage}
+        </div>
+      ) : null}
 
-      
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
+          {error}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
@@ -448,24 +459,6 @@ export function ProcedureDetailPage() {
               </div>
             </div>
           </section>
-
-          {/* <aside className="space-y-4">
-            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                Summary
-              </h2>
-
-              <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                {summaryItems.map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 text-sm">
-                    <span className="font-semibold text-slate-500">{label}</span>
-                    <span className="text-right font-bold text-slate-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside> */}
         </div>
       )}
 

@@ -221,7 +221,10 @@ export function ReceptionistBookingListPage() {
   }, [loadBookings]);
 
   useEffect(() => {
-    if (!location.state?.flashMessage) { return; }
+    if (!location.state?.flashMessage) {
+      return;
+    }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 

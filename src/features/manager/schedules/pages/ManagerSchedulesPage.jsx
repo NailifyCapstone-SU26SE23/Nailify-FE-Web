@@ -3,6 +3,7 @@ import { Spin, Alert } from 'antd';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
 import toast from 'react-hot-toast';
+import { Trash2 } from 'lucide-react';
 
 import { useSchedules } from '../hooks/useSchedules';
 import { SchedulesHeader } from '../components/SchedulesHeader';
@@ -11,6 +12,8 @@ import { SchedulesTable } from '../components/SchedulesTable';
 import { ScheduleModals } from '../components/ScheduleModals';
 import { EmergencyOffModal } from '../../staff-artist-management/components/EmergencyOffModal';
 import { createSchedule, updateSchedule, deleteSchedule } from '../services/scheduleService';
+import { ActionConfirmModal } from '../../../../shared/components/ui/ActionConfirmModal';
+import { useLanguage } from '../../../../shared/hooks/useLanguage';
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -26,6 +29,7 @@ const fadeInUp = {
 };
 
 export function ManagerSchedulesPage() {
+  const { t, language } = useLanguage();
   const {
     selectedWeekStart,
     setSelectedWeekStart,
@@ -57,6 +61,9 @@ export function ManagerSchedulesPage() {
 
   const [isEmergencyOffModalOpen, setIsEmergencyOffModalOpen] = useState(false);
   const [selectedEmergencyArtist, setSelectedEmergencyArtist] = useState(null);
+  const [showDeleteScheduleConfirm, setShowDeleteScheduleConfirm] = useState(false);
+  const [selectedScheduleForDelete, setSelectedScheduleForDelete] = useState(null);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
 
   const weekDays = useMemo(() => {
     const days = [];
@@ -150,17 +157,54 @@ export function ManagerSchedulesPage() {
     }
   };
 
-  const handleDeleteScheduleClick = async (scheduleId) => {
-    if (!window.confirm("Are you sure you want to delete this shift schedule?")) return;
+  const handleDeleteScheduleClick = (schedule) => {
+    setSelectedScheduleForDelete(schedule);
+    setShowDeleteScheduleConfirm(true);
+  };
+
+  const handleDeleteScheduleConfirm = async () => {
+    const scheduleId = selectedScheduleForDelete?.scheduleId || selectedScheduleForDelete?.id;
+    if (!scheduleId) return;
+    setIsDeletingSchedule(true);
     try {
       await deleteSchedule(scheduleId);
-      toast.success("Shift schedule deleted");
+      toast.success(language === "vi" ? "Đã xóa ca làm việc" : "Shift schedule deleted");
+      setShowDeleteScheduleConfirm(false);
+      setSelectedScheduleForDelete(null);
       loadData();
     } catch (err) {
       console.error("Failed to delete schedule:", err);
-      toast.error(err.message || "Failed to delete schedule");
+      toast.error(err.message || (language === "vi" ? "Xóa ca làm việc thất bại" : "Failed to delete schedule"));
+    } finally {
+      setIsDeletingSchedule(false);
     }
   };
+
+  const handleCancelDeleteSchedule = () => {
+    if (isDeletingSchedule) return;
+    setShowDeleteScheduleConfirm(false);
+    setSelectedScheduleForDelete(null);
+  };
+
+  const deleteScheduleDescription = useMemo(() => {
+    if (!selectedScheduleForDelete) {
+      return language === "vi"
+        ? "Bạn có chắc muốn xóa ca làm việc này không?"
+        : "Are you sure you want to delete this shift schedule?";
+    }
+
+    const date = selectedScheduleForDelete.workDate
+      ? dayjs(selectedScheduleForDelete.workDate).format(language === "vi" ? "DD/MM/YYYY" : "MMM D, YYYY")
+      : "";
+    const start = String(selectedScheduleForDelete.shiftStart || "").slice(0, 5);
+    const end = String(selectedScheduleForDelete.shiftEnd || "").slice(0, 5);
+    const timeRange = start && end ? `${start} - ${end}` : "";
+    const details = [date, timeRange].filter(Boolean).join(" ");
+
+    return language === "vi"
+      ? `Bạn có chắc muốn xóa ca làm việc${details ? ` ${details}` : ""} không?`
+      : `Are you sure you want to delete${details ? ` the ${details}` : " this"} shift schedule?`;
+  }, [language, selectedScheduleForDelete]);
 
   const handleEmergencyOff = (artist = null) => {
     setSelectedEmergencyArtist(artist || staffList[0] || null);
@@ -250,6 +294,19 @@ export function ManagerSchedulesPage() {
         artist={selectedEmergencyArtist}
         artists={staffList}
         onSuccess={() => loadData()}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteScheduleConfirm}
+        intent="danger"
+        title={t("manager.schedules.deleteShift") || (language === "vi" ? "Xóa ca làm việc" : "Delete Shift")}
+        description={deleteScheduleDescription}
+        confirmText={t("manager.schedules.deleteShift") || (language === "vi" ? "Xóa ca làm việc" : "Delete Shift")}
+        cancelText={t("manager.schedules.keepShift") || (language === "vi" ? "Giữ ca làm việc" : "Keep Shift")}
+        confirmIcon={Trash2}
+        loading={isDeletingSchedule}
+        onConfirm={handleDeleteScheduleConfirm}
+        onCancel={handleCancelDeleteSchedule}
       />
     </motion.section>
   );

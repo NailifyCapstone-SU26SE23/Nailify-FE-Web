@@ -93,9 +93,11 @@ export function ProceduresManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
-
   useEffect(() => {
-    if (!location.state?.flashMessage) { return; }
+    if (!location.state?.flashMessage) {
+      return;
+    }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
@@ -221,17 +223,19 @@ export function ProceduresManagementPage() {
 
   const filteredProcedures = useMemo(() => {
     return procedures.filter((procedure) => {
+      const normalizedStatus = String(procedure.status || "").toLowerCase();
       const matchesQuery =
         !debouncedQuery ||
         String(procedure.name || "").toLowerCase().includes(debouncedQuery) ||
         String(procedure.description || "").toLowerCase().includes(debouncedQuery);
+      const matchesStatus = !selectedStatus || normalizedStatus === selectedStatus.toLowerCase();
       const matchesRequired =
         !selectedRequired ||
         (selectedRequired === "required" ? procedure.isRequired : !procedure.isRequired);
 
-      return matchesQuery && matchesRequired;
+      return matchesQuery && matchesStatus && matchesRequired;
     });
-  }, [debouncedQuery, procedures, selectedRequired]);
+  }, [debouncedQuery, procedures, selectedRequired, selectedStatus]);
 
   const columns = useMemo(
     () => [
@@ -369,9 +373,17 @@ export function ProceduresManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
+        {flashMessage ? (
+          <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
+            {flashMessage}
+          </div>
+        ) : null}
 
-
-
+        {error ? (
+          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
+            {error}
+          </div>
+        ) : null}
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
@@ -426,19 +438,6 @@ export function ProceduresManagementPage() {
               <option value="">{language === "vi" ? "Tất cả loại" : "All Types"}</option>
               <option value="Common">{language === "vi" ? "Chung" : "Common"}</option>
               <option value="ModelSpecific">{language === "vi" ? "Riêng" : "Model Specific"}</option>
-            </select>
-
-            <select
-              value={selectedStatus}
-              onChange={(event) => {
-                setSelectedStatus(event.target.value);
-                setMetaData((current) => ({ ...current, currentPage: 1 }));
-              }}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">{t("adminProcedures.allStatuses")}</option>
-              <option value="Active">{t("adminProcedures.active")}</option>
-              <option value="Inactive">{t("adminProcedures.inactive")}</option>
             </select>
           </div>
           <div className="w-auto min-w-[150px]">

@@ -139,7 +139,10 @@ export function NailShapeDetailPage() {
   };
 
   useEffect(() => {
-    if (!location.state?.flashMessage && !location.state?.startInEdit) { return; }
+    if (!location.state?.flashMessage && !location.state?.startInEdit) {
+      return;
+    }
+
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 

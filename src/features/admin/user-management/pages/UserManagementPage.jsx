@@ -213,6 +213,7 @@ export function UserManagementPage() {
       return;
     }
 
+    toast.success(location.state.flashMessage);
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 

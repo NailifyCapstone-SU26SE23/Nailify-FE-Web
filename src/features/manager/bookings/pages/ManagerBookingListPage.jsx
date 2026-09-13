@@ -409,7 +409,7 @@ function mapBookingForDrawer(rawBooking, language = "en") {
   };
 }
 
-function mapApiBookingToUiFormat(apiBooking, index, language) {
+function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
   const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
@@ -858,7 +858,7 @@ export function ManagerBookingListPage() {
         color: "#4F46E5",
       },
       {
-        label: t("manager.dashboard.statusDone") || "Completed",
+        label: t("manager.dashboard.statusCompleted") || "Completed",
         value: completed,
         note: t("manager.bookings.finishedToday") || "Finished today",
         icon: Sparkles,
@@ -1161,7 +1161,7 @@ export function ManagerBookingListPage() {
     } finally {
       setIsLoadingDrawer(false);
     }
-  }, []);
+  }, [language]);
 
   const handleViewBooking = (bookingId) => {
     navigate(roleConfig.getDetailRoute(bookingId));

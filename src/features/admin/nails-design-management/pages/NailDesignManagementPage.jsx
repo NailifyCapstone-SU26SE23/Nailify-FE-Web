@@ -254,6 +254,7 @@ export function NailDesignManagementPage() {
       return;
     }
 
+    toast.success(location.state.flashMessage);
     flashMessageShownRef.current = true;
 
     navigate(location.pathname, { replace: true, state: null });

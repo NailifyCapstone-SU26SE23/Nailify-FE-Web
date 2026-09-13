@@ -106,6 +106,7 @@ export function SchedulesTable({
                     showShiftTimes={showShiftTimes}
                     onEdit={onEditSchedule}
                     onDelete={onDeleteSchedule}
+                    language={language}
                   />
                 ))
               )}

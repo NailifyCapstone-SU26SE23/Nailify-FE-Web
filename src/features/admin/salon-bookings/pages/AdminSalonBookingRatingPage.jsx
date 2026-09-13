@@ -239,44 +239,7 @@ export function AdminSalonBookingRatingPage() {
   const handleBackToSalons = () => {
     setSelectedSalon(null);
     setRatings([]);
-  };
-
-  // Client side sorting & filtering for Salons Selector
-  const filteredSalons = useMemo(() => {
-    let items = [...salons];
-
-    // Filter status
-    if (salonStatusFilter !== "all") {
-      items = items.filter(
-        (s) => (s.status || "open").toLowerCase() === salonStatusFilter.toLowerCase()
-      );
-    }
-
-    // Filter search query
-    if (salonSearchQuery.trim()) {
-      const query = salonSearchQuery.toLowerCase();
-      items = items.filter(
-        (s) =>
-          s.name?.toLowerCase().includes(query) ||
-          s.address?.toLowerCase().includes(query)
-      );
-    }
-
-    // Sort options
-    if (salonSortOption === "name") {
-      items.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (salonSortOption === "rating") {
-      items.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
-    } else if (salonSortOption === "reviews") {
-      items.sort((a, b) => {
-        const countA = salonMetrics[a.id]?.count || 0;
-        const countB = salonMetrics[b.id]?.count || 0;
-        return countB - countA;
-      });
-    }
-
-    return items;
-  }, [salons, salonStatusFilter, salonSearchQuery, salonSortOption, salonMetrics]);
+  };  
 
   // Derived global metrics for the header
   const totalNetworkReviews = useMemo(() => {
