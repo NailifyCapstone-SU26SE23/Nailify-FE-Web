@@ -98,7 +98,7 @@ export function CategoryTypeDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [categoryTypeId]);
+  }, [categoryTypeId, t]);
 
   const summaryItems = useMemo(() => {
     if (!categoryType || !draft) {

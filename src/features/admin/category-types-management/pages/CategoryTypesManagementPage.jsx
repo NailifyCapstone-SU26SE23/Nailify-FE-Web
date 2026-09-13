@@ -133,7 +133,7 @@ export function CategoryTypesManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, t]);
 
   const summaryCards = useMemo(() => {
     const activeCount = categoryTypes.filter((item) => String(item.status).toLowerCase() === "active").length;
