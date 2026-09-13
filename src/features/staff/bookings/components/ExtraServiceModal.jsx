@@ -47,7 +47,7 @@ export function ExtraServiceModal({
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
-            <h3 className="text-lg font-extrabold text-[#3f2b3f]">{title}</h3>
+            <h3 className="text-lg font-bold text-[#3f2b3f]">{title}</h3>
             <p className="mt-1 text-sm text-[#a88a9d]">{description}</p>
           </div>
           <button
@@ -98,7 +98,7 @@ export function ExtraServiceModal({
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
-                        <p className="text-sm font-extrabold text-[#3f2b3f]">{service.name}</p>
+                        <p className="text-sm font-bold text-[#3f2b3f]">{service.name}</p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
                           {service.description || "No description provided."}
                         </p>
@@ -121,17 +121,17 @@ export function ExtraServiceModal({
                           type="button"
                           onClick={() => onDecreaseQuantity(service.serviceId)}
                           disabled={selectedQuantity <= 0}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-lg font-extrabold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-lg font-bold text-[#ea4f93] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           -
                         </button>
-                        <span className="min-w-8 text-center text-sm font-extrabold text-[#3f2b3f]">
+                        <span className="min-w-8 text-center text-sm font-bold text-[#3f2b3f]">
                           {selectedQuantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => onIncreaseQuantity(service.serviceId)}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ea4f93] bg-[#fff1f7] text-lg font-extrabold text-[#ea4f93]"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ea4f93] bg-[#fff1f7] text-lg font-bold text-[#ea4f93]"
                         >
                           +
                         </button>

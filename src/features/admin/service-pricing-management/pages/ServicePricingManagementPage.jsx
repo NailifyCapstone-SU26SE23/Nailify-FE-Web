@@ -105,7 +105,7 @@ TogglePill.propTypes = {
 function SidePanel({ title, children }) {
   return (
     <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <h3 className="text-sm font-extrabold text-[#432744]">{title}</h3>
+      <h3 className="text-sm font-bold text-[#432744]">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -138,7 +138,7 @@ function ModalShell({ title, subtitle, onClose, children }) {
       <div className="w-full max-w-2xl rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
           <div>
-            <h3 className="text-lg font-extrabold text-[#432744]">{title}</h3>
+            <h3 className="text-lg font-bold text-[#432744]">{title}</h3>
             <p className="mt-1 text-sm text-[#b1859d]">{subtitle}</p>
           </div>
           <button
@@ -291,19 +291,19 @@ function ServiceDetailModal({ service, onClose }) {
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
               {language === "vi" ? "Tên dịch vụ" : "Service Name"}
             </p>
-            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.name}</p>
+            <p className="mt-1 text-sm font-bold text-[#432744]">{service.name}</p>
           </div>
           <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
               {language === "vi" ? "Danh mục" : "Category"}
             </p>
-            <p className="mt-1 text-sm font-extrabold text-[#432744]">{service.category}</p>
+            <p className="mt-1 text-sm font-bold text-[#432744]">{service.category}</p>
           </div>
           <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
               {language === "vi" ? "Giá cơ bản" : "Base Price"}
             </p>
-            <p className="mt-1 text-sm font-extrabold text-[#2fa06c]">
+            <p className="mt-1 text-sm font-bold text-[#2fa06c]">
               {Number(service.price).toLocaleString("vi-VN")} VND
             </p>
           </div>
@@ -311,7 +311,7 @@ function ServiceDetailModal({ service, onClose }) {
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
               {language === "vi" ? "Thời lượng" : "Duration"}
             </p>
-            <p className="mt-1 text-sm font-extrabold text-[#8b5cf6]">
+            <p className="mt-1 text-sm font-bold text-[#8b5cf6]">
               {formatDurationMinutes(service.duration, language)}
             </p>
           </div>
@@ -687,7 +687,7 @@ export function ServicePricingManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        
+
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
@@ -753,7 +753,7 @@ export function ServicePricingManagementPage() {
           <div className="space-y-4">
             <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
               {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
-                <h2 className="text-sm font-extrabold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
+                <h2 className="text-sm font-bold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
                   {t("userManagement.table.actions") === "Thao tác"
                     ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`

@@ -19,8 +19,8 @@ export function SchedulesTable({
   const { t, language } = useLanguage();
   const isVi = language === "vi";
 
-  const displayedWeekDays = selectedDayKey === "ALL" 
-    ? weekDays 
+  const displayedWeekDays = selectedDayKey === "ALL"
+    ? weekDays
     : weekDays.filter((d) => d.format("ddd").toUpperCase() === selectedDayKey);
 
   const columns = [
@@ -37,7 +37,7 @@ export function SchedulesTable({
       width: 250,
       render: (_, staff) => (
         <div className="flex items-center gap-3 group/staff px-2">
-          <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${staff.gradient} text-xs font-bold text-white shadow-sm ring-2 ${staff.ring}`}>
+          <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${staff.gradient} text-xs font-bold text-white shadow-sm ring-2 ${staff.ring}`}>
             {staff.initials}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#10B981]" />
           </div>
@@ -62,7 +62,7 @@ export function SchedulesTable({
     ...displayedWeekDays.map((day) => {
       const dateKey = day.format("YYYY-MM-DD");
       const isToday = day.isSame(dayjs(), "day");
-      
+
       return {
         title: (
           <div className="text-center">
@@ -117,7 +117,7 @@ export function SchedulesTable({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-[#F3E2EC] overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-[#F3E2EC] overflow-hidden">
       <Table
         columns={columns}
         dataSource={staffList}

@@ -283,7 +283,7 @@ export function ReceptionistCustomerDetailPage() {
     return (
       <div className="flex h-full min-h-[500px] flex-col items-center justify-center bg-[#FAF7F9] text-gray-500 font-sans">
         <UserCircle size={60} className="mb-4 text-[#EA4F93] opacity-40" />
-        <p className="text-base font-extrabold text-[#3D243C]">{language === "vi" ? "Không tìm thấy thông tin khách hàng" : "Customer not found"}</p>
+        <p className="text-base font-bold text-[#3D243C]">{language === "vi" ? "Không tìm thấy thông tin khách hàng" : "Customer not found"}</p>
         <button
           onClick={() => navigate(-1)}
           className="mt-4 px-6 py-2.5 bg-[#FFF0F5] border border-[#F4D6E4] hover:bg-[#FFE5EE] text-[#EA4F93] rounded-full text-xs font-bold transition shadow-2xs"
@@ -345,7 +345,7 @@ export function ReceptionistCustomerDetailPage() {
       </div>
 
       {/* Hero Customer Profile Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2A172A] via-[#3B1C38] to-[#251024] p-6 md:p-7 text-white shadow-xl border border-pink-900/30">
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-[#2A172A] via-[#3B1C38] to-[#251024] p-6 md:p-7 text-white shadow-xl border border-pink-900/30">
         {/* Glow Decor Background */}
         <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-rose-500/20 to-amber-500/10 blur-3xl" />
@@ -431,7 +431,7 @@ export function ReceptionistCustomerDetailPage() {
                 <Star size={12} className="text-amber-400 fill-amber-400 animate-pulse" /> {language === "vi" ? "Điểm Thưởng Tích Lũy" : "Accumulated Points"}
               </p>
               <p className="text-3xl font-bold text-amber-300">
-                {customer.loyaltyPoint || 0} <span className="text-xs font-extrabold text-white">pts</span>
+                {customer.loyaltyPoint || 0} <span className="text-xs font-bold text-white">pts</span>
               </p>
             </div>
           </div>
@@ -445,7 +445,7 @@ export function ReceptionistCustomerDetailPage() {
             <CalendarPlus size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Lịch Hẹn" : "Total Bookings"}</p>
+            <p className="text-[11px] font-bold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Lịch Hẹn" : "Total Bookings"}</p>
             <p className="text-xl font-bold text-[#2B182B]">{metrics.totalBookings} {language === "vi" ? "đơn" : "orders"}</p>
             <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{metrics.completedBookings} {language === "vi" ? "hoàn thành" : "completed"}</p>
           </div>
@@ -456,7 +456,7 @@ export function ReceptionistCustomerDetailPage() {
             <DollarSign size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Chi Tiêu" : "Total Spent"}</p>
+            <p className="text-[11px] font-bold uppercase text-[#9E8497]">{language === "vi" ? "Tổng Chi Tiêu" : "Total Spent"}</p>
             <p className="text-xl font-bold text-[#2B182B]">{formatCurrency(metrics.totalSpent)}</p>
             <p className="text-[10px] text-[#9E8497] font-semibold mt-0.5">~{formatCurrency(metrics.avgSpent)}/{language === "vi" ? "lần" : "visit"}</p>
           </div>
@@ -467,7 +467,7 @@ export function ReceptionistCustomerDetailPage() {
             <Star size={22} className="fill-[#D97706]" />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Đánh Giá Dịch Vụ" : "Service Reviews"}</p>
+            <p className="text-[11px] font-bold uppercase text-[#9E8497]">{language === "vi" ? "Đánh Giá Dịch Vụ" : "Service Reviews"}</p>
             <p className="text-xl font-bold text-[#2B182B]">5.0 / 5.0</p>
             <p className="text-[10px] text-[#D97706] font-bold mt-0.5">{language === "vi" ? "3 Đánh giá hài lòng" : "3 Satisfactory reviews"}</p>
           </div>
@@ -478,7 +478,7 @@ export function ReceptionistCustomerDetailPage() {
             <Award size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase text-[#9E8497]">{language === "vi" ? "Hạng Thành Viên" : "Membership Tier"}</p>
+            <p className="text-[11px] font-bold uppercase text-[#9E8497]">{language === "vi" ? "Hạng Thành Viên" : "Membership Tier"}</p>
             <p className="text-xl font-bold text-[#2B182B]" style={{ color: customerTier?.backgroundColor }}>{customerTier ? customerTier.name : (language === "vi" ? "Thành Viên" : "Member")}</p>
             <p className="text-[10px] font-bold mt-0.5" style={{ color: customerTier?.backgroundColor || '#4F46E5' }}>{language === "vi" ? "Tích điểm tự động" : "Earn points automatically"}</p>
           </div>
@@ -486,7 +486,7 @@ export function ReceptionistCustomerDetailPage() {
       </div>
 
       {/* Main Tab Container */}
-      <div className="rounded-3xl bg-white border border-[#F3E2EC] shadow-xs overflow-hidden">
+      <div className="rounded-lg bg-white border border-[#F3E2EC] shadow-xs overflow-hidden">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2 border-b border-[#F3E2EC] bg-[#FFFCFD] px-6 pt-4">
           <button
@@ -553,28 +553,28 @@ export function ReceptionistCustomerDetailPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                       <Mail size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Địa chỉ Email" : "Email Address"}
                     </p>
                     <p className="font-bold text-[#2B182B] text-sm break-all">{customer.email || (language === "vi" ? "Chưa cập nhật" : "Not updated")}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                       <Phone size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Số Điện Thoại" : "Phone Number"}
                     </p>
                     <p className="font-bold text-[#2B182B] text-sm">{customer.phone || (language === "vi" ? "Chưa cập nhật" : "Not updated")}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                       <Calendar size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Ngày Đăng Ký Hệ Thống" : "System Registration Date"}
                     </p>
                     <p className="font-bold text-[#2B182B] text-sm">{formatDate(customer.createdAt, language)}</p>
                   </div>
 
                   <div className="p-3.5 bg-white rounded-xl border border-[#F3E2EC] space-y-1">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                       <Activity size={13} className="text-[#EA4F93]" /> {language === "vi" ? "Trạng Thái Tài Khoản" : "Account Status"}
                     </p>
                     <p className="font-bold text-[#2B182B] text-sm flex items-center gap-2">
@@ -597,7 +597,7 @@ export function ReceptionistCustomerDetailPage() {
                   {preferenceTags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#F4D6E4] px-3 py-1.5 text-xs font-extrabold text-[#2B182B] shadow-2xs"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#F4D6E4] px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs"
                     >
                       <Heart size={12} className="text-[#EA4F93] fill-[#EA4F93]" />
                       {tag}
@@ -764,7 +764,7 @@ export function ReceptionistCustomerDetailPage() {
                 </div>
 
                 <div className="space-y-1.5 pt-2">
-                  <div className="flex justify-between text-xs font-extrabold text-[#2B182B]">
+                  <div className="flex justify-between text-xs font-bold text-[#2B182B]">
                     <span>{language === "vi" ? `Tiến trình thăng hạng ${nextTier ? nextTier.name : "Tối đa"}` : `Next tier status progress ${nextTier ? nextTier.name : "Maxed"}`}</span>
                     <span>{customer.loyaltyPoint || 0} {nextTier ? `/ ${nextTier.minLifetimePoints} Pts` : "Pts"}</span>
                   </div>

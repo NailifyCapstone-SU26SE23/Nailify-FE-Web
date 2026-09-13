@@ -92,7 +92,7 @@ const staggerContainer = {
 function PremiumCard({ className = "", children, noHover = false }) {
   return (
     <article
-      className={`relative overflow-hidden rounded-[24px] border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.12)] hover:border-[#E8C5D8]" : ""
+      className={`relative overflow-hidden rounded-lg border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.12)] hover:border-[#E8C5D8]" : ""
         } ${className}`}
     >
       {children}
@@ -582,6 +582,28 @@ function getBookingStatusLabel(status, language) {
   }
 }
 
+const tableComponents = {
+  body: {
+    wrapper: ({ children, ...props }) => (
+      <tbody {...props}>
+        <AnimatePresence>{children}</AnimatePresence>
+      </tbody>
+    ),
+    row: ({ children, className, style, ...props }) => (
+      <motion.tr
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        className={`group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0 ${className || ""}`}
+        style={style}
+        {...props}
+      >
+        {children}
+      </motion.tr>
+    )
+  }
+};
+
 // --- Main Page Component ---
 export function ManagerBookingListPage() {
   const { t, language } = useLanguage();
@@ -631,7 +653,7 @@ export function ManagerBookingListPage() {
 
   // Schedule state
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('morning');
-  const [scheduleDate, setScheduleDate] = useState(() => dayjs());
+
   const timeFilters = [
     { label: "9 AM - 3 PM", value: "morning", startHour: 9, endHour: 15 },
     { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
@@ -885,15 +907,52 @@ export function ManagerBookingListPage() {
   }, [filteredAppointments.length]);
 
   const scheduleDateBookings = useMemo(() => {
-    const targetDateStr = scheduleDate ? scheduleDate.format("YYYY-MM-DD") : null;
-    return bookings.filter(b => b.parsedDateStr && b.parsedDateStr === targetDateStr);
-  }, [bookings, scheduleDate]);
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("YYYY-MM-DD");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("YYYY-MM-DD");
+
+    if (!fromStr && !toStr) {
+      const todayStr = dayjs().format("YYYY-MM-DD");
+      return bookings.filter(b => b.parsedDateStr === todayStr);
+    }
+
+    return bookings.filter(b => {
+      const dStr = b.parsedDateStr;
+      if (!dStr) return false;
+      if (fromStr && dStr < fromStr) return false;
+      if (toStr && dStr > toStr) return false;
+      return true;
+    });
+  }, [bookings, dateFrom, dateTo]);
+
+  const scheduleDaysCount = useMemo(() => {
+    if (dateFrom && dateTo && dateFrom.isValid() && dateTo.isValid()) {
+      return Math.max(1, dateTo.diff(dateFrom, 'day') + 1);
+    }
+    const uniqueDays = new Set(scheduleDateBookings.map(b => b.parsedDateStr)).size;
+    return Math.max(1, uniqueDays);
+  }, [dateFrom, dateTo, scheduleDateBookings]);
+
+  const scheduleDateLabel = useMemo(() => {
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("MMM D, YYYY");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("MMM D, YYYY");
+
+    if (fromStr && toStr) {
+      return fromStr === toStr ? fromStr : `${fromStr} - ${toStr}`;
+    }
+    if (fromStr) return `${fromStr} - ...`;
+    if (toStr) return `... - ${toStr}`;
+    return dayjs().format("MMM D, YYYY");
+  }, [dateFrom, dateTo]);
 
   const capacityData = useMemo(() => {
     const periods = [
-      { label: language === "vi" ? "Buổi sáng (9 giờ sáng - 12 giờ trưa)" : "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 },
-      { label: language === "vi" ? "Buổi chiều (12 giờ trưa - 3 giờ chiều)" : "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 },
-      { label: language === "vi" ? "Buổi tối (3 giờ chiều - 6 giờ tối)" : "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 }
+      { label: language === "vi" ? "Buổi sáng (9 giờ sáng - 12 giờ trưa)" : "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 * scheduleDaysCount },
+      { label: language === "vi" ? "Buổi chiều (12 giờ trưa - 3 giờ chiều)" : "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 * scheduleDaysCount },
+      { label: language === "vi" ? "Buổi tối (3 giờ chiều - 6 giờ tối)" : "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 * scheduleDaysCount }
     ];
 
     return periods.map(period => {
@@ -905,7 +964,7 @@ export function ManagerBookingListPage() {
       const tone = value > 80 ? "from-[#F59E0B] to-[#D97706]" : value > 50 ? "from-[#8B5CF6] to-[#7C3AED]" : "from-[#FF75A8] to-[#E84F93]";
       return { ...period, value, tone };
     });
-  }, [scheduleDateBookings]);
+  }, [scheduleDateBookings, scheduleDaysCount, language]);
 
   const staffWorkloadData = useMemo(() => {
     const staffMap = new Map();
@@ -913,7 +972,7 @@ export function ManagerBookingListPage() {
     scheduleDateBookings.forEach(b => {
       const artistName = getArtistDisplayName(b);
       if (artistName !== "Unassigned") {
-        const current = staffMap.get(artistName) || { name: artistName, filled: 0, total: 10 };
+        const current = staffMap.get(artistName) || { name: artistName, filled: 0, total: 10 * scheduleDaysCount };
         staffMap.set(artistName, { ...current, filled: current.filled + 1 });
       }
     });
@@ -921,8 +980,8 @@ export function ManagerBookingListPage() {
     const workload = Array.from(staffMap.values());
     if (workload.length === 0) {
       return [
-        { name: "Luna Park", filled: 0, total: 10, tone: "from-[#8B5CF6] to-[#6D28D9]" },
-        { name: "Aria Nguyen", filled: 0, total: 10, tone: "from-[#FF75A8] to-[#E84F93]" }
+        { name: "Luna Park", filled: 0, total: 10 * scheduleDaysCount, tone: "from-[#8B5CF6] to-[#6D28D9]" },
+        { name: "Aria Nguyen", filled: 0, total: 10 * scheduleDaysCount, tone: "from-[#FF75A8] to-[#E84F93]" }
       ];
     }
 
@@ -1018,7 +1077,7 @@ export function ManagerBookingListPage() {
         <div className="flex flex-col items-start gap-1">
           <StatusPill status={row.status} />
           {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-extrabold text-[#E11D48] shadow-2xs whitespace-nowrap">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-bold text-[#E11D48] shadow-2xs whitespace-nowrap">
               {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
             </span>
           )}
@@ -1129,11 +1188,13 @@ export function ManagerBookingListPage() {
     setExpandedHours(newExpanded);
   };
 
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+
   return (
     <section className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans">
       {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-        <div className="relative overflow-hidden rounded-[28px] border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-6 lg:p-8 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
+        <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-4 lg:p-4 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
           <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-[#FFD6E8]/40 to-[#E84F93]/10 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#F7E7CE]/40 to-[#C99635]/10 blur-2xl pointer-events-none" />
 
@@ -1223,45 +1284,100 @@ export function ManagerBookingListPage() {
               <motion.div variants={fadeInUp}>
                 <PremiumCard className="!p-0 overflow-hidden border-[#F3E2EC]">
                   {/* Header, View Switcher & Filter Controls */}
-                  <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white p-6">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
-                    </div>
-                    <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2 lg:pb-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {/* Status Dropdown */}
-                      <div className="shrink-0 flex items-center gap-2.5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFF9FB] px-3.5 py-1.5 shadow-[0_4px_12px_rgba(219,70,117,0.06)] transition-all duration-300 hover:border-[#E84F93]/50 hover:shadow-[0_4px_16px_rgba(219,70,117,0.12)] cursor-pointer group">
-                        <div className="flex items-center gap-1.5 border-r border-[#F3D6E5] pr-3 py-0.5">
-                          <Filter size={14} className="text-[#E84F93]" />
-                          <span className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider group-hover:text-[#E84F93] transition-colors">{t("manager.common.status")}</span>
-                        </div>
-                        <div className="relative">
-                          <select
-                            value={activeFilter}
-                            onChange={(e) => setActiveFilter(e.target.value)}
-                            className="appearance-none text-xs font-bold text-[#2B182B] bg-transparent outline-none cursor-pointer pr-6 pl-1 w-full hover:text-[#E84F93] transition-colors focus:text-[#E84F93]"
-                          >
-                            {appointmentFilters.map((filter) => {
-                              const count = filter.value === "All"
-                                ? bookings.length
-                                : bookings.filter(b => matchesFilter(b.status, filter.value)).length;
-                              const displayLabel = filter.value === "All" ? t("manager.common.all") : getBookingStatusLabel(filter.value, language);
-                              return (
-                                <option key={filter.value} value={filter.value} className="text-sm font-medium text-[#2B182B]">
-                                  {displayLabel} ({count})
-                                </option>
-                              );
-                            })}
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-[#9E8497] group-hover:text-[#E84F93] transition-colors">
-                            <ChevronDown size={14} />
+                  <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white px-5 py-4 sm:px-6">
+                    {/* Top row */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      {/* Status Filter */}
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsStatusOpen((prev) => !prev)}
+                          className="flex h-9 items-center gap-2 rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFF9FB] px-3 shadow-[0_2px_8px_rgba(219,70,117,0.06)] transition-all hover:border-[#E84F93]/40"
+                        >
+                          <div className="flex items-center gap-1.5 border-r border-[#F3D6E5] pr-2.5">
+                            <Filter size={13} className="text-[#E84F93]" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                              {t("manager.common.status")}
+                            </span>
                           </div>
-                        </div>
+
+                          <span className="w-[125px] text-left truncate text-[12px] font-semibold text-[#2B182B]">
+                            {(() => {
+                              const count =
+                                activeFilter === "All"
+                                  ? bookings.length
+                                  : bookings.filter((b) => matchesFilter(b.status, activeFilter)).length;
+                              const label =
+                                activeFilter === "All"
+                                  ? t("manager.common.all")
+                                  : getBookingStatusLabel(activeFilter, language);
+                              return `${label} (${count})`;
+                            })()}
+                          </span>
+
+                          <ChevronDown
+                            size={13}
+                            className={`text-[#9E8497] transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+
+                        <AnimatePresence>
+                          {isStatusOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setIsStatusOpen(false)} />
+                              <motion.div
+                                initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 top-full z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-xl border border-[#F3D6E5] bg-white shadow-[0_10px_30px_rgba(232,79,147,0.12)]"
+                              >
+                                <div className="max-h-[260px] overflow-y-auto py-1">
+                                  {appointmentFilters.map((filter) => {
+                                    const count =
+                                      filter.value === "All"
+                                        ? bookings.length
+                                        : bookings.filter((b) => matchesFilter(b.status, filter.value)).length;
+                                    const displayLabel =
+                                      filter.value === "All"
+                                        ? t("manager.common.all")
+                                        : getBookingStatusLabel(filter.value, language);
+                                    const isActive = activeFilter === filter.value;
+
+                                    return (
+                                      <button
+                                        key={filter.value}
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveFilter(filter.value);
+                                          setIsStatusOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left text-[12px] font-medium transition-colors ${isActive
+                                          ? "bg-[#FFF0F5] text-[#E84F93]"
+                                          : "text-[#2B182B] hover:bg-[#FFF7FA]"
+                                          }`}
+                                      >
+                                        <span>{displayLabel}</span>
+                                        <span
+                                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isActive ? "bg-[#E84F93]/15 text-[#E84F93]" : "bg-[#F8EEF3] text-[#9E8497]"
+                                            }`}
+                                        >
+                                          {count}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
                       </div>
 
-                      {/* View Switcher Controls */}
-                      <div className="flex shrink-0 items-center gap-1 rounded-2xl border border-[#F3D6E5] bg-[#FFF0F5] p-1 shadow-2xs">
+                      {/* View Switcher */}
+                      <div className="flex h-9 items-center gap-0.5 rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] p-0.5">
                         {[
-                          { mode: "table", label: t("manager.common.table") || "Table", icon: TableIcon },
+                          { mode: "table", label: t("manager.common.table") || "Bảng", icon: TableIcon },
                           { mode: "day", label: t("adminDashboard.day"), icon: LayoutGrid },
                           { mode: "week", label: t("adminDashboard.week"), icon: CalendarDays },
                           { mode: "month", label: t("adminDashboard.month"), icon: GridIcon },
@@ -1270,73 +1386,81 @@ export function ManagerBookingListPage() {
                             key={btn.mode}
                             type="button"
                             onClick={() => handleViewModeChange(btn.mode)}
-                            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${viewMode === btn.mode
-                              ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-md"
+                            className={`flex h-full items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold transition-all whitespace-nowrap ${viewMode === btn.mode
+                              ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-sm"
                               : "text-[#9E8497] hover:bg-white hover:text-[#2B182B]"
                               }`}
                           >
-                            <btn.icon size={13} />
+                            <btn.icon size={12} />
                             <span>{btn.label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-4">
-
-                      {/* Search & Date Controls */}
-                      <div className="grid gap-3 pt-1 lg:grid-cols-[minmax(0,1fr)_150px_150px_auto]">
+                    {/* Search + Date filters */}
+                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_130px_130px_auto]">
+                      {/* Search */}
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                          {t("manager.common.search")}
+                        </span>
                         <div className="relative">
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.common.search")}</span>
-                          <div className="relative">
-                            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9E8497]" />
-                            <input
-                              value={query}
-                              onChange={(e) => setQuery(e.target.value)}
-                              placeholder={t("manager.bookings.searchPlaceholder")}
-                              className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white pl-10 pr-4 text-xs font-medium text-[#2B182B] outline-none transition-all duration-200 placeholder:text-[#C8B0BF] hover:border-[#F0B7CF] focus:border-[#E84F93] focus:ring-4 focus:ring-[#E84F93]/10 shadow-xs"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.bookings.dateFrom")}</span>
-                          <DatePicker
-                            value={dateFrom}
-                            onChange={handleDateFromChange}
-                            placeholder={t("manager.bookings.dateFrom")}
-                            format="DD/MM/YYYY"
-                            className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                            suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
+                          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9E8497]" />
+                          <input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder={t("manager.bookings.searchPlaceholder")}
+                            className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white pl-9 pr-3 text-[12px] font-medium text-[#2B182B] outline-none transition-all placeholder:text-[#C8B0BF] hover:border-[#F0B7CF] focus:border-[#E84F93] focus:ring-2 focus:ring-[#E84F93]/10"
                           />
                         </div>
-                        <div>
-                          <span className="mb-1.5 block text-[11px] font-bold text-[#9E8497] uppercase tracking-wider">{t("manager.bookings.dateTo")}</span>
-                          <DatePicker
-                            value={dateTo}
-                            onChange={(d) => setDateTo(d)}
-                            disabled={viewMode !== "table"}
-                            placeholder={t("manager.bookings.dateTo")}
-                            format="DD/MM/YYYY"
-                            className="h-11 w-full rounded-2xl border border-[#F3D7E4] bg-white px-3 text-xs text-[#2B182B] outline-none transition-all duration-200 hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                            suffixIcon={<Calendar size={15} className="text-[#9E8497]" />}
-                          />
-                        </div>
+                      </div>
 
-                        <div className="flex items-end">
-                          <motion.button
-                            whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
-                            whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
-                            onClick={handleResetFilters}
-                            disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
-                            className={`h-11 rounded-2xl border px-4 text-xs font-bold transition-all duration-200 ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
-                              ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA] shadow-xs"
-                              : "border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8] cursor-not-allowed"
-                              }`}
-                          >
-                            {t("manager.common.reset")}
-                          </motion.button>
-                        </div>
+                      {/* Date From */}
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                          {t("manager.bookings.dateFrom")}
+                        </span>
+                        <DatePicker
+                          value={dateFrom}
+                          onChange={handleDateFromChange}
+                          placeholder={t("manager.bookings.dateFrom")}
+                          format="DD/MM/YYYY"
+                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
+                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
+                        />
+                      </div>
+
+                      {/* Date To */}
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                          {t("manager.bookings.dateTo")}
+                        </span>
+                        <DatePicker
+                          value={dateTo}
+                          onChange={(d) => setDateTo(d)}
+                          disabled={viewMode !== "table"}
+                          placeholder={t("manager.bookings.dateTo")}
+                          format="DD/MM/YYYY"
+                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
+                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
+                        />
+                      </div>
+
+                      {/* Reset */}
+                      <div className="flex items-end">
+                        <motion.button
+                          whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
+                          whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
+                          onClick={handleResetFilters}
+                          disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
+                          className={`h-9 rounded-xl border px-4 text-[12px] font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
+                            ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA]"
+                            : "cursor-not-allowed border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8]"
+                            }`}
+                        >
+                          {t("manager.common.reset")}
+                        </motion.button>
                       </div>
                     </div>
                   </div>
@@ -1347,7 +1471,7 @@ export function ManagerBookingListPage() {
                       <SkeletonLoader />
                     ) : filteredAppointments.length === 0 ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
                           <Search size={28} />
                         </div>
                         <p className="text-base font-bold text-[#2B182B]">{t("manager.bookings.noBookings") || "No bookings found"}</p>
@@ -1371,27 +1495,7 @@ export function ManagerBookingListPage() {
                         dataSource={paginatedAppointments}
                         pagination={false}
                         onChange={handleTableChange}
-                        components={{
-                          body: {
-                            wrapper: ({ children, ...props }) => (
-                              <tbody {...props}>
-                                <AnimatePresence>{children}</AnimatePresence>
-                              </tbody>
-                            ),
-                            row: ({ children, className, style, ...props }) => (
-                              <motion.tr
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                className={`group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0 ${className || ""}`}
-                                style={style}
-                                {...props}
-                              >
-                                {children}
-                              </motion.tr>
-                            )
-                          }
-                        }}
+                        components={tableComponents}
                         onRow={(record) => ({
                           onClick: () => handleOpenDrawer(record.id)
                         })}
@@ -1508,7 +1612,7 @@ export function ManagerBookingListPage() {
                             <GripVertical size={16} /> {language === "vi" ? "Kéo và thả thẻ đặt lịch sang ngày khác để lên lịch lại!" : "Drag & drop booking cards to another day to reschedule!"}
                           </span>
                           <span className="font-bold text-[#2B182B]">
-                            {language === "vi" ? "Tuần của" : "Week of"} {scheduleDate.startOf("week").format("MMM D")} - {scheduleDate.endOf("week").format("MMM D, YYYY")}
+                            {language === "vi" ? "Tuần của" : "Week of"} {(dateFrom || dayjs()).startOf("week").format("MMM D")} - {(dateFrom || dayjs()).endOf("week").format("MMM D, YYYY")}
                           </span>
                         </div>
 
@@ -1728,7 +1832,7 @@ export function ManagerBookingListPage() {
 
               {/* Today Schedule Timeline */}
               <PremiumCard className="p-5 border-[#F3E2EC]">
-                <SectionHeading title={language === "vi" ? "Lịch trình hôm nay" : "Today's Schedule"} subtitle={language === "vi" ? "Dòng thời gian" : "Time slots timeline"} icon={Clock3} />
+                <SectionHeading title={language === "vi" ? "Lịch trình" : "Schedule"} subtitle={language === "vi" ? "Dòng thời gian" : "Time slots timeline"} icon={Clock3} />
 
                 <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF5F8] p-1 border border-[#F3D6E5]/60">
                   {timeFilters.map((tf) => (
@@ -1748,7 +1852,7 @@ export function ManagerBookingListPage() {
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
                     <span className="font-semibold">{language === "vi" ? "Ngày" : "Date"}</span>
-                    <span className="font-bold text-[#2B182B]">{scheduleDate.format("MMM D, YYYY")}</span>
+                    <span className="font-bold text-[#2B182B]">{scheduleDateLabel}</span>
                   </div>
 
                   <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -1809,7 +1913,12 @@ export function ManagerBookingListPage() {
                                     className={`rounded-xl border ${palette.tone} p-2.5 cursor-pointer hover:shadow-sm transition-all`}
                                     onClick={() => handleOpenDrawer(b.id)}
                                   >
-                                    <p className="text-xs font-bold truncate">{b.customerName || b.customer}</p>
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <p className="text-xs font-bold truncate">{b.customerName || b.customer}</p>
+                                      {scheduleDaysCount > 1 && (
+                                        <span className="text-[9px] font-semibold text-[#86687D] ml-2 shrink-0">{dayjs(b.parsedDateStr).format("MMM D")}</span>
+                                      )}
+                                    </div>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
                                       <span>{formatDuration(b.totalDuration || 60, language)}</span>

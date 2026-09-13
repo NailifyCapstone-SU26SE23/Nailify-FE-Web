@@ -46,7 +46,7 @@ function DashboardCard({ title, description, icon, children, className = "" }) {
           {Icon ? <Icon size={12} /> : null}
         </span>
         <div>
-          <h2 className="text-sm font-extrabold text-[#d83982]">{title}</h2>
+          <h2 className="text-sm font-bold text-[#d83982]">{title}</h2>
           <p className="mt-1 text-[11px] text-[#c495ab]">{description}</p>
         </div>
       </div>

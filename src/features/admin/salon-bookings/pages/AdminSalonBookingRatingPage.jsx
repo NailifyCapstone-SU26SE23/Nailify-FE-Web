@@ -473,12 +473,12 @@ export function AdminSalonBookingRatingPage() {
             </div>
 
             {loadingSalons ? (
-              <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-3xl border border-slate-200/60 shadow-xs">
+              <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-lg border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
                 <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">{isVi ? "Đang tải dữ liệu chi nhánh..." : "Loading salons..."}</p>
               </div>
             ) : salonsError ? (
-              <div className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100">
+              <div className="p-6 bg-rose-50/50 rounded-lg border border-rose-100">
                 <Alert
                   message={isVi ? "Lỗi tải danh sách chi nhánh" : "Failed to load salons list"}
                   description={salonsError}
@@ -495,7 +495,7 @@ export function AdminSalonBookingRatingPage() {
                 />
               </div>
             ) : filteredSalons.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs">
+              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-lg border border-slate-200/60 shadow-xs">
                 <Store size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
                 <h3 className="text-sm font-bold text-[#2d1b35]">{isVi ? "Không tìm thấy chi nhánh nào" : "No Salons Found"}</h3>
                 <p className="mt-1 text-xs text-[#a88a9f] max-w-[40ch]">{isVi ? "Không có chi nhánh salon nào phù hợp bộ lọc tìm kiếm." : "No salon branch matches your search query."}</p>
@@ -516,7 +516,7 @@ export function AdminSalonBookingRatingPage() {
                       variants={fadeInUp}
                       whileHover={{ y: -6, transition: { duration: 0.2 } }}
                       onClick={() => setSelectedSalon(salon)}
-                      className="group bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+                      className="group bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
                     >
                       <div className="space-y-4">
                         {/* Salon image / initials placeholder */}
@@ -639,7 +639,7 @@ export function AdminSalonBookingRatingPage() {
                 {/* Left column: reviews list (7 cols) */}
                 <div className="lg:col-span-7 space-y-6">
                   {/* Reviews search & filters bar */}
-                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
                     <div className="relative flex-1 max-w-md">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                       <input
@@ -721,7 +721,7 @@ export function AdminSalonBookingRatingPage() {
                           <motion.div
                             key={rating.bookingRatingId}
                             variants={fadeInUp}
-                            className="bg-white border border-[#ea4f93]/10 hover:border-[#ea4f93]/20 shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-[2rem] p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300"
+                            className="bg-white border border-[#ea4f93]/10 hover:border-[#ea4f93]/20 shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-lg p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300"
                           >
                             {/* Upper row: User Info (circular avatar, name, subtitle & stars) */}
                             <div className="flex items-start gap-4">
@@ -806,7 +806,7 @@ export function AdminSalonBookingRatingPage() {
                             {/* Footer area matching reference card style */}
                             <div className="pt-2 flex items-center justify-between">
                               <span className="text-xs text-[#a88a9f] font-medium">{dateFormatted}</span>
-                              <span className="px-3.5 py-1.5 rounded-full bg-[#fff2f7] text-[#ea4f93] text-[10px] font-extrabold uppercase tracking-wider select-none">
+                              <span className="px-3.5 py-1.5 rounded-full bg-[#fff2f7] text-[#ea4f93] text-[10px] font-bold uppercase tracking-wider select-none">
                                 {isVi ? "Đánh giá lịch hẹn" : "Booking Review"}
                               </span>
                             </div>
@@ -848,7 +848,7 @@ export function AdminSalonBookingRatingPage() {
                 {/* Right column: analytics panel (3 cols) */}
                 <div className="lg:col-span-3 space-y-6">
                   {/* Rating summary details */}
-                  <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-6">
+                  <div className="bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-6">
                     <div className="space-y-1">
                       <h3 className="text-sm font-bold text-[#2d1b35]">{isVi ? "Tổng hợp đánh giá" : "Rating Summary"}</h3>
                       <p className="text-[10px] text-[#a88a9f]">{isVi ? "Tổng hợp chỉ số hài lòng." : "Aggregated satisfaction score index."}</p>
@@ -867,7 +867,7 @@ export function AdminSalonBookingRatingPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-[#a88a9f] block">
+                        <span className="text-[9px] uppercase tracking-wider font-bold text-[#a88a9f] block">
                           {isVi ? "Tổng đánh giá" : "Total reviews"} : {activeSalonStats.total}
                         </span>
                       </div>
@@ -895,7 +895,7 @@ export function AdminSalonBookingRatingPage() {
                   </div>
 
                   {/* Sub-criteria indices */}
-                  <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
+                  <div className="bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                     <div className="space-y-1">
                       <h3 className="text-sm font-bold text-[#2d1b35]">{isVi ? "Chỉ số hài lòng" : "Satisfaction Indices"}</h3>
                       <p className="text-[10px] text-[#a88a9f]">{isVi ? "Các chỉ số cốt lõi ánh xạ lòng trung thành của khách hàng." : "Core indicators mapping customer loyalty."}</p>
@@ -956,7 +956,7 @@ export function AdminSalonBookingRatingPage() {
                   </div>
 
                   {/* Performance insights */}
-                  <div className="bg-gradient-to-br from-[#fff0f7] via-[#fff7ef] to-[#ffe8f2] rounded-[2.25rem] p-6 text-[#2d1b35] shadow-[0_10px_30px_rgba(234,79,147,0.10)] space-y-4 border border-[#f6dce8]">
+                  <div className="bg-gradient-to-br from-[#fff0f7] via-[#fff7ef] to-[#ffe8f2] rounded-lg p-6 text-[#2d1b35] shadow-[0_10px_30px_rgba(234,79,147,0.10)] space-y-4 border border-[#f6dce8]">
 
 
                     <div className="space-y-1">

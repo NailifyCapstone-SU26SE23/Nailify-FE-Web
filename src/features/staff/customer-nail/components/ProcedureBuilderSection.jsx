@@ -361,7 +361,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             </span>
 
             <div className="min-w-0 flex-1">
-              <p className="font-extrabold text-[#3f2240] text-sm tracking-tight truncate">{step.name}</p>
+              <p className="font-bold text-[#3f2240] text-sm tracking-tight truncate">{step.name}</p>
               {step.note && (
                 <p className="text-xs text-[#9c6f87] mt-0.5 font-medium italic truncate">
                   {step.note}
@@ -380,12 +380,12 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                 max={300}
                 value={step.estimatedMinutes}
                 onChange={(val) => handleUpdateStepDuration(step.id, val || 0)}
-                className="w-16 text-xs font-extrabold text-[#3f2240]"
+                className="w-16 text-xs font-bold text-[#3f2240]"
                 bordered={false}
                 controls={false}
                 disabled={readOnly}
               />
-              <span className="text-[11px] text-[#a988a0] font-extrabold uppercase tracking-wider">{language === "vi" ? "phút" : "min"}</span>
+              <span className="text-[11px] text-[#a988a0] font-bold uppercase tracking-wider">{language === "vi" ? "phút" : "min"}</span>
             </div>
 
             {/* Delete button */}
@@ -417,8 +417,8 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h3 className="text-xl font-serif font-extrabold text-[#3f2240]">{language === "vi" ? "Quy trình thực hiện móng" : "Nail Implementation Procedure"}</h3>
-              <span className="rounded-full bg-[#fff0f6] px-3 py-1 text-[11px] font-extrabold uppercase text-[#ea4f93] border border-[#fbcfe8] shadow-xs">
+              <h3 className="text-xl font-serif font-bold text-[#3f2240]">{language === "vi" ? "Quy trình thực hiện móng" : "Nail Implementation Procedure"}</h3>
+              <span className="rounded-full bg-[#fff0f6] px-3 py-1 text-[11px] font-bold uppercase text-[#ea4f93] border border-[#fbcfe8] shadow-xs">
                 {procedures.length} {language === "vi" ? "Bước" : "Steps"}
               </span>
               {!readOnly && (
@@ -451,7 +451,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                       <span className="font-semibold text-xs text-[#3f2240] truncate max-w-[130px]">{p.name || p.procedureName}</span>
                       <div className="flex items-center gap-1 shrink-0">
                         {isCommon ? (
-                          <span className="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">{language === "vi" ? "Chung" : "Common"}</span>
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">{language === "vi" ? "Chung" : "Common"}</span>
                         ) : (
                           <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 py-0.2 rounded">{language === "vi" ? "Riêng" : "Specific"}</span>
                         )}
@@ -480,7 +480,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
 
       {/* Procedure Steps Rendered in 2 Isolated Sub-Sections */}
       {procedures.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-[#f4c1d8] p-10 text-center bg-[#fff8fb]">
+        <div className="rounded-lg border border-dashed border-[#f4c1d8] p-10 text-center bg-[#fff8fb]">
           <Layers className="mx-auto h-10 w-10 text-[#ea4f93] opacity-60 mb-2 animate-bounce" />
           <p className="text-base font-bold text-[#3f2240]">{language === "vi" ? "Chưa có bước quy trình nào trong DB" : "No procedure steps in DB"}</p>
           <p className="text-xs text-[#9c6f87] mt-1 max-w-md mx-auto">
@@ -497,7 +497,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                   <ShieldCheck size={16} />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-emerald-950 tracking-tight">{language === "vi" ? "Quy trình chung" : "Common Procedure"}</h4>
+                  <h4 className="font-bold text-sm text-emerald-950 tracking-tight">{language === "vi" ? "Quy trình chung" : "Common Procedure"}</h4>
                 </div>
               </div>
 
@@ -515,7 +515,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
                   <Palette size={16} />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-[#3f2240] tracking-tight">{language === "vi" ? "Quy trình kỹ thuật riêng mẫu Nail" : "Nail Model Specific Technical Procedure"}</h4>
+                  <h4 className="font-bold text-sm text-[#3f2240] tracking-tight">{language === "vi" ? "Quy trình kỹ thuật riêng mẫu Nail" : "Nail Model Specific Technical Procedure"}</h4>
                 </div>
               </div>
 
@@ -551,7 +551,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             <Button
               type="primary"
               onClick={() => onApplyToQuote({ totalDuration })}
-              className="h-10 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#df4588] px-5 text-xs font-extrabold border-none flex items-center gap-2 shadow-[0_4px_16px_rgba(234,79,147,0.4)] hover:scale-105 transition-all"
+              className="h-10 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#df4588] px-5 text-xs font-bold border-none flex items-center gap-2 shadow-[0_4px_16px_rgba(234,79,147,0.4)] hover:scale-105 transition-all"
             >
               <Zap size={14} />
               <span>{language === "vi" ? "Đồng bộ Thời Gian vào Báo Giá" : "Sync Time to Quote"}</span>
@@ -567,7 +567,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff0f6] text-[#ea4f93]">
               <PlusCircle size={18} />
             </div>
-            <span className="font-serif font-extrabold text-lg">{language === "vi" ? "Thêm bước quy trình mới" : "Add new procedure step"}</span>
+            <span className="font-serif font-bold text-lg">{language === "vi" ? "Thêm bước quy trình mới" : "Add new procedure step"}</span>
           </div>
         }
         open={isModalOpen}

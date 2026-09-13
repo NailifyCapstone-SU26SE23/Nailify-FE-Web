@@ -22,7 +22,7 @@ function Card({ className = "", children }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
+      <h3 className="text-sm font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
     </div>
   );
@@ -48,7 +48,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{title}</p>
-          <p className="mt-2 text-2xl font-extrabold text-[#402542]">{value}</p>
+          <p className="mt-2 text-2xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1 text-xs text-[#a07c90]">{note}</p>
         </div>
         <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_8px_18px_rgba(236,72,153,0.16)] ${toneClassName}`}>
@@ -65,7 +65,7 @@ function RequestCard({ request, language }) {
   const statusLabel = request.status || nail.status || "Assigned";
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-white border border-[#fdf7f9] shadow-[0_10px_35px_rgba(236,72,153,0.05)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
+    <div className="group relative overflow-hidden rounded-lg bg-white border border-[#fdf7f9] shadow-[0_10px_35px_rgba(236,72,153,0.05)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
       {/* 🎨 TOP: Large Nail Preview */}
       <div className="relative h-[220px] w-full overflow-hidden bg-gradient-to-b from-[#fffbfd] to-[#fff5f9] perspective-1000">
         <div className="absolute -bottom-4 left-1/2 h-6 w-[70%] -translate-x-1/2 rounded-full bg-pink-200/50 blur-xl opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -93,7 +93,7 @@ function RequestCard({ request, language }) {
         <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
           {nail.name || "Untitled Design"}
         </h4>
-     
+
         <div className="mt-4 flex justify-end">
           <span className="flex items-center gap-1 text-[11px] font-bold text-[#ea4f93] transition-all group-hover:gap-1.5">
             {statusLabel === "Assigned" ? (language === "vi" ? "Bắt đầu đánh giá" : "Start Review") : (language === "vi" ? "Xem đánh giá" : "View Review")}
@@ -284,7 +284,7 @@ export function StaffCustomerNailsListPage() {
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Nails Review Requests"}</h2>
+                  <h2 className="text-3xl font-bold text-[#402542]">{language === "vi" ? "Yêu cầu thiết kế tùy chỉnh" : "Custom Nails Review Requests"}</h2>
                   <p className="text-sm text-[#b07a94]">{language === "vi" ? "Xem thiết kế của khách hàng, lêp giá ước tính và lập báo giá." : "Review customer designs, formulate pricing estimates, and draft quotes."}</p>
                 </div>
               </div>

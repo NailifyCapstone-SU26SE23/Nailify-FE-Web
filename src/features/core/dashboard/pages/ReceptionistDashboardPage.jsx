@@ -172,7 +172,7 @@ function SectionTitle({ icon: Icon, title, action, className = "" }) {
     <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${className}`}>
       <div className="flex min-w-0 items-center gap-2">
         {Icon ? <Icon size={14} className="text-[#eb5a98]" /> : null}
-        <h3 className="min-w-0 text-sm font-extrabold text-[#e14f91]">{title}</h3>
+        <h3 className="min-w-0 text-sm font-bold text-[#e14f91]">{title}</h3>
       </div>
       {action}
     </div>
@@ -240,7 +240,7 @@ function MobileAppointmentCard({ row, actions, formatDisplay }) {
 
       <div className="mt-4 flex min-w-0 items-start gap-3">
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}
         >
           {getInitials(row.customer)}
         </div>
@@ -286,7 +286,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
                 <GripHorizontal size={18} />
               </div>
             )}
-            <h3 className={`min-w-0 font-extrabold text-[#e14f91] ${isPinned ? 'text-[18px]' : 'text-sm'}`}>
+            <h3 className={`min-w-0 font-bold text-[#e14f91] ${isPinned ? 'text-[18px]' : 'text-sm'}`}>
               {t("receptionist.dashboard.widgets." + id) || widget.title}
             </h3>
           </div>
@@ -677,7 +677,7 @@ export function ReceptionistDashboardPage() {
       sorter: (a, b) => a.customer.localeCompare(b.customer),
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}>
             {getInitials(row.customer)}
           </div>
           <p className="text-xs font-bold text-[#432744] whitespace-nowrap">{row.customer}</p>
@@ -1220,7 +1220,7 @@ export function ReceptionistDashboardPage() {
                         className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md cursor-pointer hover:scale-105"
                       >
                         <div
-                          className={`flex shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${chair.isOccupied ? "text-green-400" : "text-[#eb5b92]"}`}
+                          className={`flex shrink-0 items-center justify-center rounded-full text-sm font-bold ${chair.isOccupied ? "text-green-400" : "text-[#eb5b92]"}`}
                         >
                           <Armchair size={16} />
                         </div>
@@ -1383,7 +1383,7 @@ export function ReceptionistDashboardPage() {
                         className={`rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center ${isOffToday ? "opacity-50 grayscale" : ""}`}
                       >
                         <div
-                          className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-extrabold text-white ${avatarTone}`}
+                          className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ${avatarTone}`}
                         >
                           {initials}
                         </div>
@@ -1415,7 +1415,7 @@ export function ReceptionistDashboardPage() {
                         className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ef4f92] text-[10px] font-extrabold text-white">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ef4f92] text-[10px] font-bold text-white">
                             !
                           </div>
                           <div className="min-w-0">
@@ -1445,7 +1445,7 @@ export function ReceptionistDashboardPage() {
                     displayArrivals.map(([name, service, time, initials, bg], index) => (
                       <div key={index} className="flex items-center gap-3">
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${bg}`}
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${bg}`}
                         >
                           {initials}
                         </div>
@@ -1480,7 +1480,7 @@ export function ReceptionistDashboardPage() {
             padding: 16,
           },
         }}
-        title={<span className="text-base font-extrabold text-[#432744]">{language === "vi" ? "Customer QR Check-in" : "Customer QR Check-in"}</span>}
+        title={<span className="text-base font-bold text-[#432744]">{language === "vi" ? "Customer QR Check-in" : "Customer QR Check-in"}</span>}
       >
         <div className="space-y-4 overflow-hidden">
           <p className="text-sm text-[#8f7484]">

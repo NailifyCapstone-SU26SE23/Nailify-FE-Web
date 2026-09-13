@@ -435,7 +435,7 @@ export function ReceptionistBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Chi tiết nghỉ phép" : "Break Request Details"}</h3>
+                <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Chi tiết nghỉ phép" : "Break Request Details"}</h3>
                 <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Thông tin chi tiết về yêu cầu nghỉ." : "Detailed information about the break request."}</p>
               </div>
               <button

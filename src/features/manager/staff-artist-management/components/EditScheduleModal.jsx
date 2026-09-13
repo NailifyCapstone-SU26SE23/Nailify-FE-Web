@@ -652,7 +652,7 @@ export function EditScheduleModal({
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">
                       {language === "vi" ? "Giờ làm việc của salon" : "Salon Operating Hours"}
                     </label>
-                    <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-extrabold text-[#ea4f93]">
+                    <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-bold text-[#ea4f93]">
                       {activeHoursSummary.label}
                     </span>
                   </div>

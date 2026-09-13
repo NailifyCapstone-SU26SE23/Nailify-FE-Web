@@ -745,14 +745,14 @@ export function TransactionOverviewPage() {
             </div>
 
             {loadingSalons ? (
-              <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-3xl border border-slate-200/60 shadow-xs">
+              <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-xs rounded-lg border border-slate-200/60 shadow-xs">
                 <Spin size="large" />
                 <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
                   {t("adminTransactions.loadingSalons")}
                 </p>
               </div>
             ) : salonsError ? (
-              <div className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100">
+              <div className="p-6 bg-rose-50/50 rounded-lg border border-rose-100">
                 <Alert
                   message={t("adminTransactions.loadSalonsFailed")}
                   description={salonsError}
@@ -769,7 +769,7 @@ export function TransactionOverviewPage() {
                 />
               </div>
             ) : filteredSalons.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs">
+              <div className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-lg border border-slate-200/60 shadow-xs">
                 <Store size={36} className="text-[#a88a9f] mb-3 stroke-[1.2]" />
                 <h3 className="text-sm font-bold text-[#2d1b35]">
                   {t("adminTransactions.noSalonsFound")}
@@ -795,7 +795,7 @@ export function TransactionOverviewPage() {
                         variants={fadeInUp}
                         whileHover={{ y: -6, transition: { duration: 0.2 } }}
                         onClick={() => setSelectedSalon(salon)}
-                        className="group bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+                        className="group bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
                       >
                         <div className="space-y-4">
                           {/* Salon image / initials placeholder */}
@@ -1035,7 +1035,7 @@ export function TransactionOverviewPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-200/60 shadow-xs"
+                  className="flex flex-col items-center justify-center py-24 bg-white rounded-lg border border-slate-200/60 shadow-xs"
                 >
                   <Spin size="large" />
                   <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">
@@ -1048,7 +1048,7 @@ export function TransactionOverviewPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100"
+                  className="p-6 bg-rose-50/50 rounded-lg border border-rose-100"
                 >
                   <Alert
                     message={t("adminTransactions.fetchWarning")}
@@ -1071,7 +1071,7 @@ export function TransactionOverviewPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs"
+                  className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-lg border border-slate-200/60 shadow-xs"
                 >
                   <div className="p-4 rounded-full bg-slate-50 text-[#a88a9f] mb-4">
                     <AlertCircle size={30} className="stroke-[1.5]" />

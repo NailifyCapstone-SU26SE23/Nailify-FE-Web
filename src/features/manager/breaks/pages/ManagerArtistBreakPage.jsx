@@ -357,7 +357,7 @@ export function ManagerArtistBreakPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Premium Hero Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 text-white shadow-xl border border-white/10">
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 text-white shadow-xl border border-white/10">
         <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[#C97A9E]/20 blur-3xl pointer-events-none"></div>
         <div className="absolute -left-10 -bottom-10 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
 
@@ -405,7 +405,7 @@ export function ManagerArtistBreakPage() {
       <TopMetricsRow metrics={summaryStats} className={"grid gap-5 md:grid-cols-2 xl:grid-cols-4"} />
 
       {/* Modern Filter Toolbar & Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-gray-200/90 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200/90 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
 
           {/* Search Query Input */}
@@ -416,7 +416,7 @@ export function ManagerArtistBreakPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
-              className="rounded-2xl border-gray-200 text-xs py-1.5 px-3"
+              className="!rounded-full border-gray-200 text-xs py-1.5 px-3"
             />
           </div>
         </div>
@@ -480,7 +480,7 @@ export function ManagerArtistBreakPage() {
 
       {/* Main Content List / Table */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm space-y-3">
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-lg border border-gray-100 shadow-sm space-y-3">
           <Spin size="large" />
           <span className="text-xs font-bold text-gray-400">{language === "vi" ? "Đang tải yêu cầu nghỉ từ máy chủ..." : "Loading break requests from server..."}</span>
         </div>
@@ -495,7 +495,7 @@ export function ManagerArtistBreakPage() {
         />
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <Table
                 rowKey="nailArtistBreakId"
@@ -522,7 +522,7 @@ export function ManagerArtistBreakPage() {
                       const artistName = getArtistName(item.nailArtistId);
                       return (
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
                             {artistName.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex flex-col min-w-0">
@@ -661,9 +661,7 @@ export function ManagerArtistBreakPage() {
                               </Tooltip>
                             </>
                           ) : (
-                            <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg">
-                              {t("manager.dashboard.statusDone") || "Processed"}
-                            </span>
+                            null
                           )}
 
                           <Tooltip title={language === "vi" ? "Xóa yêu cầu" : "Delete request"}>
@@ -743,7 +741,7 @@ export function ManagerArtistBreakPage() {
         footer={null}
         centered
         width={460}
-        className="rounded-3xl overflow-hidden"
+        className="rounded-lg overflow-hidden"
       >
         <div className="p-2 space-y-4">
           <div className="flex items-center gap-3">

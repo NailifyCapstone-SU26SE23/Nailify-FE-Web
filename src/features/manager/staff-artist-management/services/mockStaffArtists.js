@@ -34,8 +34,8 @@ export const STAFF_MINI_STATS = [
 ];
 
 export const QUICK_ACTIONS = [
-  { label: "Edit Schedule", icon: "calendar" },
-  { label: "Transfer Staff", icon: "arrow" },
+  { label: "Edit Schedule", labelVi: "Lịch làm việc", icon: "calendar" },
+  { label: "Transfer Staff", labelVi: "Chuyển thợ", icon: "arrow" },
 ];
 
 export const STAFF_FILTER_TABS = ["All", "Active", "Inactive"];

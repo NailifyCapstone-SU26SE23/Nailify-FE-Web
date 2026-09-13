@@ -295,9 +295,9 @@ export function NailSurfacesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        
 
-        
+
+
 
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
@@ -359,7 +359,7 @@ export function NailSurfacesManagementPage() {
 
         <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
           {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
-            <h2 className="text-sm font-extrabold text-[#432744]">{t("adminNailSurfacesManagement.nailSurfaces")}</h2>
+            <h2 className="text-sm font-bold text-[#432744]">{t("adminNailSurfacesManagement.nailSurfaces")}</h2>
             <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
               {language === "vi" ? `Hiển thị ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} trên ${metaData.totalItems} bề mặt móng` : `Showing ${metaData.firstRowOnPage}-${metaData.lastRowOnPage} of ${metaData.totalItems} nail surfaces`}
             </p>

@@ -81,7 +81,7 @@ function SidebarItem({ item, collapsed }) {
           <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
         ) : null}
         {item.badge && !collapsed ? (
-          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.2)] px-1.5 text-[10px] font-extrabold text-white">
+          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.2)] px-1.5 text-[10px] font-bold text-white">
             {item.badge}
           </span>
         ) : null}

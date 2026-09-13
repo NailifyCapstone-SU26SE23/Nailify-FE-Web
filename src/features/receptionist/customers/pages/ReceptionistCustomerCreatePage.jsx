@@ -28,7 +28,7 @@ function PanelCard({ title, icon, children, className = "" }) {
         <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ec4899_0%,#fb7185_100%)] text-white">
           {Icon ? <Icon size={12} /> : null}
         </span>
-        <h2 className="text-sm font-extrabold text-[#d83982]">{title}</h2>
+        <h2 className="text-sm font-bold text-[#d83982]">{title}</h2>
       </div>
       <div className="mt-4">{children}</div>
     </section>
@@ -163,7 +163,7 @@ export function ReceptionistCustomerCreatePage() {
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4 lg:items-end">
             <div className="text-sm text-[#b48ca0]">
               {language === "vi" ? "Thứ Ba, 12 Tháng 5 2026" : "Tuesday, 12 May 2026"}
-              <div className="text-lg font-extrabold text-[#eb4f94]">21:38</div>
+              <div className="text-lg font-bold text-[#eb4f94]">21:38</div>
             </div>
             <span className="inline-flex rounded-full border border-[#f4cadc] bg-[#fff2f8] px-3 py-1 text-[11px] font-bold text-[#ea4f93]">
               {language === "vi" ? "Khách Vãng Lai Mới" : "New Walk-in Customer"}
@@ -325,7 +325,7 @@ export function ReceptionistCustomerCreatePage() {
               ].map(([label, value, tone]) => (
                 <div key={label} className="flex items-center justify-between gap-3 border-b border-[#f7dce8] pb-3 last:border-b-0 last:pb-0">
                   <span className="text-[#b48ca0]">{label}</span>
-                  <span className={`font-extrabold ${tone}`}>{value}</span>
+                  <span className={`font-bold ${tone}`}>{value}</span>
                 </div>
               ))}
             </div>

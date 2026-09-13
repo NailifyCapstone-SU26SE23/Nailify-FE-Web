@@ -205,7 +205,7 @@ export function ProposeRescheduleModal({
               <Calendar size={22} />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-[#2B182B] tracking-tight">{language === "vi" ? "Đề xuất giờ mới" : "Propose New Time"}</h3>
+              <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{language === "vi" ? "Đề xuất giờ mới" : "Propose New Time"}</h3>
               <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Đề xuất ngày hoặc giờ mới cho khách hàng" : "Suggest an alternative date or slot to customer"}</p>
             </div>
           </div>
@@ -222,12 +222,12 @@ export function ProposeRescheduleModal({
         {booking && (
           <div className="mb-5 rounded-2xl border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/50 p-4 text-xs text-[#2B182B] shadow-2xs">
             <div className="flex items-center justify-between">
-              <span className="font-extrabold text-[#9E8497] uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <span className="font-bold text-[#9E8497] uppercase tracking-wider text-[10px] flex items-center gap-1">
                 <Sparkles size={12} className="text-[#E84F93]" /> {language === "vi" ? "Lịch hẹn hiện tại" : "Current Appointment"}
               </span>
               {/* <span className="font-bold text-[#E84F93] text-[11px]">#{String(booking.bookingId || "").slice(0, 8).toUpperCase()}</span> */}
             </div>
-            <p className="font-extrabold text-[#2B182B] text-sm mt-1">
+            <p className="font-bold text-[#2B182B] text-sm mt-1">
               {booking.date} · <span className="text-[#E84F93]">{booking.time}</span>
             </p>
           </div>
@@ -258,7 +258,7 @@ export function ProposeRescheduleModal({
               <label className="block text-xs font-bold text-[#2B182B] uppercase tracking-wider flex items-center gap-1.5">
                 <Clock size={14} className="text-[#E84F93]" /> {language === "vi" ? "Chọn giờ bắt đầu" : "2. Pick Start Time Slot"}
               </label>
-              <span className="text-[11px] font-extrabold text-[#E84F93]">
+              <span className="text-[11px] font-bold text-[#E84F93]">
                 {dayOperatingInfo.label}
               </span>
             </div>
@@ -277,7 +277,7 @@ export function ProposeRescheduleModal({
                       key={slot}
                       type="button"
                       onClick={() => setSelectedTimeStr(slot)}
-                      className={`py-2 px-2 rounded-xl text-xs font-extrabold transition-all text-center ${isSelected
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${isSelected
                         ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-md scale-105"
                         : "bg-white text-[#2B182B] border border-[#F3D7E4]/70 hover:border-[#E84F93] hover:bg-[#FFF0F5]"
                         }`}
@@ -317,7 +317,7 @@ export function ProposeRescheduleModal({
               type="button"
               onClick={handleSubmit}
               disabled={loading || dayOperatingInfo.isClosed}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-6 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
             >
               <Check size={16} />
               {loading ? (language === "vi" ? "Đang gửi..." : "Sending...") : (language === "vi" ? "Gửi đề xuất" : "Send Proposal")}

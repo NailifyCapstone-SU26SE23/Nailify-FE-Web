@@ -223,7 +223,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
               </div>
               <p className="text-xs leading-relaxed text-[#047857]">
                 {language === "vi" ? "Hệ thống đã tự động quét và phân bổ lại toàn bộ" : "The system has automatically scanned and reassigned all"} <strong>{resultSummary.totalAffectedBookings || 0} đơn hàng</strong>{language === "vi" ? " bị ảnh hưởng của thợ" : " affected orders of staff"} <strong>{artistName}</strong> vào ngày{" "}
-                <span className="font-extrabold">{dayjs(resultSummary.offDate).format("DD/MM/YYYY")}</span>.
+                <span className="font-bold">{dayjs(resultSummary.offDate).format("DD/MM/YYYY")}</span>.
               </p>
             </div>
 
@@ -306,7 +306,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                     {artistInitials}
                   </div>
                   <div>
-                    <p className="font-extrabold text-[#991B1B] text-sm flex items-center gap-2">
+                    <p className="font-bold text-[#991B1B] text-sm flex items-center gap-2">
                       {artistName}
                       {currentSelectedArtist.phone && (
                         <span className="text-[11px] font-medium text-[#BE123C] bg-white/70 px-2 py-0.5 rounded-md">
@@ -346,7 +346,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                 </label>
                 <div className="h-10 rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] px-3 flex items-center justify-between text-xs text-[#5C4559]">
                   <span className="font-bold text-[11px]">{language === 'vi' ? "Cả ngày nghỉ (Full Off)" : "Full Day Off"}</span>
-                  <span className="rounded-md bg-[#FFE4E6] text-[#E11D48] px-2 py-0.5 text-[10px] font-extrabold">
+                  <span className="rounded-md bg-[#FFE4E6] text-[#E11D48] px-2 py-0.5 text-[10px] font-bold">
                     {language === 'vi' ? "Tất cả ca trong ngày" : "All Shifts"}
                   </span>
                 </div>
@@ -376,7 +376,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                     key={preset}
                     type="button"
                     onClick={() => setReason(preset)}
-                    className="rounded-lg border border-[#F3D7E4] bg-[#FFF0F5]/80 px-2 py-1 text-[10px] font-extrabold text-[#991B1B] hover:bg-[#FFE4EE] hover:border-[#E84F93] transition cursor-pointer"
+                    className="rounded-lg border border-[#F3D7E4] bg-[#FFF0F5]/80 px-2 py-1 text-[10px] font-bold text-[#991B1B] hover:bg-[#FFE4EE] hover:border-[#E84F93] transition cursor-pointer"
                   >
                     {preset}
                   </button>
@@ -385,7 +385,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
             </div>
 
             {/* 4. Automated Process Explanation */}
-            <div className="rounded-2xl border border-[#FCD34D] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-[#FFFBEB] p-3.5 text-xs text-[#B45309] shadow-2xs">
+            {/* <div className="rounded-2xl border border-[#FCD34D] bg-gradient-to-r from-[#FFFBEB] via-[#FFFDF5] to-[#FFFBEB] p-3.5 text-xs text-[#B45309] shadow-2xs">
               <div className="flex items-center gap-1.5 font-bold text-xs text-[#92400E] mb-1">
                 <Clock size={15} className="text-[#D97706]" />
                 <span>{language === 'vi' ? "Quy trình Tự động Phân bổ (Re-assignment Engine):" : "Re-assignment Engine:"}</span>
@@ -401,7 +401,7 @@ export function EmergencyOffModal({ open, onClose, artist, artists = [], onSucce
                   <strong className="text-[#92400E]">{language === 'vi' ? "Bước 3:" : "Step 3:"}</strong> {language === 'vi' ? "Tự động Hủy đơn + Hoàn 100% Cọc + Voucher 20% + Đưa khách vào Waitlist nếu kín thợ." : "Auto-cancel order + 100% refund + 20% voucher + Add to waitlist if full."}
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             {/* Actions */}
             <div className="flex justify-end gap-2.5 pt-3 border-t border-[#F3E2EC]">

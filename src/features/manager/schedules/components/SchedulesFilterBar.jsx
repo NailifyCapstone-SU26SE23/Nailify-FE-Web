@@ -17,7 +17,7 @@ export function SchedulesFilterBar({
   const isVi = language === "vi";
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-[#F3E2EC]">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-[#F3E2EC]">
       <Space>
         <Button
           icon={<ChevronLeft size={16} />}

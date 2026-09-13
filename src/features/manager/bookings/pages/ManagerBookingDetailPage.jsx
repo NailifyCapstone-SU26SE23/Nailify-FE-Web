@@ -23,7 +23,7 @@ import {
   Check,
   Banknote,
 } from "lucide-react";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
@@ -36,6 +36,8 @@ import {
   managerSuggestTime,
   managerApproveReschedule,
   managerRejectReschedule,
+  fetchCustomerProfileById,
+  fetchLoyaltyTiers,
 } from "../services/bookingsService";
 import { fetchTransactionsByBookingId, fetchTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
 import { Spin, Alert, Modal, Input, Image, Select, Table } from "antd";
@@ -101,7 +103,7 @@ function Card({ className = "", children }) {
       initial="hidden"
       animate="visible"
       variants={fadeInUp}
-      className={`rounded-lg border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.1)] hover:border-[#E8C5D8] md:p-7 ${className}`}
+      className={`rounded-lg border border-[#F3E2EC] bg-white p-4 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.1)] hover:border-[#E8C5D8] md:p-7 ${className}`}
     >
       {children}
     </motion.article>
@@ -123,7 +125,7 @@ function SectionTitle({ children, subtitle, icon: Icon, actionButton }) {
           </div>
         )}
         <div>
-          <h2 className="text-lg font-extrabold tracking-tight text-[#2B182B]">{children}</h2>
+          <h2 className="text-lg font-bold tracking-tight text-[#2B182B]">{children}</h2>
           {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium leading-relaxed">{subtitle}</p> : null}
         </div>
       </div>
@@ -157,7 +159,7 @@ function InfoTile({ label, children, className = "" }) {
   return (
     <div className={`rounded-2xl border border-[#F3E2EC] bg-gradient-to-br from-white to-[#FFF9FB] p-4 shadow-2xs hover:shadow-xs transition-shadow duration-300 min-w-0 ${className}`}>
       <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] truncate">{label}</p>
-      <div className="mt-1.5 text-sm font-extrabold text-[#2B182B] truncate break-all">{children}</div>
+      <div className="mt-1.5 text-sm font-bold text-[#2B182B] truncate break-all">{children}</div>
     </div>
   );
 }
@@ -347,9 +349,22 @@ export function ManagerBookingDetailPage() {
   const backRoute = location.state?.from || (location.pathname.startsWith("/admin/") ? ROUTES.adminBookings : ROUTES.managerBookings);
   const [booking, setBooking] = useState(null);
   const [customer, setCustomer] = useState(null);
+  const [loyaltyTiers, setLoyaltyTiers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadTiers() {
+      try {
+        const tiers = await fetchLoyaltyTiers();
+        setLoyaltyTiers(tiers || []);
+      } catch (err) {
+        console.warn("Failed to load loyalty tiers:", err);
+      }
+    }
+    loadTiers();
+  }, []);
   useEffect(() => {
     if (error) {
       toast.error(error, { id: "error-msg" });
@@ -420,6 +435,15 @@ export function ManagerBookingDetailPage() {
   const [interleavingData, setInterleavingData] = useState(null);
   const [evaluatingInterleaving, setEvaluatingInterleaving] = useState(false);
   const [assigningPrep, setAssigningPrep] = useState(false);
+
+  const customerTier = useMemo(() => {
+    if (!customer || !loyaltyTiers || loyaltyTiers.length === 0 || customer.lifetimePoints === undefined) return null;
+    return loyaltyTiers.find(
+      (tier) =>
+        customer.lifetimePoints >= tier.minLifetimePoints &&
+        (tier.maxLifetimePoints === null || customer.lifetimePoints <= tier.maxLifetimePoints)
+    );
+  }, [customer, loyaltyTiers]);
 
   const mapBooking = useCallback((rawBooking) => {
     const artistName = getArtistDisplayName(rawBooking);
@@ -501,7 +525,7 @@ export function ManagerBookingDetailPage() {
 
       if (mappedBooking.customerId) {
         try {
-          const rawCustomer = await fetchUserById(mappedBooking.customerId);
+          const rawCustomer = await fetchCustomerProfileById(mappedBooking.customerId);
           setCustomer(rawCustomer);
         } catch (err) {
           console.warn("Failed to load customer details:", err);
@@ -628,6 +652,7 @@ export function ManagerBookingDetailPage() {
     normalizedStatus.includes("confirmed") ||
     normalizedStatus.includes("approved");
 
+
   return (
     <motion.section
       initial="hidden"
@@ -653,20 +678,20 @@ export function ManagerBookingDetailPage() {
               </button>
 
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl lg:text-3xl font-extrabold text-[#2B182B] tracking-tight ">
+                <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
                   {t("manager.bookings.bookingDetails")}
                 </h1>
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">
                   #{String(booking?.bookingId || bookingId).slice(0, 8).toUpperCase()}
                 </span>
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-extrabold shadow-2xs ${getStatusTone(booking?.status)}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
                 </span>
 
                 {/* Warning for unrefunded cancelled bookings */}
                 {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-3.5 py-1 text-xs font-extrabold text-[#E11D48] shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-3.5 py-1 text-xs font-bold text-[#E11D48] shadow-2xs">
                     {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
                   </span>
                 )}
@@ -696,7 +721,7 @@ export function ManagerBookingDetailPage() {
                   whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={() => setIsRefundBankModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#E11D48] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-[#BE123C] hover:shadow-lg transition-all"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#E11D48] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#BE123C] hover:shadow-lg transition-all"
                 >
                   <Banknote size={15} />
                   <span>{language === "vi" ? "Nhập TK Hoàn tiền" : "Refund Bank Info"}</span>
@@ -711,7 +736,7 @@ export function ManagerBookingDetailPage() {
                   type="button"
                   onClick={() => setIsProposeRescheduleModalOpen(true)}
                   disabled={!normalizedBookingId || isRefreshing}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#E84F93] bg-[#FFF0F5] px-5 py-2.5 text-xs font-extrabold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#E84F93] bg-[#FFF0F5] px-5 py-2.5 text-xs font-bold text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all disabled:opacity-50"
                 >
                   <Calendar size={15} />
                   <span>{language === "vi" ? "Đề xuất giờ mới" : "Propose New Time"}</span>
@@ -731,7 +756,7 @@ export function ManagerBookingDetailPage() {
                       type="button"
                       onClick={() => setIsConfirmModalOpen(true)}
                       disabled={!normalizedBookingId || isRefreshing}
-                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                     >
                       <CheckCircle2 size={16} />
                       <span>{t("manager.bookings.confirmBooking")}</span>
@@ -743,7 +768,7 @@ export function ManagerBookingDetailPage() {
                     whileTap={{ scale: 0.97 }}
                     type="button"
                     onClick={() => setIsAssignArtistModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#4F46E5] px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition-all"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366F1] to-[#4F46E5] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all"
                   >
                     <UserCheck size={16} />
                     <span>{t("manager.bookings.assignArtistTitle")}</span>
@@ -793,7 +818,7 @@ export function ManagerBookingDetailPage() {
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
                     <Calendar size={14} /> {t("manager.bookings.customerRequestedReschedule") || "Customer Requested Reschedule"}
                   </span>
-                  <p className="text-sm font-extrabold text-[#1E1B4B] mt-1">
+                  <p className="text-sm font-bold text-[#1E1B4B] mt-1">
                     {t("manager.bookings.bookingDate") || "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {t("manager.bookings.time") || "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
                   </p>
                   {booking.rescheduleReason && (
@@ -805,7 +830,7 @@ export function ManagerBookingDetailPage() {
                     type="button"
                     onClick={handleApproveCustomerReschedule}
                     disabled={isRefreshing}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
                   >
                     <CheckCircle2 size={15} /> {t("manager.breaks.approve") || "Accept Request"}
                   </button>
@@ -828,9 +853,9 @@ export function ManagerBookingDetailPage() {
               <div className="flex items-center gap-2.5">
                 <Clock3 size={16} className="text-[#D97706] shrink-0" />
                 <div>
-                  <p className="font-extrabold text-[#92400E]">Reschedule Proposal Sent to Customer</p>
+                  <p className="font-bold text-[#92400E]">{language === "vi" ? "Đã gửi yêu cầu đề xuất thay đổi cho khách hàng" : "Reschedule Proposal Sent to Customer"}</p>
                   <p className="mt-0.5 text-[#B45309]">
-                    Proposed Date: <strong>{booking.proposedBookingDate || "N/A"}</strong> · Time: <strong>{booking.proposedStartTime || "N/A"}</strong> (Awaiting customer response)
+                    {language === "vi" ? "Ngày đề xuất:" : "Proposed Date:"} <strong>{booking.proposedBookingDate || "N/A"}</strong> · {language === "vi" ? "Thời gian đề xuất:" : "Time:"} <strong>{booking.proposedStartTime || "N/A"}</strong> ({language === "vi" ? "Đang chờ phản hồi của khách hàng" : "Awaiting customer response"})
                   </p>
                 </div>
               </div>
@@ -843,21 +868,35 @@ export function ManagerBookingDetailPage() {
               subtitle={language === "vi" ? "Thông tin khách hàng" : "Customer Profile"}
               icon={UserRound}
               actionButton={
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/60 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-extrabold text-[#9E731A] shadow-2xs">
-                  <Crown size={14} className="text-[#C99635]" />
-                  VIP Member
-                </span>
+                customerTier ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold shadow-2xs border"
+                    style={{
+                      backgroundColor: customerTier.backgroundColor,
+                      borderColor: customerTier.backgroundColor,
+                      color: customerTier.textColor || "#FFFFFF",
+                    }}
+                  >
+                    <Crown size={14} />
+                    {customerTier.name}
+                  </span>
+                ) : customer ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/60 bg-[#FFF9EE] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">
+                    <Crown size={14} className="text-[#C99635]" />
+                    {language === "vi" ? "Thành viên" : "Member"}
+                  </span>
+                ) : null
               }
             >
               {language === "vi" ? "Thông tin khách hàng" : "Customer Profile"}
             </SectionTitle>
 
             <div className="flex items-center gap-4 mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/60">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-extrabold text-white shadow-md">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-bold text-white shadow-md">
                 {(customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : booking?.customerName || "C").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-extrabold text-[#2B182B] truncate">
+                <h3 className="text-base font-bold text-[#2B182B] truncate">
                   {customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : booking?.customerName}
                 </h3>
                 <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng đã đăng ký" : "Registered Customer"}</p>
@@ -869,7 +908,7 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone"}>
                   <a
                     href={`tel:${customer?.phone || booking?.phone}`}
-                    className="inline-flex items-center gap-2 font-extrabold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
+                    className="inline-flex items-center gap-2 font-bold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
                   >
                     <Phone size={13} className="shrink-0 text-[#E84F93]" />
                     <span>{customer?.phone || booking?.phone}</span>
@@ -941,7 +980,7 @@ export function ManagerBookingDetailPage() {
                   <button
                     type="button"
                     onClick={() => setIsAssignArtistModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] border border-[#C7D2FE] px-3.5 py-1.5 text-xs font-extrabold text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition shadow-2xs"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#EEF2FF] border border-[#C7D2FE] px-3.5 py-1.5 text-xs font-bold text-[#4F46E5] hover:bg-[#4F46E5] hover:text-white transition shadow-2xs"
                   >
                     <UserCheck size={13} />
                     {language === "vi" ? "Chỉ định nghệ sĩ" : "Assign Artist"}
@@ -954,7 +993,7 @@ export function ManagerBookingDetailPage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Ngày đặt lịch" : "Booking Date"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Ngày đặt lịch" : "Booking Date"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Calendar size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.date}</span>
@@ -962,7 +1001,7 @@ export function ManagerBookingDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời gian" : "Time"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời gian" : "Time"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{booking?.time}</span>
@@ -970,7 +1009,7 @@ export function ManagerBookingDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
-                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
                   <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
@@ -1011,7 +1050,7 @@ export function ManagerBookingDetailPage() {
                             </div>
                           )}
                           <div className="py-1">
-                            <h4 className="text-[15px] font-extrabold text-[#2B182B] mb-1">{text || "Nail Service"}</h4>
+                            <h4 className="text-[15px] font-bold text-[#2B182B] mb-1">{text || "Nail Service"}</h4>
                             {item.nailVariantName && (
                               <p className="text-xs font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
                                 <Sparkles size={13} /> {item.nailVariantName}
@@ -1048,7 +1087,7 @@ export function ManagerBookingDetailPage() {
                       key: 'price',
                       align: 'right',
                       width: 140,
-                      render: (price) => <span className="font-extrabold text-[#E84F93] text-[15px]">{price !== undefined ? formatVND(price) : "-"}</span>,
+                      render: (price) => <span className="font-bold text-[#E84F93] text-[15px]">{price !== undefined ? formatVND(price) : "-"}</span>,
                     },
                   ]}
                   dataSource={booking.bookingItems.map((item, index) => ({ ...item, key: item.id || index }))}
@@ -1064,19 +1103,19 @@ export function ManagerBookingDetailPage() {
         <div className="space-y-6 xl:sticky xl:top-6 xl:h-fit">
           {/* Assigned Artist Card */}
           <Card>
-            <SectionTitle subtitle={language === "vi" ? "Thông tin thợ làm móng" : "Artist"} icon={UserCheck}>
-              {language === "vi" ? "Thông tin thợ làm móng" : "Artist"}
+            <SectionTitle icon={UserCheck}>
+              {language === "vi" ? "Thông tin thợ làm móng" : "Staff Artist Information"}
             </SectionTitle>
 
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/70">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-extrabold text-white shadow-xs">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-bold text-white shadow-xs">
                 {(booking?.artistName && booking.artistName !== "Unassigned" ? booking.artistName : "U").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`text-sm font-extrabold truncate ${booking?.artistName === "Unassigned" ? "text-[#D97706]" : "text-[#2B182B]"}`}>
+                <p className={`text-sm font-bold truncate ${booking?.artistName === "Unassigned" ? "text-[#D97706]" : "text-[#2B182B]"}`}>
                   {booking?.artistName === "Unassigned" ? t("manager.bookings.unassigned") : booking?.artistName}
                 </p>
-                <p className="text-[11px] text-[#9E8497] font-medium">Nail Specialist</p>
+                <p className="text-[11px] text-[#9E8497] font-medium">{language === "vi" ? "Thợ làm móng" : "Staff Artist"}</p>
               </div>
               <button
                 type="button"
@@ -1112,7 +1151,7 @@ export function ManagerBookingDetailPage() {
                   <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
                     {/* <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${depositTone}`}>{depositText}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${depositTone}`}>{depositText}</span>
                     </div> */}
 
                     <div className="flex items-center justify-between text-xs">
@@ -1162,7 +1201,7 @@ export function ManagerBookingDetailPage() {
                               <div className="flex items-center gap-1.5">
                                 <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
                                 {percentage > 0 && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-extrabold tracking-wider border border-[#F3D6E5]/60">
+                                  <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-bold tracking-wider border border-[#F3D6E5]/60">
                                     {percentage}%
                                   </span>
                                 )}
@@ -1170,7 +1209,7 @@ export function ManagerBookingDetailPage() {
                               <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-[13px] font-extrabold text-[#E84F93]">{formatVND(tx.amount)}</p>
+                              <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(tx.amount)}</p>
                               <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
                                 String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                                   'bg-[#F3F4F6] text-[#6B7280]'
@@ -1279,12 +1318,12 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-white p-6 font-sans">
           <div className="flex items-center justify-between mb-4 border-b border-[#F3E2EC] pb-3">
-            <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#2B182B] flex items-center gap-2">
               <Edit3 size={18} className="text-[#E84F93]" /> {language === "vi" ? "Ghi chú đặt lịch" : "Edit Booking Notes"}
             </h3>
-            <button type="button" onClick={() => setIsEditNotesModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+            {/* <button type="button" onClick={() => setIsEditNotesModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
-            </button>
+            </button> */}
           </div>
           <div className="space-y-4">
             <p className="text-xs text-[#9E8497]">
@@ -1308,7 +1347,7 @@ export function ManagerBookingDetailPage() {
               <button
                 type="button"
                 onClick={handleSaveNotes}
-                className="rounded-xl bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg flex items-center gap-1.5"
+                className="rounded-xl bg-gradient-to-r from-[#E84F93] to-[#F43F5E] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg flex items-center gap-1.5"
               >
                 <Check size={14} /> {language === "vi" ? "Lưu ghi chú" : "Save Notes"}
               </button>
@@ -1450,7 +1489,7 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-[#FAF6F8] font-sans max-h-[85vh] overflow-y-auto">
           <div className="flex items-center justify-between p-5 border-b border-[#F3E2EC] bg-white sticky top-0 z-10">
-            <h3 className="text-base font-extrabold text-[#2B182B] flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#2B182B] flex items-center gap-2">
               <CreditCard size={18} className="text-[#E84F93]" /> {language === "vi" ? "Chi tiết giao dịch" : "Transaction Details"}
             </h3>
             <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
@@ -1468,7 +1507,7 @@ export function ManagerBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-extrabold text-[#E84F93] mb-2">{formatVND(selectedTransactionDetail.amount)}</p>
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatVND(selectedTransactionDetail.amount)}</p>
                   <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
@@ -1538,7 +1577,7 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-white p-6 font-sans">
           <div className="flex items-center justify-between mb-4 border-b border-[#F3E2EC] pb-3">
-            <h3 className="text-base font-extrabold text-[#E11D48] flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#E11D48] flex items-center gap-2">
               <Banknote size={18} /> {language === "vi" ? "Thông tin TK Hoàn tiền" : "Refund Bank Details"}
             </h3>
             <button type="button" onClick={() => setIsRefundBankModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
@@ -1611,7 +1650,7 @@ export function ManagerBookingDetailPage() {
                 type="button"
                 onClick={handleRefundSubmit}
                 disabled={isRefunding}
-                className="rounded-xl bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-4 py-2 text-xs font-extrabold text-white shadow-md hover:shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isRefunding ? <Spin size="small" className="text-white" /> : <Check size={14} />}
                 {language === "vi" ? "Xác nhận & Hoàn tiền" : "Submit Refund"}

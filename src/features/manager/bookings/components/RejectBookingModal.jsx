@@ -101,7 +101,7 @@ export function RejectBookingModal({
         <div className="flex gap-3 rounded-2xl border border-[#ffd4e5] bg-[#fffafc] p-4 shadow-[0_2px_8px_rgba(225,68,127,0.03)]">
           <AlertTriangle size={18} className="shrink-0 text-[#e1447f] mt-0.5" />
           <div>
-            <p className="text-xs font-extrabold text-[#7c2847]">{language === "vi" ? "Cảnh báo hành động" : "Action Warning"}</p>
+            <p className="text-xs font-bold text-[#7c2847]">{language === "vi" ? "Cảnh báo hành động" : "Action Warning"}</p>
             <p className="mt-1 text-xs text-[#a34468] leading-relaxed font-medium">
               {language === "vi" ? "Hành động này sẽ từ chối yêu cầu đặt lịch của khách hàng" : "Rejecting an appointment request cannot be undone. An email/push notification will be sent to the customer immediately."}
             </p>
@@ -122,7 +122,7 @@ export function RejectBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Khách hàng" : "Customer"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
               )}
@@ -133,7 +133,7 @@ export function RejectBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Thời gian đặt lịch" : "Time Slot"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
@@ -183,7 +183,7 @@ export function RejectBookingModal({
             }}
           />
           <div className="flex justify-end">
-            <span className="text-[9px] font-extrabold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">{details.length}/300</span>
+            <span className="text-[9px] font-bold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">{details.length}/300</span>
           </div>
         </div>
 

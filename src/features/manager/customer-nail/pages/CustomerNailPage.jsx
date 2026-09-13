@@ -29,7 +29,7 @@ Card.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
+      <h3 className="text-sm font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
     </div>
   );
@@ -366,7 +366,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
     <div className="group/stat rounded-[24px] border border-[#f6dce7] bg-white/95 p-5 shadow-[0_8px_30px_rgba(236,72,153,0.04)] backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_35px_rgba(236,72,153,0.1)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
           <p className="mt-2.5 text-3xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1.5 text-xs text-[#a07c90] group-hover/stat:text-[#ea4f93] transition-colors">{note}</p>
         </div>

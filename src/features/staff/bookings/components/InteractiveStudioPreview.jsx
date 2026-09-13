@@ -417,7 +417,7 @@ function NailShell({
         <div className="absolute inset-0 z-10">{children}</div>
       </div>
 
-      <span className="rounded-full border border-[#fce6f3] bg-white/90 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
+      <span className="rounded-full border border-[#fce6f3] bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
         {NAIL_LABELS[index]}
       </span>
     </div>
@@ -763,10 +763,9 @@ function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact 
         <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
 
         {/* Nail card — scaled based on compact mode */}
-        <div className={`relative overflow-visible border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93] ${
-          compact ? "h-28 w-14 rounded-t-[20px] rounded-b-[10px]" : "h-48 w-24 rounded-t-[32px] rounded-b-[14px]"
-        }`}>
-          
+        <div className={`relative overflow-visible border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93] ${compact ? "h-28 w-14 rounded-t-[20px] rounded-b-[10px]" : "h-48 w-24 rounded-t-[32px] rounded-b-[14px]"
+          }`}>
+
           {/* Masked section for background and Art type components */}
           <div className="absolute inset-0 h-full w-full overflow-hidden" style={shapeMaskStyle}>
             <div className="absolute inset-0 h-full w-full" style={colorStyle} />
@@ -836,9 +835,8 @@ function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact 
           </div>
         </div>
       </div>
-      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${
-        compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
-      }`}>
+      <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
+        }`}>
         {label}
       </span>
     </div>
@@ -943,11 +941,10 @@ export function InteractiveStudioPreview({
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold transition ${
-                viewMode === "grid"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${viewMode === "grid"
                   ? "bg-[#ea4f93] text-white"
                   : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
-              }`}
+                }`}
             >
               <Grid size={13} />
               Grid
@@ -955,11 +952,10 @@ export function InteractiveStudioPreview({
             <button
               type="button"
               onClick={() => setViewMode("hand")}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold transition ${
-                viewMode === "hand"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${viewMode === "hand"
                   ? "bg-[#ea4f93] text-white"
                   : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
-              }`}
+                }`}
             >
               <Hand size={13} />
               Hand
@@ -972,22 +968,20 @@ export function InteractiveStudioPreview({
               <button
                 type="button"
                 onClick={() => setHandGender("woman")}
-                className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold transition ${
-                  handGender === "woman"
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${handGender === "woman"
                     ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
                     : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 👩 Female
               </button>
               <button
                 type="button"
                 onClick={() => setHandGender("man")}
-                className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold transition ${
-                  handGender === "man"
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${handGender === "man"
                     ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
                     : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 👨 Male
               </button>
@@ -1025,9 +1019,8 @@ export function InteractiveStudioPreview({
                     key={slot.label}
                     type="button"
                     onClick={() => openNailEditor(slot.index)}
-                    className={`absolute cursor-pointer transition-all duration-250 ease-out z-[5] hover:z-[25] hover:drop-shadow-[0_4px_14px_rgba(138,61,96,0.6)] ${
-                      isSelected ? "z-[40] drop-shadow-[0_6px_18px_rgba(138,61,96,0.7)]" : ""
-                    }`}
+                    className={`absolute cursor-pointer transition-all duration-250 ease-out z-[5] hover:z-[25] hover:drop-shadow-[0_4px_14px_rgba(138,61,96,0.6)] ${isSelected ? "z-[40] drop-shadow-[0_6px_18px_rgba(138,61,96,0.7)]" : ""
+                      }`}
                     style={{
                       left: slot.left,
                       top: slot.top,
@@ -1039,9 +1032,9 @@ export function InteractiveStudioPreview({
                       padding: 0,
                     }}
                   >
-                    <div 
-                      className="origin-top center" 
-                      style={{ 
+                    <div
+                      className="origin-top center"
+                      style={{
                         transform: `scale(${scale})`,
                         width: `${metrics.frameWidth}px`,
                         height: `${metrics.frameHeight}px`
@@ -1090,7 +1083,7 @@ export function InteractiveStudioPreview({
 
         <div className="mt-5 text-center">
           <p className="text-[10px] text-[#aa8c9f]">Current Design</p>
-          <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{activeTemplateName}</p>
+          <p className="mt-1 text-sm font-bold text-[#ea4f93]">{activeTemplateName}</p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#d2508a]">
             <span>{selectedShape}</span>
             <span>{selectedLength}</span>
@@ -1125,7 +1118,7 @@ export function InteractiveStudioPreview({
           ].map(([label, value]) => (
             <div key={label} className="rounded-[12px] bg-white px-3 py-2 text-center">
               <p className="text-[10px] text-[#a98c9f]">{label}</p>
-              <p className="mt-1 text-xs font-extrabold text-[#ea4f93]">{value}</p>
+              <p className="mt-1 text-xs font-bold text-[#ea4f93]">{value}</p>
             </div>
           ))}
         </div>
@@ -1148,7 +1141,7 @@ export function InteractiveStudioPreview({
         <div className="bg-[linear-gradient(135deg,#fff0f8_0%,#fff5fb_100%)] px-6 pb-10 pt-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="text-xl font-extrabold text-[#402542]">
+              <h3 className="text-xl font-bold text-[#402542]">
                 {NAIL_LABELS[modalFingerIndex]} Nail Editor
               </h3>
               <p className="mt-1 text-sm text-[#b06484]">

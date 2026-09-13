@@ -84,7 +84,7 @@ function SectionHeading({ title, subtitle, icon: Icon }) {
         </div>
       )}
       <div>
-        <h2 className="text-[18px] font-extrabold text-[#3d1f3f] tracking-tight">
+        <h2 className="text-[18px] font-bold text-[#3d1f3f] tracking-tight">
           {title}
         </h2>
         {subtitle && <p className="mt-1 text-[13px] text-[#9a5f7f]">{subtitle}</p>}
@@ -139,7 +139,7 @@ function StatCard({ title, value, icon: Icon, trend, trendValue, color = "pink" 
             <p className="text-[12px] font-semibold text-[#9a5f7f] uppercase tracking-wider mb-1">
               {title}
             </p>
-            <p className="text-[28px] font-extrabold text-[#3d1f3f] leading-none">
+            <p className="text-[28px] font-bold text-[#3d1f3f] leading-none">
               {value}
             </p>
             {trend && (
@@ -208,7 +208,7 @@ function BookingCard({ booking }) {
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[16px] font-extrabold text-[#3d1f3f] truncate">
+              <h3 className="text-[16px] font-bold text-[#3d1f3f] truncate">
                 {booking?.customerName || "Unknown Customer"}
               </h3>
               {booking?.customerEmail && (
@@ -255,7 +255,7 @@ function BookingCard({ booking }) {
             )}
             {booking?.totalAmount && (
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-[#3d1f3f]">
+                <span className="font-bold text-[#3d1f3f]">
                   {Number(booking.totalAmount).toLocaleString("vi-VN")} VND
                 </span>
               </div>
@@ -462,7 +462,7 @@ export function AdminSalonBookingsPage() {
                       </div>
                     </div>
                     <div className="p-6">
-                      <h3 className="text-[18px] font-extrabold text-[#3d1f3f] truncate mb-2">
+                      <h3 className="text-[18px] font-bold text-[#3d1f3f] truncate mb-2">
                         {salon?.name || "Unknown Salon"}
                       </h3>
                       <div className="space-y-3 mb-4">

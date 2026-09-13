@@ -871,7 +871,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
                     <div className="flex-1 w-full">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className="font-extrabold text-[13px] text-slate-800 block">{fb.customerName}</span>
+                          <span className="font-bold text-[13px] text-slate-800 block">{fb.customerName}</span>
                           <span className="text-[10px] text-slate-400 font-medium">{dayjs(fb.date).format("MMM DD, YYYY • HH:mm")}</span>
                         </div>
                         <div className="bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center">

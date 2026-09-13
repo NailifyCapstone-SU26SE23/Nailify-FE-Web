@@ -311,9 +311,9 @@ export function CategoryTypeDetailPage() {
         </div>
       </header>
 
-      
 
-      
+
+
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
@@ -439,7 +439,7 @@ export function CategoryTypeDetailPage() {
           <div className="w-full max-w-lg rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
+                <h3 className="text-lg font-bold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
                 <p className="mt-1 text-sm text-[#b1859d]">
                   {t("adminCategoryTypes.addNestedCategoryDesc", { name: categoryType?.name || "this category type" })}
                 </p>

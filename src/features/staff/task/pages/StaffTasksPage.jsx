@@ -718,12 +718,12 @@ function BoardColumn({
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-100 text-[#ea4f93] shrink-0">
                     <CircleUserRound size={12} strokeWidth={2.5} />
                   </span>
-                  <span className="font-extrabold text-[#3f2a3c] text-[11px] truncate">
+                  <span className="font-bold text-[#3f2a3c] text-[11px] truncate">
                     {group.customerName}
                   </span>
                 </div>
                 {group.chairName && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-extrabold text-[#7c3aed] border border-purple-200/50 shadow-3xs">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-[#7c3aed] border border-purple-200/50 shadow-3xs">
                     {isVi ? `Ghế ${group.chairName}` : `Chair ${group.chairName}`}
                   </span>
                 )}
