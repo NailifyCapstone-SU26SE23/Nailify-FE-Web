@@ -1543,7 +1543,7 @@ export function StaffManagementPage() {
 
               <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-4.5">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_10px_25px_rgba(201,150,53,0.35)] border border-white/60 shrink-0">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_10px_25px_rgba(201,150,53,0.35)] border border-white/60 shrink-0">
                     <Users size={30} className="drop-shadow-md text-white" />
                   </div>
                   <div>

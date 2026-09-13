@@ -197,7 +197,7 @@ function BookingCard({ booking }) {
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
-      className="rounded-[24px] border border-[#f1e7ed] bg-[#fffafd] p-6 transition-all duration-300 hover:border-[#ea4f93] hover:bg-white hover:shadow-[0_20px_40px_-15px_rgba(234,79,147,0.1)]"
+      className="rounded-lg border border-[#f1e7ed] bg-[#fffafd] p-6 transition-all duration-300 hover:border-[#ea4f93] hover:bg-white hover:shadow-[0_20px_40px_-15px_rgba(234,79,147,0.1)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0 flex-1">

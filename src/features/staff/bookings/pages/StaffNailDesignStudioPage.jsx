@@ -2702,7 +2702,7 @@ export function StaffNailDesignStudioPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
         <div className="space-y-4">
           <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
             <label className="relative block">

@@ -315,7 +315,7 @@ export function StaffCustomerNailsListPage() {
 
           <div className="p-6">
             {requests.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
+              <div className="rounded-lg border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>

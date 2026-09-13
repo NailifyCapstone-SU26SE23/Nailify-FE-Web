@@ -189,7 +189,7 @@ function NotificationCard({ item, onClear, language }) {
   const Icon = meta.icon;
 
   return (
-    <div className={`rounded-[24px] border p-5 ${meta.panelClassName}`}>
+    <div className={`rounded-lg border p-5 ${meta.panelClassName}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">

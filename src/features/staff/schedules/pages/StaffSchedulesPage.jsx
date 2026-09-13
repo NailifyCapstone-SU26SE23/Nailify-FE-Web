@@ -272,7 +272,7 @@ export function StaffSchedulesPage() {
                 </div>
               ) : null}
 
-              <div className="overflow-hidden rounded-[24px] border border-[#eef0f5] bg-[#fbfcff]">
+              <div className="overflow-hidden rounded-lg border border-[#eef0f5] bg-[#fbfcff]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef0f5] px-4 py-4">
                   <div>
                     <p className="text-[15px] font-bold text-[#1f2435]">{language === "vi" ? "Lịch làm việc theo tuần" : "Daily schedule (staff week view)"}</p>

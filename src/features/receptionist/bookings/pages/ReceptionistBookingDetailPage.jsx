@@ -1059,7 +1059,7 @@ export function ReceptionistBookingDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-[50vh] items-center justify-center rounded-lg bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {isVi ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."}
@@ -1070,7 +1070,7 @@ export function ReceptionistBookingDetailPage() {
 
   if (error || !booking) {
     return (
-      <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+      <section className="rounded-lg border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
         <p className="text-lg font-bold text-[#412643]">{isVi ? "Không thể tải thông tin chi tiết đơn hàng" : "Booking detail unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || "This booking could not be loaded."}</p>
         <div className="mt-4 flex flex-wrap gap-2">

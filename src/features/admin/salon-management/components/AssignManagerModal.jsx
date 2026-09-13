@@ -171,7 +171,7 @@ export default function AssignManagerModal({
                                     salonId: salon.id,
                                   }));
                                 }}
-                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
+                                className={`cursor-pointer rounded-lg border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   }`}
@@ -267,7 +267,7 @@ export default function AssignManagerModal({
                                     managerId: manager.id,
                                   }));
                                 }}
-                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
+                                className={`cursor-pointer rounded-lg border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   }`}

@@ -159,7 +159,7 @@ function isReadyForCheckout(status) {
 function DashboardCard({ children, className = "" }) {
   return (
     <section
-      className={`w-full min-w-0 overflow-hidden rounded-[24px] border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
+      className={`w-full min-w-0 overflow-hidden rounded-lg border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
     >
       {children}
     </section>
@@ -1493,7 +1493,7 @@ export function ReceptionistDashboardPage() {
               <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
               <canvas ref={scannerCanvasRef} className="hidden" />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+                <div className="h-full w-full rounded-lg border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
               </div>
               {isScannerStarting || isVerifyingQr ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">

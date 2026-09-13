@@ -280,7 +280,7 @@ export function ActionConfirmModal({
             className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
           >
             {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
-            {loading ? "Processing..." : confirmText}
+            {loading ? language === "vi" ? "Đang xử lý..." : "Processing..." : confirmText}
           </button>
         </div>
       </div>

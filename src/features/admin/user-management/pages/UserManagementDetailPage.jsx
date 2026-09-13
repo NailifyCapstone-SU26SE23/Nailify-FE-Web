@@ -201,7 +201,7 @@ export function UserManagementDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-full items-center justify-center rounded-[24px] bg-white p-6">
+      <section className="flex min-h-full items-center justify-center rounded-lg bg-white p-6">
         <div className="flex items-center gap-3 text-sm text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("userManagement.detail.loadingDetails")}

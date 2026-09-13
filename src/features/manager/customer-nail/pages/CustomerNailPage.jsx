@@ -14,7 +14,7 @@ import { CustomerNailStatusBadge } from "../../../../shared/components/common/Cu
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[24px] border border-[#f8deea] shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
+      className={`rounded-lg border border-[#f8deea] shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
     >
       {children}
     </article>
@@ -363,7 +363,7 @@ function getCardColorStyle(customColor) {
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
   return (
-    <div className="group/stat rounded-[24px] border border-[#f6dce7] bg-white/95 p-5 shadow-[0_8px_30px_rgba(236,72,153,0.04)] backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_35px_rgba(236,72,153,0.1)]">
+    <div className="group/stat rounded-lg border border-[#f6dce7] bg-white/95 p-5 shadow-[0_8px_30px_rgba(236,72,153,0.04)] backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_35px_rgba(236,72,153,0.1)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
@@ -400,7 +400,7 @@ function CustomerNailCard({ nail, language }) {
   } : {};
 
   return (
-    <div className="group relative overflow-hidden rounded-[24px] border border-[#fdf7f9] bg-white shadow-[0_8px_30px_rgba(236,72,153,0.04)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
+    <div className="group relative overflow-hidden rounded-lg border border-[#fdf7f9] bg-white shadow-[0_8px_30px_rgba(236,72,153,0.04)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
       {/* 🎨 TOP: Large Nail Preview */}
       <div className="relative h-[260px] w-full overflow-hidden bg-gradient-to-b from-[#fffbfd] to-[#fff5f9] perspective-1000">
         {/* Soft shadow beneath nail */}
@@ -768,7 +768,7 @@ export function CustomerNailPage() {
 
           <div className="p-6">
             {filteredNails.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
+              <div className="rounded-lg border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>

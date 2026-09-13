@@ -428,7 +428,7 @@ export function ReadOnlyNailPreview({
   const finishLabel = String(variantDetail?.nailSurface?.name).trim();
 
   return (
-    <article className={`flex w-full max-w-full flex-col rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
+    <article className={`flex w-full max-w-full flex-col rounded-lg border border-[#f6dbe8] bg-[#fff7fb] shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
       {showHeader ? (
         <div className="flex items-center gap-2">
           <Sparkles size={14} className="text-[#ea4f93]" />

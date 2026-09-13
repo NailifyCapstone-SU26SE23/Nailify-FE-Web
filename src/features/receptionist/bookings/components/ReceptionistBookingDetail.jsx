@@ -140,7 +140,7 @@ const ACTION_CENTER = [
 function SectionCard({ title, subtitle, badge, children, className = "" }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
+      className={`rounded-lg border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>

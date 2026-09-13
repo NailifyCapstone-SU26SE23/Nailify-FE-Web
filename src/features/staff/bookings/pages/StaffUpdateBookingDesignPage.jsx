@@ -163,7 +163,7 @@ AddonRow.propTypes = {
 function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/35 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-xl rounded-[24px] border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
+      <div className="w-full max-w-xl rounded-lg border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-lg font-bold text-[#3f2b3f]">
@@ -417,7 +417,7 @@ export function StaffUpdateBookingDesignPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-4">

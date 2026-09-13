@@ -237,7 +237,7 @@ export function LoginPage() {
                 {status === AUTH_STATUS.loading ? (isVi ? "Đang đăng nhập..." : "Signing in...") : (isVi ? "Đăng nhập" : "Sign In")}
               </button>
 
-              <div className="rounded-[24px] border border-gray-200 bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-gray-600">
+              <div className="rounded-lg border border-gray-200 bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-gray-600">
                 <span className="inline-flex items-center align-middle gap-2 font-semibold text-black">
                   <ShieldQuestionMark size={20} />
                   {isVi ? "Chính sách truy cập: " : "Access policy: "}

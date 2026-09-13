@@ -1474,7 +1474,7 @@ export function NailVariantDetailPage() {
                   const isEditing = editingProcedureIndex === index;
 
                   return (
-                    <div key={`${item.procedureId || "draft"}-${index}`} className="group relative overflow-visible rounded-[24px] border border-[#f4d4e2] bg-white p-5 shadow-[0_4px_20px_rgba(236,72,153,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(236,72,153,0.08)] hover:border-[#fcd5e6]">
+                    <div key={`${item.procedureId || "draft"}-${index}`} className="group relative overflow-visible rounded-lg border border-[#f4d4e2] bg-white p-5 shadow-[0_4px_20px_rgba(236,72,153,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(236,72,153,0.08)] hover:border-[#fcd5e6]">
                       {isEditing ? (
                         <div className="grid gap-5 md:grid-cols-[80px_minmax(0,1fr)]">
                           <label className="space-y-2">

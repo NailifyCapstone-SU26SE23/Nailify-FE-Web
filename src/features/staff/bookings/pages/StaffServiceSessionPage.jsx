@@ -2577,7 +2577,7 @@ export function StaffServiceSessionPage() {
                   },
                 })
               }
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
+              className="flex min-h-24 items-start gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
                 <Receipt size={19} />
@@ -2591,7 +2591,7 @@ export function StaffServiceSessionPage() {
             {/* <button
               type="button"
               onClick={handleRequestCustomerReview}
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
+              className="flex min-h-24 items-start gap-4 rounded-lg border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f4eaff] text-[#8b5cf6]">
                 <ClipboardCheck size={19} />
@@ -2606,7 +2606,7 @@ export function StaffServiceSessionPage() {
               type="button"
               disabled={!canOpenComparison}
               onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${canOpenComparison
+              className={`flex min-h-24 items-start gap-4 rounded-lg border px-5 py-5 text-left transition ${canOpenComparison
                 ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
                 : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
                 }`}

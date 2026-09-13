@@ -638,7 +638,7 @@ export function ReceptionistBookingListPage() {
           className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         />
 
-        <article className="rounded-[24px] border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+        <article className="rounded-lg border border-[#f6d8e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-lg font-bold text-[#412643]">
@@ -969,7 +969,7 @@ export function ReceptionistBookingListPage() {
                 <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
                 <canvas ref={scannerCanvasRef} className="hidden" />
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                  <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+                  <div className="h-full w-full rounded-lg border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
                 </div>
                 {isScannerStarting || isVerifyingQr ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">

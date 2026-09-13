@@ -241,7 +241,7 @@ export function StaffCreatePage() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5  lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             {isVi ? "Thêm nhân viên làm móng mới" : "Add New Artist"}
@@ -276,7 +276,7 @@ export function StaffCreatePage() {
         {/* Left column — main form */}
         <div className="space-y-4 lg:col-span-2 lg:space-y-5">
           {/* Staff Details */}
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {isVi ? "Thông tin nhân viên làm móng" : "Staff Artist Details"}
@@ -424,7 +424,7 @@ export function StaffCreatePage() {
           </div>
 
           {/* Skills & Specialties */}
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <StaffSkillAssessmentSection
               ratings={formData.skillRatings}
               specialties={specialties}
@@ -435,8 +435,8 @@ export function StaffCreatePage() {
         </div>
 
         {/* Right sidebar */}
-        <aside className="space-y-4 lg:space-y-5">
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+        <aside className="space-y-4 lg:space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {isVi ? "Xem trước thông tin" : "Profile Preview"}
@@ -461,9 +461,27 @@ export function StaffCreatePage() {
                   <h3 className="text-[15px] font-bold text-slate-800 mb-1">
                     {formData.firstName + " " + formData.lastName || "New Artist"}
                   </h3>
-                  <p className="text-xs text-slate-400 mb-3">
+                  <p className="text-xs text-slate-400 mb-2">
                     {isVi ? "Nhân viên làm móng" : "Staff Artist"}
                   </p>
+
+                  {(formData.email || formData.phone) && (
+                    <div className="flex flex-col items-center gap-1.5 mb-4 text-slate-500 w-full px-2">
+                      {formData.email && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Mail size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.email}</span>
+                        </div>
+                      )}
+                      {formData.phone && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Phone size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {specialties.slice(0, 3).map((item) => (
                       <span

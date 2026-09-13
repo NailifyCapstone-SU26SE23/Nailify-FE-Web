@@ -115,18 +115,18 @@ export function ChairsPage() {
       <div className="mx-auto w-full max-w-7xl">
 
         {isLoading ? (
-          <div className="flex min-h-[400px] items-center justify-center rounded-[24px] border border-[#f7e0ea] bg-white p-6 shadow-[0_10px_40px_rgba(234,79,147,0.04)]">
+          <div className="flex min-h-[400px] items-center justify-center rounded-lg border border-[#f7e0ea] bg-white p-6 shadow-[0_10px_40px_rgba(234,79,147,0.04)]">
             <div className="flex flex-col items-center gap-3 text-[#b38a9f]">
               <LoaderCircle size={32} className="animate-spin text-[#ea4f93]" />
               <p className="text-sm font-medium">{language === "vi" ? "Đang tải thông tin ghế..." : "Loading chair data..."}</p>
             </div>
           </div>
         ) : error ? (
-          <div className="rounded-[24px] border border-[#f7e0ea] bg-white p-6 text-center shadow-[0_10px_40px_rgba(234,79,147,0.04)] text-[#ea4f93]">
+          <div className="rounded-lg border border-[#f7e0ea] bg-white p-6 text-center shadow-[0_10px_40px_rgba(234,79,147,0.04)] text-[#ea4f93]">
             <p>{language === "vi" ? "Không tải được dữ liệu ghế. Vui lòng thử lại sau." : "Failed to load chair data. Please try again later."}</p>
           </div>
         ) : (
-          <div className="rounded-[24px] border border-[#f7e0ea] bg-white p-6 shadow-[0_10px_40px_rgba(234,79,147,0.04)]">
+          <div className="rounded-lg border border-[#f7e0ea] bg-white p-6 shadow-[0_10px_40px_rgba(234,79,147,0.04)]">
             <ChairMap chairs={liveStatusData || []} renderCell={renderCell} />
           </div>
         )}

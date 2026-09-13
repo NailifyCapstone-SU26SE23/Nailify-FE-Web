@@ -268,11 +268,14 @@ export function StaffUpdatePage() {
   const handleConfirmSave = async () => {
     setIsSaving(true);
     try {
-      // 1. Update user profile - ONLY include fields we need to update!
+      // 1. Update user profile
       const updatePayload = {
+        email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
+        status: formData.status,
+        salonId: formData.salonId,
       };
 
       // Only include imageFile if there is one
@@ -281,15 +284,14 @@ export function StaffUpdatePage() {
       }
 
       console.log("Updating user with data:", updatePayload, "userId:", formData.userId);
-      // await updateUser(formData.userId, updatePayload);
+      await updateUser(formData.userId, updatePayload);
 
       // 2. Update skill assignments if Staff Artist ID available
       if (formData.nailArtistId) {
         const skills = skillTypes
-          .filter((s) => Number(formData.skillRatings[s.id] ?? 0) > 0)
           .map((s) => ({
             skillTypeId: s.id,
-            level: Math.floor(Number(formData.skillRatings[s.id])),
+            level: Math.floor(Number(formData.skillRatings[s.id] ?? 0)),
           }));
 
         console.log("Updating skills for Staff Artist (nailArtistId):", formData.nailArtistId);
@@ -343,12 +345,12 @@ export function StaffUpdatePage() {
   if (isLoading) {
     return (
       <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-        <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5  lg:flex-row lg:items-center lg:justify-between">
           <div className="h-8 w-48 rounded-full bg-rose-100 animate-pulse" />
         </div>
         <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
           <div className="space-y-4 lg:col-span-2 lg:space-y-5">
-            <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
               <div className="h-6 w-48 rounded-full bg-rose-100 mb-5 animate-pulse" />
               <div className="grid gap-5 md:grid-cols-2">
                 {[1, 2, 3, 4, 5, 6].map(i => (
@@ -358,7 +360,7 @@ export function StaffUpdatePage() {
             </div>
           </div>
           <div className="space-y-4 lg:space-y-5">
-            <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
               <div className="h-6 w-48 rounded-full bg-rose-100 mb-5 animate-pulse" />
               <div className="h-48 rounded-2xl bg-rose-50 animate-pulse" />
             </div>
@@ -371,7 +373,7 @@ export function StaffUpdatePage() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
             {language === "vi" ? "Cập nhật thông tin nhân viên" : "Update Artist"}
@@ -409,7 +411,7 @@ export function StaffUpdatePage() {
         {/* Left column — main form */}
         <div className="space-y-4 lg:col-span-2 lg:space-y-5">
           {/* Staff Details */}
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {language === "vi" ? "Thông tin chi tiết nghệ sĩ" : "Artist Details"}
@@ -452,15 +454,17 @@ export function StaffUpdatePage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">
-                  Email
+                  Email <span className="text-rose-500">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
                   <Mail size={14} className="shrink-0 text-rose-300" />
                   <input
                     type="email"
                     value={formData.email}
-                    readOnly
-                    className={`${inputClassName} text-slate-400 cursor-not-allowed`}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    placeholder={language === "vi" ? "Nhập email" : "Enter email"}
+                    className={inputClassName}
+                    required
                   />
                 </div>
               </label>
@@ -499,7 +503,7 @@ export function StaffUpdatePage() {
                 <span className="text-[13px] font-semibold text-slate-600">
                   {language === "vi" ? "Ảnh đại diện" : "Avatar"}
                 </span>
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8">
                   {imagePreview ? (
                     <div className="relative w-full flex items-center justify-center">
                       <img crossOrigin="anonymous"
@@ -507,30 +511,16 @@ export function StaffUpdatePage() {
                         alt="Preview"
                         className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
                       />
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
-                      >
-                        <X size={16} />
-                      </button>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center gap-3 cursor-pointer">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
-                        <Upload size={28} />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg text-xl font-bold">
+                         {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">{language === "vi" ? "Nhấn để tải lên" : "Click to upload artist avatar"}</p>
-                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                        <p className="text-sm font-medium text-slate-500">{language === "vi" ? "Chưa có ảnh đại diện" : "No avatar provided"}</p>
                       </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
+                    </div>
                   )}
                 </div>
               </label>
@@ -538,7 +528,7 @@ export function StaffUpdatePage() {
           </div>
 
           {/* Skills & Specialties */}
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <StaffSkillAssessmentSection
               ratings={formData.skillRatings}
               specialties={specialties}
@@ -549,8 +539,8 @@ export function StaffUpdatePage() {
         </div>
 
         {/* Right sidebar */}
-        <aside className="space-y-4 lg:space-y-5">
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+        <aside className="space-y-4 lg:space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
             <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {language === "vi" ? "Xem trước hồ sơ" : "Profile Preview"}
@@ -575,9 +565,27 @@ export function StaffUpdatePage() {
                   <h3 className="text-[15px] font-bold text-slate-800 mb-1">
                     {[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist"}
                   </h3>
-                  <p className="text-xs text-slate-400 mb-3">
+                  <p className="text-xs text-slate-400 mb-2">
                     {language === "vi" ? "Nhân viên làm móng" : "Staff Artist"}
                   </p>
+
+                  {(formData.email || formData.phone) && (
+                    <div className="flex flex-col items-center gap-1.5 mb-4 text-slate-500 w-full px-2">
+                      {formData.email && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Mail size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.email}</span>
+                        </div>
+                      )}
+                      {formData.phone && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Phone size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap justify-center gap-1.5 mb-3">
                     {specialties.slice(0, 3).map((item) => (
                       <span

@@ -5,7 +5,7 @@ import { NAIL_DESIGN_STATUS_STYLES } from "../services/mockNailDesigns";
 
 export function NailDesignManagementSnapshotCard({ formValues, notice }) {
   return (
-    <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
+    <article className="rounded-lg bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
       <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
         Design snapshot
       </p>
