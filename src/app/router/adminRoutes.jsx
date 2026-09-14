@@ -59,6 +59,7 @@ import { ManagerBookingDetailPage } from "../../features/manager/bookings/pages/
 import { AdminSalonBookingRatingPage } from "../../features/admin/salon-bookings/pages/AdminSalonBookingRatingPage";
 import { TransactionOverviewPage } from "../../features/admin/transaction-overview/pages/TransactionOverviewPage";
 import { LoyaltyTransactionsManagementPage } from "../../features/admin/loyalty-transactions-management/pages/LoyaltyTransactionsManagementPage";
+import { WalletTransactionsManagementPage } from "../../features/admin/wallet-transactions-management/pages/WalletTransactionsManagementPage";
 
 export const adminRoutes = [
   {
@@ -134,6 +135,10 @@ export const adminRoutes = [
       {
         path: ROUTES.adminLoyaltyTransactions,
         element: <LoyaltyTransactionsManagementPage />,
+      },
+      {
+        path: ROUTES.adminWalletTransactions,
+        element: <WalletTransactionsManagementPage />,
       },
       {
         path: ROUTES.adminQuiz,
