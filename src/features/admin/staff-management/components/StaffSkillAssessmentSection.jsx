@@ -15,16 +15,16 @@ function SkillRatingCard({ item, onRatingChange, rating }) {
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs hover:border-[#E84F93]/40 transition group">
-      <div className="flex items-start justify-between gap-2">
-        <div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-900">
             {item.name || item.title}
           </p>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-400">{item.description || item.subtitle || "Specialty skill"}</p>
+          <span className="inline-flex whitespace-nowrap rounded-full bg-pink-50 px-2.5 py-0.5 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
+            {normalizedRating}★ {SKILL_LEVEL_LABELS[normalizedRating] ?? "Not rated"}
+          </span>
         </div>
-        <span className="inline-flex rounded-full bg-pink-50 px-2.5 py-0.5 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-          {normalizedRating}★ {SKILL_LEVEL_LABELS[normalizedRating] ?? "Not rated"}
-        </span>
+        <p className="mt-0.5 text-[11px] font-medium text-slate-400">{item.description || item.subtitle || "Specialty skill"}</p>
       </div>
 
       <div className="mt-4 flex items-center gap-1.5">

@@ -542,7 +542,7 @@ function NailBlueprint({ nail, componentsList }) {
           </clipPath>
         </defs>
       </svg>
-      <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="relative rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
         <div className="flex min-h-[360px] flex-nowrap items-center justify-start sm:justify-center overflow-x-auto pb-4 gap-3 md:gap-5 lg:gap-6">
           {renderNailPreview(1, "Thumb")}
           {renderNailPreview(2, "Index")}
@@ -849,10 +849,10 @@ export function StaffCustomerNailReviewPage() {
                   <img crossOrigin="anonymous"
                     src={nail.imageUrl}
                     alt={nail.name}
-                    className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)] transition duration-300 hover:scale-105"
+                    className="h-24 w-24 rounded-lg border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)] transition duration-300 hover:scale-105"
                   />
                 ) : (
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-bold text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-bold text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
                     <Palette size={34} />
                   </div>
                 )}

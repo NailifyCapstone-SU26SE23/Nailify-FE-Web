@@ -34,7 +34,7 @@ function getFieldClassName(disabled, isTextarea = false) {
   return [
     "w-full border border-[#f1d7c0] bg-[#fffdfb] text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4]",
     isTextarea
-      ? "min-h-[140px] rounded-[22px] px-4 py-3"
+      ? "min-h-[140px] rounded-lg px-4 py-3"
       : "rounded-full px-4 py-3",
     disabled ? "cursor-not-allowed bg-[#f8f2ec] text-[#8e7e73]" : "",
   ].join(" ");

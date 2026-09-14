@@ -1379,9 +1379,15 @@ export function StaffServiceSessionPage() {
     initializedBookingIdRef.current = bookingId;
     setShowStartConfirm(false);
     setShowCompleteConfirm(false);
-    setStarted(persistedSession?.started ?? Boolean(payload?.started));
-    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized));
-    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? isServerSessionFinalized);
+
+    // Completely prioritize Redux state if it exists for this session
+    const finalStarted = persistedSession?.started ?? Boolean(payload?.started);
+    const finalCompleted = persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized);
+    const finalFinalized = persistedSession?.isSessionFinalized ?? isServerSessionFinalized;
+
+    setStarted(finalStarted);
+    setCompleted(finalCompleted);
+    setIsSessionFinalized(finalFinalized);
     setFlashMessage("");
     setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
     setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
@@ -2314,14 +2320,12 @@ export function StaffServiceSessionPage() {
         }
       }
 
-      // BR-03.2: Confirm Onsite Addon
       await confirmOnsiteAddon({
         bookingId: normalizedBookingId,
         addonItems,
         assignedArtistId: assignedArtistId
       });
 
-      // Refresh Data
       const refreshedBookingDetail = await fetchStaffBookingDetail(normalizedBookingId).catch(() => null);
       if (refreshedBookingDetail) {
         setBookingDetail(refreshedBookingDetail);
@@ -2373,11 +2377,6 @@ export function StaffServiceSessionPage() {
     setFlashMessage("");
   };
 
-  // const handleRequestCustomerReview = () => {
-  //   toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
-  //   setFlashMessage("");
-  // };
-
   const comparisonModal = showComparisonView ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
       <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl">
@@ -2423,10 +2422,10 @@ export function StaffServiceSessionPage() {
                   <Image crossOrigin="anonymous"
                     src={effectiveBeforePhoto.previewUrl}
                     alt={effectiveBeforePhoto.fileName}
-                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                    className="h-[280px] w-full rounded-lg object-cover sm:h-[360px]"
                   />
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                  <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
                     {isVi ? "Ảnh trước khi làm chưa khả dụng." : "Before-service photo is not available."}
                   </div>
                 )}
@@ -2452,10 +2451,10 @@ export function StaffServiceSessionPage() {
                   <Image crossOrigin="anonymous"
                     src={effectiveAfterPhoto.previewUrl}
                     alt={effectiveAfterPhoto.fileName}
-                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                    className="h-[280px] w-full rounded-lg object-cover sm:h-[360px]"
                   />
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                  <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
                     {isVi ? "Ảnh sau khi làm chưa khả dụng." : "After-service photo is not available."}
                   </div>
                 )}
@@ -2464,19 +2463,19 @@ export function StaffServiceSessionPage() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Khách hàng" : "Customer"}
               </p>
               <p className="mt-2 text-base font-bold text-[#3f2b3f]">{data.customerName}</p>
             </div>
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Dịch vụ" : "Service"}
               </p>
               <p className="mt-2 text-base font-bold text-[#3f2b3f]">{data.serviceLabel}</p>
             </div>
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Thiết kế" : "Design"}
               </p>
@@ -2494,20 +2493,6 @@ export function StaffServiceSessionPage() {
             >
               {isVi ? "Đóng" : "Close"}
             </button>
-            {/* <button
-              type="button"
-              onClick={() =>
-                navigate(data.backRoute, {
-                  state: {
-                    fromServiceSession: true,
-                    readyForCheckout: true,
-                  },
-                })
-              }
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
-            >
-              {isVi ? "Chuyển tới thanh toán" : "Go to Checkout"}
-            </button> */}
           </div>
         </div>
       </div>
@@ -2549,13 +2534,25 @@ export function StaffServiceSessionPage() {
             <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
               {isVi ? "Có thể tiếp tục các bước tiếp theo bên dưới hoặc trở về danh sách lịch hẹn." : "The service session has been finalized. Continue with the handoff actions below or return to the booking list."}
             </p>
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.staffBookings)}
-              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
-            >
-              {isVi ? "Quay lại danh sách" : "Back to Booking List"}
-            </button>
+            <div className="flex items-center gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.staffBookings)}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
+              >
+                {isVi ? "Quay lại danh sách" : "Back to Booking List"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompleted(false);
+                  setIsSessionFinalized(false);
+                }}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f3d5e2] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+              >
+                {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+              </button>
+            </div>
           </div>
         </article>
 
@@ -2567,46 +2564,12 @@ export function StaffServiceSessionPage() {
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {/* <button
-              type="button"
-              onClick={() =>
-                navigate(data.backRoute, {
-                  state: {
-                    fromServiceSession: true,
-                    readyForCheckout: true,
-                  },
-                })
-              }
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
-                <Receipt size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-bold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
-              </span>
-            </button> */}
-
-            {/* <button
-              type="button"
-              onClick={handleRequestCustomerReview}
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f4eaff] text-[#8b5cf6]">
-                <ClipboardCheck size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-bold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
-              </span>
-            </button> */}
 
             <button
               type="button"
               disabled={!canOpenComparison}
               onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${canOpenComparison
+              className={`flex min-h-24 items-start gap-4 rounded-lg border px-5 py-5 text-left transition ${canOpenComparison
                 ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
                 : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
                 }`}
@@ -2627,15 +2590,14 @@ export function StaffServiceSessionPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 p-4 bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+    <section className="flex min-h-full flex-col gap-4 p-4">
 
 
 
       <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${isProgressPinned ? "px-5 py-3" : "p-5"
+        className={`z-30 rounded-lg border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${isProgressPinned ? "px-5 py-3" : "p-5"
           }`}
       >
         <div className={`grid transition-all duration-300 ease-in-out ${isProgressPinned ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
@@ -2679,14 +2641,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Tải lên ảnh trước khi làm" : "Before-Service Photo Upload"}
                   subtitle={isVi ? "Lưu lại ảnh làm bằng chứng trước khi thao tác." : "Save a before photo as proof before the nail service starts."}
                 />
 
-                <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
+                <label className="mt-5 block cursor-pointer rounded-lg border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
                   <input
                     type="file"
                     accept="image/png,image/jpeg"
@@ -2758,7 +2720,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ShieldCheck}
                   title={isVi ? "Xác nhận bắt đầu" : "Service Start Confirmation"}
@@ -2801,14 +2763,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Ảnh trước khi làm" : "Before Photo Preview"}
                   subtitle={isVi ? "Hình ảnh đã tải lên trước khi làm dịch vụ." : "This image was uploaded before the service started."}
                 />
 
-                <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
+                <div className="mt-5 overflow-hidden rounded-lg border border-[#f2bfd4] bg-[#fff7fb]">
                   {effectiveBeforePhoto ? (
                     <div className="relative">
                       <img crossOrigin="anonymous"
@@ -2832,7 +2794,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Trạng thái dịch vụ" : "Current Service Status"}
@@ -2859,7 +2821,7 @@ export function StaffServiceSessionPage() {
                 </div>
 
                 {phase === "progress" ? (
-                  <div className="mt-3 rounded-[22px] border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
+                  <div className="mt-3 rounded-lg border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       {isVi ? "Quy trình thực hiện" : "Procedure Steps"}
                     </p>
@@ -2969,7 +2931,7 @@ export function StaffServiceSessionPage() {
                 ) : null}
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Play}
                   title={isVi ? "Thao tác trực tiếp" : "Live Session Actions"}
@@ -3003,6 +2965,14 @@ export function StaffServiceSessionPage() {
                   <CheckCircle2 size={16} />
                   {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStarted(false)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                >
+                  {isVi ? "Quay lại trạng thái Chưa bắt đầu (Undo)" : "Back to Preparation (Undo)"}
+                </button>
               </article>
 
 
@@ -3019,14 +2989,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Ảnh sau khi làm" : "After-Service Photo Upload"}
                   subtitle={isVi ? "Tải lên kết quả móng cuối cùng." : "Upload the final photo as proof after the service is finished."}
                 />
 
-                <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
+                <label className="mt-5 block cursor-pointer rounded-lg border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
                   <input
                     type="file"
                     accept="image/png,image/jpeg"
@@ -3099,7 +3069,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ClipboardCheck}
                   title={isVi ? "Xác nhận kết thúc" : "Completion Confirmation"}
@@ -3198,7 +3168,7 @@ export function StaffServiceSessionPage() {
                 ) : null}
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Receipt}
                   title={isVi ? "Chi phí tạm tính" : "Final Service Summary"}
@@ -3298,9 +3268,17 @@ export function StaffServiceSessionPage() {
                   <CheckCircle2 size={16} />
                   {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCompleted(false)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                >
+                  {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+                </button>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Bước tiếp theo" : "Next Step"}
@@ -3308,41 +3286,6 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  {/* <button
-                    type="button"
-                    onClick={() =>
-                      navigate(data.backRoute, {
-                        state: {
-                          fromServiceSession: true,
-                          readyForCheckout: true,
-                        },
-                      })
-                    }
-                    className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ffe7f1] text-[#ea4f93]">
-                      <Receipt size={18} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-bold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
-                    </span>
-                  </button> */}
-
-                  {/* <button
-                    type="button"
-                    onClick={handleRequestCustomerReview}
-                    className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4eaff] text-[#8b5cf6]">
-                      <ClipboardCheck size={18} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-bold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
-                    </span>
-                  </button> */}
-
                   <button
                     type="button"
                     disabled={!canOpenComparison}
@@ -3370,7 +3313,7 @@ export function StaffServiceSessionPage() {
 
         <aside className={`space-y-4 self-start xl:sticky xl:top-0 ${phase === "done" || phase === "start" ? "hidden" : ""}`}>
           {phase === "start" ? (
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
               <SectionTitle icon={Clock3} title={isVi ? "Tóm tắt phiên" : "Session Snapshot"} />
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
@@ -3419,7 +3362,7 @@ export function StaffServiceSessionPage() {
             </article>
           ) : (
             <>
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Chi tiết dịch vụ" : "Service Details"}
@@ -3471,7 +3414,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Thao tác tiếp theo" : "Next Action"}

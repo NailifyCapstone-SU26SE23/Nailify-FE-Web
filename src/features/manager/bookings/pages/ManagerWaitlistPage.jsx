@@ -144,7 +144,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
 function StatCard({ title, value, icon: Icon, gradient, textColor, shadowColor, description }) {
   const { language } = useLanguage();
   return (
-    <div className={`relative overflow-hidden rounded-[24px] bg-white p-5 border border-[#fbe7ef] shadow-sm transition-all duration-300 hover:shadow-md`}>
+    <div className={`relative overflow-hidden rounded-lg bg-white p-5 border border-[#fbe7ef] shadow-sm transition-all duration-300 hover:shadow-md`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{title}</p>
@@ -212,7 +212,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-[24px] border bg-gradient-to-tr from-[#ffffff] to-[#fffbfc] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#ea4f93] ${isNext ? "border-[#f5a9ca] ring-4 ring-[#fff0f6]" : "border-[#edd8e5]"
+      className={`group relative overflow-hidden rounded-lg border bg-gradient-to-tr from-[#ffffff] to-[#fffbfc] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#ea4f93] ${isNext ? "border-[#f5a9ca] ring-4 ring-[#fff0f6]" : "border-[#edd8e5]"
         }`}
     >
       <div className={`absolute inset-y-0 left-0 w-[5px] bg-gradient-to-b ${isNext ? "from-[#ea4f93] to-[#7e4fe6]" : "from-[#ecd4e0] to-[#fceae6]"

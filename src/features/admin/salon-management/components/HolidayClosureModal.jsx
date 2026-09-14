@@ -633,7 +633,7 @@ export default function HolidayClosureModal({
               )}
             </AnimatePresence>
 
-            <div className="rounded-[22px] border border-[#f5cbdc] bg-[#fff6fa] p-4">
+            <div className="rounded-lg border border-[#f5cbdc] bg-[#fff6fa] p-4">
               <Form form={form} layout="vertical">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Form.Item label="Select Salon" className="mb-3">
@@ -728,7 +728,7 @@ export default function HolidayClosureModal({
 
             {/* Current closures ledger list */}
             {selectedSalonId && (
-              <div className="rounded-[22px] border border-[#f5cbdc] bg-white p-5">
+              <div className="rounded-lg border border-[#f5cbdc] bg-white p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <h4 className=" text-lg font-semibold text-[#3f2034] flex items-center gap-2">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0f6] text-[11px] font-bold text-[#ea4f93]">

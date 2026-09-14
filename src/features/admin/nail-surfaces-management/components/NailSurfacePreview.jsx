@@ -130,11 +130,11 @@ export function NailSurfacePreview({ surface, compact = false }) {
 
   return (
     <>
-      <div className={compact ? "inline-flex items-center gap-3" : "rounded-[24px] border border-[#f7d7e5] bg-white p-4"}>
+      <div className={compact ? "inline-flex items-center gap-3" : "rounded-lg border border-[#f7d7e5] bg-white p-4"}>
         <div
           className={`group relative overflow-hidden ${compact
-              ? "rounded-[18px] bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff2f8_100%)] p-0 w-[60px] h-[80px]"
-              : "rounded-lg bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[240px]"
+            ? "rounded-[18px] bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff2f8_100%)] p-0 w-[60px] h-[80px]"
+            : "rounded-lg bg-[radial-gradient(circle_at_top,#fff6fb_0%,#fff0f7_55%,#fff8fb_100%)] p-0 w-full h-[240px]"
             }`}
         >
           <button

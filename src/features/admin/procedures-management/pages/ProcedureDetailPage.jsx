@@ -257,7 +257,7 @@ export function ProcedureDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminProcedures}
@@ -329,12 +329,12 @@ export function ProcedureDetailPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">{t("adminProcedures.loadingDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
-          <section className="rounded-[24px] border border-rose-50 bg-white/90 p-8 shadow-[0_24px_60px_rgba(226,93,143,0.08)] backdrop-blur">
+          <section className="rounded-lg border border-rose-50 bg-white/90 p-8 shadow-[0_24px_60px_rgba(226,93,143,0.08)] backdrop-blur">
             <h2 className="mb-8 flex items-center gap-3 text-[22px] font-bold text-slate-800">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#eb5b92] to-[#cf3d74] text-white shadow-lg shadow-rose-200">
                 <FileText size={18} />

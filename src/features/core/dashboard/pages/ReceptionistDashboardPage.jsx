@@ -56,6 +56,7 @@ import {
   useStaffArtists,
 } from "../hooks/useAdminDashboard";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { fetchNailArtistById } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
 const APPOINTMENTS_PAGE_SIZE = 5;
 
@@ -156,10 +157,16 @@ function isReadyForCheckout(status) {
   return String(status || "").trim() === "ServiceCompleted";
 }
 
+function formatLocalTime(isoString) {
+  if (!isoString) return "--";
+  const localString = String(isoString).replace(/Z$/, "");
+  return new Date(localString).toLocaleTimeString();
+}
+
 function DashboardCard({ children, className = "" }) {
   return (
     <section
-      className={`w-full min-w-0 overflow-hidden rounded-[24px] border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
+      className={`w-full min-w-0 overflow-hidden rounded-lg border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
     >
       {children}
     </section>
@@ -258,6 +265,25 @@ function MobileAppointmentCard({ row, actions, formatDisplay }) {
       </div>
     </article>
   );
+}
+
+function QueueDetailArtistName({ artistId, initialName }) {
+  const { language } = useLanguage();
+  const { data: artistProfile, isLoading } = useQuery({
+    queryKey: ['nailArtist', artistId],
+    queryFn: () => fetchNailArtistById(artistId),
+    enabled: !!artistId,
+  });
+  
+  if (isLoading) return <span className="opacity-50">...</span>;
+  
+  if (artistProfile) {
+     return artistProfile.account 
+       ? `${artistProfile.account.firstName || ""} ${artistProfile.account.lastName || ""}`.trim()
+       : (artistProfile.firstName ? `${artistProfile.firstName} ${artistProfile.lastName}`.trim() : (artistProfile.name || initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned")));
+  }
+  
+  return initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned");
 }
 
 const defaultWidgets = [
@@ -1493,7 +1519,7 @@ export function ReceptionistDashboardPage() {
               <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
               <canvas ref={scannerCanvasRef} className="hidden" />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+                <div className="h-full w-full rounded-lg border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
               </div>
               {isScannerStarting || isVerifyingQr ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">
@@ -1610,14 +1636,14 @@ export function ReceptionistDashboardPage() {
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Giờ Đến" : "Arrival Time"}</span>
               <span className="text-sm font-bold text-gray-900">
-                {selectedQueueItem.arrivalTime ? new Date(selectedQueueItem.arrivalTime).toLocaleTimeString() : "--"}
+                {formatLocalTime(selectedQueueItem.arrivalTime)}
               </span>
             </div>
             {selectedQueueItem.calledTime && (
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Giờ Gọi" : "Called Time"}</span>
                 <span className="text-sm font-bold text-[#0066ff]">
-                  {new Date(selectedQueueItem.calledTime).toLocaleTimeString()}
+                  {formatLocalTime(selectedQueueItem.calledTime)}
                 </span>
               </div>
             )}
@@ -1625,7 +1651,7 @@ export function ReceptionistDashboardPage() {
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Bắt Đầu Phục Vụ" : "Service Start Time"}</span>
                 <span className="text-sm font-bold text-[#52c41a]">
-                  {new Date(selectedQueueItem.serviceStartTime).toLocaleTimeString()}
+                  {formatLocalTime(selectedQueueItem.serviceStartTime)}
                 </span>
               </div>
             )}
@@ -1638,7 +1664,11 @@ export function ReceptionistDashboardPage() {
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Thợ Phân Công" : "Assigned Staff Artist"}</span>
               <span className="text-sm font-bold text-purple-600">
-                {selectedQueueItem.assignedNailArtistName || language === "vi" ? "Chưa phân công" : "Not Assigned"}
+                {selectedQueueItem.assignedNailArtistId ? (
+                   <QueueDetailArtistName artistId={selectedQueueItem.assignedNailArtistId} initialName={selectedQueueItem.assignedNailArtistName} />
+                ) : (
+                   selectedQueueItem.assignedNailArtistName || (language === "vi" ? "Chưa phân công" : "Not Assigned")
+                )}
               </span>
             </div>
           </div>

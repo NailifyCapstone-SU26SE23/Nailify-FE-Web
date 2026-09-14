@@ -31,7 +31,7 @@ import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[24px] transition-all duration-300 ${className}`}
+      className={`rounded-lg transition-all duration-300 ${className}`}
     >
       {children}
     </article>
@@ -1264,7 +1264,7 @@ export function CustomerNailDetailPage() {
               subtitle={language === "vi" ? "Xem trước thiết kế trực tiếp hiển thị hình dạng móng, màu sắc, kết cấu bề mặt và phụ kiện ở vị trí tay thực tế." : "Interactive 3D preview showing nail shape, color blend, surface texture, and accessories in realistic hand positioning."}
             />
 
-            <div className="relative rounded-[24px] border border-[#fdf7f9] bg-[radial-gradient(ellipse_at_top,#fffdfd_0%,#fdfafb_58%,#f9f5f7_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_20px_50px_rgba(236,72,153,0.03)]">
+            <div className="relative rounded-lg border border-[#fdf7f9] bg-[radial-gradient(ellipse_at_top,#fffdfd_0%,#fdfafb_58%,#f9f5f7_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_20px_50px_rgba(236,72,153,0.03)]">
               <div className="flex min-h-[360px] flex-wrap items-center justify-center gap-5 lg:gap-6">
                 {renderNailPreview(1, language === "vi" ? "Ngón cái" : "Thumb")}
                 {renderNailPreview(2, language === "vi" ? "Ngón trỏ" : "Index")}
@@ -1705,7 +1705,7 @@ export function CustomerNailDetailPage() {
                   title={language === "vi" ? "Lý do từ chối" : "Reject Reason"}
                   subtitle={language === "vi" ? "Phản hồi cuối cùng của quản lý cho yêu cầu này." : "Latest manager feedback for this request."}
                 />
-                <div className="rounded-[24px] border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
+                <div className="rounded-lg border border-[#f4b8cb] bg-[linear-gradient(180deg,#fff1f5_0%,#ffe7ef_100%)] p-5 shadow-[0_10px_24px_rgba(225,68,127,0.08)]">
                   <p className="text-sm text-[#e1447f]">{nail.rejectReason}</p>
                 </div>
               </div>
@@ -1724,7 +1724,7 @@ export function CustomerNailDetailPage() {
 
                 <div className="grid gap-5 lg:grid-cols-2">
                   {/* Left: Staff Card */}
-                  <div className="rounded-[24px] border border-[#caecd5] bg-[linear-gradient(180deg,#f3fff7_0%,#eaf9ee_100%)] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.08)]">
+                  <div className="rounded-lg border border-[#caecd5] bg-[linear-gradient(180deg,#f3fff7_0%,#eaf9ee_100%)] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.08)]">
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8bd5a8] to-[#2fa25f] text-lg font-bold text-white shadow-[0_10px_20px_rgba(47,162,95,0.18)]">
                         {getStaffInitials(nail.assignedStaff)}
@@ -1745,7 +1745,7 @@ export function CustomerNailDetailPage() {
                   </div>
 
                   {/* Right: Real Skill Matrix */}
-                  <div className="rounded-[24px] border border-[#f5cee1] bg-white p-5 shadow-sm space-y-3">
+                  <div className="rounded-lg border border-[#f5cee1] bg-white p-5 shadow-sm space-y-3">
                     <div className="flex items-center justify-between border-b border-[#fde7f3] pb-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-[#b87c9b] flex items-center gap-1.5">
                         <Sparkles size={13} className="text-[#ea4f93]" />
@@ -2044,7 +2044,7 @@ export function CustomerNailDetailPage() {
                     <div
                       key={staff.staffId}
                       onClick={() => setSelectedStaff(staff)}
-                      className={`cursor-pointer rounded-[24px] border p-4 transition ${selectedStaff?.staffId === staff.staffId
+                      className={`cursor-pointer rounded-lg border p-4 transition ${selectedStaff?.staffId === staff.staffId
                         ? "border-[#ea4f93] bg-[linear-gradient(180deg,#fff0f8_0%,#fff7fb_100%)] shadow-[0_14px_28px_rgba(234,79,147,0.12)]"
                         : "border-[#f4c7da] bg-white hover:border-[#ea4f93] hover:shadow-[0_12px_24px_rgba(236,72,153,0.08)]"
                         }`}

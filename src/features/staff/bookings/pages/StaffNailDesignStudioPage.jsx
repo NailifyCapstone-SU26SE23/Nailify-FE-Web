@@ -2702,9 +2702,9 @@ export function StaffNailDesignStudioPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
         <div className="space-y-4">
-          <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+          <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
             <label className="relative block">
               <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#80687d]" />
               <input
@@ -2726,7 +2726,7 @@ export function StaffNailDesignStudioPage() {
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.44fr)]">
             <div className="space-y-4">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-sm font-bold text-[#38253a]">Ready-Made Design Templates</h2>
@@ -2869,7 +2869,7 @@ export function StaffNailDesignStudioPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-sm font-bold text-[#38253a]">Layer-Based Custom Builder</h2>
                   <span
@@ -3271,7 +3271,7 @@ export function StaffNailDesignStudioPage() {
             </div>
 
             <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Palette} title="Live Nail Preview" />
                 <InteractiveStudioPreview
                   previewRef={previewContainerRef}

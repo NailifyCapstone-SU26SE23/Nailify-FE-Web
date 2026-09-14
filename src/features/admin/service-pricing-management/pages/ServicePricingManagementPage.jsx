@@ -135,7 +135,7 @@ FormField.propTypes = {
 function ModalShell({ title, subtitle, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#311422]/35 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-2xl rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
+      <div className="w-full max-w-2xl rounded-lg border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
           <div>
             <h3 className="text-lg font-bold text-[#432744]">{title}</h3>

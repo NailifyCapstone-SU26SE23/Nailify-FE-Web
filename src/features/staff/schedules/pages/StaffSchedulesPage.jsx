@@ -96,7 +96,7 @@ function getScheduleBlockStyle(schedule) {
 function SideNavItem({ active, icon: Icon, label, meta }) {
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-[22px] px-4 py-4 text-sm transition ${active ? "bg-[linear-gradient(180deg,#fff9f7_0%,#fff5f1_100%)] text-[#231d1c] shadow-[0_12px_24px_rgba(247,122,105,0.08)]" : "text-[#69708a]"
+      className={`flex items-center justify-between gap-3 rounded-lg px-4 py-4 text-sm transition ${active ? "bg-[linear-gradient(180deg,#fff9f7_0%,#fff5f1_100%)] text-[#231d1c] shadow-[0_12px_24px_rgba(247,122,105,0.08)]" : "text-[#69708a]"
         }`}
     >
       <div className="flex items-center gap-3">
@@ -272,7 +272,7 @@ export function StaffSchedulesPage() {
                 </div>
               ) : null}
 
-              <div className="overflow-hidden rounded-[24px] border border-[#eef0f5] bg-[#fbfcff]">
+              <div className="overflow-hidden rounded-lg border border-[#eef0f5] bg-[#fbfcff]">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef0f5] px-4 py-4">
                   <div>
                     <p className="text-[15px] font-bold text-[#1f2435]">{language === "vi" ? "Lịch làm việc theo tuần" : "Daily schedule (staff week view)"}</p>

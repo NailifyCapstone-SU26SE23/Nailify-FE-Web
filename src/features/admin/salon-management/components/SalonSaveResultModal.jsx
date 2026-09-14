@@ -92,7 +92,7 @@ export function SalonSaveResultModal({
         {/* Content */}
         <div className="space-y-4 px-6 py-6 text-center">
           <div
-            className={`rounded-[22px] border p-5 ${isSuccess
+            className={`rounded-lg border p-5 ${isSuccess
               ? "border-emerald-100 bg-[#f4fffb] text-emerald-900"
               : "border-rose-100 bg-[#fff7fa] text-rose-900"
               }`}

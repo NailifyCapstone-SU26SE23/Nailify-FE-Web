@@ -300,7 +300,7 @@ export function NailDesignManagementCategoryPage() {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="overflow-hidden rounded-[22px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+        <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="border-b border-[#f8dce8] bg-[linear-gradient(135deg,#fff6fb_0%,#fff0f7_55%,#ffffff_100%)] p-5">
             <div className="flex items-start justify-between gap-3">
               <div>

@@ -942,8 +942,8 @@ export function InteractiveStudioPreview({
               type="button"
               onClick={() => setViewMode("grid")}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${viewMode === "grid"
-                  ? "bg-[#ea4f93] text-white"
-                  : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
+                ? "bg-[#ea4f93] text-white"
+                : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
                 }`}
             >
               <Grid size={13} />
@@ -953,8 +953,8 @@ export function InteractiveStudioPreview({
               type="button"
               onClick={() => setViewMode("hand")}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${viewMode === "hand"
-                  ? "bg-[#ea4f93] text-white"
-                  : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
+                ? "bg-[#ea4f93] text-white"
+                : "bg-white border border-[#f2bfd4] text-[#ea4f93] hover:bg-[#fff5fa]"
                 }`}
             >
               <Hand size={13} />
@@ -969,8 +969,8 @@ export function InteractiveStudioPreview({
                 type="button"
                 onClick={() => setHandGender("woman")}
                 className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${handGender === "woman"
-                    ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
-                    : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                  ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
+                  : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                   }`}
               >
                 👩 Female
@@ -979,8 +979,8 @@ export function InteractiveStudioPreview({
                 type="button"
                 onClick={() => setHandGender("man")}
                 className={`rounded-full px-2.5 py-1 text-[10px] font-bold transition ${handGender === "man"
-                    ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
-                    : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                  ? "bg-[#fff1f7] border border-[#f2bfd4] text-[#ea4f93]"
+                  : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                   }`}
               >
                 👨 Male
@@ -1001,7 +1001,7 @@ export function InteractiveStudioPreview({
         </div>
 
         {viewMode === "hand" ? (
-          <div className="mt-4 relative w-full h-[500px] flex items-center justify-center bg-[radial-gradient(circle_at_center,#ffffff_0%,#f7eff3_100%)] rounded-[24px] border border-[#f1e5e8] overflow-hidden shadow-[0_12px_32px_rgba(138,61,96,0.06)]">
+          <div className="mt-4 relative w-full h-[500px] flex items-center justify-center bg-[radial-gradient(circle_at_center,#ffffff_0%,#f7eff3_100%)] rounded-lg border border-[#f1e5e8] overflow-hidden shadow-[0_12px_32px_rgba(138,61,96,0.06)]">
             <div className="relative w-[380px] h-[460px] flex items-center justify-center transition-all duration-500 ease-out">
               <img
                 src={handGender === "man" ? manHandImg : womanHandImg}
