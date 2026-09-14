@@ -1118,7 +1118,7 @@ export function StaffBookingDetailPage() {
   return (
     <>
       {flashMessage || staffActionMessage ? (
-        <div className="rounded-[22px] bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
+        <div className="rounded-lg bg-[#edfdf4] px-5 py-4 text-sm font-medium text-[#16975f] shadow-[0_14px_30px_rgba(94,76,62,0.06)]">
           {staffActionMessage || flashMessage}
         </div>
       ) : null}

@@ -1311,11 +1311,11 @@ export function TransactionOverviewPage() {
 
                 {/* Barcode footer */}
                 <div className="border-t border-dashed border-[#e6decb] pt-3.5 text-center space-y-1.5">
-                  <div className="flex justify-center items-center gap-[2px] opacity-25 h-6 select-none">
+                  {/* <div className="flex justify-center items-center gap-[2px] opacity-25 h-6 select-none">
                     {[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6].map((w, i) => (
                       <div key={i} className="bg-black h-full" style={{ width: `${w}px` }} />
                     ))}
-                  </div>
+                  </div> */}
                   <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
                     {language === "vi" ? "Nailify Inc — Xin Cảm Ơn" : "Nailify Inc — Thank You"}
                   </div>

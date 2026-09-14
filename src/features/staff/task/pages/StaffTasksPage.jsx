@@ -234,7 +234,7 @@ function decorateTaskBoards(myTaskList, salonTaskList, additionalProceduresList 
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[22px] border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
+      className={`rounded-lg border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
     >
       {children}
     </article>

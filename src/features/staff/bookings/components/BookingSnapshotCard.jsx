@@ -8,7 +8,7 @@ export function BookingSnapshotCard({ formValues, notice }) {
       <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
         Booking snapshot
       </p>
-      <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
+      <div className="mt-5 rounded-lg bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#c84b91] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
             <CalendarClock size={20} />
@@ -48,7 +48,7 @@ export function BookingSnapshotCard({ formValues, notice }) {
           <span className="font-semibold">Total:</span> {formValues.total}
         </div>
       </div>
-      <div className="mt-5 rounded-[22px] bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
+      <div className="mt-5 rounded-lg bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
         <div className="flex items-start gap-3">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" />
           <p>{notice}</p>

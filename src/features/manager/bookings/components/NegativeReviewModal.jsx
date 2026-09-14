@@ -55,7 +55,7 @@ export const NegativeReviewModal = () => {
               {/* Pulse effect background */}
               <div className="absolute -left-[50%] -top-[50%] h-[200%] w-[200%] animate-[spin_6s_linear_infinite] bg-[conic-gradient(transparent,rgba(255,255,255,0.3),transparent)]" />
 
-              <div className="relative rounded-[22px] bg-white p-6 shadow-inner">
+              <div className="relative rounded-lg bg-white p-6 shadow-inner">
                 <button
                   onClick={handleClose}
                   className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"

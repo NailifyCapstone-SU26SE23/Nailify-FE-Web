@@ -52,7 +52,7 @@ function SectionCard({
     <article
       id={sectionId}
       ref={sectionRef}
-      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
+      className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
         ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
         : "border-[#f8d3e2]"
         }`}
@@ -1133,7 +1133,7 @@ export function NailDesignManagementDetailPage() {
         <article
           ref={heroSectionRef}
           id="hero-section"
-          className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
+          className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
             ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
             : "border-[#f8d3e2]"
             }`}

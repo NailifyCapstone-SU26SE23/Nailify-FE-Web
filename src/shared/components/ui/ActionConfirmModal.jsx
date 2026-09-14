@@ -185,7 +185,7 @@ export function ActionConfirmModal({
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div className={`rounded-[22px] border p-4 ${palette.panelClassName}`}>
+          <div className={`rounded-lg border p-4 ${palette.panelClassName}`}>
             <div className="flex items-start gap-3">
               <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${palette.panelIconClassName}`}>
                 <Info size={16} />
@@ -209,7 +209,7 @@ export function ActionConfirmModal({
           </div>
 
           {item ? (
-            <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
               <div className="flex items-center gap-3">
                 {item.image ? (
                   <img crossOrigin="anonymous"
@@ -245,7 +245,7 @@ export function ActionConfirmModal({
           ) : null}
 
           {warnings.length > 0 ? (
-            <div className={`rounded-[22px] border p-4 ${palette.warningClassName}`}>
+            <div className={`rounded-lg border p-4 ${palette.warningClassName}`}>
               <div className="mb-3 flex items-center gap-2">
                 <AlertTriangle size={15} />
                 <p className="text-[12px] font-bold uppercase tracking-[0.08em]">

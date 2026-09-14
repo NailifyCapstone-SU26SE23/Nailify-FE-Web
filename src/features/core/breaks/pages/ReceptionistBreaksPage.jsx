@@ -234,7 +234,7 @@ export function ReceptionistBreaksPage() {
       </div>
 
       {/* Filter panel */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[#f1e7ed] bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#f1e7ed] bg-white p-4">
         <div className="flex flex-wrap items-center gap-4">
           {/* Artist Filter */}
           <div className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export function ReceptionistBreaksPage() {
                 columns={columns}
                 rowKey="nailArtistBreakId"
                 pagination={false}
-                className="rounded-[22px] border border-[#f4e4d7] bg-white overflow-hidden"
+                className="rounded-lg border border-[#f4e4d7] bg-white overflow-hidden"
               />
             </ConfigProvider>
           </div>
@@ -336,7 +336,7 @@ export function ReceptionistBreaksPage() {
             {breaks.map((item) => (
               <div
                 key={item.nailArtistBreakId}
-                className="rounded-[22px] border border-[#f4e4d7] bg-white p-4 space-y-3"
+                className="rounded-lg border border-[#f4e4d7] bg-white p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

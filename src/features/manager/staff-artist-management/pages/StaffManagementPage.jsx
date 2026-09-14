@@ -51,6 +51,8 @@ import {
   fetchArtistSchedules,
   fetchSchedulesBySalonId,
   createSchedule,
+  updateSchedule,
+  deleteSchedule,
 } from "../../schedules/services/scheduleService";
 import { Pagination } from "../../../../shared/components/common/Pagination.jsx";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
@@ -91,18 +93,15 @@ const STAFF_FILTER_TABS = [
 const SHIFT_STATUS_META = {
   Active: {
     label: "Active",
+    labelVi: "Hoạt động",
     color: "bg-[#eaf9ee] text-[#2fa25f] border-[#2fa25f]/30",
     dot: "bg-[#2fa25f]",
   },
-  Off: {
-    label: "Day Off",
+  Inactive: {
+    label: "Inactive",
+    labelVi: "Không hoạt động",
     color: "bg-gray-100 text-gray-600 border-gray-300",
     dot: "bg-gray-400",
-  },
-  Leave: {
-    label: "On Leave",
-    color: "bg-[#fff0dd] text-[#db8520] border-[#db8520]/30",
-    dot: "bg-[#db8520]",
   },
 };
 
@@ -239,7 +238,7 @@ function buildPerformanceInsights(staffArtists = [], bookings = [], ratings = []
     const effectiveRating = bookingAvgRating ?? (Number(staff.rating) || 0);
     const satisfaction = stats.ratedCount > 0
       ? `${Math.round((effectiveRating / 5) * 100)}%`
-      : "—";
+      : "0%";
 
     return {
       id: artistId,
@@ -1205,16 +1204,6 @@ export function StaffManagementPage() {
       return;
     }
 
-    // Skip days that already have an existing schedule
-    const daysToCreate = DAYS_OF_WEEK.filter(
-      (day) => newShiftSchedule[day.key] && !modalWeekSchedules[day.key]
-    );
-
-    if (daysToCreate.length === 0) {
-      toast.error(isVi ? "Vui lòng chọn ít nhất một ngày có sẵn" : "Please select at least one available day.");
-      return;
-    }
-
     if (isShiftTimeInvalid) {
       toast.error(isVi ? "Vui lòng chọn ít nhất một khung giờ" : "Please select at least one time slot.");
       return;
@@ -1258,11 +1247,26 @@ export function StaffManagementPage() {
 
       const isWorkingShift = newShiftStatus === "Active";
       const promises = [];
+      const today = dayjs().startOf("day");
+
+      // Check all selected days
+      const daysToProcess = DAYS_OF_WEEK.filter((day) => newShiftSchedule[day.key]);
+
+      if (daysToProcess.length === 0) {
+        toast.error(isVi ? "Vui lòng chọn ít nhất một ngày" : "Please select at least one day.");
+        return;
+      }
 
       if (isWorkingShift) {
         const timeGroups = getContiguousTimeGroups(selectedTimeSlots);
-        daysToCreate.forEach((day) => {
+        daysToProcess.forEach((day) => {
           const workDate = modalMonday.add(day.offset, "day");
+          if (workDate.isBefore(today)) {
+            throw new Error(isVi ? "Không thể cập nhật ca làm việc trong quá khứ" : "Cannot update past schedules");
+          }
+
+          const existingSchedule = modalWeekSchedules[day.key];
+
           timeGroups.forEach((group) => {
             const payload = {
               nailArtistId: selectedStaff.id,
@@ -1271,32 +1275,82 @@ export function StaffManagementPage() {
               shiftEnd: formatTimeWithSeconds(group.shiftEnd),
               status: newShiftStatus,
             };
-            promises.push(createSchedule(payload));
+
+            if (existingSchedule) {
+              promises.push(updateSchedule(existingSchedule.scheduleId || existingSchedule.id, payload));
+            } else {
+              promises.push(createSchedule(payload));
+            }
           });
         });
       } else {
-        daysToCreate.forEach((day) => {
+        daysToProcess.forEach((day) => {
           const workDate = modalMonday.add(day.offset, "day");
+          if (workDate.isBefore(today)) {
+            throw new Error(isVi ? "Không thể cập nhật ca làm việc trong quá khứ" : "Cannot update past schedules");
+          }
           const payload = {
             nailArtistId: selectedStaff.id,
             workDate: workDate.format("YYYY-MM-DDT00:00:00.000[Z]"),
-            shiftStart: null,
-            shiftEnd: null,
+            shiftStart: "08:00:00", // valid time fallback for off/leave
+            shiftEnd: "17:00:00",
             status: newShiftStatus,
           };
-          promises.push(createSchedule(payload));
+
+          const existingSchedule = modalWeekSchedules[day.key];
+          if (existingSchedule) {
+            promises.push(updateSchedule(existingSchedule.scheduleId || existingSchedule.id, payload));
+          } else {
+            promises.push(createSchedule(payload));
+          }
         });
       }
 
       await Promise.all(promises);
-      toast.success("New shifts created successfully!");
+      toast.success(isVi ? "Đã cập nhật lịch thành công!" : "Shifts updated successfully!");
 
       resetShiftForm();
       setIsCreateShiftModalOpen(false);
       loadSchedules();
     } catch (err) {
-      console.error("Failed to create shift:", err);
-      toast.error(err.message || "Failed to create shifts.");
+      console.error("Failed to update shift:", err);
+      toast.error(err.message || "Failed to update shifts.");
+    } finally {
+      setIsCreatingShift(false);
+    }
+  };
+
+  const handleDeleteShift = async () => {
+    const today = dayjs().startOf("day");
+    const daysToDelete = DAYS_OF_WEEK.filter((day) => newShiftSchedule[day.key] && modalWeekSchedules[day.key]);
+
+    if (daysToDelete.length === 0) {
+      toast.error(isVi ? "Vui lòng chọn ít nhất một ngày đã có lịch để xóa" : "Please select at least one day with an existing schedule to delete.");
+      return;
+    }
+
+    try {
+      setIsCreatingShift(true);
+      const promises = [];
+
+      daysToDelete.forEach((day) => {
+        const workDate = modalMonday.add(day.offset, "day");
+        if (workDate.isBefore(today)) {
+          throw new Error(isVi ? "Không thể xóa ca làm việc trong quá khứ" : "Cannot delete past schedules");
+        }
+        const existingSchedule = modalWeekSchedules[day.key];
+        promises.push(deleteSchedule(existingSchedule.scheduleId || existingSchedule.id));
+      });
+
+      await Promise.all(promises);
+      toast.success(isVi ? "Đã xóa lịch thành công!" : "Shifts deleted successfully!");
+
+      resetShiftForm();
+      setIsCreateShiftModalOpen(false);
+      loadSchedules();
+    } catch (err) {
+      console.error("Failed to delete shift:", err);
+      toast.error(err.message || "Failed to delete shifts.");
     } finally {
       setIsCreatingShift(false);
     }
@@ -1926,7 +1980,7 @@ export function StaffManagementPage() {
                   onClick={() => {
                     setIsDrawerOpen(false);
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93] shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold !text-pink-400 shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
                 >
                   <UserPlus size={14} />
                   {language === "vi" ? "Cập nhật thông tin" : "Update Profile"}
@@ -1981,7 +2035,7 @@ export function StaffManagementPage() {
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-widest text-white/80">{language === "vi" ? "Ca mới" : "New Shift"}</p>
               <h3 className="truncate text-base font-bold text-white">
-                {selectedStaff?.name || language === "vi" ? "Chọn nhân viên" : "Select staff"}
+                {selectedStaff ? selectedStaff.name : language === "vi" ? "Nhân viên" : "Staff"}
               </h3>
             </div>
           </div>
@@ -2025,6 +2079,11 @@ export function StaffManagementPage() {
                       const existingSchedule = modalWeekSchedules[day.key];
                       const hasExisting = Boolean(existingSchedule);
 
+                      const today = dayjs().startOf("day");
+                      const isPast = dayDate.isBefore(today);
+                      // Lock if it's in the past OR has existing schedule
+                      const isLocked = isPast || hasExisting;
+
                       // Summarise existing shift into a compact badge (start time only, or status)
                       const existingLabel = hasExisting
                         ? (() => {
@@ -2038,15 +2097,15 @@ export function StaffManagementPage() {
                       return (
                         <label
                           key={day.key}
-                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition-all duration-200 ${hasExisting
+                          className={`relative flex min-h-[86px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-1 py-2 text-center transition-all duration-200 ${isLocked
                             ? "cursor-not-allowed border-[#f1e7ed] bg-[#f6f6f6]"
                             : isChecked
                               ? "border-[#ea4f93] bg-[#fff5fa] shadow-sm ring-1 ring-[#ea4f93]/25"
                               : "border-rose-100 bg-white hover:border-rose-200 hover:shadow-sm"
                             }`}
                         >
-                          {hasExisting ? (
-                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ece7ea] text-[#a88a9f]">
+                          {isLocked ? (
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#ece7ea] text-[#a88a9f]" title={isPast ? (isVi ? "Ngày trong quá khứ không thể chỉnh sửa" : "Past days cannot be edited") : (isVi ? "Đã có lịch làm việc" : "Schedule already exists")}>
                               <Lock size={9} />
                             </span>
                           ) : (
@@ -2074,7 +2133,7 @@ export function StaffManagementPage() {
 
                 <p className="mt-3 flex items-center gap-1.5 text-[10.5px] text-[#b39aac]">
                   <Lock size={10} />
-                  {language === "vi" ? "Các ngày có biểu tượng khóa đã có lịch và không thể chọn" : "Days with a lock icon already have a schedule and can&apos;t be selected"}
+                  {language === "vi" ? "Các ngày có biểu tượng khóa (trong quá khứ hoặc đã có lịch) không thể chọn" : "Days with a lock icon (in the past or already scheduled) cannot be selected"}
                 </p>
               </div>
 
@@ -2097,7 +2156,7 @@ export function StaffManagementPage() {
                           }`}
                       >
                         <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-                        {meta.label}
+                        {language === "vi" ? meta.labelVi : meta.label}
                       </button>
                     );
                   })}
@@ -2197,25 +2256,27 @@ export function StaffManagementPage() {
           </div>
 
           {/* Unified Footer Actions */}
-          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreateShiftModalOpen(false);
-                resetShiftForm();
-              }}
-              className="rounded-lg px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
-            >
-              {language === "vi" ? "Hủy" : "Cancel"}
-            </button>
-            <button
-              type="button"
-              onClick={handleCreateShift}
-              disabled={isCreatingShift || isShiftTimeInvalid}
-              className="flex min-w-[140px] items-center justify-center gap-2 rounded-lg bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
-            >
-              {isCreatingShift ? <Spin size="small" className="brightness-200" /> : isVi ? "Tạo lịch hẹn" : "Create Schedule"}
-            </button>
+          <div className="mt-6 flex items-center justify-end border-t border-slate-100 pt-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateShiftModalOpen(false);
+                  resetShiftForm();
+                }}
+                className="rounded-lg px-5 py-2.5 text-xs font-semibold text-[#a88a9f] hover:bg-[#fff5fa] hover:text-[#2d1b35] transition"
+              >
+                {language === "vi" ? "Hủy" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateShift}
+                disabled={isCreatingShift || isShiftTimeInvalid}
+                className="flex min-w-[140px] items-center justify-center gap-2 rounded-lg bg-[#ea4f93] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#ea4f93]/20 transition hover:bg-[#d63d81] disabled:opacity-50"
+              >
+                {isCreatingShift ? <Spin size="small" className="brightness-200" /> : isVi ? "Tạo mới" : "Create"}
+              </button>
+            </div>
           </div>
         </div>
       </Modal>
@@ -2225,10 +2286,13 @@ export function StaffManagementPage() {
           setIsEditScheduleModalOpen(false);
           setEditingSchedule(null);
         }}
-        schedule={editingSchedule}
+        schedule={selectedSchedule}
         staffArtists={staffArtists}
         monday={monday}
-        onSuccess={() => loadSchedules()}
+        onSuccess={() => {
+          fetchStaffData();
+        }}
+        operatingHours={salonDetails?.operatingHours}
       />
       <TransferStaffModal
         open={isTransferStaffModalOpen}

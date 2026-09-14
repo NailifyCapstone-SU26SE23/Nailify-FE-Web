@@ -40,7 +40,7 @@ function formatVND(amount) {
 function DashboardCard({ title, description, icon, children, className = "" }) {
   const Icon = icon;
   return (
-    <section className={`rounded-[22px] border border-[#f5d6e3] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)] ${className}`}>
+    <section className={`rounded-lg border border-[#f5d6e3] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)] ${className}`}>
       <div className="flex items-start gap-2">
         <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ec4899_0%,#fb7185_100%)] text-white">
           {Icon ? <Icon size={12} /> : null}

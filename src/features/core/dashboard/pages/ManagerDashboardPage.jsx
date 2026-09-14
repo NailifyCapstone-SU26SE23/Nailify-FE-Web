@@ -276,7 +276,7 @@ export function ManagerDashboardPage() {
   if (isError) {
     return (
       <div className="p-10 max-w-2xl mx-auto bg-slate-50">
-        <Alert message={t("common.error")} description={t("manager.dashboard.loadingText")} type="error" showIcon />
+        <Alert message={t("manager.common.error")} description={t("manager.dashboard.loadingText")} type="error" showIcon />
       </div>
     );
   }

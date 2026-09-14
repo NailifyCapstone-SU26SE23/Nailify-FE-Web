@@ -10,7 +10,7 @@ export function NailDesignManagementSnapshotCard({ formValues, notice }) {
         Design snapshot
       </p>
 
-      <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
+      <div className="mt-5 rounded-lg bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white font-semibold text-[#c84b91] shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
             {(formValues.name || "New Design")
@@ -55,7 +55,7 @@ export function NailDesignManagementSnapshotCard({ formValues, notice }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[22px] bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
+      <div className="mt-5 rounded-lg bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
         <div className="flex items-start gap-3">
           <Sparkles size={18} className="mt-0.5 shrink-0" />
           <p>{notice}</p>

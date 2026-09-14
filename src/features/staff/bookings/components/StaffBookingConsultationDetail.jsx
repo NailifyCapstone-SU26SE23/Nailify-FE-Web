@@ -806,7 +806,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
@@ -858,7 +858,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />

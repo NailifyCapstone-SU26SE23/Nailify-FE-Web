@@ -450,7 +450,7 @@ export function UserManagementFormFields({
           onChange={onFieldChange("notes")}
           rows={5}
           disabled={disabled}
-          className={`${INPUT_CLASSNAME} rounded-[22px] resize-y ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          className={`${INPUT_CLASSNAME} rounded-lg resize-y ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           placeholder={t("userManagement.detail.addInternalNotes")}
         />
       </label>

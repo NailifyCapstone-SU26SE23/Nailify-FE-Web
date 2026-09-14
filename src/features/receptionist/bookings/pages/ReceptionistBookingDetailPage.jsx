@@ -56,6 +56,7 @@ import {
   updateReceptionistProcedureArtist,
   getBookingHistories,
   getUserById,
+  fetchBookingRating,
 } from "../services/receptionistBookingService";
 import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
@@ -119,7 +120,15 @@ function formatTime(value) {
     return "--";
   }
 
-  return value.slice(0, 5);
+  if (typeof value === "string" && /^\d{2}:\d{2}/.test(value) && !value.includes("T")) {
+    return value.slice(0, 5);
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date(value));
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
@@ -494,6 +503,12 @@ export function ReceptionistBookingDetailPage() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [selectedTransactionDetail, setSelectedTransactionDetail] = useState(null);
   const [isFetchingTransaction, setIsFetchingTransaction] = useState(false);
+
+  const { data: bookingRating } = useQuery({
+    queryKey: ["bookingRating", bookingId],
+    queryFn: () => fetchBookingRating(bookingId),
+    enabled: !!bookingId,
+  });
 
   const isVi = language === "vi";
 
@@ -1149,10 +1164,10 @@ export function ReceptionistBookingDetailPage() {
                       crossOrigin="anonymous"
                       src={customerProfile.avatarUrl}
                       alt={customerDisplayName}
-                      className="h-20 w-20 rounded-[22px] border-2 border-[#E84F93] object-cover shadow-md"
+                      className="h-20 w-20 rounded-lg border-2 border-[#E84F93] object-cover shadow-md"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[22px] border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-bold text-white shadow-md">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-bold text-white shadow-md">
                       {customerInitials}
                     </div>
                   )}
@@ -1462,27 +1477,40 @@ export function ReceptionistBookingDetailPage() {
 
           {/* CUSTOMER REVIEW WIDGET */}
           <DetailCard title={language === "vi" ? "Đánh giá khách hàng" : "Customer Review Widget"}>
-            <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-bold text-white shadow-2xs">
-                    {customerInitials}
+            {bookingRating ? (
+              <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-bold text-white shadow-2xs">
+                      {customerInitials}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#2B182B]">{customerDisplayName}</p>
+                      <p className="text-[10px] text-[#9E8497] font-medium">{formatDate(bookingRating.createdAt || booking?.bookingDate)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#2B182B]">{customerDisplayName}</p>
-                    <p className="text-[10px] text-[#9E8497] font-medium">{formatDate(booking.bookingDate)}</p>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star key={index} size={12} className={`fill-current ${index < (bookingRating.overallScore || 5) ? 'text-[#F59E0B]' : 'text-slate-200'}`} />
+                    ))}
                   </div>
                 </div>
-                <div className="flex gap-0.5 text-[#F59E0B]">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} size={12} className="fill-current text-[#F59E0B]" />
-                  ))}
-                </div>
+                {bookingRating.comment && (
+                  <p className="text-xs leading-relaxed text-[#6B5B68] italic pt-1">
+                    "{bookingRating.comment}"
+                  </p>
+                )}
+                {bookingRating.imageUrl && (
+                  <div className="mt-2">
+                    <Image src={bookingRating.imageUrl} className="rounded-lg h-24 w-full object-cover" />
+                  </div>
+                )}
               </div>
-              <p className="text-xs leading-relaxed text-[#6B5B68] italic pt-1">
-                {language === "vi" ? "Dịch vụ làm móng đính đá mẫu Giáng Sinh rất tỉ mỉ và đẹp tuyệt vời! Thợ làm rất dịu dàng." : "Christmas nail art service is very meticulous and beautiful! The technician is very gentle."}
-              </p>
-            </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic mt-2">
+                {language === "vi" ? "Chưa có đánh giá nào cho lịch hẹn này." : "No reviews found for this booking yet."}
+              </div>
+            )}
           </DetailCard>
 
           {/* BOOKING OPERATIONS TIMELINE */}

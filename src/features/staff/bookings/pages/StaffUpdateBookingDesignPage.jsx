@@ -421,7 +421,7 @@ export function StaffUpdateBookingDesignPage() {
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle
                 icon={FilePenLine}
                 title={isVi ? "So sánh thiết kế" : "Design Comparison"}
@@ -479,7 +479,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle
                 icon={ClipboardCheck}
                 title={isVi ? "Tóm tắt dịch vụ cập nhật" : "Updated Service Summary"}
@@ -519,7 +519,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={DollarSign} title={isVi ? "Chênh lệch giá" : "Price Difference"} />
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <PriceCard
@@ -552,7 +552,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={Check} title={isVi ? "Xác nhận của khách hàng" : "Customer Confirmation"} />
               <div className="mt-5 space-y-3">
                 {displayConfirmations.map((item) => (
@@ -566,7 +566,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={FilePenLine} title={isVi ? "Thao tác cập nhật lịch hẹn" : "Booking Update Actions"} />
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <button
@@ -613,7 +613,7 @@ export function StaffUpdateBookingDesignPage() {
           </div>
 
           <aside className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={ClipboardCheck} title={isVi ? "Tóm tắt lịch hẹn" : "Booking Summary"} />
               <div className="mt-4 space-y-3 text-sm">
                 {[
@@ -637,7 +637,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Sparkles} title={isVi ? "Trạng thái cập nhật" : "Design Update Status"} />
               <div className="mt-4 space-y-3 text-sm">
                 {Object.entries(updatedDesignStatus).map(([key, value]) => {
@@ -672,7 +672,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Star} title={isVi ? "Dịch vụ gợi ý thêm" : "Recommended Add-ons"} />
               <div className="mt-4 space-y-3">
                 {displayAddOns.map((item) => (
@@ -693,7 +693,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Check} title={isVi ? "Bước tiếp theo" : "Next Step"} />
               <p className="mt-4 text-xs leading-5 text-[#a88a9d]">
                 {isVi ? "Hoàn thành tất cả các xác nhận bên trên, sau đó tiến hành chốt lịch hẹn và bắt đầu phiên làm việc." : "Complete all confirmations above, then proceed to confirm the booking and start the service session."}

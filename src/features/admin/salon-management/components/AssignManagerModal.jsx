@@ -126,7 +126,7 @@ export default function AssignManagerModal({
           }}
         >
           <div className="space-y-5">
-            <div className="rounded-[22px] border border-[#f5cbdc] bg-[#fff6fa] p-4">
+            <div className="rounded-lg border border-[#f5cbdc] bg-[#fff6fa] p-4">
               <p className="text-xs font-bold text-[#7a5b6e] leading-relaxed">
                 Choose a salon and then select a manager to assign to that salon.
               </p>
