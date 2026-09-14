@@ -23,7 +23,7 @@ function PanelCard({ title, icon, children, className = "" }) {
   const Icon = icon;
 
   return (
-    <section className={`rounded-[22px] border border-[#f3d7e3] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] ${className}`}>
+    <section className={`rounded-lg border border-[#f3d7e3] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] ${className}`}>
       <div className="flex items-start gap-2">
         <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ec4899_0%,#fb7185_100%)] text-white">
           {Icon ? <Icon size={12} /> : null}
@@ -152,7 +152,7 @@ export function ReceptionistCustomerCreatePage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="rounded-[24px] border border-[#f3d7e3] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] sm:px-5">
+      <div className="rounded-lg border border-[#f3d7e3] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.05)] sm:px-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[#412643]">{language === "vi" ? "Đăng Ký Khách Hàng Mới" : "Register New Customer"}</h1>
@@ -230,7 +230,7 @@ export function ReceptionistCustomerCreatePage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[16px] bg-[#fff8fb] px-4 py-4">
                     <p className="text-sm font-bold text-[#432744]">{formValues.fullName || (language === "vi" ? "Khách Hàng Mới" : "New Customer")}</p>
-                    <div className="mt-3 space-y-2 text-[11px] text-[#b48ca0]">
+                    <div className="flex flex-col mt-3 space-y-2 text-[11px] text-[#b48ca0]">
                       <p className="inline-flex items-center gap-2"><Phone size={12} /> {formValues.phoneNumber || "—"}</p>
                       <p className="inline-flex items-center gap-2"><Mail size={12} /> {formValues.email || "—"}</p>
                       <p className="inline-flex items-center gap-2"><Star size={12} /> {language === "vi" ? "0 Điểm Tích Lũy" : "0 Loyalty Points"}</p>
@@ -344,7 +344,7 @@ export function ReceptionistCustomerCreatePage() {
             </div>
           </PanelCard>
 
-          <PanelCard title={language === "vi" ? "Mẹo Đăng Ký" : "Registration Tips"} icon={Sparkles}>
+          {/* <PanelCard title={language === "vi" ? "Mẹo Đăng Ký" : "Registration Tips"} icon={Sparkles}>
             <ul className="space-y-2 text-[11px] text-[#b48ca0]">
               {language === "vi" ? (
                 <>
@@ -362,7 +362,7 @@ export function ReceptionistCustomerCreatePage() {
                 </>
               )}
             </ul>
-          </PanelCard>
+          </PanelCard> */}
 
           <PanelCard title={language === "vi" ? "Quyền Lợi Thành Viên" : "Membership Benefits"} icon={Gift}>
             <ul className="space-y-2 text-[11px] text-[#b48ca0]">

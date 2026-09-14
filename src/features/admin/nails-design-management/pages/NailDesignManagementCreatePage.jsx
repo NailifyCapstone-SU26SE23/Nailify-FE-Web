@@ -11,7 +11,7 @@ import {
 
 function SectionCard({ title, subtitle, icon, children }) {
   return (
-    <section className="rounded-[22px] border border-[#f6dbe8] bg-white p-5 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
+    <section className="rounded-lg border border-[#f6dbe8] bg-white p-5 shadow-[0_14px_34px_rgba(236,72,153,0.06)]">
       <div className="flex items-start gap-3">
         <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">{icon}</div>
         <div>
@@ -65,7 +65,7 @@ function LivePreview({ variant, title }) {
   const surfaceVisual = getSurfaceVisual(variant);
 
   return (
-    <div className="rounded-[22px] border border-[#f6dbe8] bg-white p-4">
+    <div className="rounded-lg border border-[#f6dbe8] bg-white p-4">
       <div className="rounded-lg bg-[radial-gradient(circle_at_top,#ffe2ef_0%,#fff8fb_42%,#fff_100%)] p-5">
         <div className="mx-auto grid max-w-[220px] grid-cols-5 gap-2">
           {Array.from({ length: 5 }).map((_, index) => (

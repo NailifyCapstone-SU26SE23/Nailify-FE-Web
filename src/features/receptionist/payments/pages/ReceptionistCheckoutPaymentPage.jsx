@@ -103,7 +103,7 @@ function getBillItems(booking) {
 
 function SummaryCard({ title, children, className = "" }) {
   return (
-    <section className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
+    <section className={`rounded-lg border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
       {title ? <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c38ea8]">{title}</p> : null}
       <div className={title ? "mt-4" : ""}>{children}</div>
     </section>
@@ -374,7 +374,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-[50vh] items-center justify-center rounded-lg bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("receptionist.common.loading") || "Loading checkout payment..."}
@@ -385,7 +385,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
   if (error || !booking) {
     return (
-      <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+      <section className="rounded-lg border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
         <p className="text-lg font-bold text-[#412643]">{t("receptionist.payments.checkoutTitle") || "Checkout payment unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || (language === "vi" ? "Đơn thanh toán này không thể tải." : "This checkout could not be loaded.")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -402,7 +402,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="rounded-[24px] border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+      <div className="rounded-lg border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <button

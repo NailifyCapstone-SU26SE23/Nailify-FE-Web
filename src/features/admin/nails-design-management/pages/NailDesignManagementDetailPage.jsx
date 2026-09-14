@@ -52,7 +52,7 @@ function SectionCard({
     <article
       id={sectionId}
       ref={sectionRef}
-      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
+      className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
         ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
         : "border-[#f8d3e2]"
         }`}
@@ -334,7 +334,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     : {};
   const outerClassName = compact
     ? "rounded-[18px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-    : "rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
+    : "rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
   const deckClassName = compact
     ? "flex min-h-[180px] flex-wrap items-center justify-center gap-3"
     : "flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6";
@@ -1133,7 +1133,7 @@ export function NailDesignManagementDetailPage() {
         <article
           ref={heroSectionRef}
           id="hero-section"
-          className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
+          className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
             ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
             : "border-[#f8d3e2]"
             }`}

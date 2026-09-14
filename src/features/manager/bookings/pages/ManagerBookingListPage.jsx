@@ -1202,7 +1202,7 @@ export function ManagerBookingListPage() {
             <div className="max-w-2xl">
               <div className="flex items-center gap-4">
                 <motion.div
-                  className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
+                  className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
                   whileHover={{ scale: 1.06, rotate: 3 }}
                   transition={{ type: "spring", stiffness: 400, damping: 12 }}
                 >

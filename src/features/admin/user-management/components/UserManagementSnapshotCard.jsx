@@ -68,12 +68,12 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
   }, [normalizedAvatarUrl]);
 
   return (
-    <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
+    <article className="rounded-lg bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
       <p className="text-sm uppercase tracking-[0.18em] text-[#d45b9f]">
         {t("userManagement.detail.userSnapshot")}
       </p>
 
-      <div className="mt-5 rounded-[22px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
+      <div className="mt-5 rounded-lg bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-5">
         <div className="flex items-center gap-3">
           {normalizedAvatarUrl && !hasImageError ? (
             <img
@@ -118,7 +118,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
         </div>
       </div>
 
-      {/* <div className="mt-5 rounded-[22px] bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
+      {/* <div className="mt-5 rounded-lg bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
         <div className="flex items-start gap-3">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" />
           <p>{notice}</p>

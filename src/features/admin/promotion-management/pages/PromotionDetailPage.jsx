@@ -118,7 +118,7 @@ function FormField({ label, children }) {
 
 function PanelCard({ title, icon: Icon, children }) {
   return (
-    <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+    <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
       <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
         <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#fff0f7] text-[#cf3d74]">
           <Icon size={16} />
@@ -427,7 +427,7 @@ export function PromotionDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1350px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminPromotions}
@@ -504,11 +504,11 @@ export function PromotionDetailPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">{t("promotionDetail.loadingDetails")}</div>
         </div>
       ) : !promotion || !draft ? (
-        <div className="rounded-[24px] border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="rounded-lg border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-lg font-bold text-slate-800">{t("promotionDetail.unableToLoad")}</h2>
             <p className="mt-2 text-sm text-slate-500">

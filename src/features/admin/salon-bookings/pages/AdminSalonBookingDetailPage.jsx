@@ -472,7 +472,7 @@ export function AdminSalonBookingDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminSalonBookings}

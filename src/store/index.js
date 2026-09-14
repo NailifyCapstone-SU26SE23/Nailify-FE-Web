@@ -15,6 +15,7 @@ import {
 import { storage } from "../shared/utils/storage";
 import { managerBookingsReducer } from "./managerBookingsSlice";
 import { receptionistBookingsReducer } from "./receptionistBookingsSlice";
+import { staffBookingsReducer } from "./staffBookingsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +26,7 @@ export const store = configureStore({
     serviceSession: serviceSessionReducer,
     managerBookings: managerBookingsReducer,
     receptionistBookings: receptionistBookingsReducer,
+    staffBookings: staffBookingsReducer,
   },
 });
 
@@ -36,5 +38,9 @@ store.subscribe(() => {
   storage.set(
     SERVICE_SESSION_STORAGE.key,
     sanitizeServiceSessionsForStorage(store.getState().serviceSession.sessions),
+  );
+  storage.set(
+    "nailify.staff.bookings",
+    store.getState().staffBookings.filters,
   );
 });

@@ -126,7 +126,7 @@ export default function AssignManagerModal({
           }}
         >
           <div className="space-y-5">
-            <div className="rounded-[22px] border border-[#f5cbdc] bg-[#fff6fa] p-4">
+            <div className="rounded-lg border border-[#f5cbdc] bg-[#fff6fa] p-4">
               <p className="text-xs font-bold text-[#7a5b6e] leading-relaxed">
                 Choose a salon and then select a manager to assign to that salon.
               </p>
@@ -171,7 +171,7 @@ export default function AssignManagerModal({
                                     salonId: salon.id,
                                   }));
                                 }}
-                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
+                                className={`cursor-pointer rounded-lg border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   }`}
@@ -267,7 +267,7 @@ export default function AssignManagerModal({
                                     managerId: manager.id,
                                   }));
                                 }}
-                                className={`cursor-pointer rounded-[24px] border p-4 transition-all duration-300 ${isSelected
+                                className={`cursor-pointer rounded-lg border p-4 transition-all duration-300 ${isSelected
                                   ? "border-[#ea4f93] bg-gradient-to-br from-[#fff5fb] to-white shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_10px_25px_rgba(236,72,153,0.12)]"
                                   }`}

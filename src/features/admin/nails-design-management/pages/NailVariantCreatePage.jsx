@@ -213,7 +213,7 @@ export function NailVariantCreatePage() {
         className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"
       >
         <div className="space-y-4">
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
             <div className="flex items-start gap-3">
               <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">
                 <FileImage size={18} />
@@ -263,7 +263,7 @@ export function NailVariantCreatePage() {
             </div>
           </section>
 
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">
@@ -325,7 +325,7 @@ export function NailVariantCreatePage() {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
             <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (

@@ -14,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Table, ConfigProvider } from "antd";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -40,6 +41,11 @@ import {
   normalizeStaffBooking,
 } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import {
+  setFilter,
+  fetchStaffBookingsThunk,
+  fetchStaffSalonBookingsThunk,
+} from "../../../../store/staffBookingsSlice";
 
 const STAFF_BOOKING_SCOPES = {
   mine: "mine",
@@ -318,18 +324,35 @@ export function StaffBookingListPage() {
 
   const todayDate = useMemo(() => getTodayDateParam(), []);
 
-  const [query, setQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState(todayDate);
-  const [dateTo, setDateTo] = useState(todayDate);
-  const [salonFilter, setSalonFilter] = useState(SALON_OPTIONS[0]);
-  const [statusFilter, setStatusFilter] = useState(STATUS_OPTIONS[0]);
-  const [staffFilter, setStaffFilter] = useState("All staff");
-  const [staffTimeSortDirection, setStaffTimeSortDirection] = useState("asc");
-  const [staffBookingScope, setStaffBookingScope] = useState(STAFF_BOOKING_SCOPES.mine);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
-  const [staffBookings, setStaffBookings] = useState([]);
-  const [staffSalonBookings, setStaffSalonBookings] = useState([]);
+  const dispatch = useDispatch();
+  const {
+    staffBookings,
+    staffSalonBookings,
+    isLoading,
+    loadError,
+    filters,
+  } = useSelector((state) => state.staffBookings);
+
+  const {
+    query,
+    dateFrom,
+    dateTo,
+    salonFilter,
+    statusFilter,
+    staffFilter,
+    staffTimeSortDirection,
+    staffBookingScope,
+  } = filters;
+
+  const setQuery = (val) => dispatch(setFilter({ key: 'query', value: val }));
+  const setDateFrom = (val) => dispatch(setFilter({ key: 'dateFrom', value: val }));
+  const setDateTo = (val) => dispatch(setFilter({ key: 'dateTo', value: val }));
+  const setSalonFilter = (val) => dispatch(setFilter({ key: 'salonFilter', value: val }));
+  const setStatusFilter = (val) => dispatch(setFilter({ key: 'statusFilter', value: val }));
+  const setStaffFilter = (val) => dispatch(setFilter({ key: 'staffFilter', value: val }));
+  const setStaffTimeSortDirection = (val) => dispatch(setFilter({ key: 'staffTimeSortDirection', value: val }));
+  const setStaffBookingScope = (val) => dispatch(setFilter({ key: 'staffBookingScope', value: val }));
+
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
 
   const currentStaffArtistId = useMemo(() => {
@@ -348,45 +371,18 @@ export function StaffBookingListPage() {
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadBookings = async () => {
-      setIsLoading(true);
-      setLoadError("");
-      try {
-        const data = staffBookingScope === STAFF_BOOKING_SCOPES.salon
-          ? await fetchStaffSalonBookings()
-          : await fetchStaffBookings();
-
-        if (!isMounted) return;
-        const normalizedData = Array.isArray(data) ? data.map(normalizeStaffBooking) : [];
-
-        if (staffBookingScope === STAFF_BOOKING_SCOPES.salon) {
-          setStaffSalonBookings(normalizedData);
-        } else {
-          setStaffBookings(normalizedData);
-        }
-      } catch (error) {
-        if (!isMounted) return;
-        const message = error instanceof Error
-          ? error.message
-          : staffBookingScope === STAFF_BOOKING_SCOPES.salon
-            ? (language === "vi" ? "Không thể tải lịch hẹn toàn tiệm." : "Failed to load salon bookings.")
-            : (language === "vi" ? "Không thể tải lịch hẹn của bạn." : "Failed to load assigned bookings.");
-        setLoadError(message);
-        toast.error(message);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-    void loadBookings();
-    return () => { isMounted = false; };
-  }, [staffBookingScope, language]);
+    if (staffBookingScope === STAFF_BOOKING_SCOPES.salon) {
+      dispatch(fetchStaffSalonBookingsThunk());
+    } else {
+      dispatch(fetchStaffBookingsThunk());
+    }
+  }, [dispatch, staffBookingScope]);
 
   useEffect(() => {
-    setDateFrom(todayDate);
-    setDateTo(todayDate);
-  }, [staffBookingScope, todayDate]);
+    if (loadError) {
+      toast.error(loadError);
+    }
+  }, [loadError]);
 
   /* STREAMING_CHUNK: Filtering & Pagination Logic */
   const isSalonScopeForStaff = staffBookingScope === STAFF_BOOKING_SCOPES.salon;

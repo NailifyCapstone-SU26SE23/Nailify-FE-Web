@@ -48,7 +48,7 @@ export function StaffBookingCreatePage() {
       />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <article className="rounded-[24px] bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
+        <article className="rounded-lg bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
           <div className="grid gap-5 md:grid-cols-2">
             <BookingFormFields
               formValues={formValues}

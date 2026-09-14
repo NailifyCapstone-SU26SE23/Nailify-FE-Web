@@ -234,7 +234,7 @@ function decorateTaskBoards(myTaskList, salonTaskList, additionalProceduresList 
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[22px] border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
+      className={`rounded-lg border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
     >
       {children}
     </article>
@@ -688,7 +688,7 @@ function BoardColumn({
     <div
       onDragOver={onDragOver}
       onDrop={(event) => onDrop(event, column.key)}
-      className={`flex h-[540px] min-w-[310px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
+      className={`flex h-[540px] min-w-[310px] flex-col overflow-hidden rounded-lg border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
         }`}
     >
       <div className="mb-4 flex items-center justify-between gap-3">

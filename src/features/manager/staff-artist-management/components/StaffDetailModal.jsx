@@ -66,7 +66,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
             </div>
           </div>
 
-          <div className="-mt-6 space-y-4 rounded-[24px] bg-white px-6 pt-6 pb-6">
+          <div className="-mt-6 space-y-4 rounded-lg bg-white px-6 pt-6 pb-6">
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: language === "vi" ? "Hôm nay" : "Today", value: staff.stats?.today ?? "—", sub: language === "vi" ? "đơn" : "bookings" },

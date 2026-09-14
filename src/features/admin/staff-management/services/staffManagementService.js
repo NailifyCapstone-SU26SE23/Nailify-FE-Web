@@ -270,23 +270,34 @@ export async function assignNailArtistSkills(artistId, skills) {
 
   const newSkills = [];
   const skillsToUpdate = [];
+  const skillsToDelete = [];
 
   skills.forEach((skill) => {
     const level = skill.level ?? skill.Level ?? 0;
-    if (currentLevelBySkillId.has(skill.skillTypeId)) {
-      // Đã gán rồi -> chỉ cần update nếu level thực sự thay đổi
-      if (currentLevelBySkillId.get(skill.skillTypeId) !== level) {
+    const currentLevel = currentLevelBySkillId.get(skill.skillTypeId);
+
+    if (currentLevel !== undefined) {
+      // Đã gán rồi
+      if (level === 0) {
+        // Muốn gỡ bỏ (set = 0) -> DELETE
+        skillsToDelete.push(skill.skillTypeId);
+      } else if (currentLevel !== level) {
+        // Có đổi level -> PUT
         skillsToUpdate.push({ skillTypeId: skill.skillTypeId, level });
       }
     } else {
-      // Chưa từng gán -> cần assign mới
-      newSkills.push({ skillTypeId: skill.skillTypeId, level });
+      // Chưa từng gán
+      if (level > 0) {
+        // Level > 0 -> POST
+        newSkills.push({ skillTypeId: skill.skillTypeId, level });
+      }
     }
   });
 
   const errors = [];
 
-  // 1. Assign các skill hoàn toàn mới qua POST
+  // 1. Assign các skill hoàn toàn mới qua POST (nếu API BE hỗ trợ list, nếu không thì phải POST từng cái)
+  // Trong Swagger, Request Body cho POST là array of skills
   if (newSkills.length > 0) {
     try {
       const response = await axiosClient.post(
@@ -316,6 +327,19 @@ export async function assignNailArtistSkills(artistId, skills) {
     } catch (err) {
       console.warn(`Failed to update skill ${skill.skillTypeId}:`, err.response?.data || err);
       errors.push(`Không thể update level skill ${skill.skillTypeId}`);
+    }
+  }
+
+  // 3. Delete skill (khi level = 0) qua DELETE
+  for (const skillTypeId of skillsToDelete) {
+    try {
+      await axiosClient.delete(
+        `/nail-artists/${artistId}/skills/${skillTypeId}`,
+        { headers: getAuthHeaders() }
+      );
+    } catch (err) {
+      console.warn(`Failed to delete skill ${skillTypeId}:`, err.response?.data || err);
+      errors.push(`Không thể xóa skill ${skillTypeId}`);
     }
   }
 

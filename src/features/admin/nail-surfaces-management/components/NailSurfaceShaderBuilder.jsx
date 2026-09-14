@@ -57,7 +57,7 @@ export function NailSurfaceShaderBuilder({ formValues, onFieldChange, disabled =
   const { t, language } = useLanguage();
 
   return (
-    <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+    <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
       <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
         <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
         {t("adminNailSurfacesManagement.surfaceEffectBuilder")}

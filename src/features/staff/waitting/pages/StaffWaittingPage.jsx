@@ -84,7 +84,7 @@ const FILTERS = [
 
 function Card({ className = "", children }) {
   return (
-    <article className={`rounded-[22px] border border-[#f7d8e5] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}>
+    <article className={`rounded-lg border border-[#f7d8e5] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}>
       {children}
     </article>
   );
@@ -189,7 +189,7 @@ function NotificationCard({ item, onClear, language }) {
   const Icon = meta.icon;
 
   return (
-    <div className={`rounded-[24px] border p-5 ${meta.panelClassName}`}>
+    <div className={`rounded-lg border p-5 ${meta.panelClassName}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
@@ -474,7 +474,7 @@ export function StaffWaittingPage() {
 
 function TimelineBlock({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-[22px] border border-[#f5d8e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
+    <div className="rounded-lg border border-[#f5d8e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
       <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_12px_22px_rgba(236,72,153,0.18)]">
         <Icon size={18} />
       </div>

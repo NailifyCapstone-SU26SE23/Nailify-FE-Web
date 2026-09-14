@@ -22,9 +22,6 @@ export function ExtraServiceModal({
   onIncreaseQuantity,
   onPageChange,
   onConfirm,
-  title = "Add Extra Service",
-  description = "Select one or more active services and append them to this booking.",
-  confirmText = "Add Selected Services",
 }) {
   if (!open) {
     return null;
@@ -47,8 +44,8 @@ export function ExtraServiceModal({
       <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)]">
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
-            <h3 className="text-lg font-bold text-[#3f2b3f]">{title}</h3>
-            <p className="mt-1 text-sm text-[#a88a9d]">{description}</p>
+            <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Thêm dịch vụ phụ" : "Add Extra Service"}</h3>
+            <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Chọn một hoặc nhiều dịch vụ đang hoạt động và thêm vào lịch hẹn này." : "Select one or more active services and append them to this booking."}</p>
           </div>
           <button
             type="button"
@@ -91,7 +88,7 @@ export function ExtraServiceModal({
                 return (
                   <div
                     key={service.serviceId}
-                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${isSelected
+                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${isSelected
                       ? "border-[#ea4f93] bg-[#fff1f7] shadow-[0_14px_28px_rgba(236,72,153,0.12)]"
                       : "border-[#f3d5e2] bg-white hover:bg-[#fff8fb]"
                       }`}
@@ -194,7 +191,7 @@ export function ExtraServiceModal({
               disabled={selectedCount <= 0 || isSaving || isLoading}
               className="rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Adding Services..." : confirmText}
+              {isSaving ? (language === "vi" ? "Đang thêm dịch vụ..." : "Adding Services...") : (language === "vi" ? "Thêm dịch vụ" : "Add Services")}
             </button>
           </div>
         </div>

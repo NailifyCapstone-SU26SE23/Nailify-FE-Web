@@ -721,7 +721,7 @@ export function StaffBookingConsultationDetail({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div className="space-y-4">
             {hasSelectedNailDesign ? (
-              <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
+              <article className="relative overflow-hidden rounded-lg border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
                 {/* Decorative Orbs */}
                 <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-gradient-to-br from-[#ffb4d6]/20 to-[#e4c1f9]/20 blur-[80px]" />
                 <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-gradient-to-tr from-[#ffecd2]/30 to-[#fcb69f]/30 blur-[80px]" />
@@ -750,7 +750,7 @@ export function StaffBookingConsultationDetail({
                     <div className="relative mx-auto w-full max-w-[320px] lg:mx-0 lg:w-[45%] lg:max-w-none shrink-0">
                       {/* Glowing backdrop */}
                       <div className="absolute inset-0 bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-2xl rounded-full scale-90" />
-                      <div className="relative rounded-[24px] bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
+                      <div className="relative rounded-lg bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
                         {data.design.variantDetail ? (
                           <ReadOnlyNailPreview
                             variantDetail={data.design.variantDetail}
@@ -779,7 +779,7 @@ export function StaffBookingConsultationDetail({
                         </h3>
                       </div>
 
-                      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-[24px] bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
+                      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-lg bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
                         {data.design.details
                           .filter((item) => {
                             if (item.label === "Service") return false;
@@ -806,7 +806,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
@@ -858,7 +858,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />
