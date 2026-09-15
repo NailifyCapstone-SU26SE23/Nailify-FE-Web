@@ -47,14 +47,9 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
 import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
-import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
-
-
-const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
-const SCHEDULE_SCROLL_SENSITIVITY = 0.5;
 
 const VIETNAM_BANKS = [
   { code: "VCB", name: "Vietcombank" },
