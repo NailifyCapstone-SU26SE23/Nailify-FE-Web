@@ -1076,11 +1076,6 @@ export function ManagerBookingListPage() {
       render: (_, row) => (
         <div className="flex flex-col items-start gap-1">
           <StatusPill status={row.status} />
-          {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-bold text-[#E11D48] shadow-2xs whitespace-nowrap">
-              {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
-            </span>
-          )}
         </div>
       ),
     },

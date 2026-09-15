@@ -662,13 +662,6 @@ export function ManagerBookingDetailPage() {
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
                 </span>
-
-                {/* Warning for unrefunded cancelled bookings */}
-                {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-3.5 py-1 text-xs font-bold text-[#E11D48] shadow-2xs">
-                    {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -1447,34 +1440,6 @@ export function ManagerBookingDetailPage() {
           onSuccess={() => loadBooking({ silent: true })}
         />
       )}
-
-      {/* Refund Warning Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-[#E11D48]">
-            <AlertTriangle size={20} />
-            <span>{language === "vi" ? "Cần hoàn tiền" : "Refund Required"}</span>
-          </div>
-        }
-        open={isRefundWarningOpen}
-        onCancel={() => setIsRefundWarningOpen(false)}
-        footer={
-          <button
-            type="button"
-            onClick={() => setIsRefundWarningOpen(false)}
-            className="px-4 py-2 bg-[#E84F93] hover:bg-[#D43F7D] text-white rounded-xl font-bold transition-colors"
-          >
-            {language === "vi" ? "Đã hiểu" : "Got it"}
-          </button>
-        }
-        centered
-      >
-        <p className="text-[#4B5563]">
-          {language === "vi"
-            ? "Đơn đặt lịch này đã bị hủy nhưng chưa hoàn tiền cho khách. Vui lòng tiến hành hoàn tiền!"
-            : "This booking was cancelled but the customer hasn't been refunded yet. Please process the refund!"}
-        </p>
-      </Modal>
 
       {/* Transaction Details Modal */}
       <Modal
