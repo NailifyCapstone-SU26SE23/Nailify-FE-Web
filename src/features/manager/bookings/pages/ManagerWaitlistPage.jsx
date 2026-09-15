@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import {
   Clock,
   Search,
@@ -143,7 +144,7 @@ function NotifiedCountdown({ expiresAt, onExpire }) {
 function StatCard({ title, value, icon: Icon, gradient, textColor, shadowColor, description }) {
   const { language } = useLanguage();
   return (
-    <div className={`relative overflow-hidden rounded-[24px] bg-white p-5 border border-[#fbe7ef] shadow-sm transition-all duration-300 hover:shadow-md`}>
+    <div className={`relative overflow-hidden rounded-lg bg-white p-5 border border-[#fbe7ef] shadow-sm transition-all duration-300 hover:shadow-md`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#a88a9f]">{title}</p>
@@ -211,7 +212,7 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
 
   return (
     <article
-      className={`group relative overflow-hidden rounded-[24px] border bg-gradient-to-tr from-[#ffffff] to-[#fffbfc] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#ea4f93] ${isNext ? "border-[#f5a9ca] ring-4 ring-[#fff0f6]" : "border-[#edd8e5]"
+      className={`group relative overflow-hidden rounded-lg border bg-gradient-to-tr from-[#ffffff] to-[#fffbfc] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#ea4f93] ${isNext ? "border-[#f5a9ca] ring-4 ring-[#fff0f6]" : "border-[#edd8e5]"
         }`}
     >
       <div className={`absolute inset-y-0 left-0 w-[5px] bg-gradient-to-b ${isNext ? "from-[#ea4f93] to-[#7e4fe6]" : "from-[#ecd4e0] to-[#fceae6]"
@@ -306,10 +307,17 @@ function QueueEntryCard({ item, fallbackPosition, isNext, onOpen, getStatusBadge
 }
 
 export function ManagerWaitlistPage() {
+  const { language } = useLanguage();
   const [waitlistData, setWaitlistData] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   // Filter and search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -740,7 +748,7 @@ export function ManagerWaitlistPage() {
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
               <Sparkles size={16} />
             </div>
-            <span className="font-extrabold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
+            <span className="font-bold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
           </div>
         }
         placement="right"
@@ -755,7 +763,7 @@ export function ManagerWaitlistPage() {
           <div className="space-y-6">
             <div className="rounded-lg bg-gradient-to-br from-[#fff7fb] to-[#fffbfc] p-5 border border-[#fcd5e6]/50 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-sm font-extrabold text-white">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-sm font-bold text-white">
                   {(selectedEntry.customerName || "??")
                     .split(" ")
                     .map((p) => p[0])
@@ -764,7 +772,7 @@ export function ManagerWaitlistPage() {
                     .toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="text-base font-extrabold text-[#402542]">{selectedEntry.customerName}</h4>
+                  <h4 className="text-base font-bold text-[#402542]">{selectedEntry.customerName}</h4>
                   <div className="mt-1 flex items-center gap-1.5">
                     {getStatusBadge(selectedEntry.status)}
                     <span className="text-[11px] font-bold text-[#ea4f93] bg-[#fff0f5] border border-[#fbe1ec] rounded-full px-2">

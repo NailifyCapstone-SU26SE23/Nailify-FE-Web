@@ -45,7 +45,7 @@ export function NailVariantSelectionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div
-        className="w-full max-w-3xl overflow-hidden rounded-[24px] border border-[#f5d6e3] bg-white shadow-2xl animate-in fade-in zoom-in-95"
+        className="w-full max-w-3xl overflow-hidden rounded-lg border border-[#f5d6e3] bg-white shadow-2xl animate-in fade-in zoom-in-95"
       >
         <div className="flex items-center justify-between border-b border-[#f5d6e3] px-6 py-4">
           <div>
@@ -83,8 +83,8 @@ export function NailVariantSelectionModal({
                     type="button"
                     onClick={() => setSelectedVariantId(variant.nailVariantId)}
                     className={`relative overflow-hidden rounded-[16px] border bg-white text-left transition ${isSelected
-                        ? "border-[#ea4f93] shadow-[0_4px_12px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93] ring-offset-2"
-                        : "border-[#f5d6e3] hover:border-[#ea4f93]"
+                      ? "border-[#ea4f93] shadow-[0_4px_12px_rgba(236,72,153,0.15)] ring-2 ring-[#ea4f93] ring-offset-2"
+                      : "border-[#f5d6e3] hover:border-[#ea4f93]"
                       }`}
                   >
                     <div className="h-28 overflow-hidden bg-gray-50">

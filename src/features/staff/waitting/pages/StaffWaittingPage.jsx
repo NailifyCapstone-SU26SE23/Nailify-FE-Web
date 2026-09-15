@@ -84,7 +84,7 @@ const FILTERS = [
 
 function Card({ className = "", children }) {
   return (
-    <article className={`rounded-[22px] border border-[#f7d8e5] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}>
+    <article className={`rounded-lg border border-[#f7d8e5] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}>
       {children}
     </article>
   );
@@ -93,7 +93,7 @@ function Card({ className = "", children }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h2 className="text-sm font-extrabold text-[#402542]">{title}</h2>
+      <h2 className="text-sm font-bold text-[#402542]">{title}</h2>
       {subtitle ? <p className="mt-1 text-xs text-[#b07a94]">{subtitle}</p> : null}
     </div>
   );
@@ -158,7 +158,7 @@ function StatCard({ title, value, note, icon: Icon, toneClassName }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{title}</p>
-          <p className="mt-2 text-2xl font-extrabold text-[#402542]">{value}</p>
+          <p className="mt-2 text-2xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1 text-xs text-[#a07c90]">{note}</p>
         </div>
         <div className={`flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-[0_12px_24px_rgba(236,72,153,0.16)] ${toneClassName}`}>
@@ -189,7 +189,7 @@ function NotificationCard({ item, onClear, language }) {
   const Icon = meta.icon;
 
   return (
-    <div className={`rounded-[24px] border p-5 ${meta.panelClassName}`}>
+    <div className={`rounded-lg border p-5 ${meta.panelClassName}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
@@ -197,9 +197,9 @@ function NotificationCard({ item, onClear, language }) {
               <Icon size={20} />
             </div>
             <div className="min-w-0">
-              <p className="text-base font-extrabold text-[#402542]">{item.customerName}</p>
+              <p className="text-base font-bold text-[#402542]">{item.customerName}</p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${meta.badgeClassName}`}>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${meta.badgeClassName}`}>
                   {meta.label}
                 </span>
                 <span className="rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#9b7b8f]">
@@ -223,7 +223,7 @@ function NotificationCard({ item, onClear, language }) {
         <div className="w-full shrink-0 lg:w-[280px]">
           <div className="rounded-lg border border-white/90 bg-white/80 p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c08aa4]">{language === "vi" ? "Trạng thái vận hành" : "Operational Status"}</p>
-            <p className="mt-2 text-sm font-extrabold text-[#402542]">{formatRelativeStatus(item, language)}</p>
+            <p className="mt-2 text-sm font-bold text-[#402542]">{formatRelativeStatus(item, language)}</p>
             {item.deadlineAt ? (
               <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-[#d6851d]">
                 <Clock3 size={14} />
@@ -367,7 +367,7 @@ export function StaffWaittingPage() {
                 <Send size={22} />
               </div>
               <div>
-                <h1 className="text-3xl font-extrabold text-[#402542]">{language === "vi" ? "Bảng thông báo hàng chờ" : "Staff Waitlist Notification Board"}</h1>
+                <h1 className="text-3xl font-bold text-[#402542]">{language === "vi" ? "Bảng thông báo hàng chờ" : "Staff Waitlist Notification Board"}</h1>
                 <p className="text-sm text-[#b07a94]">
                   {language === "vi" ? "Giao diện mô phỏng cho việc nâng hạng, hết hạn, tự động hủy lịch và xoá bản ghi." : "Mock UI for waitlist promotion, expiration, booking auto-cancellation, and cleared records."}
                 </p>
@@ -474,11 +474,11 @@ export function StaffWaittingPage() {
 
 function TimelineBlock({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-[22px] border border-[#f5d8e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
+    <div className="rounded-lg border border-[#f5d8e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] p-5">
       <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_12px_22px_rgba(236,72,153,0.18)]">
         <Icon size={18} />
       </div>
-      <p className="mt-4 text-sm font-extrabold text-[#402542]">{title}</p>
+      <p className="mt-4 text-sm font-bold text-[#402542]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[#8f7184]">{text}</p>
     </div>
   );

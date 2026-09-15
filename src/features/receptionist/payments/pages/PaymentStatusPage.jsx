@@ -159,7 +159,7 @@ function PaymentResultPage({ isSuccess, orderCode }) {
               <button
                 type="button"
                 onClick={() => navigate(getReceptionistBookingDetailRoute(bookingId))}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-5 py-3.5 text-sm font-extrabold text-white transition hover:bg-[#1f2937]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#111827] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#1f2937]"
               >
                 <CalendarDays size={17} />
                 {language === "vi" ? "Quay lại chi tiết lịch hẹn" : "Return to Booking Detail"}
@@ -170,7 +170,7 @@ function PaymentResultPage({ isSuccess, orderCode }) {
               <button
                 type="button"
                 disabled
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#e5e7eb] px-5 py-3.5 text-sm font-extrabold text-[#6b7280]"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#e5e7eb] px-5 py-3.5 text-sm font-bold text-[#6b7280]"
               >
                 <LoaderCircle size={17} className="animate-spin" />
                 {language === "vi" ? "Đang tải chi tiết đặt lịch..." : "Loading Booking Detail"}
@@ -180,7 +180,7 @@ function PaymentResultPage({ isSuccess, orderCode }) {
             <button
               type="button"
               onClick={() => navigate(ROUTES.root)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#374151] transition hover:bg-[#f9fafb]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3.5 text-sm font-bold text-[#374151] transition hover:bg-[#f9fafb]"
             >
               <ArrowLeft size={17} />
               {language === "vi" ? "Quay lại Trang chủ" : "Back to Home"}

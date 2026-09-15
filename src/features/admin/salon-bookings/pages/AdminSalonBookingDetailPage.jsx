@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -218,6 +219,12 @@ export function AdminSalonBookingDetailPage() {
   const [isLoadingSalon, setIsLoadingSalon] = useState(true);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState(null);
 
@@ -465,7 +472,7 @@ export function AdminSalonBookingDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminSalonBookings}

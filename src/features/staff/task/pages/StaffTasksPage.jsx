@@ -234,7 +234,7 @@ function decorateTaskBoards(myTaskList, salonTaskList, additionalProceduresList 
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[22px] border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
+      className={`rounded-lg border border-[#f6dce7] bg-white shadow-[0_14px_34px_rgba(236,72,153,0.08)] ${className}`}
     >
       {children}
     </article>
@@ -688,7 +688,7 @@ function BoardColumn({
     <div
       onDragOver={onDragOver}
       onDrop={(event) => onDrop(event, column.key)}
-      className={`flex h-[540px] min-w-[310px] flex-col overflow-hidden rounded-[24px] border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
+      className={`flex h-[540px] min-w-[310px] flex-col overflow-hidden rounded-lg border p-4 transition ${column.ringClassName} ${column.panelClassName} ${isActiveDropTarget ? "scale-[1.01] shadow-[0_18px_36px_rgba(236,72,153,0.12)]" : ""
         }`}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -718,12 +718,12 @@ function BoardColumn({
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-pink-100 text-[#ea4f93] shrink-0">
                     <CircleUserRound size={12} strokeWidth={2.5} />
                   </span>
-                  <span className="font-extrabold text-[#3f2a3c] text-[11px] truncate">
+                  <span className="font-bold text-[#3f2a3c] text-[11px] truncate">
                     {group.customerName}
                   </span>
                 </div>
                 {group.chairName && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-extrabold text-[#7c3aed] border border-purple-200/50 shadow-3xs">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-bold text-[#7c3aed] border border-purple-200/50 shadow-3xs">
                     {isVi ? `Ghế ${group.chairName}` : `Chair ${group.chairName}`}
                   </span>
                 )}
@@ -761,6 +761,12 @@ export function StaffTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [claimingTaskId, setClaimingTaskId] = useState("");
   const [draggingTask, setDraggingTask] = useState(null);
   const [draggingSource, setDraggingSource] = useState("");

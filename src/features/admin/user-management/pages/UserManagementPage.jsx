@@ -438,7 +438,7 @@ export function UserManagementPage() {
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, user) => (
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
             {user.avatar}
           </div>
           <p className="font-bold text-[#432744]">{user.name}</p>
@@ -659,7 +659,7 @@ export function UserManagementPage() {
                     className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
                         {user.avatar}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -792,7 +792,7 @@ export function UserManagementPage() {
         </article>
 
         {/* <aside className="rounded-lg border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-          <h3 className="text-sm font-extrabold text-[#412643]">Quick Info Panel</h3>
+          <h3 className="text-sm font-bold text-[#412643]">Quick Info Panel</h3>
 
           <div className="mt-5 space-y-6">
             <div>
@@ -806,7 +806,7 @@ export function UserManagementPage() {
                 {QUICK_REGISTRATIONS.map(([name, time, role]) => (
                   <div key={name} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
                         {getAvatar(name)}
                       </div>
                       <div>

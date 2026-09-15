@@ -52,7 +52,7 @@ function SectionCard({
     <article
       id={sectionId}
       ref={sectionRef}
-      className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
+      className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlighted
         ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
         : "border-[#f8d3e2]"
         }`}
@@ -65,7 +65,7 @@ function SectionCard({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="font-extrabold text-[#432744]">{title}</h3>
+            <h3 className="font-bold text-[#432744]">{title}</h3>
             {subtitle ? <p className="mt-1 text-xs text-[#c694ad]">{subtitle}</p> : null}
           </div>
         </div>
@@ -334,7 +334,7 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     : {};
   const outerClassName = compact
     ? "rounded-[18px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-    : "rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
+    : "rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]";
   const deckClassName = compact
     ? "flex min-h-[180px] flex-wrap items-center justify-center gap-3"
     : "flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6";
@@ -349,8 +349,8 @@ function NailVariantHandPreview({ variantDetail, compact = false, showShapeOverl
     ? "pointer-events-none absolute left-1.5 top-1 h-10 w-1 rounded-full bg-white/45 blur-[0.6px]"
     : "pointer-events-none absolute left-2.5 top-1.5 h-20 w-1.5 animate-pulse rounded-full bg-white/45 blur-[0.7px]";
   const labelClassName = compact
-    ? "rounded-full border border-[#fce6f3] bg-white/90 px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]"
-    : "rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]";
+    ? "rounded-full border border-[#fce6f3] bg-white/90 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.12em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]"
+    : "rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]";
 
   return (
     <div className={outerClassName}>
@@ -641,6 +641,12 @@ export function NailDesignManagementDetailPage() {
   const [isSavingVariantProcedures, setIsSavingVariantProcedures] = useState(false);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isNotFound, setIsNotFound] = useState(false);
   const [selectedCategoryTypeId, setSelectedCategoryTypeId] = useState("");
 
@@ -1066,7 +1072,7 @@ export function NailDesignManagementDetailPage() {
             <p className="text-xs text-[#c694ad]">
               {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{formValues.breadcrumbsLabel}</span>
             </p>
-            <h2 className="mt-1 text-[1.7rem] font-extrabold text-[#432744]">
+            <h2 className="mt-1 text-[1.7rem] font-bold text-[#432744]">
               {t("adminNailsDesignManagement.nailDesignDetail")}
             </h2>
 
@@ -1121,17 +1127,13 @@ export function NailDesignManagementDetailPage() {
         </div>
       </div>
 
-      {error ? (
-        <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-          {error}
-        </div>
-      ) : null}
+
 
       <div className="space-y-4">
         <article
           ref={heroSectionRef}
           id="hero-section"
-          className={`scroll-mt-6 rounded-[22px] border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
+          className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
             ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
             : "border-[#f8d3e2]"
             }`}
@@ -1143,7 +1145,7 @@ export function NailDesignManagementDetailPage() {
                   <input
                     value={formValues.heroTitle}
                     onChange={handleChange("heroTitle")}
-                    className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-xl font-extrabold text-[#432744] outline-none transition focus:border-[#ef6bb4]"
+                    className="h-12 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-xl font-bold text-[#432744] outline-none transition focus:border-[#ef6bb4]"
                   />
                   <textarea
                     value={formValues.heroSubtitle}
@@ -1223,7 +1225,7 @@ export function NailDesignManagementDetailPage() {
                 </div>
               ) : (
                 <>
-                  <h3 className="mt-2 text-4xl font-extrabold leading-tight text-[#432744]">
+                  <h3 className="mt-2 text-4xl font-bold leading-tight text-[#432744]">
                     {formValues.heroTitle}
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm leading-7 text-[#7c6678]">
@@ -1255,7 +1257,7 @@ export function NailDesignManagementDetailPage() {
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
                     <p className="text-xs font-semibold text-[#c694af]">{label}</p>
-                    <p className="mt-2 text-2xl font-extrabold text-[#ea4f93]">{value}</p>
+                    <p className="mt-2 text-2xl font-bold text-[#ea4f93]">{value}</p>
                   </div>
                 ))}
               </div>
@@ -1339,7 +1341,7 @@ export function NailDesignManagementDetailPage() {
                     compact
                   />
                 </div>
-                <h4 className="mt-3 font-extrabold text-[#432744]">{variant.name}</h4>
+                <h4 className="mt-3 font-bold text-[#432744]">{variant.name}</h4>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Pill tone="yellow">{variant.priceDelta}</Pill>
                   <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
@@ -1429,7 +1431,7 @@ export function NailDesignManagementDetailPage() {
                   <Eye size={20} />
                 </div>
                 <div>
-                  <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#b25784]">
+                  <span className="inline-flex rounded-full bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b25784]">
                     {t("adminNailsDesignManagement.variantDetail")}
                   </span>
                   <h3 className="mt-3 text-lg font-bold text-[#432744]">
@@ -1583,7 +1585,7 @@ export function NailDesignManagementDetailPage() {
               <div className="rounded-lg border border-[#f7d7e5] bg-[#fffafb] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-bold text-[#432744]">{t("adminNailsDesignManagement.procedureSteps")}</p>
+                    <p className="font-bold text-[#432744]">{language === 'vi' ? `Bước quy trình` : `Procedure Steps`}</p>
 
                   </div>
                   <div className="flex gap-2">

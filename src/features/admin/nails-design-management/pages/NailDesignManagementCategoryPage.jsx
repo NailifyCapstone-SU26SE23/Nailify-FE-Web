@@ -67,6 +67,12 @@ export function NailDesignManagementCategoryPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -294,11 +300,11 @@ export function NailDesignManagementCategoryPage() {
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="overflow-hidden rounded-[22px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
+        <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="border-b border-[#f8dce8] bg-[linear-gradient(135deg,#fff6fb_0%,#fff0f7_55%,#ffffff_100%)] p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
+                <span className="inline-flex rounded-full bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ea4f93] shadow-[0_8px_20px_rgba(236,72,153,0.08)]">
                   {t("adminNailsDesignManagement.catalogEditor")}
                 </span>
                 <h2 className="mt-3 text-lg font-bold text-[#432744]">
@@ -331,7 +337,7 @@ export function NailDesignManagementCategoryPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-[15px] font-extrabold text-[#432744]">
+                    <p className="truncate text-[15px] font-bold text-[#432744]">
                       {previewName}
                     </p>
                     <Pill tone="bg-[#fff1f7] text-[#ea4f93]">
@@ -343,7 +349,7 @@ export function NailDesignManagementCategoryPage() {
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
                     {t("adminNailsDesignManagement.status")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
@@ -354,7 +360,7 @@ export function NailDesignManagementCategoryPage() {
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
                     {t("adminNailsDesignManagement.nameLength")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
@@ -362,7 +368,7 @@ export function NailDesignManagementCategoryPage() {
                   </p>
                 </div>
                 <div className="rounded-[16px] border border-[#f9dfeb] bg-[#fff9fc] px-3 py-3">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
                     {t("adminNailsDesignManagement.description")}
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#432744]">
@@ -410,7 +416,7 @@ export function NailDesignManagementCategoryPage() {
             </label>
 
             <div className="rounded-[18px] border border-dashed border-[#f3c9dd] bg-[#fff8fb] px-4 py-3">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c694ad]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c694ad]">
                 {t("adminNailsDesignManagement.writingTip")}
               </p>
               <p className="mt-1 text-sm leading-6 text-[#8a7082]">
@@ -445,7 +451,7 @@ export function NailDesignManagementCategoryPage() {
         <section className="rounded-[18px] border border-[#f8dce8] bg-white p-5 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-sm font-extrabold text-[#432744]">
+              <h2 className="text-sm font-bold text-[#432744]">
                 {t("adminNailsDesignManagement.categoryList")}
               </h2>
               <p className="mt-1 text-[11px] text-[#c694ad]">
@@ -458,11 +464,7 @@ export function NailDesignManagementCategoryPage() {
 
 
 
-          {error ? (
-            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+
 
           <label className="relative mb-4 block max-w-md">
             <Search
@@ -494,7 +496,7 @@ export function NailDesignManagementCategoryPage() {
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-[15px] font-extrabold text-[#432744]">{category.name}</h3>
+                        <h3 className="text-[15px] font-bold text-[#432744]">{category.name}</h3>
                         <Pill
                           tone={
                             category.status === "Active"

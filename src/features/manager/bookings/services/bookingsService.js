@@ -576,3 +576,39 @@ export async function managerRejectReschedule(bookingId) {
   }
 }
 
+export async function fetchCustomerProfileById(userId) {
+  const normalizedId = String(userId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("User ID is required.");
+  }
+
+  console.log("Fetching customer profile by ID:", normalizedId);
+  try {
+    const response = await axiosClient.get(`/Users/customers/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to load customer profile.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load customer profile.";
+    console.error("Error fetching customer profile:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+
+export async function fetchLoyaltyTiers() {
+  console.log("Fetching loyalty tiers");
+  try {
+    const response = await axiosClient.get(`/LoyaltyTiers`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to load loyalty tiers.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to load loyalty tiers.";
+    console.error("Error fetching loyalty tiers:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}
+

@@ -32,6 +32,12 @@ export function SkillTypeDetailPage() {
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -204,7 +210,7 @@ export function SkillTypeDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminSkillTypes}
@@ -274,11 +280,11 @@ export function SkillTypeDetailPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">{t("adminSkillTypes.loadingDetails")}</div>
         </div>
       ) : !skillType ? (
-        <div className="rounded-[24px] border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="rounded-lg border border-rose-100 bg-white/85 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-lg font-bold text-slate-800">{t("adminSkillTypes.unableToLoad")}</h2>
             <p className="mt-2 text-sm text-slate-500">
@@ -304,7 +310,7 @@ export function SkillTypeDetailPage() {
       ) : (
         // <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_360px]">
         <div className="grid gap-4">
-          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {t("adminSkillTypes.skillTypeInformation")}
@@ -363,7 +369,7 @@ export function SkillTypeDetailPage() {
           </section>
 
           {/* <aside className="space-y-4">
-            <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
               <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
                 <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
                 {t("adminSkillTypes.summary")}

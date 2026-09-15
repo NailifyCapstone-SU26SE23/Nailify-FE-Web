@@ -582,7 +582,7 @@ export function StaffUpdatePage() {
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
+                <div className="rounded-lg border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
                   {imagePreview ? (
                     <img
                       crossOrigin="anonymous"

@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { Modal, Spin, Alert, Select, Drawer, Calendar as AntCalendar, Badge } from "antd";
 import dayjs from "dayjs";
 import {
@@ -386,6 +387,12 @@ export function StaffManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [selectedRole, setSelectedRole] = useState(ALL_ROLES_VALUE);
 
   // Drawer state

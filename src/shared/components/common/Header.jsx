@@ -47,7 +47,7 @@ export function Header({
                 />
               </div>
             )}
-            <h1 className="text-[1.85rem] font-extrabold leading-none text-[#3d2a3a]">
+            <h1 className="text-[1.85rem] font-bold leading-none text-[#3d2a3a]">
               {title}
             </h1>
           </div>
@@ -72,9 +72,8 @@ export function Header({
               <button
                 type="button"
                 onClick={() => setLanguage("vi")}
-                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${
-                  language === "vi" ? "text-white" : "text-[#eb5a99]"
-                }`}
+                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "vi" ? "text-white" : "text-[#eb5a99]"
+                  }`}
                 title={t("vietnamese")}
               >
                 VI
@@ -82,9 +81,8 @@ export function Header({
               <button
                 type="button"
                 onClick={() => setLanguage("en")}
-                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${
-                  language === "en" ? "text-white" : "text-[#eb5a99]"
-                }`}
+                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "en" ? "text-white" : "text-[#eb5a99]"
+                  }`}
                 title={t("english")}
               >
                 EN

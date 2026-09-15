@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -83,7 +84,7 @@ function SectionHeading({ title, subtitle, icon: Icon }) {
         </div>
       )}
       <div>
-        <h2 className="text-[18px] font-extrabold text-[#3d1f3f] tracking-tight">
+        <h2 className="text-[18px] font-bold text-[#3d1f3f] tracking-tight">
           {title}
         </h2>
         {subtitle && <p className="mt-1 text-[13px] text-[#9a5f7f]">{subtitle}</p>}
@@ -138,7 +139,7 @@ function StatCard({ title, value, icon: Icon, trend, trendValue, color = "pink" 
             <p className="text-[12px] font-semibold text-[#9a5f7f] uppercase tracking-wider mb-1">
               {title}
             </p>
-            <p className="text-[28px] font-extrabold text-[#3d1f3f] leading-none">
+            <p className="text-[28px] font-bold text-[#3d1f3f] leading-none">
               {value}
             </p>
             {trend && (
@@ -196,7 +197,7 @@ function BookingCard({ booking }) {
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
-      className="rounded-[24px] border border-[#f1e7ed] bg-[#fffafd] p-6 transition-all duration-300 hover:border-[#ea4f93] hover:bg-white hover:shadow-[0_20px_40px_-15px_rgba(234,79,147,0.1)]"
+      className="rounded-lg border border-[#f1e7ed] bg-[#fffafd] p-6 transition-all duration-300 hover:border-[#ea4f93] hover:bg-white hover:shadow-[0_20px_40px_-15px_rgba(234,79,147,0.1)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
@@ -207,7 +208,7 @@ function BookingCard({ booking }) {
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[16px] font-extrabold text-[#3d1f3f] truncate">
+              <h3 className="text-[16px] font-bold text-[#3d1f3f] truncate">
                 {booking?.customerName || "Unknown Customer"}
               </h3>
               {booking?.customerEmail && (
@@ -254,7 +255,7 @@ function BookingCard({ booking }) {
             )}
             {booking?.totalAmount && (
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-[#3d1f3f]">
+                <span className="font-bold text-[#3d1f3f]">
                   {Number(booking.totalAmount).toLocaleString("vi-VN")} VND
                 </span>
               </div>
@@ -292,6 +293,12 @@ export function AdminSalonBookingsPage() {
   const [salons, setSalons] = useState([]);
   const [isLoadingSalons, setIsLoadingSalons] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   const [pageIndex, setPageIndex] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -455,7 +462,7 @@ export function AdminSalonBookingsPage() {
                       </div>
                     </div>
                     <div className="p-6">
-                      <h3 className="text-[18px] font-extrabold text-[#3d1f3f] truncate mb-2">
+                      <h3 className="text-[18px] font-bold text-[#3d1f3f] truncate mb-2">
                         {salon?.name || "Unknown Salon"}
                       </h3>
                       <div className="space-y-3 mb-4">

@@ -2,7 +2,6 @@ import { ROUTES } from "./routes";
 import { ROLES } from "./roles";
 
 export const MENU_CONFIG = {
-
   //staff
   [ROLES.staff]: [
     {
@@ -34,14 +33,6 @@ export const MENU_CONFIG = {
       icon: "palette",
       section: "Main",
     },
-    // {
-    //   key: "staff-waitting",
-    //   label: "Waitlist Alerts",
-    //   to: ROUTES.staffWaitting,
-    //   icon: "support",
-    //   section: "Main",
-    //   badge: "4",
-    // },
     {
       key: "staff-schedule",
       label: "Schedule",
@@ -56,13 +47,6 @@ export const MENU_CONFIG = {
       icon: "clock",
       section: "Main",
     },
-    // {
-    //   key: "staff-customers",
-    //   label: "Customers",
-    //   icon: "users",
-    //   section: "Support",
-    //   disabled: true,
-    // },
     {
       key: "staff-profile",
       label: "Profile",
@@ -103,13 +87,6 @@ export const MENU_CONFIG = {
       icon: "clock",
       section: "Main",
     },
-    // {
-    //   key: "receptionist-waitlist",
-    //   label: "Salon Waitlist",
-    //   to: ROUTES.receptionistWaitlist,
-    //   icon: "support",
-    //   section: "Main",
-    // },
     {
       key: "receptionist-chairs",
       label: "Chairs",
@@ -117,21 +94,6 @@ export const MENU_CONFIG = {
       icon: "armchair",
       section: "Main",
     },
-    // {
-    //   key: "receptionist-reviews",
-    //   label: "Reviews",
-    //   icon: "reviews",
-    //   section: "Analytics",
-    //   disabled: true,
-    // },
-    // {
-    //   key: "receptionist-complaints",
-    //   label: "Complaints",
-    //   icon: "support",
-    //   section: "Support",
-    //   badge: "3",
-    //   disabled: true,
-    // },
     {
       key: "receptionist-profile",
       label: "Profile",
@@ -157,20 +119,6 @@ export const MENU_CONFIG = {
       section: "Main",
       badge: "16",
     },
-    // {
-    //   key: "manager-waitlist",
-    //   label: "Salon Waitlist",
-    //   to: ROUTES.managerWaitlist,
-    //   icon: "support",
-    //   section: "Main",
-    // },
-    // {
-    //   key: "manager-queue",
-    //   label: "Walk-In Queue",
-    //   to: ROUTES.managerQueue,
-    //   icon: "users",
-    //   section: "Main",
-    // },
     {
       key: "manager-chairs",
       label: "Chairs",
@@ -190,20 +138,6 @@ export const MENU_CONFIG = {
       icon: "clock",
       section: "Main",
     },
-    // {
-    //   key: "manager-waitlist",
-    //   label: "Salon Waitlist",
-    //   to: ROUTES.managerWaitlist,
-    //   icon: "support",
-    //   section: "Main",
-    // },
-    // {
-    //   key: "manager-queue",
-    //   label: "Walk-In Queue",
-    //   to: ROUTES.managerQueue,
-    //   icon: "users",
-    //   section: "Main",
-    // },
     {
       key: "manager-customer-nails",
       label: "Customer Nails",
@@ -239,20 +173,6 @@ export const MENU_CONFIG = {
       icon: "wallet",
       section: "Main",
     },
-    // {
-    //   key: "manager-customers",
-    //   label: "Customers",
-    //   icon: "users",
-    //   section: "Main",
-    //   disabled: true,
-    // },
-    // {
-    //   key: "manager-reports",
-    //   label: "Analytics",
-    //   icon: "analytics",
-    //   section: "Analytics",
-    //   disabled: true,
-    // },
     {
       key: "manager-reviews",
       label: "Reviews",
@@ -294,6 +214,13 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
+      key: "admin-wallet-transactions",
+      label: "Wallet Transactions",
+      to: ROUTES.adminWalletTransactions,
+      icon: "wallet",
+      section: "Main",
+    },
+    {
       key: "admin-salons",
       label: "Salons",
       to: ROUTES.adminSalons,
@@ -304,7 +231,7 @@ export const MENU_CONFIG = {
       key: "admin-chairs",
       label: "Chairs",
       to: ROUTES.adminChairs,
-      icon: "armchair", // Ensure you have this icon mapped if it's dynamic
+      icon: "armchair",
       section: "Main",
     },
     {
@@ -328,13 +255,13 @@ export const MENU_CONFIG = {
       icon: "award",
       section: "Main",
     },
-    {
-      key: "admin-loyalty-transactions",
-      label: "Loyalty Transactions",
-      to: ROUTES.adminLoyaltyTransactions,
-      icon: "award",
-      section: "Main",
-    },
+    // {
+    //   key: "admin-loyalty-transactions",
+    //   label: "Loyalty Transactions",
+    //   to: ROUTES.adminLoyaltyTransactions,
+    //   icon: "award",
+    //   section: "Main",
+    // },
     {
       key: "admin-quiz",
       label: "Quiz",
@@ -413,14 +340,6 @@ export const MENU_CONFIG = {
       icon: "gift",
       section: "Main",
     },
-
-    // {
-    //   key: "admin-analytics",
-    //   label: "Analytics",
-    //   icon: "analytics",
-    //   section: "Analytics",
-    //   disabled: true,
-    // },
     {
       key: "admin-reviews",
       label: "Reviews",
@@ -428,14 +347,6 @@ export const MENU_CONFIG = {
       icon: "reviews",
       section: "Analytics",
     },
-    // {
-    //   key: "admin-complaints",
-    //   label: "Complaints",
-    //   icon: "support",
-    //   section: "Support",
-    //   badge: "7",
-    //   disabled: true,
-    // },
     {
       key: "admin-profile",
       label: "Profile",

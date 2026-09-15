@@ -340,7 +340,7 @@ export function StaffBreaksPage() {
       </div>
 
       {/* Filter panel */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[#f1e7ed] bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#f1e7ed] bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Lọc theo ngày:" : "Filter by date:"}</span>
           <DatePicker
@@ -402,7 +402,7 @@ export function StaffBreaksPage() {
                 columns={columns}
                 rowKey="nailArtistBreakId"
                 pagination={false}
-                className="rounded-[22px] border border-[#f4e4d7] bg-white overflow-hidden"
+                className="rounded-lg border border-[#f4e4d7] bg-white overflow-hidden"
               />
             </ConfigProvider>
           </div>
@@ -412,7 +412,7 @@ export function StaffBreaksPage() {
             {breaks.map((item) => (
               <div
                 key={item.nailArtistBreakId}
-                className="rounded-[22px] border border-[#f4e4d7] bg-white p-4 space-y-3"
+                className="rounded-lg border border-[#f4e4d7] bg-white p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[#3f2b3f]">
@@ -485,7 +485,7 @@ export function StaffBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Gửi yêu cầu nghỉ" : "Submit Break Request"}</h3>
+                <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Gửi yêu cầu nghỉ" : "Submit Break Request"}</h3>
                 <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Mặc định yêu cầu sẽ ở trạng thái Chờ duyệt." : "By default, requests will be in Pending status."}</p>
               </div>
               <button
@@ -573,7 +573,7 @@ export function StaffBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Cập nhật lịch nghỉ" : "Update Break Request"}</h3>
+                <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Cập nhật lịch nghỉ" : "Update Break Request"}</h3>
                 <p className="mt-1 text-sm text-[#a88a9d]">
                   {language === "vi" ? `Thay đổi thời gian nghỉ cho ngày ${dayjs(formDate).format("DD/MM/YYYY")}.` : `Change break time for ${dayjs(formDate).format("DD/MM/YYYY")}.`}
                 </p>
@@ -657,7 +657,7 @@ export function StaffBreaksPage() {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#3f2b3f]">{language === "vi" ? "Chi tiết yêu cầu nghỉ" : "Break Request Details"}</h3>
+                <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Chi tiết yêu cầu nghỉ" : "Break Request Details"}</h3>
                 <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Thông tin chi tiết về yêu cầu nghỉ phép." : "Detailed information about the break request."}</p>
               </div>
               <button
@@ -679,18 +679,18 @@ export function StaffBreaksPage() {
                     <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Trạng thái:" : "Status:"}</span>
                     {getStatusBadge(selectedBreak.status)}
                   </div>
-                  
+
                   <div className="space-y-3 text-sm text-[#3f2b3f]">
                     <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
                       <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
                       <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
                     </div>
-                    
+
                     <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
                       <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thời gian:" : "Time:"}</span>
                       <span className="font-semibold">{selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)}</span>
                     </div>
-                    
+
                     <div className="flex flex-col gap-1 border-b border-[#f7dfeb] pb-2">
                       <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Lý do:" : "Reason:"}</span>
                       <p className="font-semibold whitespace-pre-wrap">{selectedBreak.reason || "-"}</p>

@@ -84,6 +84,8 @@ export function normalizeAdminProcedure(procedure) {
     status: String(procedure?.status || "").trim(),
     createAt: String(procedure?.createAt || "").trim(),
     isRequired: Boolean(procedure?.isRequired),
+    isMainStep: Boolean(procedure?.isMainStep),
+    procedureType: String(procedure?.procedureType || "").trim(),
     durationLabel: formatProcedureDuration(procedure?.duration || 0),
     createAtLabel: formatProcedureDate(procedure?.createAt || ""),
     initials: String(procedure?.name || "")
@@ -101,13 +103,17 @@ export async function fetchAdminProcedures({
   pageIndex = 1,
   pageSize = 10,
   orderBy = "",
+  status = "",
+  procedureType = "",
 } = {}) {
   const response = await axiosClient.get("/Procedures", {
     headers: getAuthHeaders(),
     params: {
+      ProcedureType: procedureType || undefined,
       PageIndex: pageIndex,
       PageSize: pageSize,
       OrderBy: orderBy || undefined,
+      Status: status || undefined,
     },
   });
 
@@ -141,6 +147,8 @@ function buildProcedurePayload(formValues, includeStatus = false) {
     description: String(formValues?.description || "").trim(),
     duration: Number(formValues?.duration || 0),
     isRequired: Boolean(formValues?.isRequired),
+    procedureType: String(formValues?.procedureType || "Common").trim(),
+    isMainStep: Boolean(formValues?.isMainStep),
   };
 
   if (includeStatus) {

@@ -51,7 +51,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
                 </div>
               )}
               <div>
-                <h2 className="text-[20px] font-extrabold text-white">{staff.name}</h2>
+                <h2 className="text-[20px] font-bold text-white">{staff.name}</h2>
                 <p className="text-[12px] font-semibold text-white/80">{staff.role}</p>
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${STAFF_STATUS_STYLES[staff.status]}`}>
@@ -66,7 +66,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
             </div>
           </div>
 
-          <div className="-mt-6 space-y-4 rounded-[24px] bg-white px-6 pt-6 pb-6">
+          <div className="-mt-6 space-y-4 rounded-lg bg-white px-6 pt-6 pb-6">
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: language === "vi" ? "Hôm nay" : "Today", value: staff.stats?.today ?? "—", sub: language === "vi" ? "đơn" : "bookings" },
@@ -77,7 +77,7 @@ export function StaffDetailModal({ staff, onClose, loading }) {
                   key={label}
                   className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-3 py-3 text-center"
                 >
-                  <p className="text-[16px] font-extrabold text-[#ea4f93]">{value}</p>
+                  <p className="text-[16px] font-bold text-[#ea4f93]">{value}</p>
                   <p className="text-[10px] font-semibold text-[#9a5f7f]">{label}</p>
                   <p className="text-[9px] text-[#9a5f7f]">{sub}</p>
                 </div>
@@ -87,14 +87,14 @@ export function StaffDetailModal({ staff, onClose, loading }) {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">{language === "vi" ? "Trung bình mỗi ngày" : "Avg / Work Day"}</p>
-                <p className="mt-1 text-[16px] font-extrabold text-[#2d1b35]">{avgPerDay}</p>
+                <p className="mt-1 text-[16px] font-bold text-[#2d1b35]">{avgPerDay}</p>
                 <p className="text-[9px] text-[#9a5f7f]">{language === "vi" ? "đơn" : "bookings"} per day</p>
               </div>
               <div className="rounded-[14px] border border-[#f1e7ed] bg-[#fffafd] px-4 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9a5f7f]">{language === "vi" ? "Đánh giá" : "Rating"}</p>
                 <div className="mt-1 flex items-center gap-1.5">
                   <Star size={14} fill="#fbbf24" className="text-[#fbbf24]" />
-                  <p className="text-[16px] font-extrabold text-[#2d1b35]">{staff.rating?.toFixed(1) ?? "—"}</p>
+                  <p className="text-[16px] font-bold text-[#2d1b35]">{staff.rating?.toFixed(1) ?? "—"}</p>
                 </div>
                 <p className="text-[9px] text-[#9a5f7f]">{language === "vi" ? "Đánh giá từ khách hàng" : "Customer rating"}</p>
               </div>

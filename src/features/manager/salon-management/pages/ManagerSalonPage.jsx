@@ -17,6 +17,7 @@ import { useAuth } from "../../../core/auth/hooks/useAuth";
 import { SalonOffDatesManager } from "../components/SalonOffDatesManager";
 import { SalonOperatingHoursManager } from "../components/SalonOperatingHoursManager";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { Input, InputNumber } from "antd";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>'
@@ -237,15 +238,11 @@ export function ManagerSalonPage() {
       </header>
 
       <PremiumCard padded={false} allowOverflow className="mb-6">
-        <div className="relative h-48 overflow-hidden rounded-t-[28px]">
-          <motion.img
-            src={previewImage}
-            alt={isVi ? "Ảnh bìa salon" : "Salon cover"}
-            className="absolute inset-0 h-full w-full object-cover blur-sm opacity-50"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#ea4f93]/20 to-transparent" />
+        {/* Thay doi o day */}
+        <div className="rounded-t-lg h-[140px] w-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center relative">
+          <div className="rounded-t-lg absolute inset-0 bg-gradient-to-r from-[#eb5b92]/80 to-[#cf3d74]/80 mix-blend-multiply" />
         </div>
-        <div className="rounded-b-[28px] bg-white px-8 pb-8">
+        <div className="rounded-lg bg-white px-8 pb-8">
           <div className="-mt-16 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="relative">
               <img
@@ -271,98 +268,239 @@ export function ManagerSalonPage() {
       </PremiumCard>
 
       {!isEditing ? (
-        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2">
-          <InfoItem icon={MapPin} label={isVi ? "Địa chỉ" : "Address"} value={salon?.address} />
-          <InfoItem icon={Phone} label={isVi ? "Số điện thoại" : "Phone"} value={salon?.phone} />
-          <InfoItem icon={Percent} label={isVi ? "Cấu hình cọc" : "Deposit Config"} value={`${(salon?.depositConfig * 100).toFixed(0)}%`} />
-          <InfoItem
-            icon={Clock3}
-            label={isVi ? "Trạng thái" : "Status"}
-            value={salon?.status === "Open" ? (isVi ? "Hoạt động" : "Open") : (isVi ? "Đóng cửa" : "Closed")}
-            valueClassName={salon?.status === "Open" ? "text-green-600 border border-green-600 rounded-[16px] text-center w-fit px-2 bg-green-100" : "text-red-600 border border-red-600 rounded-[16px] text-center w-fit px-2 bg-red-100"}
-          />
-        </motion.div>
-      ) : (
-        <PremiumCard>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Tên chi nhánh" : "Salon Name"}</label>
-              <input
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
-                placeholder={isVi ? "Nhập tên chi nhánh" : "Enter salon name"}
-              />
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="rounded-lg border border-[#f1e7ed] bg-white/80 p-6 shadow-[0_8px_30px_rgba(234,79,147,0.05)]"
+        >
+          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+            {/* Address */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff0f6]">
+                <MapPin size={16} className="text-[#ea4f93]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#b095a8]">
+                  {isVi ? "Địa chỉ" : "Address"}
+                </p>
+                <p className="mt-1 text-[14px] font-semibold leading-6 text-[#2d1b35]">
+                  {salon?.address || "-"}
+                </p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Số điện thoại" : "Phone"}</label>
-              <input
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
-                placeholder={isVi ? "Nhập số điện thoại" : "Enter phone number"}
-              />
+
+            {/* Phone */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff0f6]">
+                <Phone size={16} className="text-[#ea4f93]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#b095a8]">
+                  {isVi ? "Số điện thoại" : "Phone"}
+                </p>
+                <p className="mt-1 text-[14px] font-semibold text-[#2d1b35]">
+                  {salon?.phone || "-"}
+                </p>
+              </div>
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Địa chỉ" : "Address"}</label>
-              <input
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className="w-full rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
-                placeholder={isVi ? "Nhập địa chỉ" : "Enter address"}
-              />
-            </div>
-            <div className="space-y-3">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Cấu hình cọc (%)" : "Deposit Config (%)"}</label>
-              <div className="flex flex-col gap-4 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-4">
-                <input
-                  name="depositConfig"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="1"
-                  value={formData.depositConfig}
-                  onChange={handleInputChange}
-                  className="w-full rounded-[12px] border border-[#f1e7ed] bg-white px-4 py-3 text-[14px] font-medium text-[#2d1b35] outline-none transition-all focus:border-[#ea4f93] focus:ring-1 focus:ring-[#ea4f93]"
-                  placeholder="0"
-                />
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-semibold text-[#a88a9f]">0%</span>
-                  <input
-                    name="depositConfig"
-                    type="range"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={formData.depositConfig}
-                    onChange={handleInputChange}
-                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-[#f1e7ed] accent-[#ea4f93]"
-                  />
-                  <span className="text-[12px] font-semibold text-[#ea4f93]">100%</span>
+
+            {/* Deposit */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff0f6]">
+                <Percent size={16} className="text-[#ea4f93]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#b095a8]">
+                  {isVi ? "Cấu hình cọc" : "Deposit Config"}
+                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-[18px] font-bold text-[#2d1b35]">
+                    {((salon?.depositConfig || 0) * 100).toFixed(0)}%
+                  </span>
+                  <span className="rounded-full bg-[#fff0f6] px-2 py-0.5 text-[10px] font-semibold text-[#ea4f93]">
+                    {isVi ? "Tiền cọc" : "Deposit"}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <label className="text-[12px] font-bold uppercase tracking-wider text-[#a88a9f]">{isVi ? "Trạng thái" : "Status"}</label>
-              <div
-                className="mt-2 flex w-fit cursor-pointer items-center gap-4 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-3"
-                onClick={() => setFormData(prev => ({ ...prev, status: prev.status === 'Open' ? 'Closed' : 'Open' }))}
-              >
-                <div
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300 ${formData.status === 'Open' ? 'bg-[#ea4f93]' : 'bg-[#e2d5db]'
-                    }`}
+
+            {/* Status */}
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff0f6]">
+                <Clock3 size={16} className="text-[#ea4f93]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#b095a8]">
+                  {isVi ? "Trạng thái" : "Status"}
+                </p>
+                <div className="mt-1">
+                  {salon?.status === "Open" ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ecfdf3] px-3 py-1 text-[12px] font-semibold text-[#168a4b]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
+                      {isVi ? "Hoạt động" : "Open"}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1f1] px-3 py-1 text-[12px] font-semibold text-[#d64545]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#ef4444]" />
+                      {isVi ? "Đóng cửa" : "Closed"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <PremiumCard noHover>
+          <div className="space-y-7">
+            {/* Header */}
+            <div>
+              <h3 className="text-[16px] font-bold text-[#2d1b35]">
+                {isVi ? "Thông tin chi nhánh" : "Salon Information"}
+              </h3>
+              <p className="mt-1.5 text-[13px] text-[#a88a9f]">
+                {isVi
+                  ? "Cập nhật thông tin và cấu hình hoạt động của chi nhánh."
+                  : "Update salon information and operational settings."}
+              </p>
+            </div>
+
+            {/* Basic Information */}
+            <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#a88a9f]">
+                  {isVi ? "Tên chi nhánh" : "Salon Name"}
+                </label>
+                <Input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder={isVi ? "Nhập tên chi nhánh" : "Enter salon name"}
+                  size="large"
+                  className="!rounded-[14px] !border-[#f0e3e9] !bg-[#fffafd] !px-4 !py-2.5 !text-[14px] !font-medium !text-[#2d1b35] !shadow-none hover:!border-[#efb8d0] focus:!border-[#ea4f93]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#a88a9f]">
+                  {isVi ? "Số điện thoại" : "Phone"}
+                </label>
+                <Input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder={isVi ? "Nhập số điện thoại" : "Enter phone number"}
+                  size="large"
+                  prefix={<Phone size={16} className="mr-1 text-[#ea4f93]" />}
+                  className="!rounded-[14px] !border-[#f0e3e9] !bg-[#fffafd] !px-4 !py-2.5 !text-[14px] !font-medium !text-[#2d1b35] !shadow-none hover:!border-[#efb8d0] focus:!border-[#ea4f93]"
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <label className="block text-[11px] font-bold uppercase tracking-[0.12em] text-[#a88a9f]">
+                  {isVi ? "Địa chỉ" : "Address"}
+                </label>
+                <Input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder={isVi ? "Nhập địa chỉ" : "Enter address"}
+                  size="large"
+                  prefix={<MapPin size={16} className="mr-1 text-[#ea4f93]" />}
+                  className="!rounded-[14px] !border-[#f0e3e9] !bg-[#fffafd] !px-4 !py-2.5 !text-[14px] !font-medium !text-[#2d1b35] !shadow-none hover:!border-[#efb8d0] focus:!border-[#ea4f93]"
+                />
+              </div>
+            </div>
+
+            <div className="h-px bg-[#f3e8ed]" />
+
+            {/* Settings */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#a88a9f]">
+                    {isVi ? "Cấu hình cọc (%)" : "Deposit Config (%)"}
+                  </label>
+                  <span className="text-[15px] font-bold text-[#ea4f93]">
+                    {Math.round((formData.depositConfig || 0) * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    value={Math.round((formData.depositConfig || 0) * 100)}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        depositConfig: (value || 0) / 100,
+                      }))
+                    }
+                    addonAfter="%"
+                    size="large"
+                    className="!w-[110px] !rounded-[14px] !border-[#f0e3e9] !bg-[#fffafd]"
+                  />
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={(formData.depositConfig || 0) * 100}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          depositConfig: Number(e.target.value) / 100,
+                        }))
+                      }
+                      className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[#f1e6ec] accent-[#ea4f93]"
+                    />
+                    <div className="mt-1.5 flex justify-between text-[10px] font-medium text-[#b9a3b0]">
+                      <span>0%</span>
+                      <span>50%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-3 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#a88a9f]">
+                  {isVi ? "Trạng thái" : "Status"}
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: prev.status === "Open" ? "Closed" : "Open",
+                    }))
+                  }
+                  className="group flex items-center gap-3"
                 >
                   <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform duration-300 ${formData.status === 'Open' ? 'translate-x-7' : 'translate-x-1'
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-all duration-200 ${formData.status === "Open" ? "bg-[#ea4f93]" : "bg-[#dcd0d6]"
                       }`}
-                  />
-                </div>
-                <span className={`text-[14px] font-bold ${formData.status === 'Open' ? 'text-[#ea4f93]' : 'text-[#a88a9f]'}`}>
-                  {formData.status === "Open" ? (isVi ? "Hoạt động" : "Open") : (isVi ? "Đóng cửa" : "Closed")}
-                </span>
+                  >
+                    <span
+                      className={`absolute h-5 w-5 rounded-full bg-white shadow-[0_2px_5px_rgba(45,27,53,0.15)] transition-transform duration-200 ${formData.status === "Open" ? "translate-x-6" : "translate-x-1"
+                        }`}
+                    />
+                  </span>
+                  <span
+                    className={`text-[14px] font-semibold transition-colors ${formData.status === "Open" ? "text-[#ea4f93]" : "text-[#a88a9f]"
+                      }`}
+                  >
+                    {formData.status === "Open"
+                      ? isVi
+                        ? "Hoạt động"
+                        : "Open"
+                      : isVi
+                        ? "Đóng cửa"
+                        : "Closed"}
+                  </span>
+                </button>
               </div>
             </div>
           </div>

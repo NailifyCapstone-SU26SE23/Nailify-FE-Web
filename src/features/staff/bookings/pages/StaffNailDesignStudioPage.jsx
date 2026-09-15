@@ -296,7 +296,7 @@ function buildDesignTemplateFromApi(item, language = "en") {
     duration: duration > 0 ? formatDurationLabel(duration, language) : "Flexible",
     tags: categories.length ? categories : ["Custom design"],
     accent: categories.length ? "Live" : "Ready",
-    accentClassName: "rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-extrabold text-[#ea4f93]",
+    accentClassName: "rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-bold text-[#ea4f93]",
     ctaLabel: "View variants",
     description: String(item?.description || "").trim(),
     raw: item,
@@ -489,7 +489,7 @@ function SectionTitle({ icon: Icon, title }) {
   return (
     <div className="flex items-center gap-2">
       <Icon size={14} className="text-[#ea4f93]" />
-      <h2 className="text-xs font-extrabold text-[#ea4f93]">{title}</h2>
+      <h2 className="text-xs font-bold text-[#ea4f93]">{title}</h2>
     </div>
   );
 }
@@ -535,7 +535,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
         referrerPolicy="no-referrer"
       />
       <div className="p-3">
-        <h3 className="text-xs font-extrabold text-[#38253a]">{item.name}</h3>
+        <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.tags.map((tag) => (
             <span
@@ -548,10 +548,10 @@ function TemplateCard({ item, isSelected, onSelect }) {
         </div>
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-extrabold text-[#ea4f93]">{item.price}</p>
+            <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
             <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
           </div>
-          <span className={`rounded-md px-2 py-1 text-[9px] font-extrabold ${item.accentClassName}`}>
+          <span className={`rounded-md px-2 py-1 text-[9px] font-bold ${item.accentClassName}`}>
             {item.accent}
           </span>
         </div>
@@ -559,7 +559,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
           <button
             type="button"
             onClick={onSelect}
-            className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-extrabold text-white"
+            className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-bold text-white"
           >
             {isSelected ? "Selected" : item.ctaLabel}
           </button>
@@ -1025,7 +1025,7 @@ function PreviewNail({ components = [], finish, fingerLabel, index, isActive, sh
         </div>
       </div>
 
-      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] border border-[#fce6f3]">
+      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] border border-[#fce6f3]">
         {fingerLabel}
       </span>
     </div>
@@ -1198,7 +1198,7 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill", language = "en" 
               />
             )}
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold truncate">{value}</p>
+              <p className="text-[10px] font-bold truncate">{value}</p>
               {subLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#a98c9f] truncate">{subLabel}</p> : null}
               {metaLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#d2508a] truncate">{metaLabel}</p> : null}
             </div>
@@ -1836,7 +1836,7 @@ export function StaffNailDesignStudioPage() {
     rows.push({
       key: "summary-nail-price",
       label: (
-        <span className="font-extrabold text-[#38253a]">
+        <span className="font-bold text-[#38253a]">
           Summary Nail Price
         </span>
       ),
@@ -2702,9 +2702,9 @@ export function StaffNailDesignStudioPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
         <div className="space-y-4">
-          <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+          <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
             <label className="relative block">
               <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#80687d]" />
               <input
@@ -2726,10 +2726,10 @@ export function StaffNailDesignStudioPage() {
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.44fr)]">
             <div className="space-y-4">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#38253a]">Ready-Made Design Templates</h2>
+                    <h2 className="text-sm font-bold text-[#38253a]">Ready-Made Design Templates</h2>
                     <p className="mt-1 text-[11px] text-[#a8899c]">
                       {designView === "designs"
                         ? "Select a template to view its available variants"
@@ -2844,7 +2844,7 @@ export function StaffNailDesignStudioPage() {
                             referrerPolicy="no-referrer"
                           />
                           <div className="p-3">
-                            <h3 className="text-xs font-extrabold text-[#38253a]">{item.name}</h3>
+                            <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
                             <div className="mt-3 flex flex-wrap gap-2">
                               {item.tags.map((tag) => (
                                 <span key={tag} className="rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-bold text-[#ea4f93]">
@@ -2854,10 +2854,10 @@ export function StaffNailDesignStudioPage() {
                             </div>
                             <div className="mt-4 flex items-end justify-between gap-3">
                               <div>
-                                <p className="text-sm font-extrabold text-[#ea4f93]">{item.price}</p>
+                                <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
                                 <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
                               </div>
-                              <span className="rounded-md bg-[#f3f1ff] px-2 py-1 text-[9px] font-extrabold text-[#7d5ce6]">
+                              <span className="rounded-md bg-[#f3f1ff] px-2 py-1 text-[9px] font-bold text-[#7d5ce6]">
                                 {selectedVariantId === String(item.id) ? "Selected" : "Variant"}
                               </span>
                             </div>
@@ -2869,9 +2869,9 @@ export function StaffNailDesignStudioPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-extrabold text-[#38253a]">Layer-Based Custom Builder</h2>
+                  <h2 className="text-sm font-bold text-[#38253a]">Layer-Based Custom Builder</h2>
                   <span
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold ${selectedVariantId
                       ? "border-orange-200 bg-orange-100 text-orange-600"
@@ -2886,8 +2886,8 @@ export function StaffNailDesignStudioPage() {
                   {!isVariantSelectionMode ? (
                     <div>
                       <div className="mb-3 flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">0</span>
-                        <p className="text-xs font-extrabold text-[#ea4f93]">Nail Name</p>
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">0</span>
+                        <p className="text-xs font-bold text-[#ea4f93]">Nail Name</p>
                       </div>
                       <input
                         type="text"
@@ -2901,8 +2901,8 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">1</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Nail Shape</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">1</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Nail Shape</p>
                     </div>
                     {builderCatalogError ? <p className="mb-3 text-[11px] font-semibold text-[#d14c84]">{builderCatalogError}</p> : null}
                     <ChoiceGrid
@@ -2916,8 +2916,8 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">2</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Nail Length</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">2</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Nail Length</p>
                     </div>
                     <ChoiceGrid
                       items={lengthVariantOptions.length ? lengthVariantOptions : [{ label: selectedLength || "Short", variantLabel: selectedShape }]}
@@ -2930,12 +2930,12 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">3</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Finger Colors</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">3</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Finger Colors</p>
                     </div>
                     <div className="space-y-4 rounded-[18px] border border-[#f4dbe7] bg-[#fff8fc] p-4">
                       <div>
-                        <p className="mb-3 text-[10px] font-extrabold text-[#ea4f93]">Choose fingers first</p>
+                        <p className="mb-3 text-[10px] font-bold text-[#ea4f93]">Choose fingers first</p>
                         <div className="flex flex-wrap gap-2">
                           <Pill
                             active={selectedColorFingerIndices.length === NAIL_LABELS.length}
@@ -2985,13 +2985,13 @@ export function StaffNailDesignStudioPage() {
                         <div className="space-y-3 rounded-[14px] border border-[#f4dbe7] bg-white p-3">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-[10px] font-extrabold text-[#ea4f93]">Gradient Stops</p>
+                              <p className="text-[10px] font-bold text-[#ea4f93]">Gradient Stops</p>
                               <p className="mt-1 text-[10px] text-[#a98c9f]">Add multiple colors for rainbow-style nails.</p>
                             </div>
                             <button
                               type="button"
                               onClick={handleAddGradientStop}
-                              className="rounded-full border border-[#f2bfd4] bg-[#fff5fa] px-3 py-1 text-[10px] font-extrabold text-[#ea4f93]"
+                              className="rounded-full border border-[#f2bfd4] bg-[#fff5fa] px-3 py-1 text-[10px] font-bold text-[#ea4f93]"
                             >
                               + Add color
                             </button>
@@ -3003,7 +3003,7 @@ export function StaffNailDesignStudioPage() {
                                 className="rounded-[14px] border border-[#f4dbe7] bg-[#fffafd] p-3"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[10px] font-extrabold text-[#ea4f93]">
+                                  <span className="text-[10px] font-bold text-[#ea4f93]">
                                     Stop {stopIndex + 1}
                                   </span>
                                   <button
@@ -3034,7 +3034,7 @@ export function StaffNailDesignStudioPage() {
                       ) : (
                         <div className="grid gap-3 md:grid-cols-2">
                           <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
-                            <span className="text-[10px] font-extrabold text-[#ea4f93]">Primary Color</span>
+                            <span className="text-[10px] font-bold text-[#ea4f93]">Primary Color</span>
                             <div className="mt-3 flex items-center gap-3">
                               <input
                                 type="color"
@@ -3068,7 +3068,7 @@ export function StaffNailDesignStudioPage() {
                               : { backgroundColor: selectedPrimaryColor }}
                           />
                           <div>
-                            <p className="text-[10px] font-extrabold text-[#ea4f93]">{selectedColorMode === "gradient" ? "Gradient RGB" : "Solid RGB"}</p>
+                            <p className="text-[10px] font-bold text-[#ea4f93]">{selectedColorMode === "gradient" ? "Gradient RGB" : "Solid RGB"}</p>
                             <p className="mt-1 text-[10px] text-[#38253a]">{selectedColor}</p>
                             <p className="mt-1 text-[10px] text-[#a98c9f]">
                               Applying to {selectedColorFingerIndices.length === NAIL_LABELS.length
@@ -3083,8 +3083,8 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">4</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Finish / Texture</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">4</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Finish / Texture</p>
                     </div>
                     <ChoiceGrid
                       items={surfaceOptions.length ? surfaceOptions : studio.builder.finishes}
@@ -3096,8 +3096,8 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">5</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Decorations</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">5</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Decorations</p>
                     </div>
                     <div className="mb-3 flex flex-wrap gap-2">
                       <Pill
@@ -3153,7 +3153,7 @@ export function StaffNailDesignStudioPage() {
                             if (list.length === 0) return null;
                             return (
                               <div key={category} className="space-y-2">
-                                <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#ea4f93] pl-1">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93] pl-1">
                                   {category}
                                 </p>
                                 <ChoiceGrid
@@ -3172,8 +3172,8 @@ export function StaffNailDesignStudioPage() {
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">6</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Extra Services</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">6</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">Extra Services</p>
                     </div>
                     <ChoiceGrid
                       items={extraServiceOptions.length ? extraServiceOptions : studio.builder.extras}
@@ -3204,8 +3204,8 @@ export function StaffNailDesignStudioPage() {
                     )}
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-base font-extrabold text-[#38253a]">Estimated Total</p>
-                    <p className="text-[1.6rem] font-extrabold text-green-600">{totalEstimatedPriceLabel}</p>
+                    <p className="text-base font-bold text-[#38253a]">Estimated Total</p>
+                    <p className="text-[1.6rem] font-bold text-green-600">{totalEstimatedPriceLabel}</p>
                   </div>
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#d34f88]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]" />
@@ -3271,7 +3271,7 @@ export function StaffNailDesignStudioPage() {
             </div>
 
             <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
                 <SectionTitle icon={Palette} title="Live Nail Preview" />
                 <InteractiveStudioPreview
                   previewRef={previewContainerRef}
@@ -3312,7 +3312,7 @@ export function StaffNailDesignStudioPage() {
         title={
           <div className="flex items-center gap-2 text-[#402542] border-b border-[#f3d6e5] pb-3">
             <Sparkles className="text-[#ea4f93]" size={20} />
-            <span className="font-extrabold text-lg">
+            <span className="font-bold text-lg">
               {language === "vi" ? "Chỉ định Quy trình Thực hiện" : "Assign Service Procedures"}
             </span>
           </div>
@@ -3330,7 +3330,7 @@ export function StaffNailDesignStudioPage() {
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
             {/* Common Procedures */}
             <div>
-              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-bold text-[#c08aa4] uppercase tracking-wider mb-2">
                 {language === "vi" ? "1. Quy trình chung" : "1. Common Procedures"}
               </h4>
               <div className="grid gap-2">
@@ -3373,7 +3373,7 @@ export function StaffNailDesignStudioPage() {
 
             {/* Model Specific Procedures */}
             <div className="pt-2">
-              <h4 className="text-xs font-extrabold text-[#c08aa4] uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-bold text-[#c08aa4] uppercase tracking-wider mb-2">
                 {language === "vi" ? "2. Quy trình riêng theo mẫu" : "2. Model Specific Procedures"}
               </h4>
               <div className="grid gap-2">
@@ -3417,7 +3417,7 @@ export function StaffNailDesignStudioPage() {
 
           {/* Selected Timeline */}
           <div className="rounded-2xl border border-[#f3d6e5] bg-[#fffafc] p-4 flex flex-col min-h-[300px]">
-            <h4 className="text-xs font-extrabold text-[#ea4f93] uppercase tracking-wider mb-3">
+            <h4 className="text-xs font-bold text-[#ea4f93] uppercase tracking-wider mb-3">
               {language === "vi" ? "Quy trình đã chọn (Theo thứ tự)" : "Selected Order Timeline"}
             </h4>
 

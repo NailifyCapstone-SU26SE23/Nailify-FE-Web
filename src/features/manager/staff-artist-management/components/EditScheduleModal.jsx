@@ -3,7 +3,7 @@ import { Modal, Select, Spin, message } from "antd";
 import { Clock3, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { getSalonIdAsync } from "../services/nailArtistsService";
-import { patchSchedule, fetchArtistSchedules, createSchedule } from "../../schedules/services/scheduleService";
+import { patchSchedule, updateSchedule, deleteSchedule, fetchArtistSchedules, createSchedule } from "../../schedules/services/scheduleService";
 import { fetchSalonById } from "../../../admin/salon-management/services/salonsService";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -12,30 +12,27 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const DAYS_OF_WEEK = [
-  { key: "Mon", label: "Monday", offset: 0 },
-  { key: "Tue", label: "Tuesday", offset: 1 },
-  { key: "Wed", label: "Wednesday", offset: 2 },
-  { key: "Thu", label: "Thursday", offset: 3 },
-  { key: "Fri", label: "Friday", offset: 4 },
-  { key: "Sat", label: "Saturday", offset: 5 },
-  { key: "Sun", label: "Sunday", offset: 6 },
+  { key: "Mon", label: "Monday", labelVi: "Thứ 2", offset: 0 },
+  { key: "Tue", label: "Tuesday", labelVi: "Thứ 3", offset: 1 },
+  { key: "Wed", label: "Wednesday", labelVi: "Thứ 4", offset: 2 },
+  { key: "Thu", label: "Thursday", labelVi: "Thứ 5", offset: 3 },
+  { key: "Fri", label: "Friday", labelVi: "Thứ 6", offset: 4 },
+  { key: "Sat", label: "Saturday", labelVi: "Thứ 7", offset: 5 },
+  { key: "Sun", label: "Sunday", labelVi: "Chủ Nhật", offset: 6 },
 ];
 
 const STATUS_META = {
   Active: {
     label: "Active",
+    labelVi: "Hoạt động",
     color: "bg-[#eaf9ee] text-[#2fa25f] border-[#2fa25f]/30",
     dot: "bg-[#2fa25f]",
   },
-  Off: {
-    label: "Day Off",
+  Inactive: {
+    label: "Inactive",
+    labelVi: "Không hoạt động",
     color: "bg-gray-100 text-gray-600 border-gray-300",
     dot: "bg-gray-400",
-  },
-  Leave: {
-    label: "On Leave",
-    color: "bg-[#fff0dd] text-[#db8520] border-[#db8520]/30",
-    dot: "bg-[#db8520]",
   },
 };
 
@@ -80,13 +77,13 @@ function getMondayOfWeek(date) {
 
 /** Map schedules → { Mon: [s1, s2, …], … } sorted by shiftStart */
 function buildDayMap(schedules, language) {
-  const DAY_NAMES = language === "vi" ? ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"] : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const DAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const map = {};
   (schedules || []).forEach((s) => {
     const dateVal = s.date || s.workDate || s.scheduleDate || s.day;
     if (!dateVal) return;
     const rawDay = dayjs(dateVal).day();
-    const key = rawDay === 0 ? "Sun" : DAY_NAMES[rawDay - 1];
+    const key = rawDay === 0 ? "Sun" : DAY_KEYS[rawDay - 1];
     if (!map[key]) map[key] = [];
     map[key].push(s);
   });
@@ -370,7 +367,7 @@ export function EditScheduleModal({
   }, [open, selectedStaffId, modalMonday]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const isNonWorking = editStatus === "Off" || editStatus === "Leave";
+  const isNonWorking = editStatus === "Inactive";
 
   const totalWorkingHours = useMemo(
     () => (isNonWorking ? 0 : selectedSlots.length * 0.5),
@@ -393,8 +390,7 @@ export function EditScheduleModal({
 
   const staffName =
     schedule?.name ||
-      staffArtists.find((s) => String(s.id) === String(selectedStaffId))?.name ||
-      language === "vi" ? "Chọn nhân viên" : "Select staff";
+    staffArtists.find((s) => String(s.id) === String(selectedStaffId))?.name
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -420,17 +416,30 @@ export function EditScheduleModal({
       const ops = [];
       const n = existingSchedules.length;
 
+      const workDateDayjs = dayjs(workDateStr);
+      const today = dayjs().startOf("day");
+      const isPast = workDateDayjs.isBefore(today);
+
       if (targetGroups.length === 0) {
-        // Mark all as Off/Leave
+        // Mark all as Off/Leave or Delete them
         existingSchedules.forEach((s) => {
-          ops.push(
-            patchSchedule(s.id || s.scheduleId, {
-              workDate: workDateStr,
-              shiftStart: null,
-              shiftEnd: null,
-              status: editStatus,
-            })
-          );
+          if (isPast) {
+            throw new Error(language === "vi" ? "Không thể xóa hoặc cập nhật ca làm việc trong quá khứ" : "Cannot delete or update past schedules");
+          }
+          if (editStatus === "Inactive") {
+            // Keep the schedule but mark it as Inactive
+            ops.push(
+              updateSchedule(s.id || s.scheduleId, {
+                workDate: workDateStr,
+                shiftStart: s.shiftStart || "08:00:00",
+                shiftEnd: s.shiftEnd || "17:00:00",
+                status: editStatus,
+              })
+            );
+          } else {
+            // Delete if no target groups and status is Active (meaning they just cleared the slots)
+            ops.push(deleteSchedule(s.id || s.scheduleId));
+          }
         });
       } else {
         const m = targetGroups.length;
@@ -438,8 +447,11 @@ export function EditScheduleModal({
         for (let i = 0; i < maxLen; i++) {
           if (i < m && i < n) {
             // Update existing record
+            if (isPast) {
+              throw new Error(language === "vi" ? "Không thể cập nhật ca làm việc trong quá khứ" : "Cannot update past schedules");
+            }
             ops.push(
-              patchSchedule(existingSchedules[i].id || existingSchedules[i].scheduleId, {
+              updateSchedule(existingSchedules[i].id || existingSchedules[i].scheduleId, {
                 workDate: workDateStr,
                 shiftStart: toApiTime(targetGroups[i].shiftStart),
                 shiftEnd: toApiTime(targetGroups[i].shiftEnd),
@@ -448,6 +460,9 @@ export function EditScheduleModal({
             );
           } else if (i < m && i >= n) {
             // Create new record
+            if (isPast) {
+              throw new Error(language === "vi" ? "Không thể tạo ca làm việc trong quá khứ" : "Cannot create past schedules");
+            }
             ops.push(
               createSchedule({
                 nailArtistId: selectedStaffId,
@@ -458,14 +473,12 @@ export function EditScheduleModal({
               })
             );
           } else {
-            // Extra old record → deactivate
+            // Extra old record → deactivate or delete
+            if (isPast) {
+              throw new Error(language === "vi" ? "Không thể xóa ca làm việc trong quá khứ" : "Cannot delete past schedules");
+            }
             ops.push(
-              patchSchedule(existingSchedules[i].id || existingSchedules[i].scheduleId, {
-                workDate: workDateStr,
-                shiftStart: null,
-                shiftEnd: null,
-                status: "Off",
-              })
+              deleteSchedule(existingSchedules[i].id || existingSchedules[i].scheduleId)
             );
           }
         }
@@ -636,7 +649,7 @@ export function EditScheduleModal({
                         }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${isActive ? meta.dot : "bg-[#c0a8ba]"}`} />
-                      {meta.label}
+                      {language === "vi" ? meta.labelVi : meta.label}
                     </button>
                   );
                 })}
@@ -652,7 +665,7 @@ export function EditScheduleModal({
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93]">
                       {language === "vi" ? "Giờ làm việc của salon" : "Salon Operating Hours"}
                     </label>
-                    <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-extrabold text-[#ea4f93]">
+                    <span className="rounded-md bg-rose-50 border border-rose-200/60 px-1.5 py-0.5 text-[9px] font-bold text-[#ea4f93]">
                       {activeHoursSummary.label}
                     </span>
                   </div>
@@ -772,7 +785,7 @@ export function EditScheduleModal({
                 disabled={loading || isTimeInvalid || !selectedStaffId}
                 className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] py-2 text-[11px] font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:opacity-95 disabled:opacity-50"
               >
-                {loading ? <Spin size="small" className="brightness-200" /> : "Save Changes"}
+                {loading ? <Spin size="small" className="brightness-200" /> : (language === "vi" ? "Lưu thay đổi" : "Save Changes")}
               </button>
             </div>
           </div>
@@ -862,7 +875,7 @@ export function EditScheduleModal({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-slate-700">
-                                {day.label}
+                                {language === "vi" ? day.labelVi : day.label}
                               </span>
                               <span className="text-[8px] text-slate-400">
                                 {dayDate.format("MMM DD")}

@@ -118,7 +118,7 @@ function ProfileField({
           <Icon size={18} strokeWidth={2.5} />
         </div>
         <div className="min-w-0 pt-0.5">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c08aa4]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c08aa4]">
             {label}
           </p>
           {children ? (
@@ -148,6 +148,12 @@ export function ProfilePage() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [successMessage, setSuccessMessage] = useState("");
   const [formValues, setFormValues] = useState({
     email: "",
@@ -749,7 +755,7 @@ export function ProfilePage() {
                         </div>
                       </Space>
                       <Tag color={slot.isClosed ? "purple" : "success"}>
-                        {slot.isClosed ? t("profile.closed") : "Open"}
+                        {slot.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : (language === "vi" ? "Mở cửa" : "Open")}
                       </Tag>
                     </div>
                   ))}

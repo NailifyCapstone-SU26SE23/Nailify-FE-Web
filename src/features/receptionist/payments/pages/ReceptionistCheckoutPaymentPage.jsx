@@ -103,8 +103,8 @@ function getBillItems(booking) {
 
 function SummaryCard({ title, children, className = "" }) {
   return (
-    <section className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
-      {title ? <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#c38ea8]">{title}</p> : null}
+    <section className={`rounded-lg border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
+      {title ? <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#c38ea8]">{title}</p> : null}
       <div className={title ? "mt-4" : ""}>{children}</div>
     </section>
   );
@@ -115,7 +115,7 @@ function PaymentStatusRow({ label, subtitle, dotClassName, isActive }) {
     <div className={`rounded-[16px] border px-4 py-3 ${isActive ? "border-[#f3cada] bg-[#fff4f8]" : "border-[#f4dfe8] bg-white"}`}>
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ${dotClassName}`} />
-        <p className="text-xs font-extrabold text-[#d54186]">{label}</p>
+        <p className="text-xs font-bold text-[#d54186]">{label}</p>
       </div>
       <p className="mt-1 text-[11px] text-[#b38a9f]">{subtitle}</p>
     </div>
@@ -129,6 +129,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(location.state?.booking ?? null);
   const [customerProfile, setCustomerProfile] = useState(location.state?.customerProfile ?? null);
   const [salonProfile, setSalonProfile] = useState(null);
@@ -368,7 +374,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-[50vh] items-center justify-center rounded-lg bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("receptionist.common.loading") || "Loading checkout payment..."}
@@ -379,8 +385,8 @@ export function ReceptionistCheckoutPaymentPage() {
 
   if (error || !booking) {
     return (
-      <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-extrabold text-[#412643]">{t("receptionist.payments.checkoutTitle") || "Checkout payment unavailable"}</p>
+      <section className="rounded-lg border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+        <p className="text-lg font-bold text-[#412643]">{t("receptionist.payments.checkoutTitle") || "Checkout payment unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || (language === "vi" ? "Đơn thanh toán này không thể tải." : "This checkout could not be loaded.")}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
@@ -396,7 +402,7 @@ export function ReceptionistCheckoutPaymentPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="rounded-[24px] border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+      <div className="rounded-lg border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <button
@@ -417,7 +423,7 @@ export function ReceptionistCheckoutPaymentPage() {
             </span>
             <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${paymentBadgeClassName}`}>
               {paymentStage === "paid"
-                ? (t("receptionist.dashboard.statusDone") || "Paid")
+                ? (t("receptionist.dashboard.statusCompleted") || "Paid")
                 : paymentStage === "processing"
                   ? (language === "vi" ? "Đang xử lý" : "Processing")
                   : paymentStage === "cancelled"
@@ -453,7 +459,7 @@ export function ReceptionistCheckoutPaymentPage() {
                       {language === "vi" ? "Thành viên Vàng" : "Gold Member"}
                     </span>
                     <span className="rounded-full bg-[#e8f8ef] px-3 py-1 text-[10px] font-bold text-[#1f9d61]">
-                      {t("receptionist.dashboard.statusDone") || "Service Completed"}
+                      {t("receptionist.dashboard.statusCompleted") || "Service Completed"}
                     </span>
                   </div>
                 </div>
@@ -469,7 +475,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{booking.chairName || (language === "vi" ? "Chưa có ghế" : "No chair")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusDone") || "Completed"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.dashboard.statusCompleted") || "Completed"}</p>
                   <p className="mt-1 text-xs font-bold text-[#4a3741]">{completedTime}</p>
                 </div>
 
@@ -485,28 +491,28 @@ export function ReceptionistCheckoutPaymentPage() {
                 rowKey="id"
                 columns={[
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.payments.services") || "Service"}</span>,
+                    title: <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.payments.services") || "Service"}</span>,
                     key: 'service',
                     render: (_, record) => (
                       <div>
-                        <p className="text-sm font-extrabold text-[#412643]">{record.name} </p>
+                        <p className="text-sm font-bold text-[#412643]">{record.name} </p>
                       </div>
                     ),
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "Thời gian" : "Duration"}</span>,
+                    title: <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "Thời gian" : "Duration"}</span>,
                     dataIndex: 'duration',
                     key: 'duration',
                     render: (text) => <span className="text-sm text-[#8f7b88]">{text}</span>,
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "SL" : "Qty"}</span>,
+                    title: <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c38ea8]">{language === "vi" ? "SL" : "Qty"}</span>,
                     dataIndex: 'quantity',
                     key: 'quantity',
                     render: (text) => <span className="text-sm font-bold text-[#8f7b88]">x{text}</span>,
                   },
                   {
-                    title: <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.price") || "Price"}</span>,
+                    title: <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#c38ea8]">{t("receptionist.bookings.price") || "Price"}</span>,
                     key: 'price',
                     align: 'right',
                     render: (_, record) => (
@@ -535,13 +541,13 @@ export function ReceptionistCheckoutPaymentPage() {
 
             <div className="mt-4 rounded-[16px] border border-[#f3cade] bg-[linear-gradient(90deg,#fff2f7_0%,#ffeaf2_100%)] px-4 py-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-extrabold text-[#d54186]">{t("receptionist.payments.totalAmount") || "Remaining Amount"}</span>
+                <span className="text-sm font-bold text-[#d54186]">{t("receptionist.payments.totalAmount") || "Remaining Amount"}</span>
                 <span className="text-2xl font-bold text-[#d54186]">{formatCurrency(remainingValue)}</span>
               </div>
             </div>
 
             {/* <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
-              <span className="text-lg font-extrabold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
+              <span className="text-lg font-bold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
               <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
             </div> */}
           </SummaryCard>
@@ -642,7 +648,7 @@ export function ReceptionistCheckoutPaymentPage() {
                       toast.error(checkoutErr instanceof Error ? checkoutErr.message : (language === "vi" ? "Thanh toán thất bại." : "Failed to check out booking."));
                     }
                   }}
-                  className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                  className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
                 >
                   <Check size={18} />
                   {t("receptionist.dashboard.checkoutBtn") || "Complete Checkout"}
@@ -658,7 +664,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   type="button"
                   onClick={handleCheckout}
                   disabled={isCreatingPayment}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1888f3] px-2 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(24,136,243,0.22)] disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1888f3] px-2 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(24,136,243,0.22)] disabled:opacity-50"
                 >
                   {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
                   {language === "vi" ? "Thanh toán qua PayOS" : "Checkout with PayOS"}
@@ -745,7 +751,7 @@ export function ReceptionistCheckoutPaymentPage() {
               <button
                 type="button"
                 onClick={() => toast.success(language === "vi" ? "In hóa đơn đã sẵn sàng trong giao diện." : "Print bill is ready in UI.")}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
               >
                 <Printer size={14} />
                 {language === "vi" ? "In Hóa đơn" : "Print Bill"}
@@ -753,14 +759,14 @@ export function ReceptionistCheckoutPaymentPage() {
               <button
                 type="button"
                 onClick={() => toast.success(language === "vi" ? "Chức năng gửi hóa đơn đã sẵn sàng để tích hợp API thanh toán." : "Receipt send flow is ready for payment API integration.")}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-extrabold text-[#d54186]"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-bold text-[#d54186]"
               >
                 <Mail size={14} />
                 {language === "vi" ? "Gửi hóa đơn cho khách" : "Send Receipt to Customer"}
               </button>
               <Link
                 to={ROUTES.receptionistBookings}
-                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-extrabold ${paymentStage === "paid"
+                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${paymentStage === "paid"
                   ? "border-[#dcebdc] bg-[#eef9f1] text-[#1f9d61]"
                   : "border-[#f3d7e2] bg-[#fffafb] text-[#8f7b88]"
                   }`}
@@ -779,38 +785,27 @@ export function ReceptionistCheckoutPaymentPage() {
                 <Receipt size={18} />
               </div>
               <div>
-                <p className="text-base font-extrabold text-[#412643]">{language === "vi" ? "Trạng thái thanh toán" : "Checkout Status"}</p>
+                <p className="text-base font-bold text-[#412643]">{language === "vi" ? "Trạng thái thanh toán" : "Checkout Status"}</p>
                 <p className="mt-1 text-xs text-[#b38a9f]">{language === "vi" ? "Lịch hẹn đã xong, đang chờ xác nhận thanh toán." : "Booking is completed, waiting for payment confirmation."}</p>
               </div>
             </div>
 
             <div className="mt-5 space-y-3 text-sm">
               {[
-                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusDone") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
-                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusDone") || "Paid") : paymentBadge, paymentBadgeClassName],
+                [t("receptionist.bookings.title") || "Booking", t("receptionist.dashboard.statusCompleted") || "Completed", "bg-[#e8f8ef] text-[#1f9d61]"],
+                [t("receptionist.payments.payMethod") || "Payment", paymentStage === "paid" ? (t("receptionist.dashboard.statusCompleted") || "Paid") : paymentBadge, paymentBadgeClassName],
                 [language === "vi" ? "Hóa đơn" : "Receipt", paymentStage === "paid" ? (language === "vi" ? "Sẵn sàng" : "Ready") : (language === "vi" ? "Chưa in" : "Not Printed"), paymentStage === "paid" ? "bg-[#e8f8ef] text-[#1f9d61]" : "bg-[#fff1f6] text-[#d54186]"],
                 [t("receptionist.bookings.artist") || "Staff Artist", booking.artistName, ""],
               ].map(([label, value, className]) => (
                 <div key={label} className="flex items-center justify-between gap-3">
                   <span className="text-[#8f7b88]">{label}</span>
-                  <span className={className ? `rounded-full px-2.5 py-1 text-[10px] font-extrabold ${className}` : "font-bold text-[#412643]"}>
+                  <span className={className ? `rounded-full px-2.5 py-1 text-[10px] font-bold ${className}` : "font-bold text-[#412643]"}>
                     {value}
                   </span>
                 </div>
               ))}
             </div>
           </SummaryCard>
-
-          {/* <SummaryCard title={language === "vi" ? "Điểm tích lũy" : "Customer Loyalty"}>
-            <div className="rounded-[18px] bg-[linear-gradient(180deg,#fff8e5_0%,#fff3c7_100%)] px-4 py-4 text-center">
-              <p className="text-xs font-bold text-[#b18211]">{language === "vi" ? "Thành viên Vàng" : "Gold Member"}</p>
-              <p className="mt-3 text-3xl font-bold text-[#d54186]">+63 pts</p>
-              <p className="mt-1 text-xs text-[#8f7b88]">{language === "vi" ? "Tích lũy từ lượt xem này" : "Earned from this visit"}</p>
-            </div>
-            <div className="mt-3 rounded-[16px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-center text-xs text-[#8f7b88]">
-              {language === "vi" ? "Voucher khả dụng: Giảm 50.000đ cho lần đến tiếp theo" : "Available voucher: 50,000 off next visit"}
-            </div>
-          </SummaryCard> */}
 
           <SummaryCard title={language === "vi" ? "Hành động tiếp theo" : "Next Actions"}>
             <div className="space-y-3">
@@ -824,7 +819,7 @@ export function ReceptionistCheckoutPaymentPage() {
                   key={label}
                   type="button"
                   onClick={() => toast.success(language === "vi" ? `Chức năng ${label} đã sẵn sàng.` : `${label} is ready in UI.`)}
-                  className="inline-flex w-full items-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-sm font-extrabold text-[#d54186]"
+                  className="inline-flex w-full items-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-sm font-bold text-[#d54186]"
                 >
                   <Icon size={14} />
                   {label}
@@ -836,11 +831,11 @@ export function ReceptionistCheckoutPaymentPage() {
           <SummaryCard title={language === "vi" ? "Ghi chú hỗ trợ" : "Support Notes"}>
             <div className="rounded-[18px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-4 text-xs leading-6 text-[#8f7b88]">
               <p>
-                <span className="font-extrabold text-[#d54186]">{language === "vi" ? "Thanh toán QR thất bại?" : "QR Payment Failed?"}</span>
+                <span className="font-bold text-[#d54186]">{language === "vi" ? "Thanh toán QR thất bại?" : "QR Payment Failed?"}</span>
                 {" "}{language === "vi" ? "Làm mới mã QR hoặc xác nhận thanh toán thủ công cho đến khi API thanh toán sẵn sàng." : "Refresh the QR code or use manual payment confirmation until payment API is available."}
               </p>
               <p className="mt-3">
-                <span className="font-extrabold text-[#d54186]">{language === "vi" ? "Hóa đơn:" : "Receipt:"}</span>
+                <span className="font-bold text-[#d54186]">{language === "vi" ? "Hóa đơn:" : "Receipt:"}</span>
                 {" "}{language === "vi" ? "Giữ hóa đơn để in. Gửi bản sao số qua SMS hoặc email nếu được yêu cầu." : "Keep the receipt printable. Send a digital copy by SMS or email if requested."}
               </p>
             </div>

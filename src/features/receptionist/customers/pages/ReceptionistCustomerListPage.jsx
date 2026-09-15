@@ -846,12 +846,12 @@ export function ReceptionistCustomerListPage() {
     try {
       // 1. Assign chair to the queue
       await receptionistWalkInBookingService.assignChairToQueue(actualQueueId, selectedChair.chairId || selectedChair.id);
-      
+
       // 2. Convert queue entry to booking to start service
       await receptionistWalkInBookingService.convertQueueToBooking(actualQueueId);
-      
-      toast.success(language === "vi" 
-        ? `Đã phân ghế ${selectedChair?.chairName || ""} và chuyển khách vào làm dịch vụ thành công!` 
+
+      toast.success(language === "vi"
+        ? `Đã phân ghế ${selectedChair?.chairName || ""} và chuyển khách vào làm dịch vụ thành công!`
         : `Assigned chair ${selectedChair?.chairName || ""} and started service successfully!`
       );
 
@@ -1707,11 +1707,7 @@ export function ReceptionistCustomerListPage() {
                     popupMatchSelectWidth={false}
                     options={lateArrivalOptions}
                   />
-                  <p className="text-[11px] text-amber-800 font-medium">
-                    {language === "vi"
-                      ? "⚠️ Tự động chuyển lịch trễ xuống hàng chờ sảnh với ghi chú: \"Khách hàng đến muộn -> Tự động chuyển xuống hàng chờ.\""
-                      : "⚠️ Automatically move late appointments to lobby queue with notes: \"Customer arrived late -> Auto-moved to queue.\""}
-                  </p>
+
                 </div>
               )}
 

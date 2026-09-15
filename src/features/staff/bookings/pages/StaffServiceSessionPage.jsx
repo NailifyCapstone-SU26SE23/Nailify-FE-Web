@@ -145,14 +145,14 @@ function ProgressStep({ step, index, isLast, isProgressPinned = false }) {
       ) : null}
 
       <div
-        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-extrabold transition-all duration-300 ${isProgressPinned ? "h-9 w-9" : "h-10 w-10"
+        className={`relative z-[1] flex items-center justify-center rounded-full border text-sm font-bold transition-all duration-300 ${isProgressPinned ? "h-9 w-9" : "h-10 w-10"
           } ${tone.dot}`}
       >
         {step.state === "complete" ? <Check size={18} strokeWidth={3} /> : index + 1}
       </div>
 
       <div className={`transition-all duration-300 ${isProgressPinned ? "mt-2" : "mt-4"}`}>
-        <p className={`font-extrabold transition-all duration-300 ${isProgressPinned ? "text-[0.95rem]" : "text-base"
+        <p className={`font-bold transition-all duration-300 ${isProgressPinned ? "text-[0.95rem]" : "text-base"
           } ${tone.label}`}>{step.label}</p>
         <div className={`grid transition-all duration-300 ease-in-out ${isProgressPinned ? "grid-rows-[0fr] opacity-0 mt-0" : "grid-rows-[1fr] opacity-100 mt-2"
           }`}>
@@ -194,7 +194,7 @@ function ProcedureTimelineStep({ step, isLast, onTick }) {
       {/* Step number + connecting line */}
       <div className="flex w-10 shrink-0 flex-col items-center">
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${tone.dot}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${tone.dot}`}
         >
           {step.stepNumber}
         </div>
@@ -210,7 +210,7 @@ function ProcedureTimelineStep({ step, isLast, onTick }) {
       <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_40px] items-center gap-3">
         {/* Procedure name */}
         <div className="min-w-0">
-          <p className={`truncate text-sm font-extrabold ${tone.title}`}>
+          <p className={`truncate text-sm font-bold ${tone.title}`}>
             {step.label}
           </p>
 
@@ -223,7 +223,7 @@ function ProcedureTimelineStep({ step, isLast, onTick }) {
 
         {/* Status */}
         <span
-          className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(
+          className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold ${getProcedureStatusTone(
             step.status
           )}`}
         >
@@ -299,13 +299,13 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
     <div className="overflow-hidden rounded-2xl border border-[#f4cfdd] bg-white shadow-[0_8px_24px_rgba(236,72,153,0.06)]">
       <div className="overflow-x-auto">
         <div className={`hidden min-w-[700px] items-center gap-3 border-b border-[#f6d5e3] bg-[linear-gradient(180deg,#fff8fb_0%,#fff0f6_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(200px,1.4fr)_90px_110px_120px_100px_120px]" : "grid-cols-[minmax(200px,1.6fr)_90px_110px_120px_100px]"}`}>
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Số lượng" : "Quantity"}</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Đơn giá" : "Unit Price"}</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thành tiền" : "Subtotal"}</p>
-          <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thời gian" : "Duration"}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
+          <p className="text-center text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Số lượng" : "Quantity"}</p>
+          <p className="text-center text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Đơn giá" : "Unit Price"}</p>
+          <p className="text-center text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thành tiền" : "Subtotal"}</p>
+          <p className="text-center text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thời gian" : "Duration"}</p>
           {hasProcedureAction ? (
-            <p className="text-center text-[11px] font-extrabold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thao tác" : "Action"}</p>
+            <p className="text-center text-[11px] font-bold uppercase tracking-wider text-[#9e7689]">{language === "vi" ? "Thao tác" : "Action"}</p>
           ) : null}
         </div>
 
@@ -319,7 +319,7 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
                 <span className="inline-block rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#ea4f93] border border-[#f9cbe0]/60">
                   {language === "vi" ? `Dịch vụ ${index + 1}` : `Service ${index + 1}`}
                 </span>
-                <p className="mt-1 text-sm font-extrabold text-slate-800 md:break-words">{service.name}</p>
+                <p className="mt-1 text-sm font-bold text-slate-800 md:break-words">{service.name}</p>
                 {service.nailServiceName ? (
                   <p className="mt-0.5 text-xs font-semibold text-slate-500 md:break-words">
                     {language === "vi" ? "Dịch vụ Nail: " : "Nail service: "} {service.nailServiceName}
@@ -336,21 +336,21 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                 <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Đơn giá" : "Unit Price"}</p>
-                <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-extrabold text-emerald-700 shadow-xs">
+                <span className="inline-flex rounded-full bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-bold text-emerald-700 shadow-xs">
                   {service.priceLabel}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                 <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Thành tiền" : "Subtotal"}</p>
-                <span className="inline-flex rounded-full bg-pink-50 border border-pink-200/80 px-3 py-1 text-xs font-extrabold text-[#ea4f93] shadow-xs">
+                <span className="inline-flex rounded-full bg-pink-50 border border-pink-200/80 px-3 py-1 text-xs font-bold text-[#ea4f93] shadow-xs">
                   {service.subtotalLabel || service.priceLabel}
                 </span>
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                 <p className="text-xs font-semibold text-slate-400 md:hidden">{language === "vi" ? "Thời gian" : "Duration"}</p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-xs font-extrabold text-indigo-700 shadow-xs">
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-xs font-bold text-indigo-700 shadow-xs">
                   {service.durationLabel}
                 </span>
               </div>
@@ -360,7 +360,7 @@ function ServiceSummaryValue({ services = [], fallbackValue = "", onOpenProcedur
                   <button
                     type="button"
                     onClick={() => onOpenProcedures(service)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#f4b8d3] bg-gradient-to-r from-[#fff0f6] to-[#ffe4ef] px-3.5 py-1.5 text-xs font-extrabold text-[#d82a76] shadow-xs hover:from-[#ffe0ed] hover:to-[#ffd5e5] hover:border-[#e979a9] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-[#f4b8d3] bg-gradient-to-r from-[#fff0f6] to-[#ffe4ef] px-3.5 py-1.5 text-xs font-bold text-[#d82a76] shadow-xs hover:from-[#ffe0ed] hover:to-[#ffd5e5] hover:border-[#e979a9] transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {language === "vi" ? "Quy trình" : "Procedures"}
                   </button>
@@ -483,13 +483,13 @@ function SessionSummaryPanel({
                   referrerPolicy="no-referrer"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-xl font-extrabold text-slate-800">{data.customerName}</p>
+                  <p className="truncate text-xl font-bold text-slate-800">{data.customerName}</p>
                   <p className="mt-1 text-sm font-semibold text-slate-500">{data.customerPhone}</p>
                 </div>
               </div>
 
               <span
-                className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-extrabold shadow-xs ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
+                className={`inline-flex w-fit items-center rounded-full border px-4 py-2 text-xs font-bold shadow-xs ${serviceStatusToneByPhase[phase] || serviceStatusToneByPhase.start}`}
               >
                 {serviceStatusLabel}
               </span>
@@ -514,19 +514,19 @@ function SessionSummaryPanel({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Nhân viên thực hiện" : "Staff Artist"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.staffArtist}</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">{data.staffArtist}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian bắt đầu" : "Appointment Time"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.appointmentTime}</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">{data.appointmentTime}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến hoàn thành" : "Estimated Finish"}</p>
-                <p className="mt-1 text-sm font-extrabold text-slate-800">{data.estimatedFinishTime}</p>
+                <p className="mt-1 text-sm font-bold text-slate-800">{data.estimatedFinishTime}</p>
               </div>
               <div className="rounded-xl border border-[#f6dbe7] bg-[#fffafc] p-3.5 shadow-xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#bca0ae]">{language === "vi" ? "Thời gian dự kiến" : "Estimated Duration"}</p>
-                <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{data.estimatedDuration}</p>
+                <p className="mt-1 text-sm font-bold text-[#ea4f93]">{data.estimatedDuration}</p>
               </div>
             </div>
 
@@ -1379,9 +1379,15 @@ export function StaffServiceSessionPage() {
     initializedBookingIdRef.current = bookingId;
     setShowStartConfirm(false);
     setShowCompleteConfirm(false);
-    setStarted(persistedSession?.started ?? Boolean(payload?.started));
-    setCompleted(persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized));
-    setIsSessionFinalized(persistedSession?.isSessionFinalized ?? isServerSessionFinalized);
+
+    // Completely prioritize Redux state if it exists for this session
+    const finalStarted = persistedSession?.started ?? Boolean(payload?.started);
+    const finalCompleted = persistedSession?.completed ?? Boolean(payload?.completed || isServerSessionFinalized);
+    const finalFinalized = persistedSession?.isSessionFinalized ?? isServerSessionFinalized;
+
+    setStarted(finalStarted);
+    setCompleted(finalCompleted);
+    setIsSessionFinalized(finalFinalized);
     setFlashMessage("");
     setBeforePhoto(persistedSession?.beforePhoto ?? payload?.beforePhoto ?? serverBeforePhoto ?? null);
     setAfterPhoto(persistedSession?.afterPhoto ?? payload?.afterPhoto ?? serverAfterPhoto ?? null);
@@ -2314,14 +2320,12 @@ export function StaffServiceSessionPage() {
         }
       }
 
-      // BR-03.2: Confirm Onsite Addon
       await confirmOnsiteAddon({
         bookingId: normalizedBookingId,
         addonItems,
         assignedArtistId: assignedArtistId
       });
 
-      // Refresh Data
       const refreshedBookingDetail = await fetchStaffBookingDetail(normalizedBookingId).catch(() => null);
       if (refreshedBookingDetail) {
         setBookingDetail(refreshedBookingDetail);
@@ -2373,11 +2377,6 @@ export function StaffServiceSessionPage() {
     setFlashMessage("");
   };
 
-  // const handleRequestCustomerReview = () => {
-  //   toast.success(isVi ? "Đã gửi yêu cầu đánh giá cho khách." : "Customer review request sent successfully.");
-  //   setFlashMessage("");
-  // };
-
   const comparisonModal = showComparisonView ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#2b1323]/55 px-4 py-6 backdrop-blur-sm">
       <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-xl">
@@ -2423,10 +2422,10 @@ export function StaffServiceSessionPage() {
                   <Image crossOrigin="anonymous"
                     src={effectiveBeforePhoto.previewUrl}
                     alt={effectiveBeforePhoto.fileName}
-                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                    className="h-[280px] w-full rounded-lg object-cover sm:h-[360px]"
                   />
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                  <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
                     {isVi ? "Ảnh trước khi làm chưa khả dụng." : "Before-service photo is not available."}
                   </div>
                 )}
@@ -2452,10 +2451,10 @@ export function StaffServiceSessionPage() {
                   <Image crossOrigin="anonymous"
                     src={effectiveAfterPhoto.previewUrl}
                     alt={effectiveAfterPhoto.fileName}
-                    className="h-[280px] w-full rounded-[22px] object-cover sm:h-[360px]"
+                    className="h-[280px] w-full rounded-lg object-cover sm:h-[360px]"
                   />
                 ) : (
-                  <div className="flex h-[280px] items-center justify-center rounded-[22px] border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
+                  <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-[#f2bfd4] bg-white px-6 text-center text-sm text-[#a88a9d] sm:h-[360px]">
                     {isVi ? "Ảnh sau khi làm chưa khả dụng." : "After-service photo is not available."}
                   </div>
                 )}
@@ -2464,23 +2463,23 @@ export function StaffServiceSessionPage() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Khách hàng" : "Customer"}
               </p>
-              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.customerName}</p>
+              <p className="mt-2 text-base font-bold text-[#3f2b3f]">{data.customerName}</p>
             </div>
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Dịch vụ" : "Service"}
               </p>
-              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">{data.serviceLabel}</p>
+              <p className="mt-2 text-base font-bold text-[#3f2b3f]">{data.serviceLabel}</p>
             </div>
-            <div className="rounded-[22px] border border-[#f3d5e2] bg-white px-5 py-4">
+            <div className="rounded-lg border border-[#f3d5e2] bg-white px-5 py-4">
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b68aa2]">
                 {isVi ? "Thiết kế" : "Design"}
               </p>
-              <p className="mt-2 text-base font-extrabold text-[#3f2b3f]">
+              <p className="mt-2 text-base font-bold text-[#3f2b3f]">
                 {hasConfirmedDesign ? data.designName : "N/A"}
               </p>
             </div>
@@ -2494,20 +2493,6 @@ export function StaffServiceSessionPage() {
             >
               {isVi ? "Đóng" : "Close"}
             </button>
-            {/* <button
-              type="button"
-              onClick={() =>
-                navigate(data.backRoute, {
-                  state: {
-                    fromServiceSession: true,
-                    readyForCheckout: true,
-                  },
-                })
-              }
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[image:var(--gradient-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_16px_28px_rgba(236,72,153,0.24)]"
-            >
-              {isVi ? "Chuyển tới thanh toán" : "Go to Checkout"}
-            </button> */}
           </div>
         </div>
       </div>
@@ -2549,13 +2534,25 @@ export function StaffServiceSessionPage() {
             <p className="mt-3 max-w-2xl text-sm text-[#5f8a70]">
               {isVi ? "Có thể tiếp tục các bước tiếp theo bên dưới hoặc trở về danh sách lịch hẹn." : "The service session has been finalized. Continue with the handoff actions below or return to the booking list."}
             </p>
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.staffBookings)}
-              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
-            >
-              {isVi ? "Quay lại danh sách" : "Back to Booking List"}
-            </button>
+            <div className="flex items-center gap-3 mt-5">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.staffBookings)}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#b7e6c8] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
+              >
+                {isVi ? "Quay lại danh sách" : "Back to Booking List"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompleted(false);
+                  setIsSessionFinalized(false);
+                }}
+                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f3d5e2] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+              >
+                {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+              </button>
+            </div>
           </div>
         </article>
 
@@ -2567,46 +2564,12 @@ export function StaffServiceSessionPage() {
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {/* <button
-              type="button"
-              onClick={() =>
-                navigate(data.backRoute, {
-                  state: {
-                    fromServiceSession: true,
-                    readyForCheckout: true,
-                  },
-                })
-              }
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
-                <Receipt size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
-              </span>
-            </button> */}
-
-            {/* <button
-              type="button"
-              onClick={handleRequestCustomerReview}
-              className="flex min-h-24 items-start gap-4 rounded-[24px] border border-[#f2bfd4] bg-[#fff7fb] px-5 py-5 text-left transition hover:bg-[#fff2f8]"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f4eaff] text-[#8b5cf6]">
-                <ClipboardCheck size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
-              </span>
-            </button> */}
 
             <button
               type="button"
               disabled={!canOpenComparison}
               onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-[24px] border px-5 py-5 text-left transition ${canOpenComparison
+              className={`flex min-h-24 items-start gap-4 rounded-lg border px-5 py-5 text-left transition ${canOpenComparison
                 ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
                 : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
                 }`}
@@ -2615,7 +2578,7 @@ export function StaffServiceSessionPage() {
                 <Camera size={19} />
               </span>
               <span>
-                <span className="block text-base font-extrabold text-[#3f2b3f]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
+                <span className="block text-base font-bold text-[#3f2b3f]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
                 <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}</span>
               </span>
             </button>
@@ -2627,19 +2590,14 @@ export function StaffServiceSessionPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 p-4 bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+    <section className="flex min-h-full flex-col gap-4 p-4">
 
-      {flashMessage ? (
-        <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
-          {flashMessage}
-        </div>
-      ) : null}
+
 
       <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
-        className={`z-30 rounded-[22px] border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${isProgressPinned ? "px-5 py-3" : "p-5"
+        className={`z-30 rounded-lg border border-[#f3d5e2] bg-white/95 backdrop-blur-md shadow-[0_14px_30px_rgba(236,72,153,0.08)] xl:sticky transition-all duration-300 ${isProgressPinned ? "px-5 py-3" : "p-5"
           }`}
       >
         <div className={`grid transition-all duration-300 ease-in-out ${isProgressPinned ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
@@ -2683,14 +2641,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Tải lên ảnh trước khi làm" : "Before-Service Photo Upload"}
                   subtitle={isVi ? "Lưu lại ảnh làm bằng chứng trước khi thao tác." : "Save a before photo as proof before the nail service starts."}
                 />
 
-                <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
+                <label className="mt-5 block cursor-pointer rounded-lg border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
                   <input
                     type="file"
                     accept="image/png,image/jpeg"
@@ -2700,7 +2658,7 @@ export function StaffServiceSessionPage() {
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ffe6f1_0%,#f9bfd5_100%)] text-[#ea4f93]">
                     <ImageUp size={28} />
                   </div>
-                  <h3 className="mt-5 text-base font-extrabold text-[#3f2b3f]">
+                  <h3 className="mt-5 text-base font-bold text-[#3f2b3f]">
                     {isVi ? "Tải ảnh tay trước khi làm" : "Upload hand photo before service"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#a88a9d]">
@@ -2742,7 +2700,7 @@ export function StaffServiceSessionPage() {
                         style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-extrabold text-[#3f2b3f]">
+                        <p className="truncate text-sm font-bold text-[#3f2b3f]">
                           {effectiveBeforePhoto.fileName}
                         </p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
@@ -2762,7 +2720,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ShieldCheck}
                   title={isVi ? "Xác nhận bắt đầu" : "Service Start Confirmation"}
@@ -2783,7 +2741,7 @@ export function StaffServiceSessionPage() {
                   type="button"
                   disabled={!canStartService}
                   onClick={() => setShowStartConfirm(true)}
-                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${canStartService
+                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold transition ${canStartService
                     ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
                     : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     }`}
@@ -2805,14 +2763,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Ảnh trước khi làm" : "Before Photo Preview"}
                   subtitle={isVi ? "Hình ảnh đã tải lên trước khi làm dịch vụ." : "This image was uploaded before the service started."}
                 />
 
-                <div className="mt-5 overflow-hidden rounded-[22px] border border-[#f2bfd4] bg-[#fff7fb]">
+                <div className="mt-5 overflow-hidden rounded-lg border border-[#f2bfd4] bg-[#fff7fb]">
                   {effectiveBeforePhoto ? (
                     <div className="relative">
                       <img crossOrigin="anonymous"
@@ -2836,7 +2794,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Trạng thái dịch vụ" : "Current Service Status"}
@@ -2848,7 +2806,7 @@ export function StaffServiceSessionPage() {
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                       {isVi ? "Trạng thái" : "Session Status"}
                     </p>
-                    <p className="mt-1 text-base font-extrabold text-slate-800">
+                    <p className="mt-1 text-base font-bold text-slate-800">
                       {phase === "progress" ? (isVi ? "Đang tiến hành" : "In Progress") : phase === "done" ? (isVi ? "Đã hoàn thành" : "Completed") : (isVi ? "Sẵn sàng" : "Ready to Start")}
                     </p>
                   </div>
@@ -2863,7 +2821,7 @@ export function StaffServiceSessionPage() {
                 </div>
 
                 {phase === "progress" ? (
-                  <div className="mt-3 rounded-[22px] border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
+                  <div className="mt-3 rounded-lg border border-[#f4cfdd] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8f2_100%)] px-4 py-4 shadow-[0_14px_28px_rgba(236,72,153,0.05)]">
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
                       {isVi ? "Quy trình thực hiện" : "Procedure Steps"}
                     </p>
@@ -2895,7 +2853,7 @@ export function StaffServiceSessionPage() {
                                   {!procedure.isLast && (
                                     <div className="absolute top-1/2 bottom-0 left-1/2 w-[2px] -ml-[1px] bg-[#f7dce8] z-0" />
                                   )}
-                                  <div className={`relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-extrabold transition-all duration-300 ${procedure.state === "complete"
+                                  <div className={`relative z-10 mx-auto flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300 ${procedure.state === "complete"
                                     ? "bg-[#249a5c] text-white shadow-[0_4px_12px_rgba(36,154,92,0.25)]"
                                     : procedure.state === "active"
                                       ? "bg-[linear-gradient(135deg,#f857a6_0%,#ffcc70_100%)] text-white shadow-[0_8px_16px_rgba(244,114,182,0.25)]"
@@ -2924,7 +2882,7 @@ export function StaffServiceSessionPage() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-4">
-                                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getProcedureStatusTone(procedure.status)}`}>
+                                  <span className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold ${getProcedureStatusTone(procedure.status)}`}>
                                     {procedure.statusLabel}
                                   </span>
                                 </td>
@@ -2973,7 +2931,7 @@ export function StaffServiceSessionPage() {
                 ) : null}
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Play}
                   title={isVi ? "Thao tác trực tiếp" : "Live Session Actions"}
@@ -2999,13 +2957,21 @@ export function StaffServiceSessionPage() {
                   type="button"
                   onClick={handleMarkServiceDone}
                   disabled={isMarkingServiceDone || !areAllProceduresCompleted}
-                  className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold ${isMarkingServiceDone || !areAllProceduresCompleted
+                  className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold ${isMarkingServiceDone || !areAllProceduresCompleted
                     ? "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     : "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
                     }`}
                 >
                   <CheckCircle2 size={16} />
                   {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStarted(false)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                >
+                  {isVi ? "Quay lại trạng thái Chưa bắt đầu (Undo)" : "Back to Preparation (Undo)"}
                 </button>
               </article>
 
@@ -3023,14 +2989,14 @@ export function StaffServiceSessionPage() {
                 onOpenProcedures={handleOpenServiceProcedureModal}
               />
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Ảnh sau khi làm" : "After-Service Photo Upload"}
                   subtitle={isVi ? "Tải lên kết quả móng cuối cùng." : "Upload the final photo as proof after the service is finished."}
                 />
 
-                <label className="mt-5 block cursor-pointer rounded-[22px] border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
+                <label className="mt-5 block cursor-pointer rounded-lg border-2 border-dashed border-[#f2bfd4] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f8_100%)] px-6 py-10 text-center transition hover:border-[#ea4f93] hover:bg-[#fff6fa]">
                   <input
                     type="file"
                     accept="image/png,image/jpeg"
@@ -3040,7 +3006,7 @@ export function StaffServiceSessionPage() {
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#ffe6f1_0%,#f9bfd5_100%)] text-[#ea4f93]">
                     <ImageUp size={26} />
                   </div>
-                  <h3 className="mt-5 text-base font-extrabold text-[#3f2b3f]">
+                  <h3 className="mt-5 text-base font-bold text-[#3f2b3f]">
                     {isVi ? "Tải ảnh hoàn thiện" : "Upload completed nail photo"}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-[#a88a9d]">
@@ -3083,7 +3049,7 @@ export function StaffServiceSessionPage() {
                         style={{ width: "80px", height: "80px", borderRadius: "16px", objectFit: "cover", border: "1px solid #f2bfd4" }}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-extrabold text-[#3f2b3f]">
+                        <p className="truncate text-sm font-bold text-[#3f2b3f]">
                           {effectiveAfterPhoto.fileName}
                         </p>
                         <p className="mt-1 text-xs text-[#a88a9d]">
@@ -3103,7 +3069,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={ClipboardCheck}
                   title={isVi ? "Xác nhận kết thúc" : "Completion Confirmation"}
@@ -3202,7 +3168,7 @@ export function StaffServiceSessionPage() {
                 ) : null}
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Receipt}
                   title={isVi ? "Chi phí tạm tính" : "Final Service Summary"}
@@ -3273,19 +3239,19 @@ export function StaffServiceSessionPage() {
                 <div className="mt-4 border-t border-[#f5d9e6]" />
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
-                  <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
+                  <span className="text-base font-bold text-green-700">{data.totalPrice}</span>
                 </div>
 
                 {data.amountPaid ? (
                   <>
                     <div className="mt-2 flex items-center justify-between gap-3">
                       <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                      <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                      <span className="text-base font-bold text-[#3f2b3f]">{data.amountPaid}</span>
                     </div>
                     {data.amountDue ? (
                       <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
                         <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
-                        <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                        <span className="text-base font-bold text-green-700">{data.amountDue}</span>
                       </div>
                     ) : null}
                   </>
@@ -3294,7 +3260,7 @@ export function StaffServiceSessionPage() {
                   type="button"
                   disabled={!canCompleteSession || isCompletingSession}
                   onClick={() => setShowCompleteConfirm(true)}
-                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-extrabold transition ${canCompleteSession && !isCompletingSession
+                  className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold transition ${canCompleteSession && !isCompletingSession
                     ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
                     : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
                     }`}
@@ -3302,9 +3268,17 @@ export function StaffServiceSessionPage() {
                   <CheckCircle2 size={16} />
                   {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCompleted(false)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                >
+                  {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+                </button>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Bước tiếp theo" : "Next Step"}
@@ -3312,41 +3286,6 @@ export function StaffServiceSessionPage() {
                 />
 
                 <div className="mt-5 grid gap-3 md:grid-cols-3">
-                  {/* <button
-                    type="button"
-                    onClick={() =>
-                      navigate(data.backRoute, {
-                        state: {
-                          fromServiceSession: true,
-                          readyForCheckout: true,
-                        },
-                      })
-                    }
-                    className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ffe7f1] text-[#ea4f93]">
-                      <Receipt size={18} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Thanh toán" : "Go to Checkout"}</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Chuyển tới quy trình thanh toán." : "Proceed from staff handoff to payment review."}</span>
-                    </span>
-                  </button> */}
-
-                  {/* <button
-                    type="button"
-                    onClick={handleRequestCustomerReview}
-                    className="flex min-h-20 items-start gap-3 rounded-2xl border border-[#f2bfd4] bg-[#fff7fb] px-4 py-4 text-left transition hover:bg-[#fff2f8]"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4eaff] text-[#8b5cf6]">
-                      <ClipboardCheck size={18} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Yêu cầu đánh giá" : "Request Customer Review"}</span>
-                      <span className="mt-1 block text-xs text-[#a88a9d]">{isVi ? "Gửi thông báo yêu cầu đánh giá cho khách." : "Send the final review prompt to the customer profile."}</span>
-                    </span>
-                  </button> */}
-
                   <button
                     type="button"
                     disabled={!canOpenComparison}
@@ -3360,7 +3299,7 @@ export function StaffServiceSessionPage() {
                       <Camera size={18} />
                     </span>
                     <span>
-                      <span className="block text-sm font-extrabold text-[#3f2b3f]">{isVi ? "Đối chiếu trước & sau" : "Compare Before & After"}</span>
+                      <span className="block text-sm font-bold text-[#3f2b3f]">{isVi ? "Đối chiếu trước & sau" : "Compare Before & After"}</span>
                       <span className="mt-1 block text-xs text-[#a88a9d]">
                         {isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}
                       </span>
@@ -3374,38 +3313,38 @@ export function StaffServiceSessionPage() {
 
         <aside className={`space-y-4 self-start xl:sticky xl:top-0 ${phase === "done" || phase === "start" ? "hidden" : ""}`}>
           {phase === "start" ? (
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
               <SectionTitle icon={Clock3} title={isVi ? "Tóm tắt phiên" : "Session Snapshot"} />
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tình trạng thiết kế" : "Design Status"}</span>
-                  <span className="font-extrabold text-[#ea4f93]">{data.designName}</span>
+                  <span className="font-bold text-[#ea4f93]">{data.designName}</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thành tiền (trước giảm)" : "Subtotal"}</span>
-                  <span className="font-extrabold text-[#3f2b3f]">{data.originalServicePrice}</span>
+                  <span className="font-bold text-[#3f2b3f]">{data.originalServicePrice}</span>
                 </div>
                 {data.discountValue && data.discountValue !== "0 VND" ? (
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">{data.discountLabel || (isVi ? "Giảm giá" : "Discount")}</span>
-                    <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
+                    <span className="font-bold text-[#249a5c]">{data.discountValue}</span>
                   </div>
                 ) : null}
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
-                  <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
+                  <span className="text-base font-bold text-green-700">{data.totalPrice}</span>
                 </div>
 
                 {data.amountPaid ? (
                   <>
                     <div className="mt-2 flex items-center justify-between gap-3">
                       <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                      <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                      <span className="text-base font-bold text-[#3f2b3f]">{data.amountPaid}</span>
                     </div>
                     {data.amountDue ? (
                       <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
                         <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
-                        <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                        <span className="text-base font-bold text-green-700">{data.amountDue}</span>
                       </div>
                     ) : null}
                   </>
@@ -3423,7 +3362,7 @@ export function StaffServiceSessionPage() {
             </article>
           ) : (
             <>
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Chi tiết dịch vụ" : "Service Details"}
@@ -3433,12 +3372,12 @@ export function StaffServiceSessionPage() {
                   {hasConfirmedDesign ? (
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thiết kế đã xác nhận" : "Confirmed Design"}</span>
-                      <span className="text-right font-extrabold text-[#ea4f93]">{data.designName}</span>
+                      <span className="text-right font-bold text-[#ea4f93]">{data.designName}</span>
                     </div>
                   ) : null}
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Thời gian" : "Duration"}</span>
-                    <span className="font-extrabold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
+                    <span className="font-bold text-[#3f2b3f]">{data.appointmentTime} - {data.estimatedFinishTime}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Trạng thái" : "Status"}</span>
@@ -3449,24 +3388,24 @@ export function StaffServiceSessionPage() {
                   {data.discountValue && data.discountValue !== "0 VND" ? (
                     <div className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3">
                       <span className="text-[11px] text-[#a88a9d]">{data.discountLabel || (isVi ? "Giảm giá" : "Discount")}</span>
-                      <span className="font-extrabold text-[#249a5c]">{data.discountValue}</span>
+                      <span className="font-bold text-[#249a5c]">{data.discountValue}</span>
                     </div>
                   ) : null}
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tổng tiền" : "Total Price"}</span>
-                    <span className="text-base font-extrabold text-green-700">{data.totalPrice}</span>
+                    <span className="text-base font-bold text-green-700">{data.totalPrice}</span>
                   </div>
 
                   {data.amountPaid ? (
                     <>
                       <div className="mt-2 flex items-center justify-between gap-3">
                         <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền đã trả" : "Amount Paid"}</span>
-                        <span className="text-base font-extrabold text-[#3f2b3f]">{data.amountPaid}</span>
+                        <span className="text-base font-bold text-[#3f2b3f]">{data.amountPaid}</span>
                       </div>
                       {data.amountDue ? (
                         <div className="mt-2 flex items-center justify-between gap-3 border-t border-dashed border-[#f5d9e6] pt-2">
                           <span className="text-[11px] text-[#a88a9d]">{isVi ? "Tiền còn lại" : "Amount Due"}</span>
-                          <span className="text-base font-extrabold text-green-700">{data.amountDue}</span>
+                          <span className="text-base font-bold text-green-700">{data.amountDue}</span>
                         </div>
                       ) : null}
                     </>
@@ -3475,7 +3414,7 @@ export function StaffServiceSessionPage() {
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Camera}
                   title={isVi ? "Thao tác tiếp theo" : "Next Action"}

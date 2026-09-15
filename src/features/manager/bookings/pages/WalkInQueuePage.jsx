@@ -72,6 +72,12 @@ export function WalkInQueuePage() {
   const [isStaffLoading, setIsStaffLoading] = useState(false);
   const [isServicesLoading, setIsServicesLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   // View switch: "kanban" (default) or "timeline"
   const [viewMode, setViewMode] = useState("kanban");
@@ -415,7 +421,7 @@ export function WalkInQueuePage() {
     <section className="flex min-h-full flex-col gap-6 bg-[#f7f4ef] text-[#2f2430] p-6 pb-12">
 
       {/* UNIFIED HEADER & STATS BLOCK */}
-      <div className="flex flex-col gap-6 rounded-3xl border border-[#e2e8f0] bg-[#fffdf9] p-6 shadow-sm">
+      <div className="flex flex-col gap-6 rounded-lg border border-[#e2e8f0] bg-[#fffdf9] p-6 shadow-sm">
 
         {/* Row 1: Title and Actions */}
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -435,7 +441,7 @@ export function WalkInQueuePage() {
               <button
                 onClick={() => setViewMode("kanban")}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === "kanban"
-                  ? "bg-[#fffdf9] text-[#e85d9b] shadow-sm font-extrabold"
+                  ? "bg-[#fffdf9] text-[#e85d9b] shadow-sm font-bold"
                   : "text-[#7d6d78] hover:text-[#e85d9b]"
                   }`}
               >
@@ -445,7 +451,7 @@ export function WalkInQueuePage() {
               <button
                 onClick={() => setViewMode("timeline")}
                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === "timeline"
-                  ? "bg-[#fffdf9] text-[#e85d9b] shadow-sm font-extrabold"
+                  ? "bg-[#fffdf9] text-[#e85d9b] shadow-sm font-bold"
                   : "text-[#7d6d78] hover:text-[#e85d9b]"
                   }`}
               >
@@ -599,7 +605,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2d5c5]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#d89b1d]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Sảnh Chờ (${waitingEntries.length})` : `Lobby (${waitingEntries.length})`}</h3>
+                <h3 className="font-bold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Sảnh Chờ (${waitingEntries.length})` : `Lobby (${waitingEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#d89b1d]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#d89b1d] border border-[#d89b1d]/20">{language === "vi" ? "Chờ phục vụ" : "Waiting"}</span>
             </div>
@@ -661,7 +667,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#d2e4f7]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3b82f6]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Tại Quầy (${calledEntries.length})` : `Checked In (${calledEntries.length})`}</h3>
+                <h3 className="font-bold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Tại Quầy (${calledEntries.length})` : `Checked In (${calledEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#3b82f6]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#3b82f6] border border-[#3b82f6]/20">{language === "vi" ? "Đã gọi số" : "Called"}</span>
             </div>
@@ -766,7 +772,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#c8ebd3]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#22a06b]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Đang Phục Vụ (${inServiceEntries.length})` : `In Service (${inServiceEntries.length})`}</h3>
+                <h3 className="font-bold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Đang Phục Vụ (${inServiceEntries.length})` : `In Service (${inServiceEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#22a06b]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#22a06b] border border-[#22a06b]/20">{language === "vi" ? "Đang phục vụ" : "In Service"}</span>
             </div>
@@ -821,7 +827,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#e2e8f0]/20 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5b6472]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Hoàn Thành (${doneEntries.length})` : `Completed (${doneEntries.length})`}</h3>
+                <h3 className="font-bold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Hoàn Thành (${doneEntries.length})` : `Completed (${doneEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#5b6472]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#5b6472] border border-[#5b6472]/20">{language === "vi" ? "Xong" : "Done"}</span>
             </div>
@@ -855,7 +861,7 @@ export function WalkInQueuePage() {
             <div className="flex items-center justify-between border-b border-[#fee2e2]/25 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#e56b6f]" />
-                <h3 className="font-extrabold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Vắng / Rời Đi (${leftEntries.length})` : `Absent / Left (${leftEntries.length})`}</h3>
+                <h3 className="font-bold text-[#2f2430] text-xs uppercase tracking-wider">{language === "vi" ? `Vắng / Rời Đi (${leftEntries.length})` : `Absent / Left (${leftEntries.length})`}</h3>
               </div>
               <span className="rounded-full bg-[#e56b6f]/10 px-2 py-0.5 text-[9px] font-bold uppercase text-[#e56b6f] border border-[#e56b6f]/20">{language === "vi" ? "Đã rời đi" : "Left"}</span>
             </div>
@@ -883,7 +889,7 @@ export function WalkInQueuePage() {
         </div>
       ) : (
         /* ==================== CALENDAR SCHEDULE TIMELINE VIEW (DRAG & DROP) ==================== */
-        <div className="overflow-x-auto rounded-3xl border border-[#e2e8f0] bg-[#fffdf9] shadow-sm p-6">
+        <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-[#fffdf9] shadow-sm p-6">
           <div className="min-w-[1200px] space-y-6">
 
             <div className="flex justify-between items-center border-b border-[#e2e8f0]/60 pb-4">
@@ -937,7 +943,7 @@ export function WalkInQueuePage() {
                       {artist.firstName?.[0]}{artist.lastName?.[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-extrabold text-xs text-[#2f2430] truncate">
+                      <p className="font-bold text-xs text-[#2f2430] truncate">
                         {artist.firstName} {artist.lastName}
                       </p>
                       <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-[8px] font-bold bg-[#22a06b]/10 text-[#22a06b] border border-[#22a06b]/15 uppercase">
@@ -961,7 +967,7 @@ export function WalkInQueuePage() {
                       return (
                         <div
                           key={slot}
-                          className={`flex-1 flex flex-col items-center justify-center font-extrabold tracking-wider relative ${isCurrentHour ? "bg-[#e85d9b]/5 text-[#e85d9b]" : ""
+                          className={`flex-1 flex flex-col items-center justify-center font-bold tracking-wider relative ${isCurrentHour ? "bg-[#e85d9b]/5 text-[#e85d9b]" : ""
                             }`}
                         >
                           <span>{slot}</span>
@@ -1096,7 +1102,7 @@ export function WalkInQueuePage() {
               <button
                 type="button"
                 onClick={() => setIsLateArrival(false)}
-                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${!isLateArrival
+                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${!isLateArrival
                   ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
@@ -1106,7 +1112,7 @@ export function WalkInQueuePage() {
               <button
                 type="button"
                 onClick={() => setIsLateArrival(true)}
-                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-extrabold text-center transition-all cursor-pointer ${isLateArrival
+                className={`flex-1 py-3 px-4 rounded-xl border text-xs font-bold text-center transition-all cursor-pointer ${isLateArrival
                   ? "border-[#ea4f93] bg-[#fff5f9] text-[#ea4f93] font-bold shadow-sm"
                   : "border-gray-200 bg-white text-gray-500 hover:border-pink-200"
                   }`}
@@ -1239,7 +1245,7 @@ export function WalkInQueuePage() {
         onCancel={() => setIsAssignModalOpen(false)}
         footer={null}
         width={420}
-        className="rounded-3xl overflow-hidden"
+        className="rounded-lg overflow-hidden"
       >
         {selectedQueueItem && (
           <div className="space-y-4 py-2">
@@ -1326,7 +1332,7 @@ function DraggableCard({ item, onDragStart, onDragEnd, isDragging, extraActions 
             <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded bg-[#e85d9b]/10 text-[9px] font-bold text-[#e85d9b] border border-[#e85d9b]/15 shadow-sm">
               #{item.queuePosition}
             </span>
-            <h4 className="font-extrabold text-[#2f2430] text-sm truncate tracking-tight">{item.guestName}</h4>
+            <h4 className="font-bold text-[#2f2430] text-sm truncate tracking-tight">{item.guestName}</h4>
           </div>
 
           <div className="mt-3 space-y-1">
@@ -1404,7 +1410,7 @@ function TimelinePill({ item, onDragStart, onDragEnd, onCallClick, onAssignClick
       className={`group cursor-grab active:cursor-grabbing p-3 rounded-xl border text-[10px] bg-gradient-to-b shadow-sm hover:border-[#e85d9b] hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${statusColors[item.status] || "bg-white text-[#2f2430] border-[#e2e8f0]"
         }`}
     >
-      <div className="flex items-center justify-between gap-1 font-extrabold">
+      <div className="flex items-center justify-between gap-1 font-bold">
         <span className="truncate">#{item.queuePosition} {item.guestName}</span>
         {item.isLateArrival && (
           <span className="text-[7px] bg-red-150 text-[#e56b6f] px-1 py-0.5 rounded font-bold uppercase shadow-sm">L</span>

@@ -73,6 +73,12 @@ export function TransactionManagementPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [transactionsData, setTransactionsData] = useState({
     items: [],
     totalCount: 0,
@@ -401,7 +407,7 @@ export function TransactionManagementPage() {
         />
 
         {/* Filters Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
           {/* Search bar */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
@@ -453,7 +459,7 @@ export function TransactionManagementPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-200/60 shadow-xs"
+              className="flex flex-col items-center justify-center py-24 bg-white rounded-lg border border-slate-200/60 shadow-xs"
             >
               <Spin size="large" />
               <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[#a88a9f] animate-pulse">{language === "vi" ? "Đang tải giao dịch..." : "Loading transactions..."}</p>
@@ -464,7 +470,7 @@ export function TransactionManagementPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-6 bg-rose-50/50 rounded-3xl border border-rose-100"
+              className="p-6 bg-rose-50/50 rounded-lg border border-rose-100"
             >
               <Alert
                 message="Data Load Warning"
@@ -487,7 +493,7 @@ export function TransactionManagementPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-3xl border border-slate-200/60 shadow-xs"
+              className="flex flex-col items-center justify-center py-24 px-4 text-center bg-white rounded-lg border border-slate-200/60 shadow-xs"
             >
               <div className="p-4 rounded-full bg-slate-50 text-[#a88a9f] mb-4">
                 <AlertCircle size={30} className="stroke-[1.5]" />
@@ -503,7 +509,7 @@ export function TransactionManagementPage() {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="overflow-hidden bg-white rounded-[2rem] border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
+              className="overflow-hidden bg-white rounded-lg border border-slate-200/60 shadow-[0_12px_40px_rgba(0,0,0,0.02)]"
             >
               <div className="overflow-x-auto">
                 <Table
@@ -828,7 +834,7 @@ export function TransactionManagementPage() {
                 <button
                   type="button"
                   onClick={handleViewBookingDetail}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-3xl border border-[#f1e7ed] bg-white px-4 py-2.5 text-xs font-bold text-[#2d1b35] shadow-xs transition hover:border-[#ea4f93]/40 hover:bg-[#fff7fb] hover:text-[#ea4f93] active:scale-[0.98]"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-[#f1e7ed] bg-white px-4 py-2.5 text-xs font-bold text-[#2d1b35] shadow-xs transition hover:border-[#ea4f93]/40 hover:bg-[#fff7fb] hover:text-[#ea4f93] active:scale-[0.98]"
                 >
                   <ExternalLink size={13} />
                   {language === "vi" ? "Xem chi tiết lịch hẹn" : "View Booking Detail"}

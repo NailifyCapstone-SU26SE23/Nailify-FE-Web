@@ -29,7 +29,7 @@ export function UserManagementHeroCard({
   }, [normalizedAvatarUrl]);
 
   return (
-    <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+    <div className="overflow-hidden rounded-lg bg-white shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
       <div className="h-3 bg-[image:var(--gradient-accent)]" />
       <div className="flex flex-col gap-5 p-5 sm:p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
@@ -53,13 +53,13 @@ export function UserManagementHeroCard({
                 <img
                   src={normalizedAvatarUrl}
                   alt={`${title} avatar`}
-                  className="h-16 w-16 rounded-3xl border border-[#f6dbe7] object-cover shadow-[0_14px_28px_rgba(94,76,62,0.08)]"
+                  className="h-16 w-16 rounded-lg border border-[#f6dbe7] object-cover shadow-[0_14px_28px_rgba(94,76,62,0.08)]"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                   onError={() => setHasImageError(true)}
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[linear-gradient(180deg,#ffd9eb_0%,#ea4f93_100%)] text-lg font-bold text-white shadow-[0_14px_28px_rgba(94,76,62,0.08)]">
+                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[linear-gradient(180deg,#ffd9eb_0%,#ea4f93_100%)] text-lg font-bold text-white shadow-[0_14px_28px_rgba(94,76,62,0.08)]">
                   {avatarFallback}
                 </div>
               )}
@@ -72,7 +72,7 @@ export function UserManagementHeroCard({
             </p>
           </div>
 
-          <div className="rounded-[24px] bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-4 text-sm text-[var(--color-muted)] shadow-[0_14px_30px_rgba(94,76,62,0.06)] sm:p-5 md:max-w-[22rem]">
+          <div className="rounded-lg bg-[linear-gradient(180deg,#fff5f9_0%,#fff8e8_100%)] p-4 text-sm text-[var(--color-muted)] shadow-[0_14px_30px_rgba(94,76,62,0.06)] sm:p-5 md:max-w-[22rem]">
             <div className="flex items-center gap-3 text-[var(--color-ink)]">
               <div className="rounded-2xl bg-white p-3 shadow-[0_12px_24px_rgba(94,76,62,0.08)]">
                 {panelIcon}

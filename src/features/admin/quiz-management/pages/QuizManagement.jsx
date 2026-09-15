@@ -417,7 +417,7 @@ export function QuizManagement() {
                         {isLoading && questions.length === 0 ? (
                             <div className="space-y-4">
                                 {[1, 2, 3].map(i => (
-                                    <div key={i} className="h-32 w-full animate-pulse rounded-[2rem] border border-[#f5e3ed] bg-white p-6" />
+                                    <div key={i} className="h-32 w-full animate-pulse rounded-lg border border-[#f5e3ed] bg-white p-6" />
                                 ))}
                             </div>
                         ) : filteredQuestions.length > 0 ? (
@@ -431,7 +431,7 @@ export function QuizManagement() {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.96 }}
                                             transition={{ type: "spring", stiffness: 120, damping: 18, delay: idx * 0.04 }}
-                                            className={`relative overflow-hidden rounded-[2rem] border border-white/60 bg-white/60 p-6 shadow-[0_8px_24px_rgba(224,188,206,0.15)] backdrop-blur-md hover:-translate-y-1 hover:border-[#eba2c6]/50 hover:bg-white/80 hover:shadow-[0_16px_40px_rgba(234,79,147,0.12)] transition-all duration-300 ${q.status === "Inactive" ? "opacity-70 grayscale-[20%]" : ""}`}
+                                            className={`relative overflow-hidden rounded-lg border border-white/60 bg-white/60 p-6 shadow-[0_8px_24px_rgba(224,188,206,0.15)] backdrop-blur-md hover:-translate-y-1 hover:border-[#eba2c6]/50 hover:bg-white/80 hover:shadow-[0_16px_40px_rgba(234,79,147,0.12)] transition-all duration-300 ${q.status === "Inactive" ? "opacity-70 grayscale-[20%]" : ""}`}
                                         >
                                             <div className="flex justify-between items-start gap-4">
                                                 <div>
@@ -576,7 +576,7 @@ export function QuizManagement() {
 
                     {/* Selected Shape Detail View */}
                     {selectedShape && (
-                        <div className="rounded-[2rem] border border-[#f5e3ed] bg-white p-6 shadow-sm">
+                        <div className="rounded-lg border border-[#f5e3ed] bg-white p-6 shadow-sm">
                             <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
                                 <div>
                                     <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">

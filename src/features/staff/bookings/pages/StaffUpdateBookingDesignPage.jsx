@@ -29,7 +29,7 @@ function SectionTitle({ icon: Icon, title, badge }) {
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
         <Icon size={14} className="text-[#ea4f93]" />
-        <h2 className="text-sm font-extrabold text-[#3f2b3f]">{title}</h2>
+        <h2 className="text-sm font-bold text-[#3f2b3f]">{title}</h2>
       </div>
       {badge ? (
         <span className="rounded-full border border-[#cbeed5] bg-[#f0fff4] px-3 py-1 text-[10px] font-bold text-[#21a55f]">
@@ -63,7 +63,7 @@ function PriceCard({ label, value, note, accent = false }) {
   return (
     <article className={`rounded-[18px] border p-4 ${accent ? "border-[#f2bfd4] bg-[linear-gradient(135deg,#fff4f9_0%,#ffeef7_100%)]" : "border-[#f4dbe7] bg-[#fff9fc]"}`}>
       <p className="text-[10px] font-medium text-[#a88a9d]">{label}</p>
-      <p className={`mt-3 text-[1.5rem] font-extrabold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>{value}</p>
+      <p className={`mt-3 text-[1.5rem] font-bold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>{value}</p>
       <p className="mt-2 text-[10px] text-[#b690a4]">{note}</p>
     </article>
   );
@@ -129,12 +129,12 @@ function AddonRow({ item }) {
           <Icon size={14} />
         </span>
         <div>
-          <p className="text-xs font-extrabold text-[#3f2b3f]">{item.title}</p>
+          <p className="text-xs font-bold text-[#3f2b3f]">{item.title}</p>
           <p className="mt-1 text-[10px] text-[#a88a9d]">{item.note}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-extrabold text-[#ea4f93]">{item.price}</span>
+        <span className="text-xs font-bold text-[#ea4f93]">{item.price}</span>
         <button
           type="button"
           onClick={item.onToggle}
@@ -163,10 +163,10 @@ AddonRow.propTypes = {
 function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/35 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-xl rounded-[24px] border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
+      <div className="w-full max-w-xl rounded-lg border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-extrabold text-[#3f2b3f]">
+            <h3 className="text-lg font-bold text-[#3f2b3f]">
               {isVi ? "Đổi nhân viên thực hiện" : "Change Staff Artist"}
             </h3>
             <p className="mt-1 text-sm text-[#a88a9d]">
@@ -197,11 +197,11 @@ function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi
                   }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
                     {staff.initials}
                   </span>
                   <div>
-                    <p className="text-sm font-extrabold text-[#3f2b3f]">{staff.name}</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{staff.name}</p>
                     <p className="mt-1 text-[11px] text-[#a88a9d]">
                       {staff.level} • {staff.specialty}
                     </p>
@@ -246,7 +246,7 @@ export function StaffUpdateBookingDesignPage() {
   const isVi = language === "vi";
   const payload = location.state?.designUpdate;
   const data = payload || null;
-  
+
   const appointmentStartTime = data?.appointment ?? "--";
   const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, data?.duration ?? "60 min");
 
@@ -417,11 +417,11 @@ export function StaffUpdateBookingDesignPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle
                 icon={FilePenLine}
                 title={isVi ? "So sánh thiết kế" : "Design Comparison"}
@@ -441,7 +441,7 @@ export function StaffUpdateBookingDesignPage() {
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.previousDesign.name}</p>
+                  <p className="mt-4 text-base font-bold text-[#3f2b3f]">{data.previousDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.previousDesign.price}</Tag>
                     <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration, language)}</Tag>
@@ -470,7 +470,7 @@ export function StaffUpdateBookingDesignPage() {
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.newDesign.name}</p>
+                  <p className="mt-4 text-base font-bold text-[#3f2b3f]">{data.newDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.newDesign.price}</Tag>
                     <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration, language)}</Tag>
@@ -479,7 +479,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle
                 icon={ClipboardCheck}
                 title={isVi ? "Tóm tắt dịch vụ cập nhật" : "Updated Service Summary"}
@@ -519,7 +519,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={DollarSign} title={isVi ? "Chênh lệch giá" : "Price Difference"} />
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <PriceCard
@@ -552,7 +552,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={Check} title={isVi ? "Xác nhận của khách hàng" : "Customer Confirmation"} />
               <div className="mt-5 space-y-3">
                 {displayConfirmations.map((item) => (
@@ -566,7 +566,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
               <SectionTitle icon={FilePenLine} title={isVi ? "Thao tác cập nhật lịch hẹn" : "Booking Update Actions"} />
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <button
@@ -613,7 +613,7 @@ export function StaffUpdateBookingDesignPage() {
           </div>
 
           <aside className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={ClipboardCheck} title={isVi ? "Tóm tắt lịch hẹn" : "Booking Summary"} />
               <div className="mt-4 space-y-3 text-sm">
                 {[
@@ -625,7 +625,7 @@ export function StaffUpdateBookingDesignPage() {
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
                     <span className="text-[11px] text-[#a98c9f]">{label}</span>
-                    <span className="text-right text-xs font-extrabold text-[#3f2b3f]">
+                    <span className="text-right text-xs font-bold text-[#3f2b3f]">
                       {label === (isVi ? "Trạng thái" : "Status") ? (
                         <Tag className="border-[#f1ddac] bg-[#fff4da] text-[#bd8517]">{value}</Tag>
                       ) : (
@@ -637,7 +637,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Sparkles} title={isVi ? "Trạng thái cập nhật" : "Design Update Status"} />
               <div className="mt-4 space-y-3 text-sm">
                 {Object.entries(updatedDesignStatus).map(([key, value]) => {
@@ -672,7 +672,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Star} title={isVi ? "Dịch vụ gợi ý thêm" : "Recommended Add-ons"} />
               <div className="mt-4 space-y-3">
                 {displayAddOns.map((item) => (
@@ -693,7 +693,7 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
               <SectionTitle icon={Check} title={isVi ? "Bước tiếp theo" : "Next Step"} />
               <p className="mt-4 text-xs leading-5 text-[#a88a9d]">
                 {isVi ? "Hoàn thành tất cả các xác nhận bên trên, sau đó tiến hành chốt lịch hẹn và bắt đầu phiên làm việc." : "Complete all confirmations above, then proceed to confirm the booking and start the service session."}

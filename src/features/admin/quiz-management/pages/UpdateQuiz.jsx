@@ -354,7 +354,7 @@ export function UpdateQuiz() {
                 {/* FORMS CONTAINER */}
                 <div className="lg:col-span-7">
                     {/* Update Quiz Settings & Choices Form */}
-                    <form onSubmit={handleUpdateQuizSubmit} className="rounded-[2rem] border border-white/60 bg-white/60 p-7 shadow-[0_16px_40px_-16px_rgba(224,188,206,0.35)] backdrop-blur-md space-y-6 transition-all duration-300 hover:shadow-[0_24px_48px_-12px_rgba(234,79,147,0.2)] hover:bg-white/80">
+                    <form onSubmit={handleUpdateQuizSubmit} className="rounded-lg border border-white/60 bg-white/60 p-7 shadow-[0_16px_40px_-16px_rgba(224,188,206,0.35)] backdrop-blur-md space-y-6 transition-all duration-300 hover:shadow-[0_24px_48px_-12px_rgba(234,79,147,0.2)] hover:bg-white/80">
                         <header className="flex items-center justify-between border-b border-[#fcecf4] pb-4">
                             <div className="flex items-center gap-3">
                                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#fff0f6] text-xs font-bold text-[#ea4f93] shadow-[0_4px_10px_rgba(234,79,147,0.15)]">
@@ -364,7 +364,7 @@ export function UpdateQuiz() {
                                     {t("adminQuizManagement.quizSettingsAnswerChoices")}
                                 </h2>
                             </div>
-                            <span className="rounded-full bg-[#fdf5f9] border border-[#fbcce0] px-3 py-1 text-[10px] font-extrabold text-[#ea4f93] uppercase">
+                            <span className="rounded-full bg-[#fdf5f9] border border-[#fbcce0] px-3 py-1 text-[10px] font-bold text-[#ea4f93] uppercase">
                                 {t("adminQuizManagement.coreUpdateSettings")}
                             </span>
                         </header>
@@ -418,7 +418,7 @@ export function UpdateQuiz() {
                                                     className={`mt-0.5 shrink-0 ${active ? "text-[#ea4f93]" : "text-[#c9a7be]"}`}
                                                 />
                                                 <span>
-                                                    <span className={`block text-[12px] font-extrabold ${active ? "text-[#c9376e]" : "text-[#4b3345]"}`}>
+                                                    <span className={`block text-[12px] font-bold ${active ? "text-[#c9376e]" : "text-[#4b3345]"}`}>
                                                         {opt.label}
                                                     </span>
                                                     <span className="block text-[10px] text-[#a6869a] mt-0.5 leading-tight">{opt.hint}</span>
@@ -525,7 +525,7 @@ export function UpdateQuiz() {
                                 {formData.choices.map((choice, idx) => (
                                     <div
                                         key={choice.id || idx}
-                                        className="rounded-3xl border border-[#f0dde8] bg-[#fffbfc] overflow-hidden"
+                                        className="rounded-lg border border-[#f0dde8] bg-[#fffbfc] overflow-hidden"
                                     >
                                         <div className="flex items-start gap-3 p-4">
                                             <GripVertical size={14} className="mt-2 shrink-0 text-[#d8c1cf]" />
@@ -689,7 +689,7 @@ export function UpdateQuiz() {
 
                     <div className="relative mx-auto w-full max-w-[300px] rounded-[2.75rem] border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
                         <div className="absolute left-1/2 top-2.5 z-10 h-3.5 w-24 -translate-x-1/2 rounded-full bg-[#321c29]" />
-                        <div className="flex min-h-[480px] flex-col justify-between rounded-[2.25rem] bg-white p-5 pt-8">
+                        <div className="flex min-h-[480px] flex-col justify-between rounded-lg bg-white p-5 pt-8">
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">

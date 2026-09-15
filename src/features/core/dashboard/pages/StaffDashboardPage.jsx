@@ -112,7 +112,7 @@ function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onD
               </div>
             )}
             {/* IN TITLE ĐÃ ĐƯỢC DỊCH RA MÀN HÌNH */}
-            <h3 className={`font-extrabold text-[#432744] ${isPinned ? 'text-base' : 'text-sm'}`}>
+            <h3 className={`font-bold text-[#432744] ${isPinned ? 'text-base' : 'text-sm'}`}>
               {getWidgetTitle(id, widget.title)}
             </h3>
           </div>
@@ -219,7 +219,7 @@ function MobileBookingCard({ booking, actions }) {
     <article className="w-full min-w-0 rounded-[18px] border border-[#f8dce8] bg-[#fff9fc] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-extrabold text-[#432744]">{booking.customerName}</p>
+          <p className="text-sm font-bold text-[#432744]">{booking.customerName}</p>
           <div className="mt-1 flex flex-col">
             <span className="text-[11px] font-semibold text-[#8a7082]">{formatDate(booking.bookingDateTime || booking.startTimeValue)}</span>
             <span className="text-[11px] text-[#c28ca6]">{formatBookingWindow(booking)}</span>
@@ -264,6 +264,12 @@ export function StaffDashboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [bookings, setBookings] = useState([]);
   const [selectedStaffNotesBooking, setSelectedStaffNotesBooking] = useState(null);
   const [bookingPagination, setBookingPagination] = useState({
@@ -1123,11 +1129,7 @@ export function StaffDashboardPage() {
                         bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
                       ">
 
-          {error ? (
-            <div className="rounded-[16px] border border-[#f7d4df] bg-[#fff3f7] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+
 
           <TopMetricsRow metrics={metrics} />
 

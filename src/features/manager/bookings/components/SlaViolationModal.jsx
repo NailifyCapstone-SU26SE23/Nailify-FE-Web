@@ -49,12 +49,12 @@ export const SlaViolationModal = () => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-red-600 to-rose-700 p-1 shadow-[0_20px_50px_-12px_rgba(225,29,72,0.5)]"
+              className="relative overflow-hidden rounded-lg bg-gradient-to-br from-red-600 to-rose-700 p-1 shadow-[0_20px_50px_-12px_rgba(225,29,72,0.5)]"
             >
               {/* Pulse effect background */}
               <div className="absolute -left-[50%] -top-[50%] h-[200%] w-[200%] animate-[spin_4s_linear_infinite] bg-[conic-gradient(transparent,rgba(255,255,255,0.3),transparent)]" />
 
-              <div className="relative rounded-[22px] bg-white p-6 shadow-inner">
+              <div className="relative rounded-lg bg-white p-6 shadow-inner">
                 <button
                   onClick={handleClose}
                   className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"

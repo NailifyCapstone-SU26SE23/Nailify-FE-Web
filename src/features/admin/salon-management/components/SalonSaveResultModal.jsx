@@ -68,7 +68,7 @@ export function SalonSaveResultModal({
                 {isSuccess ? <Check size={20} /> : <AlertTriangle size={20} />}
               </div>
               <div>
-                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] bg-white/20 text-white">
+                <span className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] bg-white/20 text-white">
                   {isSuccess ? "Success" : "Error"}
                 </span>
                 <h3 className=" mt-3 text-2xl font-semibold">
@@ -92,7 +92,7 @@ export function SalonSaveResultModal({
         {/* Content */}
         <div className="space-y-4 px-6 py-6 text-center">
           <div
-            className={`rounded-[22px] border p-5 ${isSuccess
+            className={`rounded-lg border p-5 ${isSuccess
               ? "border-emerald-100 bg-[#f4fffb] text-emerald-900"
               : "border-rose-100 bg-[#fff7fa] text-rose-900"
               }`}
@@ -102,7 +102,7 @@ export function SalonSaveResultModal({
             </p>
             <p className="mt-1 text-xs opacity-80">{result.message}</p>
             {isSuccess && (
-              <p className="mt-4 text-[10px] font-extrabold uppercase tracking-wider text-emerald-500 animate-pulse">
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-emerald-500 animate-pulse">
                 {redirectMessage}
               </p>
             )}

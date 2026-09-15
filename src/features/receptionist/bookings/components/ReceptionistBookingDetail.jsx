@@ -140,15 +140,15 @@ const ACTION_CENTER = [
 function SectionCard({ title, subtitle, badge, children, className = "" }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
+      className={`rounded-lg border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-extrabold text-[#4a3741]">{title}</h3>
+          <h3 className="text-sm font-bold text-[#4a3741]">{title}</h3>
           {subtitle ? <p className="mt-1 text-xs text-[#a48796]">{subtitle}</p> : null}
         </div>
         {badge ? (
-          <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-extrabold text-[#eb5b92]">
+          <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-bold text-[#eb5b92]">
             {badge}
           </span>
         ) : null}
@@ -208,7 +208,7 @@ export function ReceptionistBookingDetail({ booking }) {
       key: "artist",
       render: (_, row) => (
         <div className="flex items-center gap-2.5">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
+          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}>
             {row.initials}
           </div>
           <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
@@ -226,7 +226,7 @@ export function ReceptionistBookingDetail({ booking }) {
     //   dataIndex: "status",
     //   key: "status",
     //   render: (value, row) => (
-    //     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.statusTone}`}>
+    //     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${row.statusTone}`}>
     //       {value}
     //     </span>
     //   ),
@@ -291,7 +291,7 @@ export function ReceptionistBookingDetail({ booking }) {
                       </div>
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">{t("receptionist.customers.tier") || "Membership"}</p>
-                        <p className="mt-1 text-sm font-extrabold text-[#eb5b92]">Gold Tier</p>
+                        <p className="mt-1 text-sm font-bold text-[#eb5b92]">Gold Tier</p>
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -380,7 +380,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <div className="mt-4 border-t border-[#f3d7e2] pt-4">
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-medium text-[#8f7b88]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}</span>
-                    <span className="text-sm font-extrabold text-[#eb5b92]">$176.50</span>
+                    <span className="text-sm font-bold text-[#eb5b92]">$176.50</span>
                   </div>
                 </div>
 
@@ -407,7 +407,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Add Payment")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-bold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
                 >
                   <CreditCard size={14} />
                   {t("receptionist.payments.checkoutTitle") || "Add Payment"}
@@ -415,7 +415,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 <button
                   type="button"
                   onClick={() => handleMockAction("Print Receipt")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-bold text-[#eb5b92]"
                 >
                   <Printer size={14} />
                   {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
@@ -442,7 +442,7 @@ export function ReceptionistBookingDetail({ booking }) {
                     <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
                       <Icon size={18} />
                     </span>
-                    <p className="mt-3 text-xs font-extrabold text-[#4a3741]">
+                    <p className="mt-3 text-xs font-bold text-[#4a3741]">
                       {item.label === "Check In"
                         ? t("receptionist.dashboard.checkinBtn") || item.label
                         : item.label === "Start Service"
@@ -496,7 +496,7 @@ export function ReceptionistBookingDetail({ booking }) {
                   <span
                     className={
                       index === 0
-                        ? "rounded-full bg-[#efeafd] px-2.5 py-1 text-[10px] font-extrabold text-[#7c63d8]"
+                        ? "rounded-full bg-[#efeafd] px-2.5 py-1 text-[10px] font-bold text-[#7c63d8]"
                         : "font-bold text-[#4a3741]"
                     }
                   >
@@ -527,7 +527,7 @@ export function ReceptionistBookingDetail({ booking }) {
                 referrerPolicy="no-referrer"
               />
               <div>
-                <p className="text-xs font-extrabold text-[#4a3741]">Sophia Hartwell</p>
+                <p className="text-xs font-bold text-[#4a3741]">Sophia Hartwell</p>
                 <p className="mt-1 text-[10px] text-[#a48796]">July 5, 2025</p>
               </div>
             </div>
@@ -550,7 +550,7 @@ export function ReceptionistBookingDetail({ booking }) {
             <button
               type="button"
               onClick={() => toast.success(language === "vi" ? "Đã lưu ghi chú trong giao diện mô phỏng." : "Receptionist notes saved in mock UI.")}
-              className="mt-4 w-full rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
+              className="mt-4 w-full rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-3 text-xs font-bold text-[#eb5b92]"
             >
               {language === "vi" ? "Lưu ghi chú" : "Save Notes"}
             </button>
@@ -558,7 +558,7 @@ export function ReceptionistBookingDetail({ booking }) {
 
           {/* <SectionCard title="Next Appointment">
             <div className="rounded-lg border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
-              <p className="text-xs font-extrabold text-[#eb5b92]">Tomorrow - 2:30 PM</p>
+              <p className="text-xs font-bold text-[#eb5b92]">Tomorrow - 2:30 PM</p>
               <p className="mt-2 text-sm font-bold text-[#4a3741]">Gel Manicure + Nail Art</p>
               <p className="mt-2 text-[11px] text-[#8f7b88]">with Luna Park - Chair #02</p>
             </div>
@@ -566,14 +566,14 @@ export function ReceptionistBookingDetail({ booking }) {
               <button
                 type="button"
                 onClick={() => handleMockAction("View next appointment")}
-                className="rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-2.5 text-xs font-extrabold text-[#eb5b92]"
+                className="rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-2.5 text-xs font-bold text-[#eb5b92]"
               >
                 View
               </button>
               <button
                 type="button"
                 onClick={() => handleMockAction("Edit next appointment")}
-                className="rounded-xl border border-[#e3dbff] bg-[#f2edff] px-4 py-2.5 text-xs font-extrabold text-[#7c63d8]"
+                className="rounded-xl border border-[#e3dbff] bg-[#f2edff] px-4 py-2.5 text-xs font-bold text-[#7c63d8]"
               >
                 Edit
               </button>

@@ -80,7 +80,7 @@ export function ConfirmBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Khách hàng" : "Customer"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.customerName}</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.customerName}</p>
                   </div>
                 </div>
               )}
@@ -91,7 +91,7 @@ export function ConfirmBookingModal({
                   </div>
                   <div>
                     <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{isVi ? "Thời gian" : "Time Slot"}</p>
-                    <p className="font-extrabold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
+                    <p className="font-bold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
                   </div>
                 </div>
               )}
@@ -109,7 +109,7 @@ export function ConfirmBookingModal({
         <div className="rounded-2xl border border-[#d1fad7] bg-[#f4fdf6] p-4 flex gap-3 shadow-[0_2px_12px_rgba(47,162,95,0.03)]">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2fa25f] text-white text-[10px] font-bold">✓</div>
           <div>
-            <p className="text-xs font-extrabold text-[#1d6b3e]">{isVi ? "Thao tác này sẽ:" : "This action will:"}</p>
+            <p className="text-xs font-bold text-[#1d6b3e]">{isVi ? "Thao tác này sẽ:" : "This action will:"}</p>
             <ul className="mt-1 space-y-1 text-xs text-[#446b53] font-medium leading-relaxed">
               <li>• {isVi ? "Thay đổi trạng thái lịch hẹn thành Đã xác nhận" : "Change booking status to Confirmed"}</li>
               <li>• {isVi ? "Khóa khung giờ đặt lịch và đặt lịch nghệ sĩ làm móng" : "Lock appointment slot and reserve Staff Artist schedule"}</li>

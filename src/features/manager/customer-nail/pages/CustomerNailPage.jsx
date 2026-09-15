@@ -14,7 +14,7 @@ import { CustomerNailStatusBadge } from "../../../../shared/components/common/Cu
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[24px] border border-[#f8deea] shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
+      className={`rounded-lg border border-[#f8deea] shadow-[0_12px_28px_rgba(236,72,153,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_38px_rgba(236,72,153,0.1)] ${className}`}
     >
       {children}
     </article>
@@ -29,7 +29,7 @@ Card.propTypes = {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
+      <h3 className="text-sm font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
     </div>
   );
@@ -363,10 +363,10 @@ function getCardColorStyle(customColor) {
 
 function StatCard({ title, value, note, icon: Icon, toneClassName }) {
   return (
-    <div className="group/stat rounded-[24px] border border-[#f6dce7] bg-white/95 p-5 shadow-[0_8px_30px_rgba(236,72,153,0.04)] backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_35px_rgba(236,72,153,0.1)]">
+    <div className="group/stat rounded-lg border border-[#f6dce7] bg-white/95 p-5 shadow-[0_8px_30px_rgba(236,72,153,0.04)] backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-[#ea4f93] hover:shadow-[0_20px_35px_rgba(236,72,153,0.1)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c08aa4]">{title}</p>
           <p className="mt-2.5 text-3xl font-bold text-[#402542]">{value}</p>
           <p className="mt-1.5 text-xs text-[#a07c90] group-hover/stat:text-[#ea4f93] transition-colors">{note}</p>
         </div>
@@ -400,7 +400,7 @@ function CustomerNailCard({ nail, language }) {
   } : {};
 
   return (
-    <div className="group relative overflow-hidden rounded-[24px] border border-[#fdf7f9] bg-white shadow-[0_8px_30px_rgba(236,72,153,0.04)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
+    <div className="group relative overflow-hidden rounded-lg border border-[#fdf7f9] bg-white shadow-[0_8px_30px_rgba(236,72,153,0.04)] transition-all duration-500 hover:-translate-y-1 hover:rotate-1 hover:shadow-[0_20px_50px_rgba(236,72,153,0.15)]">
       {/* 🎨 TOP: Large Nail Preview */}
       <div className="relative h-[260px] w-full overflow-hidden bg-gradient-to-b from-[#fffbfd] to-[#fff5f9] perspective-1000">
         {/* Soft shadow beneath nail */}
@@ -484,6 +484,12 @@ export function CustomerNailPage() {
   const [allNails, setAllNails] = useState([]); // for statistics calculations
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -762,7 +768,7 @@ export function CustomerNailPage() {
 
           <div className="p-6">
             {filteredNails.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
+              <div className="rounded-lg border border-dashed border-[#f2c7da] bg-[linear-gradient(180deg,#fffafb_0%,#fff5f9_100%)] py-16 text-center">
                 <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
                   <Palette size={32} className="text-[#ea4f93]" />
                 </div>

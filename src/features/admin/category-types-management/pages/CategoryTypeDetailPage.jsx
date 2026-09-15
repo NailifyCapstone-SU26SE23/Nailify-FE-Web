@@ -1,6 +1,6 @@
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -26,7 +26,7 @@ function validateForm(formValues, t) {
 }
 
 export function CategoryTypeDetailPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { categoryTypeId } = useParams();
@@ -34,12 +34,17 @@ export function CategoryTypeDetailPage() {
   const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [createCategoryError, setCreateCategoryError] = useState("");
@@ -92,20 +97,7 @@ export function CategoryTypeDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [categoryTypeId]);
-
-  const summaryItems = useMemo(() => {
-    if (!categoryType || !draft) {
-      return [];
-    }
-
-    return [
-      [t("adminCategoryTypes.categoryTypeIdLabel"), String(categoryType.categoryTypeId)],
-      [t("adminCategoryTypes.status"), draft.status],
-      [t("adminCategoryTypes.categoriesCountLabel"), String(categoryType.categoriesCount)],
-      [t("adminCategoryTypes.categoriesLabel"), categoryType.categoriesLabel],
-    ];
-  }, [categoryType, draft]);
+  }, [categoryTypeId, t]);
 
   const handleFieldChange = (field, value) => {
     setDraft((current) => ({
@@ -251,7 +243,7 @@ export function CategoryTypeDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminCategoryTypes}
@@ -308,25 +300,17 @@ export function CategoryTypeDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
+
+
 
       {isLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">{t("adminCategoryTypes.loadingDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4 ">
-          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {t("adminCategoryTypes.categoryTypeInformation")}
@@ -441,10 +425,10 @@ export function CategoryTypeDetailPage() {
 
       {showCreateCategoryModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#311422]/35 p-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-lg rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
+          <div className="w-full max-w-lg rounded-lg border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
               <div>
-                <h3 className="text-lg font-extrabold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
+                <h3 className="text-lg font-bold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
                 <p className="mt-1 text-sm text-[#b1859d]">
                   {t("adminCategoryTypes.addNestedCategoryDesc", { name: categoryType?.name || "this category type" })}
                 </p>

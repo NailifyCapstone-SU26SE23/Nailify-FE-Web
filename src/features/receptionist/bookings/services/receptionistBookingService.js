@@ -422,3 +422,20 @@ export async function assignChairToBooking(bookingId, chairId) {
 
   return unwrapResponse(response, "Failed to assign chair to booking.");
 }
+
+export async function fetchBookingRating(bookingId) {
+  const normalizedId = String(bookingId || "").trim();
+  if (!normalizedId) return null;
+
+  try {
+    const response = await axiosClient.get(`/BookingRatings/by-booking/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data?.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}

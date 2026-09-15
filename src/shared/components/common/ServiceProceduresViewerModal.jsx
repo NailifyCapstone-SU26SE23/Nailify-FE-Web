@@ -183,7 +183,7 @@ export function ServiceProceduresViewerModal({
 
                         {/* Estimated Time Badge */}
                         <div className="flex items-center gap-2 text-xs shrink-0">
-                          <span className="flex items-center justify-center gap-1.5 font-extrabold text-[#E84F93]">
+                          <span className="flex items-center justify-center gap-1.5 font-bold text-[#E84F93]">
                             <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {formatTimeOnly(procedure.estimatedStartTime)} - {formatTimeOnly(procedure.estimatedEndTime)}
                           </span>
                           <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">

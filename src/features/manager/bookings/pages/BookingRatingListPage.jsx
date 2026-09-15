@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
@@ -156,7 +157,7 @@ function SentimentGauge({ average, total }) {
           out of 5
         </text>
       </svg>
-      <span className={`-mt-2 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
+      <span className={`-mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
         {tier.label}
       </span>
       <span className="mt-2 text-[10px] font-semibold text-[#a88a9f] uppercase tracking-wider">
@@ -171,6 +172,12 @@ export function BookingRatingListPage() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -446,7 +453,7 @@ export function BookingRatingListPage() {
             <div className="lg:col-span-7 space-y-6">
 
               {/* Search & Filters Command Bar */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-3xl border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
                 {/* <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                   <input
@@ -498,14 +505,14 @@ export function BookingRatingListPage() {
                   />
                 </div>
               </div>
-              <div className="relative flex-1 w-full bg-white rounded-3xl">
+              <div className="relative flex-1 w-full bg-white rounded-lg">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
                 <input
                   type="text"
                   placeholder={language === "vi" ? "Tìm kiếm theo tên khách hàng hoặc mã đơn..." : "Search by customer name or order code..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 rounded-3xl"
+                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 rounded-lg"
                 />
               </div>
 
@@ -536,7 +543,7 @@ export function BookingRatingListPage() {
                       <motion.div
                         key={rating.bookingRatingId}
                         variants={fadeInUp}
-                        className={`bg-white border ${tier.border} shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-[2rem] p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.04)] hover:-translate-y-0.5`}
+                        className={`bg-white border ${tier.border} shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-lg p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300 hover:shadow-[0_16px_40px_rgba(0,0,0,0.04)] hover:-translate-y-0.5`}
                       >
                         {/* Upper row: avatar, name, subtitle, stars, tier badge */}
                         <div className="flex items-start justify-between gap-4">
@@ -573,7 +580,7 @@ export function BookingRatingListPage() {
                             </div>
                           </div>
 
-                          <span className={`shrink-0 px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
+                          <span className={`shrink-0 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
                             {tier.label}
                           </span>
                         </div>
@@ -680,7 +687,7 @@ export function BookingRatingListPage() {
 
               {/* Pagination footer */}
               {processedRatings.length > 0 && (
-                <div className="flex justify-between items-center px-6 py-4.5 border border-slate-200/60 bg-white rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+                <div className="flex justify-between items-center px-6 py-4.5 border border-slate-200/60 bg-white rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
                   <span className="text-xs text-[#a88a9f]">
                     {language === "vi" ? "Hiển thị" : "Showing"} <span className="font-bold text-[#2d1b35]">{displayedRatings.length}</span> {language === "vi" ? "kết quả" : "items"}
                   </span>
@@ -697,7 +704,7 @@ export function BookingRatingListPage() {
             <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-6">
 
               {/* Signature card: sentiment gauge */}
-              <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
+              <div className="bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-[#2d1b35]">{language === "vi" ? "Tóm tắt đánh giá" : "Rating Summary"}</h3>
                   <p className="text-[10px] text-[#a88a9f]">{language === "vi" ? "Chỉ số điểm hài lòng tổng hợp." : "Aggregated satisfaction score index."}</p>
@@ -728,7 +735,7 @@ export function BookingRatingListPage() {
               </div>
 
               {/* Sub-criteria indices */}
-              <div className="bg-white/80 backdrop-blur-md rounded-[2.25rem] border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
+              <div className="bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] space-y-5">
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-[#2d1b35]">{language === "vi" ? "Chỉ số hài lòng" : "Satisfaction Indices"}</h3>
                   <p className="text-[10px] text-[#a88a9f]">{language === "vi" ? "Các chỉ số cốt lõi đo lường lòng trung thành của khách hàng." : "Core indicators mapping customer loyalty."}</p>
@@ -788,7 +795,7 @@ export function BookingRatingListPage() {
               {/* Performance insight quote */}
               <div className="bg-[#fff9fb]
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-                       rounded-[2.25rem] p-6 text-white shadow-lg space-y-4 border border-[#ea4f93]">
+                       rounded-lg p-6 text-white shadow-lg space-y-4 border border-[#ea4f93]">
 
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -803,7 +810,8 @@ export function BookingRatingListPage() {
                       ? language === "vi" ? "Hiệu suất xuất sắc! Salon của bạn đang mang lại các tiêu chuẩn hài lòng vượt trội — hãy tiếp tục phát huy." : "Outstanding performance! Your salon is delivering exceptional satisfaction benchmarks — keep it up."
                       : stats.average >= 3.5
                         ? language === "vi" ? "Mức độ dịch vụ đang tốt, nhưng nhật ký đúng giờ cho thấy cần cải thiện để tối đa hóa các cuộc hẹn lặp lại." : "Service levels are healthy, but punctuality logs show room for improvement to maximize repeat appointments."
-                        : "Action required — review cleanliness audits and client remarks on service times to re-establish standards."
+                        : language === "vi" ? "Hành động cần thực hiện — xem lại các đánh giá và nhận xét của khách hàng về thời gian dịch vụ để thiết lập lại tiêu chuẩn."
+                          : "Action required — review cleanliness audits and client remarks on service times to re-establish standards."
                     }
                   </p>
                 </div>

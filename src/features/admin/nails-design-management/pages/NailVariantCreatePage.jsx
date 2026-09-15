@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { ArrowLeft, FileImage, LoaderCircle, Save, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -43,6 +44,12 @@ export function NailVariantCreatePage() {
   const [isLoadingReferences, setIsLoadingReferences] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const previewImageUrl = useMemo(
     () => (formValues.image ? URL.createObjectURL(formValues.image) : ""),
     [formValues.image],
@@ -206,13 +213,13 @@ export function NailVariantCreatePage() {
         className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"
       >
         <div className="space-y-4">
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
             <div className="flex items-start gap-3">
               <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">
                 <FileImage size={18} />
               </div>
               <div>
-                <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.variantInformation")}</h2>
+                <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.variantInformation")}</h2>
                 <p className="mt-1 text-sm text-[#a88a9d]">
                   {t("adminNailsDesignManagement.nameAndImageFileAreRequired")}
                 </p>
@@ -256,14 +263,14 @@ export function NailVariantCreatePage() {
             </div>
           </section>
 
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-5 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="rounded-[16px] bg-[#fff0f7] p-3 text-[#ea4f93]">
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.nailTryonSetup")}</h2>
+                  <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.nailTryonSetup")}</h2>
                   <p className="mt-1 text-sm text-[#a88a9d]">
                     {t("adminNailsDesignManagement.cachedInBrowserRouteStateUntil")
                     }
@@ -294,11 +301,7 @@ export function NailVariantCreatePage() {
             </div>
           </section>
 
-          {error ? (
-            <div className="rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3 text-sm font-semibold text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
+
 
           <div className="flex flex-wrap gap-3">
             <button
@@ -322,8 +325,8 @@ export function NailVariantCreatePage() {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-[22px] border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-            <h2 className="font-extrabold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
+          <section className="rounded-lg border border-[#f8d3e2] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+            <h2 className="font-bold text-[#432744]">{t("adminNailsDesignManagement.preview")}</h2>
             <div className="mt-4 overflow-hidden rounded-[18px] bg-[#f6edf2]">
               {previewImageUrl ? (
                 <img
@@ -338,7 +341,7 @@ export function NailVariantCreatePage() {
                 </div>
               )}
             </div>
-            <p className="mt-4 text-sm font-extrabold text-[#432744]">{formValues.name || (t("adminNailsDesignManagement.unnamedVariant"))}</p>
+            <p className="mt-4 text-sm font-bold text-[#432744]">{formValues.name || (t("adminNailsDesignManagement.unnamedVariant"))}</p>
             <p className="mt-1 text-xs text-[#a88a9d]">
               {t("adminNailsDesignManagement.theUploadedImageAndCachedTryon")
               }

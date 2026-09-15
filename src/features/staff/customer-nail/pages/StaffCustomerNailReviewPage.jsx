@@ -542,7 +542,7 @@ function NailBlueprint({ nail, componentsList }) {
           </clipPath>
         </defs>
       </svg>
-      <div className="relative rounded-[24px] border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="relative rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
         <div className="flex min-h-[360px] flex-nowrap items-center justify-start sm:justify-center overflow-x-auto pb-4 gap-3 md:gap-5 lg:gap-6">
           {renderNailPreview(1, "Thumb")}
           {renderNailPreview(2, "Index")}
@@ -555,7 +555,7 @@ function NailBlueprint({ nail, componentsList }) {
       {/* Selected Components / Accessories */}
       {componentsList.length > 0 && (
         <div className="mt-6">
-         
+
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {componentsList.map((itemComponent, idx) => {
               const comp = itemComponent.component || itemComponent.customerComponent;
@@ -619,6 +619,12 @@ export function StaffCustomerNailReviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
@@ -843,16 +849,16 @@ export function StaffCustomerNailReviewPage() {
                   <img crossOrigin="anonymous"
                     src={nail.imageUrl}
                     alt={nail.name}
-                    className="h-24 w-24 rounded-[24px] border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)] transition duration-300 hover:scale-105"
+                    className="h-24 w-24 rounded-lg border-4 border-white object-cover shadow-[0_16px_32px_rgba(236,72,153,0.18)] transition duration-300 hover:scale-105"
                   />
                 ) : (
-                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-bold text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#ff9ac2] via-[#ea4f93] to-[#c63d79] text-2xl font-bold text-white shadow-[0_16px_32px_rgba(234,79,147,0.22)]">
                     <Palette size={34} />
                   </div>
                 )}
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-2xl font-extrabold text-[#402542]">
+                    <h2 className="text-2xl font-bold text-[#402542]">
                       {nail.name || (language === "vi" ? "Thiết kế chưa đặt tên" : "Untitled Design")}
                     </h2>
                     <CustomerNailStatusBadge
@@ -874,7 +880,7 @@ export function StaffCustomerNailReviewPage() {
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#ea4f93] text-white">
                       <DollarSign size={13} />
                     </span>
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
                   </div>
                   <p className="mt-2 text-xl font-black text-[#ea4f93]">{formatVND(recommendedStats.price)}</p>
                 </div>
@@ -883,7 +889,7 @@ export function StaffCustomerNailReviewPage() {
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#402542] text-white">
                       <Clock size={13} />
                     </span>
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
                   </div>
                   <p className="mt-2 text-xl font-black text-[#402542]">{formatDuration(recommendedStats.duration, language)}</p>
                 </div>
@@ -953,7 +959,7 @@ export function StaffCustomerNailReviewPage() {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#d43d81] text-white shadow-sm shrink-0">
                         <Sparkles size={14} />
                       </span>
-                      <h3 className="text-lg font-serif font-extrabold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
+                      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
                     </div>
                     <p className="mt-1 text-xs text-[#a988a0]">
                       {language === "vi" ? "Giá và thời gian được hệ thống tính toán cho yêu cầu này." : "System-calculated price and duration for this request."}
@@ -992,7 +998,7 @@ export function StaffCustomerNailReviewPage() {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
                     <div>
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Kiểu cơ bản" : "Base Shape"}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Kiểu cơ bản" : "Base Shape"}</span>
                       <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{nail.nailShape?.name || (language === "vi" ? "Tiêu chuẩn" : "Standard")}</p>
                     </div>
                     <div className="text-right">
@@ -1004,7 +1010,7 @@ export function StaffCustomerNailReviewPage() {
 
                   <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
                     <div>
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Bề mặt hoàn thiện" : "Surface Finish"}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Bề mặt hoàn thiện" : "Surface Finish"}</span>
                       <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{nail.nailSurface?.name || (language === "vi" ? "Bóng" : "Glossy")}</p>
                     </div>
                     <div className="text-right">
@@ -1016,7 +1022,7 @@ export function StaffCustomerNailReviewPage() {
 
                   <div className="flex justify-between items-center rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
                     <div>
-                      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Phụ kiện" : "Add-ons"}</span>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-[#c08aa4]">{language === "vi" ? "Phụ kiện" : "Add-ons"}</span>
                       <p className="mt-0.5 text-sm font-bold text-[#3f2240]">{componentsList.length} {language === "vi" ? "Món" : "Items"}</p>
                     </div>
                     <div className="text-right">
@@ -1027,8 +1033,8 @@ export function StaffCustomerNailReviewPage() {
                   </div>
                 </div>
 
-                  <div className="rounded-2xl bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] p-4 text-white shadow-lg text-center space-y-1">
-                  <span className="block text-[10px] font-extrabold uppercase tracking-widest text-pink-100">{language === "vi" ? "Giá hệ thống" : "System Price"}</span>
+                <div className="rounded-2xl bg-gradient-to-r from-[#ea4f93] via-[#df4588] to-[#c63d79] p-4 text-white shadow-lg text-center space-y-1">
+                  <span className="block text-[10px] font-bold uppercase tracking-widest text-pink-100">{language === "vi" ? "Giá hệ thống" : "System Price"}</span>
                   <div className="flex items-center justify-center gap-2">
                     <span className="text-2xl font-black">{formatVND(recommendedStats.price)}</span>
                     <span className="text-xs font-semibold text-pink-100">• {formatDuration(recommendedStats.duration, language)}</span>
@@ -1085,7 +1091,7 @@ export function StaffCustomerNailReviewPage() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d97706] text-white shadow-sm font-bold text-xs">
                   !
                 </span>
-                <h4 className="font-extrabold text-[#b45309] text-sm">
+                <h4 className="font-bold text-[#b45309] text-sm">
                   {language === "vi" ? "Khách mang phụ kiện tới" : "Customer-provided accessories"}
                 </h4>
               </div>
@@ -1104,7 +1110,7 @@ export function StaffCustomerNailReviewPage() {
           )}
 
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#c08aa4] mb-2">
               {language === "vi" ? "Chi phí gia công thêm (VNĐ)" : "Additional Labor Cost (VND)"}
             </label>
             <Input
@@ -1134,7 +1140,7 @@ export function StaffCustomerNailReviewPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#c08aa4] mb-2">
               {language === "vi" ? "Thời gian gia công thêm (phút)" : "Additional Labor Duration (minutes)"}
             </label>
             <Input
@@ -1164,7 +1170,7 @@ export function StaffCustomerNailReviewPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] font-extrabold uppercase tracking-widest text-[#c08aa4] mb-2">
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#c08aa4] mb-2">
               {language === "vi" ? "Ghi chú của thợ (Tùy chọn)" : "Artist Review Notes (Optional)"}
             </label>
             <Input.TextArea

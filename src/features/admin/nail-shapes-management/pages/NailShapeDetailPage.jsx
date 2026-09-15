@@ -46,6 +46,12 @@ export function NailShapeDetailPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -324,7 +330,7 @@ export function NailShapeDetailPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
-      <header className="flex flex-col gap-4 rounded-[24px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
           <Link
             to={ROUTES.adminNailShapes}
@@ -383,25 +389,17 @@ export function NailShapeDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
+
+
 
       {isLoading ? (
-        <div className="flex min-h-[320px] items-center justify-center rounded-[24px] bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
           <div className="text-center text-sm text-slate-600">{t("adminNailShapesManagement.loadingNailShapeDetails")}</div>
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
-          <section className="rounded-[24px] border border-rose-50 bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
             <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
               <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
               {t("adminNailShapesManagement.nailShapeInformation")}
@@ -464,7 +462,7 @@ export function NailShapeDetailPage() {
             </div>
           </section>
 
-          <section className="min-w-0 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <section className="min-w-0 rounded-lg bg-white p-5 shadow-sm ring-1 ring-slate-100">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-800">{t("adminNailShapesManagement.shapeMethodConfigs")}</h2>
               <Button
@@ -514,7 +512,7 @@ export function NailShapeDetailPage() {
                   sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {val}
+                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
                     </span>
                   )
                 },
@@ -634,7 +632,7 @@ export function NailShapeDetailPage() {
               {editingConfig ? <Pencil size={18} /> : <Plus size={18} />}
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-[#432744]">
+              <h3 className="text-lg font-bold text-[#432744]">
                 {editingConfig ? (t("adminNailShapesManagement.editShapeMethodConfig")) : (t("adminNailShapesManagement.addShapeMethodConfig"))}
               </h3>
               <p className="mt-1 text-xs font-medium text-[#b58a9f]">

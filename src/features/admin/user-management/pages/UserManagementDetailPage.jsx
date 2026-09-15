@@ -79,7 +79,7 @@ function getLocalizedStatus(status, t) {
 
 function InfoSection({ icon: Icon, title, children }) {
   return (
-    <section className="rounded-[22px] border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)]">
+    <section className="rounded-lg border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)]">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d45b9f]">
           <Icon size={18} />
@@ -201,7 +201,7 @@ export function UserManagementDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-full items-center justify-center rounded-[24px] bg-white p-6">
+      <section className="flex min-h-full items-center justify-center rounded-lg bg-white p-6">
         <div className="flex items-center gap-3 text-sm text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
           {t("userManagement.detail.loadingDetails")}

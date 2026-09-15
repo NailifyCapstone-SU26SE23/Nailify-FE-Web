@@ -188,7 +188,7 @@ export function NailDesignManagementFormFields({
           onChange={onFieldChange("description")}
           rows={4}
           disabled={disabled}
-          className={`w-full rounded-[22px] border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          className={`w-full rounded-lg border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           placeholder="Describe the design concept"
         />
       </label>
@@ -202,7 +202,7 @@ export function NailDesignManagementFormFields({
           onChange={onFieldChange("notes")}
           rows={5}
           disabled={disabled}
-          className={`w-full rounded-[22px] border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          className={`w-full rounded-lg border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           placeholder="Add merchandising or publishing notes"
         />
       </label>

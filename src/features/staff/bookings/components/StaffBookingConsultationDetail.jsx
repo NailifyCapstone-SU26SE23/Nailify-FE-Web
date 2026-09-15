@@ -56,7 +56,7 @@ function SectionTitle({ icon: Icon, title }) {
   return (
     <div className="flex items-center gap-2">
       <Icon size={14} className="text-[#ea4f93]" />
-      <h2 className="text-xs font-extrabold text-[#ea4f93]">{title}</h2>
+      <h2 className="text-xs font-bold text-[#ea4f93]">{title}</h2>
     </div>
   );
 }
@@ -72,7 +72,7 @@ function InfoCard({ label, value, note, tone = "default" }) {
   return (
     <article className="rounded-[16px] border border-[#f6dbe7] bg-[#fff9fc] p-4">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{label}</p>
-      <p className={`mt-2 whitespace-pre-line text-sm font-extrabold ${valueTone}`}>{value}</p>
+      <p className={`mt-2 whitespace-pre-line text-sm font-bold ${valueTone}`}>{value}</p>
       {note ? <p className="mt-1 text-xs text-[#9a7f90]">{note}</p> : null}
     </article>
   );
@@ -113,7 +113,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                     {service.detailLabel || `Service ${index + 1}`}
                   </p>
-                  <p className="mt-2 break-words text-sm font-extrabold text-[#ea4f93]">{service.name}</p>
+                  <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
                   {service.nailServiceName ? (
                     <p className="mt-1 text-xs font-semibold text-[#7a6275]">
                       Nail service: {service.nailServiceName}
@@ -137,7 +137,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
-                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-extrabold text-[#8c63ef]">
+                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-bold text-[#8c63ef]">
                     {service.duration}
                   </span>
                 </div>
@@ -225,7 +225,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
             <p className="text-[15px] font-bold uppercase tracking-[0.16em] text-pink-500">
               Nail Variant Detail
             </p>
-            <h3 className="mt-2 text-2xl font-extrabold text-black">{variantDetail.name}</h3>
+            <h3 className="mt-2 text-2xl font-bold text-black">{variantDetail.name}</h3>
 
           </div>
           <button
@@ -270,7 +270,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                       referrerPolicy="no-referrer"
                     />
                     <div className="min-w-0">
-                      <p className="text-base font-extrabold capitalize text-[#3f2b3f]">
+                      <p className="text-base font-bold capitalize text-[#3f2b3f]">
                         {variantDetail.nailShape?.name}
                       </p>
                     </div>
@@ -280,7 +280,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
                   <div className="mt-3">
-                    <p className="text-base font-extrabold text-[#3f2b3f]">
+                    <p className="text-base font-bold text-[#3f2b3f]">
                       {variantDetail.nailSurface?.name}
                     </p>
                   </div>
@@ -313,7 +313,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                               referrerPolicy="no-referrer"
                             />
                             <div>
-                              <p className="text-sm font-extrabold text-[#3f2b3f]">
+                              <p className="text-sm font-bold text-[#3f2b3f]">
                                 {item.component?.name}
                               </p>
                               <p className="mt-1 text-xs text-[#a88a9d]">
@@ -418,7 +418,7 @@ function SuggestedCard({ item }) {
         referrerPolicy="no-referrer"
       />
       <div className="min-w-0">
-        <p className="truncate text-xs font-extrabold text-[#432744]">{item.name}</p>
+        <p className="truncate text-xs font-bold text-[#432744]">{item.name}</p>
         <p className="mt-1 text-[10px] text-[#aa8c9f]">{item.meta}</p>
       </div>
     </article>
@@ -523,7 +523,7 @@ export function StaffBookingConsultationDetail({
     <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
       <div className="mt-2 space-y-6">
-        <article className="rounded-3xl border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
+        <article className="rounded-lg border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
           {/* <div className="flex items-center gap-3 border-b border-[#fdebf3] pb-4 mb-6">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
               <UserRound size={16} className="text-[#ea4f93]" />
@@ -582,7 +582,7 @@ export function StaffBookingConsultationDetail({
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <div>
-                      <p className="text-2xl font-extrabold text-[#3f2b3f]">{data.customer.name}</p>
+                      <p className="text-2xl font-bold text-[#3f2b3f]">{data.customer.name}</p>
                       <p className="mt-1 text-sm text-[#9a7f90]">{data.customer.phone}</p>
                     </div>
                     {customerTier ? (
@@ -630,7 +630,7 @@ export function StaffBookingConsultationDetail({
           </div>
         </article>
 
-        <article className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-6 md:p-8 backdrop-blur-2xl shadow-sm transition-all hover:shadow-md">
+        <article className="relative overflow-hidden rounded-lg border border-white/60 bg-white/70 p-6 md:p-8 backdrop-blur-2xl shadow-sm transition-all hover:shadow-md">
           <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-[60px]" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#ffecd2]/40 to-[#fcb69f]/40 blur-[60px]" />
 
@@ -721,7 +721,7 @@ export function StaffBookingConsultationDetail({
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div className="space-y-4">
             {hasSelectedNailDesign ? (
-              <article className="relative overflow-hidden rounded-[24px] border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
+              <article className="relative overflow-hidden rounded-lg border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
                 {/* Decorative Orbs */}
                 <div className="pointer-events-none absolute -right-32 -top-32 h-72 w-72 rounded-full bg-gradient-to-br from-[#ffb4d6]/20 to-[#e4c1f9]/20 blur-[80px]" />
                 <div className="pointer-events-none absolute -bottom-32 -left-32 h-72 w-72 rounded-full bg-gradient-to-tr from-[#ffecd2]/30 to-[#fcb69f]/30 blur-[80px]" />
@@ -750,7 +750,7 @@ export function StaffBookingConsultationDetail({
                     <div className="relative mx-auto w-full max-w-[320px] lg:mx-0 lg:w-[45%] lg:max-w-none shrink-0">
                       {/* Glowing backdrop */}
                       <div className="absolute inset-0 bg-gradient-to-br from-[#ffb4d6]/30 to-[#e4c1f9]/30 blur-2xl rounded-full scale-90" />
-                      <div className="relative rounded-[24px] bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
+                      <div className="relative rounded-lg bg-white/60 backdrop-blur-md border border-white shadow-xl shadow-pink-500/5">
                         {data.design.variantDetail ? (
                           <ReadOnlyNailPreview
                             variantDetail={data.design.variantDetail}
@@ -779,7 +779,7 @@ export function StaffBookingConsultationDetail({
                         </h3>
                       </div>
 
-                      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-[24px] bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
+                      <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 rounded-lg bg-white/50 p-6 border border-white shadow-sm backdrop-blur-md">
                         {data.design.details
                           .filter((item) => {
                             if (item.label === "Service") return false;
@@ -806,7 +806,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceInProgress && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <Search size={18} className="text-[#ea4f93]" />
@@ -858,7 +858,7 @@ export function StaffBookingConsultationDetail({
             ) : null}
 
             {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2] shadow-inner">
                     <ClipboardCheck size={18} className="text-[#ea4f93]" />
