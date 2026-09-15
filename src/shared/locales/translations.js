@@ -179,7 +179,8 @@ export const translations = {
       "admin-analytics": "Analytics",
       "admin-reviews": "Reviews",
       "admin-complaints": "Complaints",
-      "admin-profile": "Profile"
+      "admin-profile": "Profile",
+      "admin-withdraw-requests": "Withdraw Requests",
     },
 
     // Header Content Titles & Descriptions (EN)
@@ -2759,7 +2760,8 @@ export const translations = {
       "admin-analytics": "Thống kê hệ thống",
       "admin-reviews": "Quản lý Đánh giá",
       "admin-complaints": "Khiếu nại",
-      "admin-profile": "Hồ sơ cá nhân"
+      "admin-profile": "Hồ sơ cá nhân",
+      "admin-withdraw-requests": "Yêu cầu rút tiền",
     },
 
     // Loyalty Transactions (VI)

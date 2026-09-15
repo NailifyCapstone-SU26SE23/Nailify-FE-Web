@@ -60,6 +60,8 @@ import { AdminSalonBookingRatingPage } from "../../features/admin/salon-bookings
 import { TransactionOverviewPage } from "../../features/admin/transaction-overview/pages/TransactionOverviewPage";
 import { LoyaltyTransactionsManagementPage } from "../../features/admin/loyalty-transactions-management/pages/LoyaltyTransactionsManagementPage";
 import { WalletTransactionsManagementPage } from "../../features/admin/wallet-transactions-management/pages/WalletTransactionsManagementPage";
+import { WithdrawRequestsPage } from "../../features/admin/withdraw-request-management/pages/WithdrawRequestsPage";
+import { WithdrawRequestDetailPage } from "../../features/admin/withdraw-request-management/pages/WithdrawRequestDetailPage";
 
 export const adminRoutes = [
   {
@@ -139,6 +141,14 @@ export const adminRoutes = [
       {
         path: ROUTES.adminWalletTransactions,
         element: <WalletTransactionsManagementPage />,
+      },
+      {
+        path: ROUTES.adminWithdrawRequests,
+        element: <WithdrawRequestsPage />,
+      },
+      {
+        path: ROUTES.adminWithdrawRequestDetail,
+        element: <WithdrawRequestDetailPage />,
       },
       {
         path: ROUTES.adminQuiz,
