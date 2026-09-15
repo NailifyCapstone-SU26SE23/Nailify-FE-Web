@@ -28,10 +28,8 @@ import {
 } from "../services/categoriesManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-
-
 function CategoryStatusBadge({ status }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
   const isStatusActive = normalizedStatus === "active";
   const className = isStatusActive
