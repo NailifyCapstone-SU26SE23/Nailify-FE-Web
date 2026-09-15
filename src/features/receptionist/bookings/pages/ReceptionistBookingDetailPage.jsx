@@ -1164,7 +1164,7 @@ export function ReceptionistBookingDetailPage() {
                       crossOrigin="anonymous"
                       src={customerProfile.avatarUrl}
                       alt={customerDisplayName}
-                      className="h-20 w-20 rounded-lg border-2 border-[#E84F93] object-cover shadow-md"
+                      className="h-20 w-20 rounded-full border-2 border-[#E84F93] object-cover shadow-md"
                     />
                   ) : (
                     <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-bold text-white shadow-md">
@@ -1298,7 +1298,7 @@ export function ReceptionistBookingDetailPage() {
           <DetailCard
             title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
             subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
-            badge="API Validated"
+          // badge="API Validated"
           >
             <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
               <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">

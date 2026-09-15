@@ -1471,7 +1471,7 @@ export function ManagerBookingListPage() {
                       <SkeletonLoader />
                     ) : filteredAppointments.length === 0 ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
                           <Search size={28} />
                         </div>
                         <p className="text-base font-bold text-[#2B182B]">{t("manager.bookings.noBookings") || "No bookings found"}</p>
