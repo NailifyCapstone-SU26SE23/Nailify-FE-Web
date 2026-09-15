@@ -1,10 +1,11 @@
-import { Input, Modal } from "antd";
+import { Input, Modal, Checkbox } from "antd";
 import { Canvas, FabricImage, Rect } from "fabric";
-import { Grid, Hand, Maximize2, Move, Sparkles } from "lucide-react";
+import { Grid, Hand, Maximize2, Move, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import womanHandImg from "../../../../shared/assets/images/womanHand.png";
 import manHandImg from "../../../../shared/assets/images/manHand.png";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const HAND_SLOT_CONFIG = {
   woman: [
@@ -861,12 +862,16 @@ export function InteractiveStudioPreview({
   onSelectNail,
   onSelectPlacement,
   onPlacementChange,
+  onRemovePlacements,
   previewRef,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItemsToRemove, setSelectedItemsToRemove] = useState([]);
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "hand"
   const [handGender, setHandGender] = useState("woman"); // "woman" | "man"
   const aspectRatio = useShapeAspectRatio(shapeImageUrl);
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   const openNailEditor = (fingerIndex) => {
     onSelectNail(fingerIndex);
@@ -885,7 +890,10 @@ export function InteractiveStudioPreview({
     || null;
 
   useEffect(() => {
-    if (!isModalOpen) return;
+    if (!isModalOpen) {
+      setSelectedItemsToRemove([]);
+      return;
+    }
     if (activeNailIndex === -1) {
       onSelectNail(3);
     }
@@ -895,7 +903,7 @@ export function InteractiveStudioPreview({
     if (!placement) {
       return (
         <p className="mt-3 text-[11px] font-semibold text-[#a98c9f]">
-          Select a component on this nail to edit exact coordinates and size.
+          {isVi ? "Chọn một phụ kiện trên móng này để chỉnh sửa tọa độ và kích thước chính xác." : "Select a component on this nail to edit exact coordinates and size."}
         </p>
       );
     }
@@ -947,7 +955,7 @@ export function InteractiveStudioPreview({
                 }`}
             >
               <Grid size={13} />
-              Grid
+              {isVi ? "Lưới" : "Grid"}
             </button>
             <button
               type="button"
@@ -958,13 +966,13 @@ export function InteractiveStudioPreview({
                 }`}
             >
               <Hand size={13} />
-              Hand
+              {isVi ? "Bàn tay" : "Hand"}
             </button>
           </div>
 
           {viewMode === "hand" && (
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-[#b07d97]">Model:</span>
+              <span className="text-[10px] font-bold text-[#b07d97]">{isVi ? "Mẫu" : "Model"}:</span>
               <button
                 type="button"
                 onClick={() => setHandGender("woman")}
@@ -973,7 +981,7 @@ export function InteractiveStudioPreview({
                   : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                   }`}
               >
-                👩 Female
+                👩 {isVi ? "Nữ" : "Female"}
               </button>
               <button
                 type="button"
@@ -983,21 +991,21 @@ export function InteractiveStudioPreview({
                   : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                   }`}
               >
-                👨 Male
+                👨 {isVi ? "Nam" : "Male"}
               </button>
             </div>
           )}
         </div>
 
         <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
-          <span>Surface Mode</span>
+          <span>{isVi ? "Kiểu bề mặt" : "Surface Mode"}</span>
           <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
             {finish}
           </span>
         </div>
 
         <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white/75 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
-          Click a nail to open its editor and edit component position there.
+          {isVi ? "Chọn một móng để mở trình chỉnh sửa và chỉnh sửa vị trí phụ kiện tại đó." : "Click a nail to open its editor and edit component position there."}
         </div>
 
         {viewMode === "hand" ? (
@@ -1082,7 +1090,7 @@ export function InteractiveStudioPreview({
         )}
 
         <div className="mt-5 text-center">
-          <p className="text-[10px] text-[#aa8c9f]">Current Design</p>
+          <p className="text-[10px] text-[#aa8c9f]">{isVi ? "Thiết kế hiện tại" : "Current Design"}</p>
           <p className="mt-1 text-sm font-bold text-[#ea4f93]">{activeTemplateName}</p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#d2508a]">
             <span>{selectedShape}</span>
@@ -1099,12 +1107,12 @@ export function InteractiveStudioPreview({
                 key={item}
                 className="rounded-full border border-[#f2bfd4] bg-white px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]"
               >
-                {activeNailIndex === -1 ? "All fingers" : NAIL_LABELS[activeNailIndex]}: {item}
+                {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: {item}
               </span>
             ))
           ) : (
             <span className="rounded-full border border-[#f0d7e3] bg-white px-2.5 py-1 text-[10px] font-bold text-[#b48aa0]">
-              {activeNailIndex === -1 ? "All fingers" : NAIL_LABELS[activeNailIndex]}: No decoration
+              {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: No decoration
             </span>
           )}
         </div>
@@ -1142,15 +1150,15 @@ export function InteractiveStudioPreview({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-[#402542]">
-                {NAIL_LABELS[modalFingerIndex]} Nail Editor
+                {NAIL_LABELS[modalFingerIndex]} {isVi ? "Chỉnh sửa" : "Editor"}
               </h3>
               <p className="mt-1 text-sm text-[#b06484]">
-                Select a component on this nail, then drag it or edit exact values below.
+                {isVi ? "Chọn một phụ kiện trên móng này, sau đó kéo nó hoặc chỉnh sửa giá trị chính xác bên dưới." : "Select a component on this nail, then drag it or edit exact values below."}
               </p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold text-[#ea4f93]">
               <Sparkles size={12} />
-              {modalFingerPlacements.length} component(s)
+              {modalFingerPlacements.length} {isVi ? "phụ kiện" : "components"}
             </div>
           </div>
         </div>
@@ -1159,7 +1167,7 @@ export function InteractiveStudioPreview({
           <div className="space-y-4">
             <div className="rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4 overflow-visible">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
-                Live Nail Canvas
+                {isVi ? "Trình chỉnh sửa móng" : "Live Nail Canvas"}
               </p>
               <div className="mt-4 flex justify-center overflow-visible px-2 py-3">
                 <FabricNailCanvas
@@ -1192,37 +1200,77 @@ export function InteractiveStudioPreview({
 
           <div className="space-y-4">
             <div className="rounded-2xl border border-[#f6d8e6] bg-[#fffafb] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
-                Components On This Nail
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">
+                  {isVi ? "Phụ kiện trên móng" : "Components On This Nail"}
+                </p>
+                {selectedItemsToRemove.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onRemovePlacements) onRemovePlacements(selectedItemsToRemove);
+                      setSelectedItemsToRemove([]);
+                    }}
+                    className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold text-red-600 transition hover:bg-red-100"
+                  >
+                    <Trash2 size={12} />
+                    {isVi ? `Xóa ${selectedItemsToRemove.length} mục` : `Delete ${selectedItemsToRemove.length}`}
+                  </button>
+                )}
+              </div>
               <div className="mt-3 space-y-2">
                 {modalFingerPlacements.length > 0 ? (
                   modalFingerPlacements.map((item) => (
-                    <button
+                    <div
                       key={item.key}
-                      type="button"
-                      onClick={() => onSelectPlacement(item.key)}
                       className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${modalPlacement?.key === item.key
                         ? "border-[#ea4f93] bg-[#fff0f8]"
                         : "border-[#f5d2e1] bg-white hover:border-[#ea4f93]"
                         }`}
                     >
-                      <img
-                        src={item.imageUrl}
-                        alt={item.label}
-                        className="h-12 w-12 rounded-xl border border-[#f3c8db] bg-white object-contain p-1"
+                      <Checkbox 
+                        checked={selectedItemsToRemove.includes(item.key)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedItemsToRemove(prev => [...prev, item.key]);
+                          } else {
+                            setSelectedItemsToRemove(prev => prev.filter(k => k !== item.key));
+                          }
+                        }}
                       />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-[#3f2240]">{item.label}</p>
-                        <p className="mt-1 text-xs text-[#9d7188]">
-                          X {Number(item.posX).toFixed(1)}% • Y {Number(item.posY).toFixed(1)}% • Scale {Number(item.scale).toFixed(2)}
-                        </p>
-                      </div>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => onSelectPlacement(item.key)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={item.label}
+                          className="h-12 w-12 rounded-xl border border-[#f3c8db] bg-white object-contain p-1"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-[#3f2240]">{item.label}</p>
+                          <p className="mt-1 text-xs text-[#9d7188]">
+                            X {Number(item.posX).toFixed(1)}% • Y {Number(item.posY).toFixed(1)}% • Scale {Number(item.scale).toFixed(2)}
+                          </p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onRemovePlacements) onRemovePlacements([item.key]);
+                          setSelectedItemsToRemove(prev => prev.filter(k => k !== item.key));
+                        }}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-red-400 hover:bg-red-50 hover:text-red-600"
+                        title={isVi ? "Xóa" : "Delete"}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   ))
                 ) : (
                   <p className="text-sm text-[#9d7188]">
-                    No decorations are currently placed on this nail.
+                    {isVi ? "Không có phụ kiện nào được đặt trên móng này." : "No decorations are currently placed on this nail."}
                   </p>
                 )}
               </div>
@@ -1232,7 +1280,7 @@ export function InteractiveStudioPreview({
               <div className="flex items-center gap-2 text-[#ea4f93]">
                 <Move size={14} />
                 <p className="text-xs font-bold uppercase tracking-[0.12em]">
-                  Selected Component
+                  {isVi ? "Thành phần đã chọn" : "Selected Component"}
                 </p>
               </div>
               {renderPlacementInputs(modalPlacement)}
