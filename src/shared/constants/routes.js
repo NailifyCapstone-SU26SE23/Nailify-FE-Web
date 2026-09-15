@@ -82,6 +82,8 @@ export const ROUTES = {
   adminLoyaltyTiers: "/admin/loyalty-tiers",
   adminLoyaltyTransactions: "/admin/loyalty-transactions",
   adminWalletTransactions: "/admin/wallet-transactions",
+  adminWithdrawRequests: "/admin/withdraw-requests",
+  adminWithdrawRequestDetail: "/admin/withdraw-requests/:requestId",
   adminServicePricing: "/admin/services",
   adminQuiz: "/admin/quiz",
   adminQuizCreate: "/admin/quiz/create",
@@ -152,6 +154,8 @@ export const getAdminStaffUpdateRoute = (staffId) =>
   `/admin/staff/${staffId}`;
 export const getAdminUserDetailRoute = (userId) =>
   `/admin/users/${userId}`;
+export const getAdminWithdrawRequestDetailRoute = (requestId) =>
+  `/admin/withdraw-requests/${requestId}`;
 export const getAdminLoyaltyTiersRoute = () =>
   "/admin/loyalty-tiers";
 export const getAdminServicePricingRoute = () =>

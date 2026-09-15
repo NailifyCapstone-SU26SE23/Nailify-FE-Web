@@ -304,11 +304,12 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
     pageSize = 100,
   } = filters ?? {};
 
-  const response = await axiosClient.get("/NailComponents", {
+  const response = await axiosClient.get("/Components", {
     headers: getAuthHeaders(),
     params: {
       pageNumber,
       pageSize,
+      status: "Active"
     },
   });
 
@@ -317,7 +318,7 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
 
   if (Array.isArray(data?.items)) {
     data.items.forEach((item) => {
-      const component = item?.component;
+      const component = item?.component || item;
       const componentId = Number(component?.componentId || item?.componentId || 0);
 
       if (!componentId || uniqueComponents.has(componentId)) {
@@ -326,11 +327,11 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
 
       uniqueComponents.set(componentId, {
         componentId,
-        name: String(component?.name || "").trim(),
-        imageUrl: String(component?.imageUrl || "").trim(),
-        componentType: String(component?.componentType || "").trim(),
-        price: Number(component?.price || 0),
-        duration: Number(component?.duration || 0),
+        name: String(component?.name || item?.name || "").trim(),
+        imageUrl: String(component?.imageUrl || item?.imageUrl || "").trim(),
+        componentType: String(component?.componentType || item?.componentType || "").trim(),
+        price: Number(component?.price || item?.price || 0),
+        duration: Number(component?.duration || item?.duration || 0),
       });
     });
   }

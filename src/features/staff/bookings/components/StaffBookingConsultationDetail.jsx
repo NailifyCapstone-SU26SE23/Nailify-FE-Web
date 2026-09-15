@@ -524,12 +524,7 @@ export function StaffBookingConsultationDetail({
                       bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
       <div className="mt-2 space-y-6">
         <article className="rounded-lg border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
-          {/* <div className="flex items-center gap-3 border-b border-[#fdebf3] pb-4 mb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
-              <UserRound size={16} className="text-[#ea4f93]" />
-            </div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-[#ea4f93]">Customer Information</h2>
-          </div> */}
+
           <div className="mb-6 flex items-center justify-between border-b border-[#fdebf3] pb-4">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ffcce0] to-[#f4d6e2]">
