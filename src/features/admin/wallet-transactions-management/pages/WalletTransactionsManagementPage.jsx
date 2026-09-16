@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, DatePicker, Select, Table, Tag, Typography } from "antd";
+import { Alert, DatePicker, Select, Table, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import { Calendar, Eye, RefreshCw, Search, WalletCards, X } from "lucide-react";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -147,6 +147,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "referenceId",
       key: "referenceId",
       width: 220,
+      sorter: (a, b) => String(a.referenceId || "").localeCompare(String(b.referenceId || "")),
       render: (value) => (
         <Text copyable className="font-mono text-xs font-bold text-[#ea4f93]">
           {value || "-"}
@@ -158,6 +159,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "amount",
       key: "amount",
       width: 140,
+      sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
       render: (value) => (
         <Text strong className={`font-mono text-sm ${Number(value) < 0 ? "!text-rose-600" : "!text-emerald-600"}`}>
           {formatCurrency(value)}
@@ -169,6 +171,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "type",
       key: "type",
       width: 170,
+      sorter: (a, b) => String(a.type || "").localeCompare(String(b.type || "")),
       render: (value) => (
         <Tag color={getWalletTransactionTypeColor(value)}>
           {getWalletTransactionTypeLabel(value, language)}
@@ -180,6 +183,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "referenceType",
       key: "referenceType",
       width: 160,
+      sorter: (a, b) => String(a.referenceType || "").localeCompare(String(b.referenceType || "")),
       render: (value) => getWalletReferenceTypeLabel(value, language),
     },
     {
@@ -187,6 +191,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "status",
       key: "status",
       width: 140,
+      sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
       render: (value) => (
         <Tag color={getWalletTransactionStatusColor(value)}>
           {getWalletTransactionStatusLabel(value, language)}
@@ -198,6 +203,7 @@ export function WalletTransactionsManagementPage() {
       dataIndex: "createdAt",
       key: "createdAt",
       width: 180,
+      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
       render: (value) => (
         <div className="flex items-center gap-1.5 text-xs text-[#7f6478]">
           <Calendar size={13} className="text-[#a88a9f]" />
@@ -212,17 +218,18 @@ export function WalletTransactionsManagementPage() {
       width: 90,
       render: (_, record) => (
         <div className="flex justify-end">
-          <button
-            type="button"
-            title={t("walletTransactions.view")}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] shadow-xs transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#ea4f93] hover:text-white active:scale-95"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleViewDetail(record.walletTransactionId);
-            }}
-          >
-            <Eye size={13} className="stroke-[2]" />
-          </button>
+          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View detail"}>
+            <button
+              type="button"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] shadow-xs transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#ea4f93] hover:text-white active:scale-95"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleViewDetail(record.walletTransactionId);
+              }}
+            >
+              <Eye size={13} className="stroke-[2]" />
+            </button>
+          </Tooltip>
         </div>
       ),
     },

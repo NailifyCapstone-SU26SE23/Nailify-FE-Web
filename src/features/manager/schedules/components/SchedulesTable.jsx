@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 export function SchedulesTable({
   staffList,
   scheduleMatrix,
+  breaksMatrix,
   weekDays,
   selectedDayKey,
   showShiftTimes,
@@ -85,6 +86,19 @@ export function SchedulesTable({
         render: (_, staff) => {
           const cellKey = `${staff.id}_${dateKey}`;
           const shifts = scheduleMatrix.get(cellKey) || [];
+          const breaks = breaksMatrix?.get(cellKey) || [];
+          
+          const hasApprovedBreak = breaks.some(b => b.status === "Approved");
+
+          if (hasApprovedBreak) {
+            return (
+              <div className="min-h-[70px] flex flex-col justify-center px-1">
+                <div className="flex h-14 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-500">
+                  <span className="text-xs font-bold uppercase tracking-wider">{isVi ? 'Nghỉ' : 'OFF'}</span>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div className="min-h-[70px] flex flex-col justify-center">

@@ -224,7 +224,7 @@ export const MENU_CONFIG = {
       key: "admin-withdraw-requests",
       label: "Withdraw Requests",
       to: ROUTES.adminWithdrawRequests,
-      icon: "file-text",
+      icon: "banknote-arrow-up",
       section: "Main",
     },
     {

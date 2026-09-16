@@ -367,13 +367,13 @@ export function RescheduleBooking() {
         <article className="relative overflow-hidden rounded-[28px] border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]">
                 <Clock size={26} />
               </div>
               <div>
-                <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
+                {/* <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
                   {language === "vi" ? "Portal quản lý" : "Manager portal"}
-                </span>
+                </span> */}
                 <h1 className="text-2xl font-bold text-[#2d1b35] mt-1.5 tracking-tight">{t("manager.bookings.rescheduleTime") || "Reschedule Requests"}</h1>
                 <p className="text-xs text-[#a88a9f] mt-0.5">
                   {language === "vi" ? "Phê duyệt, từ chối hoặc đề xuất thời gian mới cho yêu cầu dời lịch của khách hàng" : "Approve, reject, or suggest new times for customer reschedule requests"}

@@ -369,7 +369,9 @@ export function ManagerArtistBreakPage() {
               <Sparkles size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Cổng Quản Lý • Quản Lý Ca Làm Việc" : "Manager Portal • Shift Management"}
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black flex items-center gap-3">
-              <Coffee size={28} className="text-[#C97A9E]" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#E84F93] to-[#F43F5E] text-white shadow-md">
+                <Coffee size={28} />
+              </div>
               {language === "vi" ? "Yêu Cầu Nghỉ Của Thợ Nail" : "Artist Break Requests"}
             </h1>
             <p className="text-xs sm:text-sm font-medium text-gray-600 leading-relaxed">
@@ -522,7 +524,7 @@ export function ManagerArtistBreakPage() {
                       const artistName = getArtistName(item.nailArtistId);
                       return (
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
                             {artistName.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex flex-col min-w-0">
