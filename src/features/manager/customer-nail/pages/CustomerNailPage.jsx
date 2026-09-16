@@ -733,7 +733,7 @@ export function CustomerNailPage() {
         <TopMetricsRow metrics={summaryStats} />
 
         <Card className="p-0">
-          <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="bg-white/40 flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
             <SectionHeading
               title={language === "vi" ? "Tất cả mẫu móng của khách hàng" : "All Customer Nails"}
               subtitle={language === "vi" ? `${totalItems} thiết kế${selectedDate ? " (lọc theo ngày)" : " có sẵn trong không gian làm việc hiện tại"}` : `${totalItems} designs${selectedDate ? " (filtered by selected date)" : " available in the current salon workspace"}`}

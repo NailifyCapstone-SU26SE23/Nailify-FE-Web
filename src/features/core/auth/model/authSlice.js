@@ -40,6 +40,16 @@ export const loginGoogle = createAsyncThunk(
   },
 );
 
+const getIsVi = () => {
+  try {
+    const lang = localStorage.getItem("nailify_language");
+    if (lang) return lang === "vi";
+    return navigator.language?.toLowerCase().startsWith("vi");
+  } catch {
+    return true; // Default to Vietnamese if localStorage is unavailable
+  }
+};
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -62,7 +72,7 @@ const authSlice = createSlice({
       state.status = AUTH_STATUS.idle;
       state.error = null;
       clearAuthSession();
-      toast.success("Signed out successfully.");
+      toast.success(getIsVi() ? "Đăng xuất thành công." : "Signed out successfully.");
     },
   },
   extraReducers: (builder) => {
@@ -77,11 +87,11 @@ const authSlice = createSlice({
         state.accessToken = action.payload.accessToken;
         state.isAuthenticated = true;
         saveAuthSession(action.payload);
-        toast.success("Signed in successfully.");
+        toast.success(getIsVi() ? "Đăng nhập thành công." : "Signed in successfully.");
       })
       .addCase(login.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
-        state.error = action.payload ?? "Sign-in failed.";
+        state.error = action.payload ?? (getIsVi() ? "Đăng nhập thất bại." : "Sign-in failed.");
         state.isAuthenticated = false;
         toast.error(state.error);
       })
@@ -95,11 +105,11 @@ const authSlice = createSlice({
         state.accessToken = action.payload.accessToken;
         state.isAuthenticated = true;
         saveAuthSession(action.payload);
-        toast.success("Signed in with Google successfully.");
+        toast.success(getIsVi() ? "Đăng nhập với Google thành công." : "Signed in with Google successfully.");
       })
       .addCase(loginGoogle.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
-        state.error = action.payload ?? "Google Sign-in failed.";
+        state.error = action.payload ?? (getIsVi() ? "Đăng nhập với Google thất bại." : "Google Sign-in failed.");
         state.isAuthenticated = false;
         toast.error(state.error);
       });

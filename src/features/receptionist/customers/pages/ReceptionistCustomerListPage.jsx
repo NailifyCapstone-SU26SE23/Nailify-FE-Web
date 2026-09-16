@@ -1011,8 +1011,8 @@ export function ReceptionistCustomerListPage() {
   );
 
   return (
-    <div className="flex flex-col min-h-full font-sans bg-[#FAF9FA] p-4 md:p-6 space-y-5 text-[#221F26]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+    <div className="flex flex-col min-h-full font-sans p-4 md:p-6 space-y-5 text-[#221F26]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-lg border border-gray-200 shadow-xs">
         <div>
           <h1 className="text-xl font-bold text-[#221F26] tracking-tight flex items-center gap-2">
             {language === "vi" ? "Quản lý Khách Hàng" : "Customer Management"}
@@ -1068,7 +1068,7 @@ export function ReceptionistCustomerListPage() {
       <TopMetricsRow metrics={metrics} className="grid grid-cols-2 lg:grid-cols-4 gap-3.5" />
 
       {mainWorkspaceTab === "directory" && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 md:p-6 space-y-4">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-xs p-5 md:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
               {[

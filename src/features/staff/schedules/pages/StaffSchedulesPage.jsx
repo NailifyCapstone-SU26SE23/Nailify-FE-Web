@@ -229,16 +229,16 @@ export function StaffSchedulesPage() {
   }, [activeWeekContainsToday, now]);
 
   return (
-    <section className="relative min-h-full overflow-hidden rounded-[36px] ">
+    <section className="relative min-h-full overflow-hidden rounded-lg">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[radial-gradient(circle,#ff9f95_0%,rgba(255,159,149,0)_72%)] opacity-70 blur-2xl" />
         <div className="absolute -left-20 bottom-0 h-80 w-80 rounded-full bg-[radial-gradient(circle,#ffe4de_0%,rgba(255,228,222,0)_72%)] blur-2xl" />
       </div>
 
-      <div className="relative overflow-hidden rounded-[34px] border border-white/70 bg-white shadow-[0_24px_90px_rgba(226,143,128,0.16)]">
+      <div className="relative overflow-hidden rounded-lg shadow-[0_24px_90px_rgba(226,143,128,0.16)]">
         <div className="grid min-h-[760px]">
-          <main className="bg-[linear-gradient(180deg,#ffffff_0%,#fffefd_100%)]">
-            <div className="border-b border-[#eef0f5] px-6 py-5">
+          <div className="">
+            <div className="border-b border-[#eef0f5] bg-white/80 px-6 py-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <button
                   type="button"
@@ -265,7 +265,7 @@ export function StaffSchedulesPage() {
               </div>
             </div>
 
-            <div className="px-6 py-6 bg-[linear-gradient(135deg,#fff6f1_0%,#fffaf7_42%,#ffe3dc_100%)]">
+            <div className="mt-6 bg-[linear-gradient(135deg,#fff6f1_0%,#fffaf7_42%,#ffe3dc_100%)]">
               {error ? (
                 <div className="mb-4 rounded-2xl border border-[#ffd9d3] bg-[#fff5f2] px-4 py-3 text-sm font-medium text-[#d36557]">
                   {error}
@@ -397,7 +397,7 @@ export function StaffSchedulesPage() {
                 </div>
               </div>
             </div>
-          </main>
+          </div>
         </div>
       </div>
     </section>

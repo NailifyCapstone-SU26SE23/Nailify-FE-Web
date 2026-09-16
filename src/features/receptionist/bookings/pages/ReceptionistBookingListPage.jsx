@@ -627,7 +627,7 @@ export function ReceptionistBookingListPage() {
         },
       }}
     >
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         <TopMetricsRow
           metrics={[
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },

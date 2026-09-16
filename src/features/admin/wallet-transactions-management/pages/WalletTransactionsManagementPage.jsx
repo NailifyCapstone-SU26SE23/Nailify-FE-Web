@@ -217,7 +217,7 @@ export function WalletTransactionsManagementPage() {
       fixed: "right",
       width: 90,
       render: (_, record) => (
-        <div className="flex justify-end">
+        <div className="flex justify-center">
           <Tooltip title={language === "vi" ? "Xem chi tiết" : "View detail"}>
             <button
               type="button"
