@@ -309,21 +309,28 @@ export function TransactionManagementPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Paid
+            {language === "vi" ? "Đã thanh toán" : "Paid"}
           </span>
         );
       case "pending":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-700">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce"></span>
-            Pending
+            {language === "vi" ? "Chờ xử lý" : "Pending"}
+          </span>
+        );
+      case "refunded":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-500/20 px-2.5 py-1 text-xs font-semibold text-blue-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+            {language === "vi" ? "Đã hoàn tiền" : "Refunded"}
           </span>
         );
       case "expired":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
             <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            Expired
+            {language === "vi" ? "Hết hạn" : "Expired"}
           </span>
         );
       case "canceled":
@@ -331,7 +338,7 @@ export function TransactionManagementPage() {
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            Canceled
+            {language === "vi" ? "Đã hủy" : "Canceled"}
           </span>
         );
       default:

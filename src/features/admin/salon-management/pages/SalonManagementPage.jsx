@@ -607,13 +607,17 @@ export function SalonManagementPage() {
       icon: Pencil,
       onSelect: () => handleUpdateSalon(salon),
     },
-    {
-      key: "delete",
-      label: t("adminSalonManagement.deleteSalon"),
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () => handleDeleteSalon(salon),
-    },
+    ...(salon?.status === "Active"
+      ? [
+          {
+            key: "delete",
+            label: t("adminSalonManagement.deleteSalon"),
+            icon: Trash2,
+            className: "text-[#d14c84]",
+            onSelect: () => handleDeleteSalon(salon),
+          },
+        ]
+      : []),
   ];
 
   const salonOptions = useMemo(

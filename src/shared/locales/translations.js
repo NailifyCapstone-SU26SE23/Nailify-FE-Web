@@ -447,7 +447,7 @@ export const translations = {
       ownerStatus: "Owner Status",
       walletOwner: "Wallet Owner",
       walletOwnerUnavailable: "Wallet owner information is unavailable.",
-      transactionInformation: "Transaction Information",
+      transactionInformation: "Transaction Details",
       amount: "Amount",
       balanceBefore: "Balance Before",
       balanceAfter: "Balance After",

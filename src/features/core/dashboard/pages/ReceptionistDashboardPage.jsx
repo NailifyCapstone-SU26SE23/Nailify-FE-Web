@@ -1417,7 +1417,7 @@ export function ReceptionistDashboardPage() {
                         <span
                           className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeTone}`}
                         >
-                          {status}
+                          {isOffToday ? (language === "vi" ? "Nghỉ hôm nay" : "Off Today") : (language === "vi" ? "Sẵn sàng" : "Available")}
                         </span>
                       </div>
                     ))

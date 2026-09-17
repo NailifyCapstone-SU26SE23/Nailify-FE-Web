@@ -985,7 +985,7 @@ export function ReceptionistBookingListPage() {
               </div>
             ) : (
               <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
-                {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
+                {isVerifyingQr ? (language === "vi" ? "Đang xác nhận mã QR của khách hàng..." : "Checking customer QR code...") : (language === "vi" ? "Đang chờ mã QR..." : "Waiting for QR code...")}
               </div>
             )}
 

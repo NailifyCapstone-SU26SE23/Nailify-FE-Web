@@ -122,7 +122,7 @@ export function ManagerArtistBreakPage() {
     [artists, language]
   );
 
-  // Client-side filtering by status and search query
+  // Client-side filtering by status, date and search query
   const filteredBreaks = useMemo(() => {
     return breaks.filter((b) => {
       const st = String(b.status || "").toLowerCase();
@@ -135,6 +135,12 @@ export function ManagerArtistBreakPage() {
 
       if (!matchesStatus) return false;
 
+      // Date filter
+      if (filterDate) {
+        const breakDateStr = dayjs(b.breakDate).format("YYYY-MM-DD");
+        if (breakDateStr !== filterDate) return false;
+      }
+
       // Search query filter (artist name, reason)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -146,7 +152,7 @@ export function ManagerArtistBreakPage() {
 
       return true;
     });
-  }, [breaks, filterStatus, searchQuery, getArtistName]);
+  }, [breaks, filterStatus, filterDate, searchQuery, getArtistName]);
 
   const sortedBreaks = useMemo(() => {
     const [sortKey, sortOrder] = selectedSort.split("-");

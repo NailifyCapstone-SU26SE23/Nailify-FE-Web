@@ -490,7 +490,7 @@ export function ProfilePage() {
                       </Text>
                       <Text type="secondary" style={{ color: TEXT_MUTED }} className="flex items-center">
                         <Shield size={14} style={{ marginRight: 6, verticalAlign: -2 }} />
-                        {profile?.status}
+                        {profile?.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : profile?.status === "Inactive" ? (language === "vi" ? "Ngừng hoạt động" : "Inactive") : profile?.status}
                       </Text>
                     </Space>
                   </div>
@@ -691,8 +691,8 @@ export function ProfilePage() {
                   <ProfileField label={t("profile.email")} value={profile?.email} icon={Mail} />
                   <ProfileField label={t("profile.phone")} value={profile?.phone} icon={Phone} />
                   <ProfileField label={t("profile.status")} icon={CheckCircle2}>
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">
-                      {profile?.status || "—"}
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${profile?.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                      {profile?.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : profile?.status === "Inactive" ? (language === "vi" ? "Ngừng hoạt động" : "Inactive") : profile?.status || "—"}
                     </span>
                   </ProfileField>
                   <ProfileField label={t("profile.role")} icon={Shield}>

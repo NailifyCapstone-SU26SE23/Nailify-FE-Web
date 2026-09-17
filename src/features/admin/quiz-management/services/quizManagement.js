@@ -315,6 +315,17 @@ export async function deleteQuizQuestion(id) {
     }
 }
 
+export async function deleteQuizOption(optionId) {
+    try {
+        await axiosClient.delete(`/Quizzes/options/${optionId}`, {
+            headers: getAuthHeaders(),
+        });
+        return true;
+    } catch (e) {
+        handleApiError(e, "Failed to delete quiz option.");
+    }
+}
+
 // --- Linked reference data ---------------------------------------------
 // Lets the quiz-creation UI let admins pick real DB records (nail shapes,
 // nail surfaces, categories) as option values instead of typing free text.

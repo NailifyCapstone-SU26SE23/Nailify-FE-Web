@@ -253,6 +253,41 @@ export function AdminSalonBookingRatingPage() {
     return Number((sum / values.length).toFixed(1));
   }, [salonMetrics]);
 
+  // Client side filters for Salons List
+  const filteredSalons = useMemo(() => {
+    let items = [...salons];
+
+    // Filter by search query
+    if (salonSearchQuery.trim()) {
+      const query = salonSearchQuery.toLowerCase();
+      items = items.filter(s => 
+        (s.name || "").toLowerCase().includes(query) ||
+        (s.address || "").toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by status
+    if (salonStatusFilter !== "all") {
+      items = items.filter(s => {
+        const status = (s.status || (s.isActive ? "Active" : "Inactive")).toLowerCase();
+        return status === salonStatusFilter.toLowerCase();
+      });
+    }
+
+    // Sort options
+    if (salonSortOption === "name") {
+      items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (salonSortOption === "rating") {
+      items.sort((a, b) => {
+        const ratingA = salonMetrics[a.id]?.average || 0;
+        const ratingB = salonMetrics[b.id]?.average || 0;
+        return ratingB - ratingA;
+      });
+    }
+
+    return items;
+  }, [salons, salonSearchQuery, salonStatusFilter, salonSortOption, salonMetrics]);
+
   // Client side filters for Reviews Feed
   const processedRatings = useMemo(() => {
     let items = [...ratings];

@@ -18,7 +18,7 @@ import {
   Quote
 } from "lucide-react";
 import { fetchBookingRatingsBySalonId, fetchUserById } from "../services/bookingsService";
-import { fetchAllSalonStaff, getSalonId } from "../../staff-artist-management/services/nailArtistsService";
+import { fetchAllSalonStaff, getSalonId, fetchNailArtistById } from "../../staff-artist-management/services/nailArtistsService";
 import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select, Modal, DatePicker } from "antd";
@@ -58,6 +58,7 @@ const getTier = (score) => {
   if (score >= 4.5) {
     return {
       label: "Excellent",
+      labelVi: "Xuất sắc",
       text: "text-emerald-600",
       solid: "#10b981",
       bg: "bg-emerald-50",
@@ -68,6 +69,7 @@ const getTier = (score) => {
   if (score >= 3.5) {
     return {
       label: "Solid",
+      labelVi: "Tốt",
       text: "text-amber-600",
       solid: "#f59e0b",
       bg: "bg-amber-50",
@@ -77,6 +79,7 @@ const getTier = (score) => {
   }
   return {
     label: "Needs attention",
+    labelVi: "Cần chú ý",
     text: "text-rose-600",
     solid: "#e11d48",
     bg: "bg-rose-50",
@@ -118,6 +121,7 @@ function SentimentGauge({ average, total }) {
   const pct = Math.max(0, Math.min(1, average / 5));
   const progress = pct * halfCircumference;
   const tier = getTier(average);
+  const { language } = useLanguage();
 
   return (
     <div className="flex flex-col items-center">
@@ -154,14 +158,14 @@ function SentimentGauge({ average, total }) {
           className="fill-[#a88a9f]"
           style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}
         >
-          out of 5
+          {language === "vi" ? "trên 5" : "out of 5"}
         </text>
       </svg>
       <span className={`-mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
-        {tier.label}
+        {language === "vi" ? tier.labelVi : tier.label}
       </span>
       <span className="mt-2 text-[10px] font-semibold text-[#a88a9f] uppercase tracking-wider">
-        Based on {total} review{total === 1 ? "" : "s"}
+        {language === "vi" ? "Dựa trên " + total + " đánh giá" : "Based on " + total + " review" + (total === 1 ? "" : "s")}
       </span>
     </div>
   );
@@ -209,9 +213,22 @@ export function BookingRatingListPage() {
       const staffList = await fetchAllSalonStaff(salonId);
       if (Array.isArray(staffList)) {
         staffList.forEach((s) => {
+          const sName = s.fullName || [s.firstName, s.lastName].filter(Boolean).join(" ") || "Staff Artist";
           if (s.staffId) {
             newUsers[s.staffId] = {
-              name: s.name,
+              name: sName,
+              avatarUrl: s.avatarUrl || ""
+            };
+          }
+          if (s.nailArtistId && s.nailArtistId !== s.staffId) {
+            newUsers[s.nailArtistId] = {
+              name: sName,
+              avatarUrl: s.avatarUrl || ""
+            };
+          }
+          if (s.id && s.id !== s.staffId && s.id !== s.nailArtistId) {
+            newUsers[s.id] = {
+              name: sName,
               avatarUrl: s.avatarUrl || ""
             };
           }
@@ -221,13 +238,16 @@ export function BookingRatingListPage() {
       console.error("Failed to load salon staff list:", err);
     }
 
-    // 2. Extract unique customerIds (which are userIds)
+    // 2. Extract unique customerIds (which are userIds) and nailArtistIds
     const uniqueCustomerIds = new Set();
+    const uniqueArtistIds = new Set();
     ratingsList.forEach((r) => {
       if (r.customerId) uniqueCustomerIds.add(r.customerId);
+      if (r.nailArtistId) uniqueArtistIds.add(r.nailArtistId);
     });
 
     const customerIdsToFetch = Array.from(uniqueCustomerIds).filter(id => !newUsers[id]);
+    const artistIdsToFetch = Array.from(uniqueArtistIds).filter(id => !newUsers[id]);
 
     // 3. Fetch customer details
     if (customerIdsToFetch.length > 0) {
@@ -251,6 +271,31 @@ export function BookingRatingListPage() {
         );
       } catch (err) {
         console.error("Error fetching customer names in batch:", err);
+      }
+    }
+
+    // 4. Fetch nail artist details
+    if (artistIdsToFetch.length > 0) {
+      try {
+        await Promise.all(
+          artistIdsToFetch.map(async (id) => {
+            try {
+              const artist = await fetchNailArtistById(id);
+              const firstName = String(artist?.firstName || "").trim();
+              const lastName = String(artist?.lastName || "").trim();
+              const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || "Staff Artist";
+              newUsers[id] = {
+                name: fullName,
+                avatarUrl: artist?.avatarUrl || ""
+              };
+            } catch (err) {
+              console.error(`Failed to fetch nail artist name for ID ${id}:`, err);
+              newUsers[id] = { name: "Staff Artist", avatarUrl: "" };
+            }
+          })
+        );
+      } catch (err) {
+        console.error("Error fetching nail artist names in batch:", err);
       }
     }
 
@@ -454,16 +499,7 @@ export function BookingRatingListPage() {
 
               {/* Search & Filters Command Bar */}
               <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
-                {/* <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
-                  <input
-                    type="text"
-                    placeholder="Search by customer name, Staff Artist, or comment..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
-                  />
-                </div> */}
+
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
                     {["all", "5", "4", "3", "2", "1"].map((score) => (
@@ -531,14 +567,13 @@ export function BookingRatingListPage() {
                   className="space-y-6"
                 >
                   {displayedRatings.map((rating) => {
-                    const cName = rating.customerName || usersMap[rating.customerId]?.name || "Customer";
+                    const cName = rating.customerName || usersMap[rating.customerId]?.name;
                     const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                     const score = rating.overallScore || 5;
                     const tier = getTier(score);
                     const dateFormatted = formatDate(rating.createdAt);
-                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
+                    const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || (language === "vi" ? "Chưa có thông tin" : "Unknown");
                     const isReplied = !!replies[rating.bookingRatingId];
-
                     return (
                       <motion.div
                         key={rating.bookingRatingId}
@@ -581,7 +616,7 @@ export function BookingRatingListPage() {
                           </div>
 
                           <span className={`shrink-0 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${tier.bg} ${tier.text} border ${tier.border}`}>
-                            {tier.label}
+                            {language === "vi" ? tier.labelVi : tier.label}
                           </span>
                         </div>
 
@@ -845,7 +880,7 @@ export function BookingRatingListPage() {
           <div className="space-y-5 pt-3">
             <div className="p-4 bg-[#fafaf9] rounded-2xl border border-slate-100 space-y-2.5">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-[#2d1b35]">{selectedRating.customerName || "Customer"}</span>
+                <span className="font-bold text-[#2d1b35]">{usersMap[selectedRating.customerId]?.name}</span>
                 <span className="text-[#a88a9f] font-medium">{formatDate(selectedRating.createdAt)}</span>
               </div>
               <p className="text-xs text-slate-500 italic">
@@ -859,14 +894,14 @@ export function BookingRatingListPage() {
                 rows={4}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a warm response thanking the customer for their review..."
+                placeholder={language === "vi" ? "Viết phản hồi cảm ơn khách hàng đã đánh giá..." : "Write a response thanking the customer for their review..."}
                 className="w-full p-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/20 focus:outline-hidden focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 resize-none"
               />
             </div>
 
             <div className="flex gap-2 p-3 bg-amber-50/50 border border-amber-500/10 rounded-xl text-[10px] text-amber-800 font-medium">
               <AlertTriangle size={14} className="shrink-0 text-amber-500" />
-              <span>{language === "vi" ? "Phản hồi được gửi đến hộp thư trong ứng dụng di động của khách hàng ngay lập tức. Vui lòng giữ phản hồi ấm áp và chuyên nghiệp." : "Responses are published to the customer's mobile application inbox immediately. Please keep responses warm and professional."}</span>
+              <span>{language === "vi" ? "Phản hồi được gửi đến hộp thư trong ứng dụng di động của khách hàng ngay lập tức. Vui lòng giữ phản hồi chuyên nghiệp." : "Responses are published to the customer's mobile application inbox immediately. Please keep responses professional."}</span>
             </div>
 
             <div className="flex gap-3 justify-end pt-2">

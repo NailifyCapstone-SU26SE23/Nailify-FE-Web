@@ -347,15 +347,17 @@ export function NailShapeDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Trash2 size={14} />
-            {t("adminNailShapesManagement.deleteShape")}
-          </button>
+          {shape?.status === "Active" && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {t("adminNailShapesManagement.deleteShape")}
+            </button>
+          )}
           {isEditing ? (
             <>
               <button

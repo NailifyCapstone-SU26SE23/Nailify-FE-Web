@@ -573,32 +573,39 @@ export function ServicePricingManagementPage() {
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
   }, []);
 
-  const getServiceActionItems = useCallback((service) => [
-    {
-      key: "view-service",
-      label: language === "vi" ? "Xem chi tiết" : "View Details",
-      icon: Eye,
-      onSelect: () => setDetailService(service),
-    },
-    {
-      key: "edit-service",
-      label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
-      icon: Pencil,
-      onSelect: () => openEditService(service),
-    },
-    {
-      key: "delete-service",
-      label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () =>
-        setDeleteState({
-          type: "service",
-          recordId: service.id,
-          label: service.name,
-        }),
-    },
-  ], [openEditService, t, language]);
+  const getServiceActionItems = useCallback((service) => {
+    const actions = [
+      {
+        key: "view-service",
+        label: language === "vi" ? "Xem chi tiết" : "View Details",
+        icon: Eye,
+        onSelect: () => setDetailService(service),
+      },
+      {
+        key: "edit-service",
+        label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
+        icon: Pencil,
+        onSelect: () => openEditService(service),
+      },
+    ];
+
+    if (service?.status === "Active") {
+      actions.push({
+        key: "delete-service",
+        label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
+        icon: Trash2,
+        className: "text-[#d14c84]",
+        onSelect: () =>
+          setDeleteState({
+            type: "service",
+            recordId: service.id,
+            label: service.name,
+          }),
+      });
+    }
+
+    return actions;
+  }, [openEditService, t, language]);
 
   const submitServiceForm = async () => {
     setServiceError("");
