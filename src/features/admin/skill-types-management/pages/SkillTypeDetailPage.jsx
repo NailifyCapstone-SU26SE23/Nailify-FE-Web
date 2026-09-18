@@ -194,11 +194,7 @@ export function SkillTypeDetailPage() {
     try {
       await deleteAdminSkillType(skillType.skillTypeId);
       toast.success(t("adminSkillTypes.deleteSuccess", { name: skillType.name }));
-      navigate(ROUTES.adminSkillTypes, {
-        state: {
-          flashMessage: t("adminSkillTypes.deleteFlashSuccess", { name: skillType.name }),
-        },
-      });
+      setSkillType((prev) => ({ ...prev, status: "Inactive" }));
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : t("adminSkillTypes.deleteFailed");
       toast.error(message);
@@ -225,15 +221,17 @@ export function SkillTypeDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Trash2 size={14} />
-            {t("adminSkillTypes.deleteSkillType")}
-          </button>
+          {skillType?.status === "Active" && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {t("adminSkillTypes.deleteSkillType")}
+            </button>
+          )}
           {isEditing ? (
             <>
               <button
@@ -267,17 +265,7 @@ export function SkillTypeDetailPage() {
         </div>
       </header>
 
-      {flashMessage ? (
-        <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
-        </div>
-      ) : null}
 
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
-          {error}
-        </div>
-      ) : null}
 
       {isLoading ? (
         <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">

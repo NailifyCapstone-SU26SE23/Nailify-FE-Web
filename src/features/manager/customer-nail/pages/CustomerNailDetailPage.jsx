@@ -1734,7 +1734,7 @@ export function CustomerNailDetailPage() {
                           {assignedStaffName}
                         </p>
                         <p className="text-sm text-[#3b8d5f]">
-                          {nail.assignedStaff.role || "Staff Artist"}
+                          {nail.assignedStaff.role === "Staff_Artist" ? (language === "vi" ? "Nhân viên làm móng" : "Staff Artist") : (language === "vi" ? "Không có nhân viên làm móng" : "No staff artist")}
                         </p>
                         <div className="mt-2 text-xs text-[#3b8d5f] space-y-1">
                           <p>Email: {nail.assignedStaff.email || "N/A"}</p>
@@ -2063,7 +2063,7 @@ export function CustomerNailDetailPage() {
                             </p>
                             {staff.role ? (
                               <span className="inline-flex rounded-full bg-[#fce7f3] px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]">
-                                {staff.role}
+                                {staff.role === "Staff_Artist" ? (language === "vi" ? "Nhân viên làm móng" : "Staff Artist") : staff.role}
                               </span>
                             ) : null}
                           </div>

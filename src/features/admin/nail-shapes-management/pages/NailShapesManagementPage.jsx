@@ -314,6 +314,12 @@ export function NailShapesManagementPage() {
 
                     <div className="flex flex-1 flex-col items-center justify-center border-t border-[#f6dbe7] p-3 text-center gap-2">
                       <h3 className="text-xs font-bold text-[#432744] line-clamp-2">{shape.name}</h3>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${shape.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#ea4f93]"
+                        }`}>
+                        {language === "vi"
+                          ? (shape.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                          : shape.status || "Inactive"}
+                      </span>
                       <div className="flex items-center justify-center gap-1.5 ">
                         <Tooltip title={t("adminNailShapesManagement.viewDetail")}>
                           <button
@@ -333,15 +339,17 @@ export function NailShapesManagementPage() {
                             <Pencil size={12} />
                           </button>
                         </Tooltip>
-                        <Tooltip title={t("adminNailShapesManagement.deleteShape")}>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(shape)}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </Tooltip>
+                        {shape?.status === "Active" && (
+                          <Tooltip title={t("adminNailShapesManagement.deleteShape")}>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(shape)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { DatePicker, Spin, Table, ConfigProvider } from "antd";
+import { DatePicker, Spin, Table, ConfigProvider, Tooltip } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import {
@@ -281,33 +281,39 @@ export function StaffBreaksPage() {
       key: "action",
       align: 'right',
       render: (_, item) => (
-        <div className="flex justify-end gap-2 px-2">
-          <button
-            onClick={() => openDetailModal(item)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
-            title={language === "vi" ? "Chi tiết" : "Details"}
-          >
-            <Eye size={13} />
-          </button>
+        <div className="flex justify-center gap-2 px-2">
+          <Tooltip title={language === "vi" ? "Chi tiết" : "Details"}>
+            <button
+              onClick={() => openDetailModal(item)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+
+            >
+              <Eye size={13} />
+            </button>
+          </Tooltip>
           {String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt" ? (
             <>
-              <button
-                onClick={() => openEditModal(item)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-                title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
-              >
-                <Edit2 size={13} />
-              </button>
-              <button
-                onClick={() => openDeleteModal(item)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
-              >
-                <Trash2 size={13} />
-              </button>
+              <Tooltip title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}>
+                <button
+                  onClick={() => openEditModal(item)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
+
+                >
+                  <Edit2 size={13} />
+                </button>
+              </Tooltip>
+              <Tooltip title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}>
+                <button
+                  onClick={() => openDeleteModal(item)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
+                  title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </Tooltip>
             </>
           ) : (
-            <span className="text-xs text-slate-400 self-center">{language === "vi" ? "Không thể sửa/hủy" : "Cannot edit/cancel"}</span>
+            null
           )}
         </div>
       )

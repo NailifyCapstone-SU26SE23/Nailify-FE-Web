@@ -68,14 +68,21 @@ function formatDiscount(promotion) {
   return `${value.toLocaleString("vi-VN")} VND`;
 }
 
-function PromotionStatusBadge({ promotion }) {
+function PromotionStatusBadge({ promotion, language }) {
   const className = promotion?.isActive
     ? "bg-[#e7fbf4] text-[#159669]"
     : "bg-[#fff1f5] text-[#d14c84]";
 
+  let statusText = promotion?.status || (promotion?.isActive ? "Active" : "Inactive");
+  if (statusText.toLowerCase() === "active") {
+    statusText = language === "vi" ? "Hoạt động" : "Active";
+  } else if (statusText.toLowerCase() === "inactive") {
+    statusText = language === "vi" ? "Ngừng hoạt động" : "Inactive";
+  }
+
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
-      {promotion?.status || (promotion?.isActive ? "Active" : "Inactive")}
+      {statusText}
     </span>
   );
 }
@@ -321,7 +328,7 @@ export function PromotionsManagementPage() {
           const statusB = b.status || (b.isActive ? "Active" : "Inactive");
           return statusA.localeCompare(statusB);
         },
-        render: (_, promotion) => <PromotionStatusBadge promotion={promotion} />,
+        render: (_, promotion) => <PromotionStatusBadge promotion={promotion} language={language} />,
       },
       {
         title: t("userManagement.table.actions"),
@@ -347,15 +354,17 @@ export function PromotionsManagementPage() {
                 <Pencil size={12} />
               </button>
             </Tooltip>
-            <Tooltip title={t("promotionDetail.deleteBtn")}>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(promotion)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Trash2 size={12} />
-              </button>
-            </Tooltip>
+            {promotion?.status === "Active" && (
+              <Tooltip title={t("promotionDetail.deleteBtn")}>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(promotion)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </Tooltip>
+            )}
           </div>
         ),
       },

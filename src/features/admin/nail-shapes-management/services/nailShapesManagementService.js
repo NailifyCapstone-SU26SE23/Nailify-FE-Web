@@ -61,6 +61,7 @@ export function normalizeAdminNailShape(shape) {
       .map((part) => part[0])
       .join("")
       .toUpperCase(),
+    status: String(shape?.status || "").trim() || "Inactive",
   };
 }
 

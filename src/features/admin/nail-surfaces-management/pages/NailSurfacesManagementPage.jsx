@@ -228,6 +228,24 @@ export function NailSurfacesManagementPage() {
         render: (value) => <span className="text-sm text-[#6b5668]">{value}</span>,
       },
       {
+        title: language === "vi" ? "Trạng thái" : "Status",
+        dataIndex: "status",
+        key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+        render: (status) => (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+              status === "Active"
+                ? "bg-[#e7fbf4] text-[#23b68b]"
+                : "bg-[#fff0f5] text-[#eb5a99]"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-[#23b68b]" : "bg-[#eb5a99]"}`}></span>
+            {status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
+          </span>
+        ),
+      },
+      {
         title: t("adminNailSurfacesManagement.actions"),
         key: "actions",
         align: "right",
@@ -251,15 +269,17 @@ export function NailSurfacesManagementPage() {
                 <Pencil size={12} />
               </button>
             </Tooltip>
-            <Tooltip title={t("adminNailSurfacesManagement.deleteSurface")}>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(surface)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Trash2 size={12} />
-              </button>
-            </Tooltip>
+            {surface?.status === "Active" && (
+              <Tooltip title={t("adminNailSurfacesManagement.deleteSurface")}>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(surface)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </Tooltip>
+            )}
           </div>
         ),
       },

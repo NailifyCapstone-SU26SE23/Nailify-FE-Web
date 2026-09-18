@@ -262,15 +262,17 @@ export function SkillTypesManagementPage() {
                 <Pencil size={12} />
               </button>
             </Tooltip>
-            <Tooltip title={t("adminSkillTypes.deleteSkillType")}>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(skillType)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Trash2 size={12} />
-              </button>
-            </Tooltip>
+            {skillType?.status === "Active" && (
+              <Tooltip title={t("adminSkillTypes.deleteSkillType")}>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(skillType)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </Tooltip>
+            )}
           </div>
         ),
       },

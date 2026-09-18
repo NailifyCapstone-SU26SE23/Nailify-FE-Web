@@ -1114,15 +1114,17 @@ export function NailDesignManagementDetailPage() {
 
               </>
             )}
-            <button
-              type="button"
-              onClick={() => setShowDeleteDesignConfirm(true)}
-              disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
-              className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Trash2 size={13} className="mr-1.5 inline" />
-              {language === "vi" ? "Xóa thiết kế" : "Delete Design"}
-            </button>
+            {initialDesign?.status === "Active" && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteDesignConfirm(true)}
+                disabled={isSavingVariants || isDeletingVariant || isDeletingDesign}
+                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 size={13} className="mr-1.5 inline" />
+                {language === "vi" ? "Xóa thiết kế" : "Delete Design"}
+              </button>
+            )}
           </div>
         </div>
       </div>

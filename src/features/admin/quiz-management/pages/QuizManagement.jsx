@@ -28,6 +28,7 @@ import {
     updateQuizQuestionCore,
     updateQuizQuestion,
     deleteQuizQuestion,
+    deleteQuizOption,
     fetchDiagnosticShapes,
     updateDiagnosticShape
 } from "../services/quizManagement";
@@ -143,16 +144,26 @@ export function QuizManagement() {
     const handleDeleteQuestion = (id) => {
         const target = questions.find(q => q.id === id);
         if (!target) return;
-        setDeleteTarget({ id: target.id, questionText: target.questionText });
+        setDeleteTarget(target);
     };
 
     const handleConfirmDelete = async () => {
         if (!deleteTarget) return;
         setIsDeleting(true);
         try {
+            // Delete all options of the quiz first
+            const options = deleteTarget.choices || [];
+            for (const opt of options) {
+                if (opt.id) {
+                    await deleteQuizOption(opt.id);
+                }
+            }
+
+            // Then delete the quiz question itself
             await deleteQuizQuestion(deleteTarget.id);
+            
             setQuestions(prev => prev.filter(q => q.id !== deleteTarget.id));
-            showNotification(t("adminQuizManagement.questionRemovedSuccessfully"));
+            showNotification(language === "vi" ? "Xóa quiz thành công" : "Quiz deleted successfully");
             if (activeQuestionId === deleteTarget.id) handleCancelForm();
         } catch (err) {
             console.error(err);
@@ -497,9 +508,20 @@ export function QuizManagement() {
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <span className="font-bold text-[#5c3e53]">{choice.text}</span>
                                                                 {choice.value && !/^\d+$/.test(choice.value) && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(choice.value) && (
-                                                                    <span className="font-mono text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
-                                                                        {choice.value}
-                                                                    </span>
+                                                                    /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(choice.value) ? (
+                                                                        <div className="flex items-center gap-1.5 bg-slate-50 px-1.5 py-1 rounded-md border border-slate-100">
+                                                                            <div
+                                                                                className="w-4 h-4 rounded shadow-sm border border-black/10"
+                                                                                style={{ backgroundColor: choice.value }}
+                                                                                title={choice.value}
+                                                                            />
+                                                                            <span className="font-mono text-[9px] text-slate-500 uppercase">{choice.value}</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="font-mono text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                                                            {choice.value}
+                                                                        </span>
+                                                                    )
                                                                 )}
                                                             </div>
                                                             {choice.description && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Modal, message, Select, Spin, Alert, Table } from "antd";
+import { Modal, message, Select, Spin, Alert, Table, Tooltip } from "antd";
 import {
   Search,
   Eye,
@@ -529,17 +529,19 @@ export function TransactionOverviewPage() {
         width: "3%",
         align: "right",
         render: (_, tx) => (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedTransaction(tx);
-              setModalVisible(true);
-            }}
-            title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-          >
-            <Eye size={13} className="stroke-[2]" />
-          </button>
+          <Tooltip title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTransaction(tx);
+                setModalVisible(true);
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
+            >
+              <Eye size={13} className="stroke-[2]" />
+            </button>
+          </Tooltip>
         )
       }
     ];

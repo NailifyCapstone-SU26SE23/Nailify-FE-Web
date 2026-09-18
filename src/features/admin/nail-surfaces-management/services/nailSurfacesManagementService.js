@@ -62,6 +62,7 @@ export function normalizeAdminNailSurface(surface) {
     hueOffset: Number(surface?.hueOffset || 0),
     price: Number(surface?.price || 0),
     duration: Number(surface?.duration || 0),
+    status: String(surface?.status || "").trim(),
     priceLabel: formatNailSurfaceCurrency(surface?.price || 0),
     durationLabel: formatNailSurfaceDuration(surface?.duration || 0),
     initials: String(surface?.name || "")

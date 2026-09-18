@@ -15,11 +15,9 @@ import {
   fetchAdminUserDetail,
   updateAdminUser,
 } from "../services/userManagementService";
-import {
-  fetchNailArtistById,
-  fetchNailArtistSkills,
-} from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { fetchNailArtistById, fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { fetchArtistSchedules } from "../../../manager/schedules/services/scheduleService";
+import { fetchArtistBreaks } from "../../staff-management/services/staffManagementService";
 
 function formatWorkDate(value) {
   if (!value) {
@@ -52,6 +50,8 @@ function getScheduleStatusClass(status) {
       return "bg-[#edfdf4] text-[#16975f]";
     case "inactive":
       return "bg-[#f4f1ff] text-[#7157d9]";
+    case "leave":
+      return "bg-[#fff0f8] text-[#ea4f93]";
     default:
       return "bg-[#fff0f5] text-[#d14c84]";
   }
@@ -59,6 +59,7 @@ function getScheduleStatusClass(status) {
 
 function getLocalizedStatus(status, t) {
   if (!status) return "";
+  const currentLanguage = localStorage.getItem("i18nextLng") || "vi";
   switch (String(status).trim().toLowerCase()) {
     case "active":
       return t("userManagement.detail.statusActive") || "Active";
@@ -72,21 +73,23 @@ function getLocalizedStatus(status, t) {
       return t("profile.open") || "Open";
     case "closed":
       return t("profile.closed") || "Closed";
+    case "leave":
+      return currentLanguage === "vi" ? "Nghỉ phép" : "On Leave";
     default:
       return status;
   }
 }
 
-function InfoSection({ icon: Icon, title, children }) {
+function InfoSection({ icon: Icon, title, children, className = "" }) {
   return (
-    <section className="rounded-lg border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)]">
+    <section className={`rounded-lg border border-[#f6dbe7] bg-[linear-gradient(180deg,#fffdfd_0%,#fff8fb_100%)] p-5 shadow-[0_14px_30px_rgba(94,76,62,0.04)] flex flex-col ${className}`}>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d45b9f]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#d45b9f] shrink-0">
           <Icon size={18} />
         </div>
         <h3 className="text-lg font-semibold text-[var(--color-ink)]">{title}</h3>
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-5 flex-1">{children}</div>
     </section>
   );
 }
@@ -147,16 +150,40 @@ export function UserManagementDetailPage() {
           nextArtistDetail,
           nextArtistSkills,
           nextArtistSchedules,
+          nextArtistBreaks,
         ] = await Promise.all([
           user?.salonId ? fetchSalonById(user.salonId).catch(() => null) : Promise.resolve(null),
           user?.staffId ? fetchNailArtistById(user.staffId).catch(() => null) : Promise.resolve(null),
           user?.staffId ? fetchNailArtistSkills(user.staffId).catch(() => []) : Promise.resolve([]),
           user?.staffId ? fetchArtistSchedules(user.staffId).catch(() => []) : Promise.resolve([]),
+          user?.staffId ? fetchArtistBreaks(user.staffId, { status: "Approved" }).catch(() => []) : Promise.resolve([]),
         ]);
 
         if (!isMounted) {
           return;
         }
+
+        const mappedBreaks = nextArtistBreaks.map(b => ({
+          ...b,
+          workDate: b.breakDate,
+          status: "leave",
+          shiftStart: b.startTime,
+          shiftEnd: b.endTime
+        }));
+
+        const filteredSchedules = nextArtistSchedules.filter(schedule => {
+          const scheduleDate = schedule.workDate ? dayjs(schedule.workDate).format('YYYY-MM-DD') : '';
+          return !mappedBreaks.some(b => {
+            const breakDate = b.workDate ? dayjs(b.workDate).format('YYYY-MM-DD') : '';
+            if (breakDate !== scheduleDate) return false;
+
+            if (!b.shiftStart || !b.shiftEnd) return true;
+
+            return b.shiftStart === schedule.shiftStart && b.shiftEnd === schedule.shiftEnd;
+          });
+        });
+
+        const combinedSchedules = [...filteredSchedules, ...mappedBreaks];
 
         const detailValues = {
           ...user,
@@ -172,7 +199,7 @@ export function UserManagementDetailPage() {
         setSalonDetail(nextSalonDetail);
         setArtistDetail(nextArtistDetail);
         setArtistSkills(Array.isArray(nextArtistSkills) ? nextArtistSkills : []);
-        setArtistSchedules(Array.isArray(nextArtistSchedules) ? nextArtistSchedules : []);
+        setArtistSchedules(Array.isArray(combinedSchedules) ? combinedSchedules : []);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -267,10 +294,12 @@ export function UserManagementDetailPage() {
           <ul className="m-0 flex flex-col gap-1 p-0 list-none mt-1">
             {daySchedules.map((schedule, idx) => (
               <li key={idx} className="rounded border border-[#f6dbe7] bg-[#fffcfd] p-1 text-center shadow-sm hover:shadow-md transition">
-                <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-[var(--color-ink)]">
-                  <Clock3 size={11} className="text-[#d39bb5]" />
-                  {formatShiftRange(schedule.shiftStart, schedule.shiftEnd)}
-                </div>
+                {formatShiftRange(schedule.shiftStart, schedule.shiftEnd) !== "--" && (
+                  <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-[var(--color-ink)]">
+                    <Clock3 size={11} className="text-[#d39bb5]" />
+                    {formatShiftRange(schedule.shiftStart, schedule.shiftEnd)}
+                  </div>
+                )}
                 <div className="mt-1">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.05em] ${getScheduleStatusClass(schedule.status)}`}>
                     {getLocalizedStatus(schedule.status, t) || t("userManagement.detail.unknown")}
@@ -435,9 +464,9 @@ export function UserManagementDetailPage() {
 
 
 
-      <div className="grid gap-5 xl:grid-cols-3 items-start">
+      <div className="grid gap-5 xl:grid-cols-3 items-stretch">
         <div className={`space-y-5 ${leftColSpan}`}>
-          <article className="overflow-hidden rounded-[28px] bg-white shadow-[0_20px_45px_rgba(226,93,143,0.06)] border border-rose-50/50">
+          <article className="overflow-hidden rounded-lg bg-white shadow-[0_20px_45px_rgba(226,93,143,0.06)] border border-[#f6dbe7] h-full">
             {/* Banner */}
             <div className="h-[140px] w-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#eb5b92]/80 to-[#cf3d74]/80 mix-blend-multiply" />
@@ -464,10 +493,6 @@ export function UserManagementDetailPage() {
 
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{displayName}</h2>
-                <p className="font-semibold text-[#d45b9f] mt-0.5">{formValues.role ? String(formValues.role).replace(/_/g, " ") : "User"}</p>
-                {/* <p className="mt-3 text-[13px] leading-relaxed text-slate-500 max-w-2xl">
-                  {language === "vi" ? "Hồ sơ lưu trữ thông tin cá nhân, liên lạc và vai trò của người dùng trên hệ thống Nailify. Vui lòng cập nhật đầy đủ và chính xác." : "Profile storing personal, contact and role information of the user on the Nailify system. Please keep this up to date."}
-                </p> */}
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -480,32 +505,12 @@ export function UserManagementDetailPage() {
               </div>
             </div>
           </article>
-
-          {shouldShowWorkSchedule && (
-            <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
-              {formValues.staffId ? (
-                sortedSchedules.length ? (
-                  <div className="overflow-hidden rounded-2xl border border-[#f6dbe7] bg-white p-2 md:p-4 shadow-sm custom-calendar-wrapper">
-                    <Calendar cellRender={cellRender} />
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                    {t("userManagement.detail.noWorkScheduleFound")}
-                  </div>
-                )
-              ) : (
-                <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                  {t("userManagement.detail.notLinkedToArtist")}
-                </div>
-              )}
-            </InfoSection>
-          )}
         </div>
 
         {hasRightColumnContent && (
-          <div className="space-y-5 xl:col-span-1">
+          <div className="xl:col-span-1 h-full">
             {shouldShowSalonDetail ? (
-              <InfoSection icon={Building2} title={t("userManagement.detail.assignedSalon")}>
+              <InfoSection className="h-full" icon={Building2} title={t("userManagement.detail.assignedSalon")}>
                 <div className="flex flex-col gap-4">
                   {salonDetail?.imageUrl ? (
                     <div className="relative w-full overflow-hidden rounded-2xl border border-[#f6dbe7] aspect-[4/3]">
@@ -549,35 +554,60 @@ export function UserManagementDetailPage() {
               </InfoSection>
             ) : null}
 
-            {shouldShowSkills ? (
-              <InfoSection icon={Star} title={t("userManagement.detail.skillRatings")}>
-                {artistSkills.length ? (
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {artistSkills.map((skill) => (
-                      <div
-                        key={skill.nailArtistSkillId || `${skill.skillTypeId}-${skill.skillTypeName}`}
-                        className="rounded-2xl bg-white px-4 py-4"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-[var(--color-ink)]">{skill.skillTypeName || "Skill"}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#d39bb5]">Level {skill.level ?? 0}/5</p>
-                          </div>
-                          <StarRating level={skill.level} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
-                    {t("userManagement.detail.noSkillsAssigned")}
-                  </div>
-                )}
-              </InfoSection>
-            ) : null}
+
           </div>
         )}
       </div>
+      {shouldShowSkills ? (
+        <div className="mt-6">
+          <InfoSection icon={Star} title={t("userManagement.detail.skillRatings")}>
+            {artistSkills.length ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                {artistSkills.map((skill) => (
+                  <div
+                    key={skill.nailArtistSkillId || `${skill.skillTypeId}-${skill.skillTypeName}`}
+                    className="rounded-2xl bg-white px-4 py-4 border border-[#f6dbe7]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-[var(--color-ink)]">{skill.skillTypeName || "Skill"}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[#d39bb5]">Level {skill.level ?? 0}/5</p>
+                      </div>
+                      <StarRating level={skill.level} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                {t("userManagement.detail.noSkillsAssigned")}
+              </div>
+            )}
+          </InfoSection>
+        </div>
+      ) : null}
+
+      {shouldShowWorkSchedule && (
+        <div className="mt-6">
+          <InfoSection icon={CalendarDays} title={t("userManagement.detail.workSchedule")}>
+            {formValues.staffId ? (
+              sortedSchedules.length ? (
+                <div className="overflow-hidden rounded-2xl border border-[#f6dbe7] bg-white p-2 md:p-4 shadow-sm custom-calendar-wrapper">
+                  <Calendar cellRender={cellRender} />
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                  {t("userManagement.detail.noWorkScheduleFound")}
+                </div>
+              )
+            ) : (
+              <div className="rounded-2xl bg-white px-4 py-4 text-sm text-[#8f7c6d]">
+                {t("userManagement.detail.notLinkedToArtist")}
+              </div>
+            )}
+          </InfoSection>
+        </div>
+      )}
 
       <ActionConfirmModal
         open={showSaveConfirm}

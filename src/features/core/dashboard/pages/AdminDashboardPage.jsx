@@ -13,7 +13,7 @@ import {
   Eye,
   RotateCcw
 } from "lucide-react";
-import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button } from "antd";
+import { Modal, Table, Spin, Alert, DatePicker, Segmented, Dropdown, Button, Tooltip } from "antd";
 import dayjs from "dayjs";
 import { useMemo, useState, useEffect } from "react";
 import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, useSalonStaffByRole } from "../hooks/useAdminDashboard";
@@ -287,14 +287,22 @@ export function AdminDashboardPage() {
       title: t("userManagement.table.actions").toUpperCase(),
       key: "action",
       render: (_, salon) => (
-        <button
-          type="button"
-          onClick={() => salon.originalId && setSelectedSalonId(salon.originalId)}
-          className={`text-[10px] font-bold uppercase tracking-widest border-b transition-colors ${salon.originalId ? 'text-sky-600 hover:text-sky-800 border-transparent hover:border-sky-800' : 'text-slate-400 border-transparent cursor-not-allowed'}`}
-          disabled={!salon.originalId}
+        <Tooltip
+          placement="top"
+          title={language === "vi" ? "Xem chi tiết" : "View Detail"}
         >
-          {t("view") || "VIEW"}
-        </button>
+          <button
+            type="button"
+            onClick={() => salon.originalId && setSelectedSalonId(salon.originalId)}
+            disabled={!salon.originalId}
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-200 ${salon.originalId
+              ? "border-sky-100 bg-sky-50 text-sky-600 hover:border-sky-200 hover:bg-sky-100 hover:text-sky-700 hover:shadow-sm"
+              : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+              }`}
+          >
+            <Eye size={15} strokeWidth={2.2} />
+          </button>
+        </Tooltip>
       ),
     },
   ]), [t]);
@@ -648,7 +656,7 @@ export function AdminDashboardPage() {
         <div className="bg-white">
           <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between bg-slate-50">
             <div>
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Salon Details</h3>
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">{language === "vi" ? "Chi tiết Salon" : "Salon Details"}</h3>
             </div>
             <button type="button" onClick={() => setSelectedSalonId(null)} className="text-slate-400 hover:text-slate-800 transition-colors">
               <X size={16} />
@@ -664,16 +672,25 @@ export function AdminDashboardPage() {
                   const managerCount = salonManagers?.metaData?.totalItems || 0;
                   const receptionistCount = salonReceptionists?.metaData?.totalItems || 0;
                   const staffCount = salonStaffArtists?.metaData?.totalItems || 0;
+
+                  const formatStatus = (status) => {
+                    if (!status) return "N/A";
+                    const s = status.toLowerCase();
+                    if (s === "open") return language === "vi" ? "Mở cửa" : "Open";
+                    if (s === "closed") return language === "vi" ? "Đóng cửa" : "Closed";
+                    return status;
+                  };
+
                   return [
-                    { label: "NAME", value: salonDetails.name },
-                    { label: "MANAGER", value: selectedRow?.manager },
-                    { label: "MANAGERS COUNT", value: managerCount },
-                    { label: "RECEPTIONISTS COUNT", value: receptionistCount },
-                    { label: "STAFF COUNT", value: staffCount },
-                    { label: "REVENUE", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} ₫` : "0 ₫" },
-                    { label: "STATUS", value: salonDetails.status },
-                    { label: "PHONE", value: salonDetails.phone },
-                    { label: "ADDRESS", value: salonDetails.address },
+                    { label: language === "vi" ? "Tên Salon" : "Salon Name", value: salonDetails.name },
+                    { label: language === "vi" ? "Quản Lý" : "Manager", value: selectedRow?.manager },
+                    { label: language === "vi" ? "Số Quản Lý" : "Managers Count", value: managerCount },
+                    { label: language === "vi" ? "Số Lễ Tân" : "Receptionists Count", value: receptionistCount },
+                    { label: language === "vi" ? "Số Nhân Viên" : "Staff Count", value: staffCount },
+                    { label: language === "vi" ? "Doanh Thu" : "Revenue", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} ₫` : "0 ₫" },
+                    { label: language === "vi" ? "Trạng Thái" : "Status", value: formatStatus(salonDetails.status) },
+                    { label: language === "vi" ? "Số Điện Thoại" : "Phone", value: salonDetails.phone },
+                    { label: language === "vi" ? "Địa Chỉ" : "Address", value: salonDetails.address },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex justify-between items-center border-b border-slate-100 pb-2">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</span>
@@ -683,10 +700,10 @@ export function AdminDashboardPage() {
                 })()}
               </div>
             ) : (
-              <div className="text-center text-slate-500 text-sm py-4 font-mono">Failed to load data.</div>
+              <div className="text-center text-slate-500 text-sm py-4 font-mono">{language === "vi" ? "Không thể tải dữ liệu." : "Failed to load data."}</div>
             )}
-            <button className="w-full mt-6 py-2 border border-slate-800 text-slate-800 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors" onClick={() => setSelectedSalonId(null)}>
-              CLOSE
+            <button className="w-full mt-6 rounded-lg py-2 border border-slate-800 text-slate-800 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-colors" onClick={() => setSelectedSalonId(null)}>
+              {language === "vi" ? "Đóng" : "Close"}
             </button>
           </div>
         </div>

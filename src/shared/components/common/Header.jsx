@@ -5,6 +5,7 @@ import { BackButton } from "../ui/BackButton";
 import { useNotifications } from "../../../features/core/notifications/context/NotificationContext";
 import { NotificationDropdown } from "../../../features/core/notifications/components/NotificationDropdown";
 import { useLanguage } from "../../hooks/useLanguage";
+import { Tooltip } from "antd";
 
 export function Header({
   showBackButton = false,
@@ -69,24 +70,26 @@ export function Header({
                   width: "calc(50% - 6px)",
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setLanguage("vi")}
-                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "vi" ? "text-white" : "text-[#eb5a99]"
-                  }`}
-                title={t("vietnamese")}
-              >
-                VI
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage("en")}
-                className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "en" ? "text-white" : "text-[#eb5a99]"
-                  }`}
-                title={t("english")}
-              >
-                EN
-              </button>
+              <Tooltip title={t("vietnamese")}>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("vi")}
+                  className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "vi" ? "text-white" : "text-[#eb5a99]"
+                    }`}
+                >
+                  VI
+                </button>
+              </Tooltip>
+              <Tooltip title={t("english")}>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("en")}
+                  className={`relative z-10 flex h-full w-[12px] min-w-[38px] items-center justify-center text-xs font-bold transition-colors duration-200 ${language === "en" ? "text-white" : "text-[#eb5a99]"
+                    }`}
+                >
+                  EN
+                </button>
+              </Tooltip>
             </div>
 
             <button

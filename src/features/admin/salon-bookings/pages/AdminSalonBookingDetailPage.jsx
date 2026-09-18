@@ -61,6 +61,9 @@ function SectionHeading({ title, subtitle }) {
 
 
 function BookingCard({ booking, index }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -90,7 +93,7 @@ function BookingCard({ booking, index }) {
         <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 border border-emerald-200">
           <CheckCircle size={14} className="text-emerald-600" />
           <span className="text-[10px] font-bold text-emerald-700">
-            {booking?.status || "Completed"}
+            {isVi && (booking?.status || "Completed").toLowerCase() === "completed" ? "Hoàn thành" : (booking?.status || "Completed")}
           </span>
         </div>
       </div>
@@ -368,11 +371,15 @@ export function AdminSalonBookingDetailPage() {
         dataIndex: "status",
         key: "status",
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
-        render: (status) => (
-          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-            {status || "Completed"}
-          </span>
-        ),
+        render: (status) => {
+          const displayStatus = status || "Completed";
+          const formattedStatus = isVi && displayStatus.toLowerCase() === "completed" ? "Hoàn thành" : displayStatus;
+          return (
+            <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+              {formattedStatus}
+            </span>
+          );
+        },
       },
       {
         title: isVi ? "Thao tác" : "Actions",
@@ -430,7 +437,14 @@ export function AdminSalonBookingDetailPage() {
       },
       {
         label: t("userManagement.table.status") || "Status",
-        value: isLoadingSalon ? "..." : (isVi && salon?.status === "Active" ? "Đang hoạt động" : salon?.status || "Active"),
+        value: (() => {
+          if (isLoadingSalon) return "...";
+          const s = salon?.status?.toLowerCase();
+          if (s === "open") return isVi ? "Mở cửa" : "Open";
+          if (s === "closed") return isVi ? "Đóng cửa" : "Closed";
+          if (s === "active") return isVi ? "Đang hoạt động" : "Active";
+          return salon?.status || "N/A";
+        })(),
         unit: "",
         note: isVi ? "Hoạt động bình thường" : "Operating normally",
         icon: Sparkles,

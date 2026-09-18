@@ -627,7 +627,7 @@ export function ReceptionistBookingListPage() {
         },
       }}
     >
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         <TopMetricsRow
           metrics={[
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
@@ -985,7 +985,7 @@ export function ReceptionistBookingListPage() {
               </div>
             ) : (
               <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
-                {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
+                {isVerifyingQr ? (language === "vi" ? "Đang xác nhận mã QR của khách hàng..." : "Checking customer QR code...") : (language === "vi" ? "Đang chờ mã QR..." : "Waiting for QR code...")}
               </div>
             )}
 

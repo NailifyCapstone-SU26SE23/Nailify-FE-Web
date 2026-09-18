@@ -415,3 +415,33 @@ export async function fetchTodaySchedules() {
 
   return Array.isArray(data?.items) ? data.items : [];
 }
+
+export async function fetchArtistBreaks(artistId, { pageNumber = 1, pageSize = 1000, date, status, orderBy } = {}) {
+  const normalizedArtistId = artistId ? String(artistId).trim() : null;
+
+  try {
+    const params = {
+      pageNumber,
+      pageSize,
+    };
+    if (normalizedArtistId) params.artistId = normalizedArtistId;
+    if (date) params.date = date;
+    if (status) params.status = status;
+    if (orderBy) params.orderBy = orderBy;
+
+    const response = await axiosClient.get(`/NailArtistBreaks`, {
+      headers: getAuthHeaders(),
+      params,
+    });
+
+    const data = unwrapResponse(response, "Failed to load artist breaks.");
+
+    if (Array.isArray(data?.items)) {
+      return data.items;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching artist breaks:", error);
+    return [];
+  }
+}

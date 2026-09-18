@@ -26,7 +26,7 @@ import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/r
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules } from "../services/staffManagementService";
+import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules, fetchArtistBreaks } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -77,6 +77,47 @@ InfoItem.propTypes = {
   label: PropTypes.string.isRequired,
   children: PropTypes.node,
 };
+function getLocalizedRole(role, language) {
+  if (!role) return '-';
+  const roleStr = String(role).toUpperCase();
+  if (language === 'vi') {
+    switch (roleStr) {
+      case 'STAFF_ARTIST':
+      case 'NAIL_ARTIST':
+        return 'Nhân viên làm móng';
+      case 'MANAGER':
+        return 'Quản lý';
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'RECEPTIONIST':
+        return 'Lễ tân';
+      case 'CUSTOMER':
+        return 'Khách hàng';
+      case 'STAFF':
+        return 'Nhân viên';
+      default:
+        return String(role).replace(/_/g, ' ');
+    }
+  } else {
+    switch (roleStr) {
+      case 'STAFF_ARTIST':
+      case 'NAIL_ARTIST':
+        return 'Nail Artist';
+      case 'MANAGER':
+        return 'Manager';
+      case 'ADMIN':
+        return 'Admin';
+      case 'RECEPTIONIST':
+        return 'Receptionist';
+      case 'CUSTOMER':
+        return 'Customer';
+      case 'STAFF':
+        return 'Staff';
+      default:
+        return String(role).replace(/_/g, ' ');
+    }
+  }
+}
 
 function StaffAvatar({ staff, className, fallbackClassName = "" }) {
   const [hasImageError, setHasImageError] = useState(false);
@@ -123,19 +164,26 @@ function StaffCard({ staff, onClick }) {
         />
         <div className="min-w-0 flex-1 pr-24">
           <p className="font-bold text-[#2d1b35] truncate">{staff.name}</p>
-          <p className="text-xs text-[#a88a9f] truncate">{staff.role ? staff.role.replace(/_/g, ' ') : ''}</p>
+          <p className="text-xs text-[#a88a9f] truncate">{staff.role ? getLocalizedRole(staff.role, language) : ''}</p>
           {staff.phone && <p className="mt-1 text-xs text-[#8b7382] truncate">{staff.phone}</p>}
         </div>
       </div>
 
-      {staff.hasScheduleToday && (
+      {staff.isOnLeaveToday ? (
+        <div className="absolute top-4 right-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f8] border border-[#f0d9e8] px-2 py-1 text-[9px] uppercase tracking-wide font-bold text-[#ea4f93]">
+            <span className="h-1 w-1 rounded-full bg-[#ea4f93] shadow-[0_0_8px_rgba(234,79,147,0.5)]"></span>
+            {language === 'vi' ? 'Nghỉ phép' : 'On Leave'}
+          </span>
+        </div>
+      ) : staff.hasScheduleToday ? (
         <div className="absolute top-4 right-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/50 px-2 py-1 text-[9px] uppercase tracking-wide font-bold text-emerald-600">
             <span className="h-1 w-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
             {t("adminStaffManagement.workingToday")}
           </span>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -148,6 +196,8 @@ StaffCard.propTypes = {
     avatarTone: PropTypes.string.isRequired,
     avatarUrl: PropTypes.string,
     phone: PropTypes.string,
+    hasScheduleToday: PropTypes.bool,
+    isOnLeaveToday: PropTypes.bool,
   }).isRequired,
   onClick: PropTypes.func,
 };
@@ -407,14 +457,44 @@ export function StaffManagementPage() {
   const [todaySchedules, setTodaySchedules] = useState([]);
   const [loadingTodaySchedules, setLoadingTodaySchedules] = useState(false);
 
-  // const availableTodayCount = useMemo(() => {
-  //   return new Set(
-  //     todaySchedules
-  //       .filter(s => s.salonId === selectedSalonId)
-  //       .map(s => s.nailArtistId)
-  //   ).size;
-  // }, [todaySchedules, selectedSalonId]);
+  const [todayBreaks, setTodayBreaks] = useState([]);
 
+  useEffect(() => {
+    const fetchBreaksForCurrentPage = async () => {
+      const nailArtists = staffList.filter(s => s.role === 'Staff_Artist' || s.role === 'NAIL_ARTIST');
+      if (nailArtists.length === 0) {
+        setTodayBreaks([]);
+        return;
+      }
+
+      const results = await Promise.allSettled(
+        nailArtists.map(staff => {
+          if (!staff.staffId) return Promise.resolve([]);
+          return fetchArtistBreaks(staff.staffId, { status: "Approved" });
+        })
+      );
+
+      const allBreaks = [];
+      results.forEach(res => {
+        if (res.status === 'fulfilled' && res.value) {
+          allBreaks.push(...res.value);
+        }
+      });
+      setTodayBreaks(allBreaks);
+    };
+    fetchBreaksForCurrentPage();
+  }, [staffList]);
+
+  const todayArtistLeaves = useMemo(() => {
+    const leaves = new Set();
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    todayBreaks.forEach(b => {
+      if (b.breakDate && dayjs(b.breakDate).format("YYYY-MM-DD") === todayStr) {
+        leaves.add(b.nailArtistId);
+      }
+    });
+    return leaves;
+  }, [todayBreaks]);
 
   const todayArtistIds = useMemo(() => {
     return new Set(todaySchedules.map(s => s.nailArtistId));
@@ -423,9 +503,10 @@ export function StaffManagementPage() {
   const availableTodayCount = useMemo(() => {
     return staffList.filter(staff =>
       staff.role === "Staff_Artist" &&
-      todayArtistIds.has(staff.staffId)
+      todayArtistIds.has(staff.staffId) &&
+      !todayArtistLeaves.has(staff.staffId)
     ).length;
-  }, [staffList, todayArtistIds]);
+  }, [staffList, todayArtistIds, todayArtistLeaves]);
 
   // Handle opening staff detail drawer
   const handleOpenDrawer = useCallback(async (userId) => {
@@ -443,9 +524,10 @@ export function StaffManagementPage() {
       // Fetch skills + schedule song song nếu staff là Staff Artist và có staffId
       // (staffId ở đây là nailArtistId, không phải userId)
       if (isNailArtist && staffData.staffId) {
-        const [skillsResult, scheduleResult] = await Promise.allSettled([
+        const [skillsResult, scheduleResult, breaksResult] = await Promise.allSettled([
           fetchNailArtistSkills(staffData.staffId),
           fetchArtistSchedule(staffData.staffId),
+          fetchArtistBreaks(staffData.staffId, { status: "Approved" }),
         ]);
 
         if (skillsResult.status === "fulfilled") {
@@ -455,12 +537,25 @@ export function StaffManagementPage() {
           setStaffSkills([]);
         }
 
+        let combinedSchedule = [];
         if (scheduleResult.status === "fulfilled") {
-          setStaffSchedule(scheduleResult.value || []);
+          combinedSchedule = [...(scheduleResult.value || [])];
         } else {
           console.warn("Failed to load staff schedule:", scheduleResult.reason);
-          setStaffSchedule([]);
         }
+
+        if (breaksResult.status === "fulfilled") {
+          const breaks = (breaksResult.value || []).map(b => ({
+            ...b,
+            date: b.breakDate,
+            status: "leave",
+          }));
+          combinedSchedule = [...breaks, ...combinedSchedule];
+        } else {
+          console.warn("Failed to load staff breaks:", breaksResult.reason);
+        }
+
+        setStaffSchedule(combinedSchedule);
       } else {
         setStaffSkills([]);
         setStaffSchedule([]);
@@ -822,6 +917,7 @@ export function StaffManagementPage() {
                       staff={{
                         ...staff,
                         hasScheduleToday: todayArtistIds.has(staff.staffId),
+                        isOnLeaveToday: todayArtistLeaves.has(staff.staffId),
                       }}
                       onClick={() => handleOpenDrawer(staff.userId || staff.id)}
                     />
@@ -904,7 +1000,7 @@ export function StaffManagementPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   {selectedStaff.role && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
-                      {selectedStaff.role.replace(/_/g, ' ')}
+                      {getLocalizedRole(selectedStaff.role, language)}
                     </span>
                   )}
                 </div>
@@ -917,10 +1013,14 @@ export function StaffManagementPage() {
                     {t("adminStaffManagement.personalInfo")}
                   </h3>
                   <div className="space-y-4">
-                    <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
-                    <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
-                    <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
-                    <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
+                      <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                      <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
+                    </div>
                   </div>
                 </div>
 
@@ -929,8 +1029,8 @@ export function StaffManagementPage() {
                   <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
                     {t("adminStaffManagement.accountInfo")}
                   </h3>
-                  <div className="space-y-4">
-                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? selectedStaff.role.replace(/_/g, ' ') : '-'}</InfoItem>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? getLocalizedRole(selectedStaff.role, language) : '-'}</InfoItem>
                     <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
                         {selectedStaff.status === 'Active' || !selectedStaff.status ? t("adminStaffManagement.workingToday") : selectedStaff.status}

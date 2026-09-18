@@ -1057,7 +1057,7 @@ export function StaffDashboardPage() {
 
   return (
     <>
-      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 font-sans">
+      <div className="flex min-h-screen flex-col text-slate-800 font-sans">
         {/* Header & Controls */}
         <div
           className="rounded-lg
@@ -1124,13 +1124,7 @@ export function StaffDashboardPage() {
           </div>
         </div>
 
-        <div className="mx-auto w-full space-y-6 p-8
-                        bg-[#fff9fb]
-                        bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
-                      ">
-
-
-
+        <div className="mx-auto w-full space-y-6 py-8">
           <TopMetricsRow metrics={metrics} />
 
           {/* Pinned Widgets Section */}
