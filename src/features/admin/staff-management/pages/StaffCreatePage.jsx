@@ -7,8 +7,8 @@ import {
   Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Select } from "antd";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Select, Rate } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
@@ -21,8 +21,9 @@ import {
   getStaffInitials,
   getStaffRoleOption,
 } from "../services/mockStaff";
-import { createUser } from "../services/staffManagementService";
+import { createUser, fetchSalonStaff } from "../services/staffManagementService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { fetchSkillTypes, assignNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
 const inputWrapperClassName =
   "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
@@ -36,23 +37,41 @@ export function StaffCreatePage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
+  const location = useLocation();
   const [formData, setFormData] = useState({
     ...createEmptyStaffForm(),
     firstName: "",
     lastName: "",
     password: "",
-    salonId: "",
+    salonId: location.state?.selectedSalonId || "",
     avatarUrl: "",
     imageFile: null,
   });
   const [salons, setSalons] = useState([]);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [selectedSkills, setSelectedSkills] = useState({});
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Load salons on mount
+  // Load salons and skills on mount
   useEffect(() => {
     const loadData = async () => {
-      const salonList = await fetchAdminSalons({ pageSize: 100 });
-      setSalons(salonList.items || []);
+      try {
+        const salonList = await fetchAdminSalons({ pageSize: 100 });
+        const fetchedSalons = salonList.items || [];
+        setSalons(fetchedSalons);
+        
+        if (!location.state?.selectedSalonId && fetchedSalons.length > 0) {
+          setFormData(prev => ({ ...prev, salonId: fetchedSalons[0].id }));
+        }
+      } catch (err) {
+        console.error("Failed to load salons", err);
+      }
+      try {
+        const skillsData = await fetchSkillTypes({ pageSize: 100 });
+        setSkillTypes(skillsData.items || []);
+      } catch (err) {
+        console.error("Failed to fetch skill types", err);
+      }
     };
     loadData();
   }, []);
@@ -116,6 +135,38 @@ export function StaffCreatePage() {
 
       console.log("Created user:", createdUser);
 
+      if (formData.role === "Staff_Artist") {
+        let targetArtistId = createdUser?.staffId || createdUser?.nailArtistId;
+
+        // Fetch staff list to get the real staffId if it's missing from the POST /Users response
+        if (!targetArtistId) {
+          try {
+            const staffList = await fetchSalonStaff(formData.salonId || salons[0]?.id, { pageSize: 1000 });
+            const found = staffList.items.find(s => s.email === formData.email || s.userId === (createdUser?.userId || createdUser?.id));
+            if (found) {
+              targetArtistId = found.staffId || found.nailArtistId || found.id;
+            }
+          } catch (e) {
+            console.error("Failed to fetch staff list for staffId", e);
+          }
+        }
+
+        if (!targetArtistId) targetArtistId = createdUser?.id;
+
+        const skillsPayload = Object.entries(selectedSkills)
+          .filter(([_, level]) => level > 0)
+          .map(([skillTypeId, level]) => ({ skillTypeId, level }));
+        
+        if (skillsPayload.length > 0 && targetArtistId) {
+          try {
+            await assignNailArtistSkills(targetArtistId, skillsPayload);
+            console.log("Assigned skills successfully.");
+          } catch (err) {
+            console.error("Failed to assign skills:", err);
+          }
+        }
+      }
+
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
@@ -143,6 +194,7 @@ export function StaffCreatePage() {
     navigate(ROUTES.adminStaff, {
       state: {
         flashMessage: saveResult?.message,
+        selectedSalonId: formData.salonId || salons[0]?.id,
       },
     });
   }, [navigate, saveResult?.message]);
@@ -153,7 +205,11 @@ export function StaffCreatePage() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(ROUTES.adminStaff);
+    navigate(ROUTES.adminStaff, {
+      state: {
+        selectedSalonId: formData.salonId,
+      },
+    });
   };
 
   return (
@@ -272,13 +328,11 @@ export function StaffCreatePage() {
                 <Select
                   value={formData.role}
                   onChange={(value) => handleInputChange("role", value)}
-                  options={STAFF_ROLE_OPTIONS.map((option) => {
-                    const roleLabelMap = { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" };
-                    return {
-                      value: option.value,
-                      label: t("adminStaffManagement." + (option.value === "Staff_Artist" ? "staffArtist" : option.value === "Manager" ? "manager" : "receptionist")),
-                    };
-                  })}
+                  options={[
+                    { value: "Manager", label: t("adminStaffManagement.manager") || (language === "vi" ? "Quản lý" : "Manager") },
+                    { value: "Receptionist", label: t("adminStaffManagement.receptionist") || (language === "vi" ? "Lễ tân" : "Receptionist") },
+                    { value: "Staff_Artist", label: t("adminStaffManagement.staffArtist") || (language === "vi" ? "Nhân viên làm móng" : "Staff Artist") }
+                  ]}
                   className="w-full"
                   size="large"
                 />
@@ -289,7 +343,8 @@ export function StaffCreatePage() {
                   {t("adminStaffManagement.assignedSalon")}
                 </span>
                 <Select
-                  value={formData.salonId}
+                  value={salons.length > 0 ? (formData.salonId || undefined) : undefined}
+                  loading={salons.length === 0}
                   onChange={(value) => {
                     const selectedSalon = salons.find(s => s.id === value) || { name: value };
                     handleInputChange("salonId", value);
@@ -301,6 +356,9 @@ export function StaffCreatePage() {
                   }))}
                   className="w-full"
                   size="large"
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder={language === "vi" ? "Đang tải chi nhánh..." : "Loading salons..."}
                 />
               </div>
 
@@ -345,6 +403,50 @@ export function StaffCreatePage() {
               </div>
             </div>
           </div>
+
+          {formData.role === "Staff_Artist" && (
+            <div className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50 mt-5">
+              <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
+                <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
+                {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
+              </h2>
+              
+              <div className="grid gap-6 md:grid-cols-2">
+                {skillTypes.map((skill) => (
+                  <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-bold text-slate-700">
+                        {skill.name}
+                      </span>
+                      {selectedSkills[skill.skillTypeId || skill.id] > 0 && (
+                        <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+                          Level {selectedSkills[skill.skillTypeId || skill.id]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center">
+                      <Rate
+                        value={selectedSkills[skill.skillTypeId || skill.id] || 0}
+                        onChange={(value) => {
+                          setSelectedSkills(prev => ({
+                            ...prev,
+                            [skill.skillTypeId || skill.id]: value
+                          }));
+                        }}
+                        className="text-rose-400"
+                        allowClear
+                      />
+                    </div>
+                    {skill.description && (
+                      <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 font-medium">
+                        {skill.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <aside className="space-y-4 lg:space-y-5">
@@ -388,10 +490,11 @@ export function StaffCreatePage() {
                 <div className="space-y-3">
                   {STAFF_ONBOARDING_CHECKLIST.map((item) => {
                     const checklistMap = {
-                      "Create Account & Credentials": "Tạo tài khoản & Thông tin đăng nhập",
-                      "Setup Availability & Work Schedule": "Thiết lập lịch làm việc",
-                      "Assign to Branch Location": "Phân bổ địa điểm chi nhánh",
-                      "List Professional Services & Skills": "Thiết lập kỹ năng & Chuyên môn",
+                      "Complete personal information": "Hoàn tất thông tin cá nhân",
+                      "Assign salon and role": "Phân công chi nhánh và vai trò",
+                      "Select specialties": "Chọn chuyên môn",
+                      "Set weekly working schedule": "Thiết lập lịch làm việc hàng tuần",
+                      "Review and save profile": "Xem lại và lưu hồ sơ",
                     };
                     return (
                       <div
@@ -458,6 +561,7 @@ export function StaffCreatePage() {
         failureDescription={language === "vi" ? "Không thể tạo hồ sơ nhân viên này." : "Unable to create the staff member."}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến danh sách nhân viên..." : "Redirecting to staff list..."}
       />
     </section>
   );

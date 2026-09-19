@@ -503,47 +503,48 @@ export function StaffCreatePage() {
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Artist Creation"
-        subtitle="You are leaving this artist form without saving."
-        description="The new artist profile has not been saved yet. Leave this page only if you want to discard the draft."
-        confirmText="Leave Page"
-        cancelText="Keep Editing"
+        title={isVi ? "Hủy tạo nghệ sĩ" : "Cancel Artist Creation"}
+        subtitle={isVi ? "Bạn đang rời khỏi biểu mẫu nghệ sĩ mà không lưu." : "You are leaving this artist form without saving."}
+        description={isVi ? "Hồ sơ nghệ sĩ mới chưa được lưu. Chỉ rời khỏi trang này nếu bạn muốn loại bỏ bản nháp." : "The new artist profile has not been saved yet. Leave this page only if you want to discard the draft."}
+        confirmText={isVi ? "Rời khỏi trang" : "Leave Page"}
+        cancelText={isVi ? "Tiếp tục chỉnh sửa" : "Keep Editing"}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
         details={[
-          { label: "Draft Status", value: "Not saved yet" },
-          { label: "Next Step", value: "Return to artist list" },
+          { label: isVi ? "Trạng thái bản nháp" : "Draft Status", value: isVi ? "Chưa lưu" : "Not saved yet" },
+          { label: isVi ? "Bước tiếp theo" : "Next Step", value: isVi ? "Quay lại danh sách nghệ sĩ" : "Return to artist list" },
         ]}
         warnings={[
-          "Artist details and specialties entered here will be lost.",
-          "You will need to re-create the profile if you open the create screen again.",
+          isVi ? "Thông tin nghệ sĩ và chuyên môn đã nhập sẽ bị mất." : "Artist details and specialties entered here will be lost.",
+          isVi ? "Bạn sẽ cần tạo lại hồ sơ nếu mở lại màn hình tạo." : "You will need to re-create the profile if you open the create screen again.",
         ]}
       />
 
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save New Artist"
-        subtitle="This will create the profile and save to database."
-        description="Confirm to create this artist profile."
-        confirmText="Save Artist"
-        cancelText="Review Again"
+        title={isVi ? "Lưu nghệ sĩ mới" : "Save New Artist"}
+        subtitle={isVi ? "Đây sẽ tạo hồ sơ và lưu vào cơ sở dữ liệu." : "This will create the profile and save to database."}
+        description={isVi ? "Xác nhận để tạo hồ sơ nghệ sĩ này." : "Confirm to create this artist profile."}
+        confirmText={isVi ? "Lưu nghệ sĩ" : "Save Artist"}
+        cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.firstName + " " + formData.lastName || "New Artist", "Staff Artist"]}
+        highlights={[formData.firstName + " " + formData.lastName || isVi ? "Nghệ sĩ mới" : "New Artist", isVi ? "Nghệ sĩ làm móng" : "Staff Artist"]}
       />
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Create Successful"
-        failureTitle="Create Failed"
-        successDescription="The artist has been created successfully."
-        failureDescription="Unable to create the artist."
+        successTitle={isVi ? "Tạo thành công" : "Create Successful"}
+        failureTitle={isVi ? "Tạo thất bại" : "Create Failed"}
+        successDescription={isVi ? "Hồ sơ nghệ sĩ đã được tạo thành công." : "The artist has been created successfully."}
+        failureDescription={isVi ? "Không thể tạo hồ sơ nghệ sĩ." : "Unable to create the artist."}
         onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={isVi ? "Đang chuyển hướng đến danh sách nghệ sĩ..." : "Redirecting to artist list..."}
       />
     </section>
   );

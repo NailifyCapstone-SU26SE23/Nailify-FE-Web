@@ -63,7 +63,7 @@ function normalizeBookingPageSize(value, isAdmin = false) {
 }
 
 export async function fetchBookingsBySalonId(salonId, options = {}) {
-  const { pageNumber = 1, pageSize = 10, isAdmin = true, startDate, endDate } = options;
+  const { pageNumber = 1, pageSize = 10, isAdmin = true, startDate, endDate, search, status } = options;
   const normalizedPageNumber = normalizePageNumber(pageNumber);
   const normalizedPageSize = normalizeBookingPageSize(pageSize, isAdmin);
 
@@ -74,6 +74,8 @@ export async function fetchBookingsBySalonId(salonId, options = {}) {
 
   if (startDate) queryParams.startDate = startDate;
   if (endDate) queryParams.endDate = endDate;
+  if (search) queryParams.search = search;
+  if (status) queryParams.status = status;
 
   console.log("Fetching bookings for salon:", salonId, queryParams);
   try {

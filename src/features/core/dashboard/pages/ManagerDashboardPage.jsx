@@ -152,6 +152,7 @@ WidgetWrapper.propTypes = {
 
 export function ManagerDashboardPage() {
   const { t, language } = useLanguage();
+  const isVi = language === 'vi';
   const salonId = getSalonId();
   const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
   const [filterMode, setFilterMode] = useState("Week");
@@ -417,7 +418,7 @@ export function ManagerDashboardPage() {
     yAxis: { type: 'value', axisLabel: commonAxisLabel, splitLine: commonSplitLine },
     series: [
       {
-        name: 'Bookings',
+        name: isVi ? 'Lịch hẹn' : 'Bookings',
         type: 'line',
         smooth: false,
         symbol: 'circle',
@@ -503,11 +504,13 @@ export function ManagerDashboardPage() {
               data.staffLeaveAlerts.map((alert, i) => (
                 <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 shrink-0">
                   <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-sm">{alert.artistName}</p>
-                    <div className="mt-1 flex items-center gap-4 text-xs font-medium">
-                      <span>{isVi ? "Ngày" : "Date"}: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
-                      <span>{isVi ? "Thời gian" : "Time"}: {alert.startTime} - {alert.endTime}</span>
+                  <div className='flex-1'>
+                    <div className='flex justify-between'>
+                      <p className="font-bold text-sm">{alert.artistName}</p>
+                      <div className="flex items-center gap-4 text-xs font-medium">
+                        <span>{isVi ? "Ngày" : "Date"}: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
+                        <span>{isVi ? "Thời gian" : "Time"}: {alert.startTime} - {alert.endTime}</span>
+                      </div>
                     </div>
                     <p className="mt-1 text-xs opacity-90 truncate max-w-[400px]" title={alert.reason}>
                       {isVi ? "Lý do" : "Reason"}: {alert.reason}
@@ -585,7 +588,6 @@ export function ManagerDashboardPage() {
 
   const pinnedWidgets = widgets.filter(w => w.pinned && w.visible);
   const unpinnedWidgets = widgets.filter(w => !w.pinned && w.visible);
-  const isVi = language === "vi";
 
   return (
     <div className="flex min-h-screen flex-col text-slate-800 font-sans">
