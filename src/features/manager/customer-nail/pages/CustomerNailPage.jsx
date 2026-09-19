@@ -10,6 +10,7 @@ import { fetchCustomerNails, getManagerSalonId } from "../services/customerNails
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
+import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
 
 function Card({ className = "", children }) {
   return (
@@ -608,6 +609,27 @@ export function CustomerNailPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // Lắng nghe SignalR cho yêu cầu custom nail mới
+  useEffect(() => {
+    const unsubscribe = notificationSignalRService.registerListener((type, payload) => {
+      const messageType = type?.MessageType || type || "";
+      if (messageType === "NEW_CUSTOM_NAIL_REQUEST") {
+        const data = payload || type?.Payload || {};
+        const customerName = data.CustomerName || data.customerName || "một khách hàng";
+        
+        // Use toast to notify the user and refresh the list silently
+        toast.success(language === "vi" ? `Có yêu cầu duyệt mẫu móng custom mới từ ${customerName}!` : `New custom nail request from ${customerName}!`, {
+          icon: '💅',
+          style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
+        });
+        
+        loadCustomerNails({ silent: true });
+        loadStats(); // Update the stats as well
+      }
+    });
+    return () => unsubscribe();
+  }, [loadCustomerNails, loadStats, language]);
 
   // Reset page when filters change to prevent out of bounds
   useEffect(() => {
