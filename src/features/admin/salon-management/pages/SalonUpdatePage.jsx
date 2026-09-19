@@ -763,6 +763,7 @@ export function SalonUpdatePage() {
         failureDescription={t("adminSalonManagement.unableToUpdateTheSalon")}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến chi nhánh..." : "Redirecting to salon..."}
       />
 
       <HolidayClosureModal

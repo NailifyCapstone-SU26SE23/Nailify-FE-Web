@@ -363,7 +363,7 @@ export function SalonDetailPage() {
           </div>
 
           <div className="flex gap-3">
-            {salonDetail?.status === "Active" && (
+            {salonDetail?.status === "Open" && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}

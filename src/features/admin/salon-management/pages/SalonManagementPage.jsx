@@ -21,11 +21,12 @@ import {
   UserRound,
   X,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
 import AssignManagerModal from "../components/AssignManagerModal";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import SetOperatingHoursModal from "../components/SetOperatingHoursModal";
-import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip, Table } from "antd";
+import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip, Table, Popover } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -243,7 +244,42 @@ function BranchCard({ branch, onClick }) {
             <Phone size={16} className="shrink-0 text-[#ea4f93]" />
             <span className="truncate">{t("adminSalonManagement.phone")} {branch.phone}</span>
           </div>
-
+          <Popover
+            content={
+              <div className="flex flex-col gap-1.5 text-xs w-48">
+                {branch.operatingHours && branch.operatingHours.length > 0 ? [...branch.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                  <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                    <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                    <span className="text-[#a88a9f]">
+                      {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                    </span>
+                  </div>
+                )) : (
+                  <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                )}
+              </div>
+            }
+            title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+            trigger="hover"
+            placement="bottomLeft"
+          >
+            <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+              <Clock size={16} className="shrink-0 text-[#ea4f93]" />
+              <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+              <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                {(() => {
+                  const today = new Date().getDay();
+                  const todayHours = branch.operatingHours?.find(h => h.dayOfWeek === today);
+                  if (todayHours) {
+                    return todayHours.isClosed
+                      ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                      : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                  }
+                  return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                })()}
+              </span>
+            </div>
+          </Popover>
         </div>
         <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
           <div className="flex items-center gap-1 text-[#f59e0b]">
@@ -323,13 +359,15 @@ function mapApiSalonToUiFormat(apiSalon) {
     statusTone = "bg-[#fff0f0] text-[#e53e3e]";
   }
 
+
   return {
     id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
     salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
-    name: apiSalon.salonName || apiSalon.name || "Unknown Salon",
-    address: apiSalon.address || "No address",
-    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
-    phone: apiSalon.phone || "No phone",
+    name: apiSalon.salonName || apiSalon.name,
+    address: apiSalon.address,
+    manager: apiSalon.managerName || apiSalon.manager,
+    phone: apiSalon.phone,
+    operatingHours: apiSalon.operatingHours,
     imageUrl: apiSalon.imageUrl || apiSalon.image || "",
     image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
     status: internalStatus,
@@ -428,7 +466,7 @@ export function SalonManagementPage() {
         name: search.trim() || undefined,
         status: status !== "All" ? status : undefined
       });
-
+      console.log("data", data);
       const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
 
       if (page === 1) {
@@ -447,6 +485,16 @@ export function SalonManagementPage() {
       setIsLoadMore(false);
     }
   };
+
+  const enrichedSalons = useMemo(() => {
+    return salons.map(salon => {
+      const manager = managers.find(m => m.salonId === salon.salonId);
+      return {
+        ...salon,
+        manager: manager ? `${manager.lastName} ${manager.firstName}` : salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
+      };
+    });
+  }, [salons, managers, language]);
 
   useEffect(() => {
     const loadInitialDeps = async () => {
@@ -609,14 +657,14 @@ export function SalonManagementPage() {
     },
     ...(salon?.status === "Active"
       ? [
-          {
-            key: "delete",
-            label: t("adminSalonManagement.deleteSalon"),
-            icon: Trash2,
-            className: "text-[#d14c84]",
-            onSelect: () => handleDeleteSalon(salon),
-          },
-        ]
+        {
+          key: "delete",
+          label: t("adminSalonManagement.deleteSalon"),
+          icon: Trash2,
+          className: "text-[#d14c84]",
+          onSelect: () => handleDeleteSalon(salon),
+        },
+      ]
       : []),
   ];
 
@@ -781,9 +829,9 @@ export function SalonManagementPage() {
             </div>
           </PremiumCard>
 
-          {salons.length > 0 ? (
+          {enrichedSalons.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {salons.map((branch) => (
+              {enrichedSalons.map((branch) => (
                 <BranchCard
                   key={branch.id}
                   branch={branch}
