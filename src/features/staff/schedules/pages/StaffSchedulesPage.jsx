@@ -16,7 +16,22 @@ import { fetchStaffSchedules } from "../services/staffScheduleService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_LABELS = {
+  en: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+  vi: ["Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Chủ nhật"],
+};
+const SCHEDULE_STATUS_LABELS = {
+  confirmed: { en: "Confirmed", vi: "Đã xác nhận" },
+  working: { en: "Working", vi: "Đang làm" },
+  active: { en: "Active", vi: "Hoạt động" },
+  pending: { en: "Pending", vi: "Chờ duyệt" },
+  draft: { en: "Draft", vi: "Nháp" },
+  off: { en: "Off", vi: "Nghỉ" },
+  dayoff: { en: "Day off", vi: "Ngày nghỉ" },
+  "day off": { en: "Day off", vi: "Ngày nghỉ" },
+  leave: { en: "Leave", vi: "Nghỉ phép" },
+  holiday: { en: "Holiday", vi: "Nghỉ lễ" },
+};
 const HOUR_MARKERS = Array.from({ length: 12 }, (_, index) => 7 + index);
 const EVENT_PALETTES = [
   "bg-[#d8f5e5] text-[#275c45]",
@@ -59,6 +74,36 @@ function getStatusDotClass(status) {
   }
 
   return "bg-[#7c6cff]";
+}
+
+function getWeekdayLabel(day, language = "en") {
+  const labels = WEEKDAY_LABELS[language] || WEEKDAY_LABELS.en;
+  const isoIndex = (day.day() + 6) % 7;
+  return labels[isoIndex] || day.format("dddd");
+}
+
+function formatUnknownStatus(status) {
+  return String(status || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getScheduleStatusLabel(status, language = "en") {
+  const normalized = String(status || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return language === "vi" ? "Ca làm" : "Shift";
+  }
+
+  const statusConfig = SCHEDULE_STATUS_LABELS[normalized];
+  if (statusConfig) {
+    return statusConfig[language] || statusConfig.en;
+  }
+
+  return formatUnknownStatus(status);
 }
 
 function formatTimeLabel(value) {
@@ -112,7 +157,7 @@ function EventCard({ schedule, paletteClass, language = "en" }) {
   return (
     <div className={`rounded-lg px-4 py-4 shadow-[0_12px_24px_rgba(26,32,60,0.06)] ${paletteClass}`}>
       <p className="text-[13px] font-semibold">{formatTimeLabel(schedule.shiftStart)} - {formatTimeLabel(schedule.shiftEnd)}</p>
-      <p className="mt-2 text-[15px] font-bold">{schedule.status || "Shift"}</p>
+      <p className="mt-2 text-[15px] font-bold">{getScheduleStatusLabel(schedule.status, language)}</p>
       <p className="mt-2 text-[13px] opacity-70">{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd, language)}</p>
     </div>
   );
@@ -191,13 +236,13 @@ export function StaffSchedulesPage() {
   const groupedByDay = useMemo(
     () => weekDays.map((day, index) => ({
       day,
-      rowLabel: day.format("dddd"),
+      rowLabel: getWeekdayLabel(day, language),
       paletteClass: getPaletteClass(index),
       schedules: scheduleRows
         .filter((item) => dayjs(item.workDate).isSame(day, "day"))
         .sort((left, right) => dayjs(left.shiftStart).valueOf() - dayjs(right.shiftStart).valueOf()),
     })),
-    [scheduleRows, weekDays],
+    [language, scheduleRows, weekDays],
   );
 
   const upcomingSchedules = useMemo(
@@ -380,7 +425,7 @@ export function StaffSchedulesPage() {
                                     <p className="text-[11px] font-semibold">
                                       {formatTimeLabel(schedule.shiftStart)}
                                     </p>
-                                    <p className="mt-1 text-sm font-bold">{schedule.status || "Shift"}</p>
+                                    <p className="mt-1 text-sm font-bold">{getScheduleStatusLabel(schedule.status, language)}</p>
                                     <div className="mt-1 flex items-center gap-2 text-[11px] opacity-80">
                                       <span className={`h-2 w-2 rounded-full ${getStatusDotClass(schedule.status)}`} />
                                       <span>{formatDurationLabel(schedule.shiftStart, schedule.shiftEnd, language)}</span>
