@@ -35,16 +35,21 @@ export function getStaffArtistId() {
 
 export function getSalonId() {
   const session = loadAuthSession();
-  const salonId = session?.user?.salonId || session?.salonId;
+  const salonId = session?.user?.salonId || session?.salonId || localStorage.getItem("salonId");
 
   return salonId || null;
 }
 
-export async function fetchBreaks({ pageNumber = 1, pageSize = 10, artistId, date } = {}) {
+export async function fetchBreaks({ pageNumber = 1, pageSize = 10, artistId, date, salonId } = {}) {
+  const normalizedSalonId = String(salonId || getSalonId() || "").trim();
   const params = {
     pageNumber,
     pageSize,
   };
+
+  if (normalizedSalonId) {
+    params.salonId = normalizedSalonId;
+  }
 
   if (artistId) {
     params.artistId = artistId;
