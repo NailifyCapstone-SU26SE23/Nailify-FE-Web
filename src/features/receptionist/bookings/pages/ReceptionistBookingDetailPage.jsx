@@ -63,6 +63,7 @@ import { createPayment } from "../../payments/services/receptionistPaymentServic
 import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
+import { TransactionBadge } from "../../../../shared/utils/transactions";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -1463,6 +1464,14 @@ export function ReceptionistBookingDetailPage() {
                             <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
                           </div>
                         )}
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                          <TransactionBadge
+                            walletId={tx.walletId}
+                            paymentLinkId={tx.paymentLinkId}
+                            language={language}
+                          />
+                        </div>
                       </div>
                     </div>
                   );

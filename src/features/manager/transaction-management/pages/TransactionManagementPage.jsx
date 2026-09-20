@@ -27,6 +27,7 @@ import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { getManagerBookingDetailRoute } from "../../../../shared/constants/routes";
+import { TransactionBadge } from "../../../../shared/utils/transactions";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -701,14 +702,13 @@ export function TransactionManagementPage() {
         destroyOnClose
         closeIcon={<X size={15} className="text-[#a88a9f] hover:text-[#ea4f93] transition-colors" />}
         styles={{
-          content: { borderRadius: "1.75rem", padding: 0, overflow: "hidden" },
-          header: { borderBottom: "1px solid #f1e7ed", padding: "1.25rem 1.5rem 1rem", marginBottom: 0 },
-          body: { padding: 0, backgroundColor: "#fcf9fb" },
+          content: { overflow: "hidden" },
+          header: { borderBottom: "1px solid #f1e7ed", padding: "1rem"},
         }}
       >
         {selectedTransaction && (
           <div className="receipt-scroll max-h-[78vh] overflow-y-auto">
-            <div className="p-6 space-y-5">
+            <div className="p-2 space-y-5">
 
               {/* Unified summary: status + amount + order code in one place, no repeat further down */}
               <div className="text-center space-y-2.5 pb-1">
@@ -789,6 +789,14 @@ export function TransactionManagementPage() {
                     <span className="text-[#db8520] font-semibold">{dayjs(selectedTransaction.expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#a88a9f]">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                  <TransactionBadge
+                    walletId={selectedTransaction.walletId}
+                    paymentLinkId={selectedTransaction.paymentLinkId}
+                    language={language}
+                  />
+                </div>
               </div>
 
               {/* Interactive payment area for Pending state */}

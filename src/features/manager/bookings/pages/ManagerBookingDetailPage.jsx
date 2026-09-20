@@ -47,7 +47,7 @@ import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
-
+import { TransactionBadge } from "../../../../shared/utils/transactions";
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
@@ -1163,7 +1163,7 @@ export function ManagerBookingDetailPage() {
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
-                               
+
                               </div>
                               <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                             </div>
@@ -1197,6 +1197,14 @@ export function ManagerBookingDetailPage() {
                                 <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
                               </div>
                             )}
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                              <TransactionBadge
+                                walletId={tx.walletId}
+                                paymentLinkId={tx.paymentLinkId}
+                                language={language}
+                              />
+                            </div>
                           </div>
                         </div>
                       );
