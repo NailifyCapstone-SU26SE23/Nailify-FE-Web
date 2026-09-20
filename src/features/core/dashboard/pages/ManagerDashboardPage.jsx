@@ -505,7 +505,7 @@ export function ManagerDashboardPage() {
                 <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 shrink-0">
                   <AlertCircle size={20} className="shrink-0 mt-0.5" />
                   <div className='flex-1'>
-                    <div className='flex justify-between'>
+                    <div className='flex flex-col justify-between'>
                       <p className="font-bold text-sm">{alert.artistName}</p>
                       <div className="flex items-center gap-4 text-xs font-medium">
                         <span>{isVi ? "Ngày" : "Date"}: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
@@ -722,6 +722,30 @@ const StaffAvatar = ({ staff, size = 56, className }) => {
   );
 };
 
+const FeedbackAvatar = ({ fb, getInitials }) => {
+  const customerId = fb.customerId || fb.userId || fb.id;
+  const { data: userDetail } = useUserDetail(customerId);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+  }, [userDetail?.avatarUrl]);
+
+  return (
+    <Avatar
+      style={{ backgroundColor: '#ffe3ef', color: '#ea4f93', borderColor: '#ffcce1' }}
+      className="font-bold shrink-0 mt-0.5 shadow-sm border"
+      src={!error ? userDetail?.avatarUrl : undefined}
+      onError={() => {
+        setError(true);
+        return false;
+      }}
+    >
+      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
+    </Avatar>
+  );
+};
+
 // Staff Detail Modal Component
 function StaffDetailModal({ staff, startDate, endDate, onClose }) {
   const { t, language } = useLanguage();
@@ -867,9 +891,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
               <div className="flex flex-col gap-3">
                 {dashboard.recentFeedback.map((fb, idx) => (
                   <div key={idx} className="flex gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-sky-100">
-                    <Avatar className="bg-gradient-to-br from-sky-400 to-indigo-500 text-white font-bold shrink-0 mt-0.5 shadow-sm">
-                      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
-                    </Avatar>
+                    <FeedbackAvatar fb={fb} getInitials={getInitials} />
                     <div className="flex-1 w-full">
                       <div className="flex justify-between items-start">
                         <div>

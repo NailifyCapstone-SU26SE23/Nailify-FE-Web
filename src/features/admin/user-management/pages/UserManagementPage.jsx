@@ -124,7 +124,7 @@ function FilterSelect({
         options={options}
         placeholder={placeholder}
         disabled={disabled}
-        bordered={false}
+        variant="borderless"
         suffixIcon={<ChevronDownIcon />}
         popupMatchSelectWidth
         className="h-full min-w-0 flex-1 [&_.ant-select-arrow]:!right-0 [&_.ant-select-arrow]:!text-[#d3a0b8] [&_.ant-select-selection-item]:!leading-[42px] [&_.ant-select-selection-item]:!text-[15px] [&_.ant-select-selection-item]:!font-semibold [&_.ant-select-selection-item]:!text-[#4b3148] [&_.ant-select-selection-placeholder]:!leading-[42px] [&_.ant-select-selection-placeholder]:!text-[#cf9ab3] [&_.ant-select-selector]:!h-full [&_.ant-select-selector]:!rounded-[16px] [&_.ant-select-selector]:!bg-transparent [&_.ant-select-selector]:!px-0 [&_.ant-select-selector]:!shadow-none"
@@ -213,8 +213,8 @@ export function UserManagementPage() {
       return;
     }
 
-    toast.success(location.state.flashMessage);
-    navigate(location.pathname, { replace: true, state: null });
+    toast.success(location.state.flashMessage, { id: "user-mgmt-flash" });
+    navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
@@ -437,7 +437,7 @@ export function UserManagementPage() {
       key: "user",
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, user) => (
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
             {user.avatar}
           </div>

@@ -8,7 +8,7 @@ import { ROUTES } from "../../../../shared/constants/routes";
 import { UserManagementFormFields } from "../components/UserManagementFormFields";
 import { UserManagementHeroCard } from "../components/UserManagementHeroCard";
 import { UserManagementSnapshotCard } from "../components/UserManagementSnapshotCard";
-import { createAdminUser } from "../services/userManagementService";
+import { createAdminUser, fetchAdminUsers } from "../services/userManagementService";
 
 export function UserManagementCreatePage() {
   const { t, language } = useLanguage();
@@ -59,9 +59,30 @@ export function UserManagementCreatePage() {
     setSubmitError("");
 
     try {
+      if (formValues.email) {
+        const emailCheck = await fetchAdminUsers({ searchTerm: formValues.email.trim() });
+        if (emailCheck.items.some(u => u.email === formValues.email.trim())) {
+          const msg = language === "vi" ? "Email này đã được sử dụng." : "This email is already in use.";
+          setSubmitError(msg);
+          toast.error(msg);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (formValues.phone) {
+        const phoneCheck = await fetchAdminUsers({ searchTerm: formValues.phone.trim() });
+        if (phoneCheck.items.some(u => u.phone === formValues.phone.trim())) {
+          const msg = language === "vi" ? "Số điện thoại này đã được sử dụng." : "This phone number is already in use.";
+          setSubmitError(msg);
+          toast.error(msg);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const createdUser = await createAdminUser(formValues);
 
-      toast.success(t("userManagement.detail.createSuccess"));
       navigate(ROUTES.adminUsers, {
         state: {
           flashMessage: t("userManagement.detail.createFlashSuccess", { name: createdUser.name || displayName }),

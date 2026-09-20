@@ -626,21 +626,20 @@ export function ManagerArtistBreakPage() {
                       const isPending = st === "pending" || st === "chờ duyệt";
                       return (
                         <div className="flex items-center justify-end gap-2">
+                          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBreak(item);
+                                setIsViewModalOpen(true);
+                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all cursor-pointer"
+                            >
+                              <Eye size={15} />
+                            </button>
+                          </Tooltip>
                           {isPending ? (
                             <>
-                              <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setIsViewModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all cursor-pointer"
-                                >
-                                  <Eye size={15} />
-                                </button>
-                              </Tooltip>
-
                               <Tooltip title={language === "vi" ? "Phê duyệt" : "Approve"}>
                                 <button
                                   type="button"
@@ -921,10 +920,10 @@ export function ManagerArtistBreakPage() {
       <ActionConfirmModal
         open={isDeleteOpen}
         intent="danger"
-        title="Delete Break Request?"
-        description="This action will permanently delete this break request record."
-        confirmText="Delete Request"
-        cancelText="Cancel"
+        title={language === "vi" ? "Xóa yêu cầu nghỉ?" : "Delete Break Request?"}
+        description={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn bản ghi yêu cầu nghỉ này." : "This action will permanently delete this break request record."}
+        confirmText={language === "vi" ? "Xóa yêu cầu" : "Delete Request"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         onConfirm={handleDeleteConfirm}
         onCancel={() => {
           setIsDeleteOpen(false);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Camera, User } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   USER_BRANCH_OPTIONS,
@@ -108,6 +109,7 @@ export function UserManagementFormFields({
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
+            autoComplete="off"
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
             placeholder={t("userManagement.detail.enterEmail")}
           />
@@ -120,6 +122,7 @@ export function UserManagementFormFields({
             value={formValues.password}
             onChange={onFieldChange("password")}
             disabled={disabled}
+            autoComplete="new-password"
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
             placeholder={t("userManagement.detail.enterPassword")}
           />
@@ -136,23 +139,37 @@ export function UserManagementFormFields({
           />
         </label>
 
-        <label className="space-y-2">
-          <span className="text-[13px] font-bold text-slate-700">
+        <label className="md:col-span-2 flex flex-col items-center justify-center space-y-3 pb-4 pt-2">
+          <div className="relative group cursor-pointer">
+            <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-[0_8px_20px_rgba(234,79,147,0.15)] bg-[#fff0f6] flex items-center justify-center transition-transform group-hover:scale-105">
+              {formValues.imageFile ? (
+                <img src={URL.createObjectURL(formValues.imageFile)} alt="Avatar Preview" className="h-full w-full object-cover" />
+              ) : (
+                <User size={48} className="text-[#ea4f93] opacity-60" />
+              )}
+            </div>
+            <div className="absolute bottom-1 right-1 rounded-full bg-[#ea4f93] p-2 text-white shadow-md transition-transform group-hover:scale-110">
+              <Camera size={16} />
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file) {
+                  onFieldChange("imageFile")({ target: { value: file } });
+                }
+              }}
+              disabled={disabled}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
+          <span className="text-[14px] font-bold text-slate-700">
             {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
           </span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              onFieldChange("imageFile")({ target: { value: file } });
-            }}
-            disabled={disabled}
-            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          />
         </label>
 
-        <label className="space-y-2 md:col-span-2">
+        <label className="space-y-2">
           <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <select
             value={formValues.role}
@@ -169,7 +186,7 @@ export function UserManagementFormFields({
         </label>
 
         {isSalonRole(formValues.role) && (
-          <label className="space-y-2 md:col-span-2">
+          <label className="space-y-2">
             <span className="text-[13px] font-bold text-slate-700">
               {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
             </span>

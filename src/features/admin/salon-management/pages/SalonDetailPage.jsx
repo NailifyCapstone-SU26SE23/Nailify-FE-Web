@@ -16,7 +16,7 @@ import {
   Percent,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Navigate, useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -25,8 +25,8 @@ import {
   ROUTES,
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
-import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail, deleteAdminSalon } from "../services/salonManagementService";
-import { uploadSalonImage } from "../services/salonsService";
+import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail, deleteAdminSalon, fetchSalonStaffSummary } from "../services/salonManagementService";
+import { uploadSalonImage, fetchSalonRatings } from "../services/salonsService";
 import { fetchAdminUsers } from "../../user-management/services/userManagementService";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -177,6 +177,8 @@ export function SalonDetailPage() {
     };
   }, [salonForm, salonRow, managers, salonId]);
 
+  const [salonRatings, setSalonRatings] = useState({ average: 0, count: 0 });
+
   useEffect(() => {
     let isMounted = true;
 
@@ -185,10 +187,13 @@ export function SalonDetailPage() {
       setIsNotFound(false);
 
       try {
-        // Fetch salon details and managers
-        const [normalizedSalon, managersData] = await Promise.all([
+        // Fetch salon details, managers, ratings, and staff count
+        const [normalizedSalon, managersData, ratingsData, allStaffSummary, managerStaffSummary] = await Promise.all([
           fetchAdminSalonDetail(salonId),
-          fetchAdminUsers({ role: "Manager", pageSize: 1000 })
+          fetchAdminUsers({ role: "Manager", pageSize: 1000 }),
+          fetchSalonRatings(salonId),
+          fetchSalonStaffSummary(salonId),
+          fetchSalonStaffSummary(salonId, "Manager")
         ]);
 
         setManagers(managersData.items);
@@ -197,17 +202,32 @@ export function SalonDetailPage() {
           return;
         }
 
+        let avgRating = 0;
+        let ratingCount = 0;
+        if (ratingsData && ratingsData.length > 0) {
+          ratingCount = ratingsData.length;
+          const sum = ratingsData.reduce((acc, curr) => acc + (curr.overallScore || 0), 0);
+          avgRating = (sum / ratingCount).toFixed(1);
+        }
+        setSalonRatings({ average: avgRating, count: ratingCount });
+
+        const realStaffCount = allStaffSummary.count - managerStaffSummary.count;
+
+        const salonManagers = managersData.items.filter(m => String(m.salonId || "").toLowerCase() === String(salonId || "").toLowerCase());
+        const managerNames = salonManagers.map(m => `${m.lastName} ${m.firstName}`.trim()).join(", ");
+        const finalManager = managerNames || normalizedSalon.manager || "Unassigned";
+
         setSalonForm({
           salonName: normalizedSalon.name,
           address: normalizedSalon.address,
-          manager: normalizedSalon.manager,
+          manager: finalManager,
           phone: normalizedSalon.phone,
-          staffAmount: normalizedSalon.staffCount,
+          staffAmount: realStaffCount,
           status: normalizedSalon.status,
           operatingHours: normalizedSalon.operatingHours,
           depositConfig: normalizedSalon.depositConfig,
         });
-        setSalonRow(normalizedSalon);
+        setSalonRow({ ...normalizedSalon, staffCount: realStaffCount, manager: finalManager });
       } catch (err) {
         console.error("Failed to load salon:", err);
         if (isMounted) {
@@ -238,15 +258,17 @@ export function SalonDetailPage() {
       { icon: UserRound, label: isVi ? "Quản lý" : "Manager", value: salonDetail.manager === "Unassigned" ? (isVi ? "Chưa phân bổ" : "Unassigned") : salonDetail.manager || (isVi ? "Chưa phân bổ" : "Unassigned") },
       { icon: Phone, label: isVi ? "Điện thoại" : "Phone", value: salonDetail.phone === "Not set" ? (isVi ? "Chưa thiết lập" : "Not set") : salonDetail.phone || (isVi ? "Chưa thiết lập" : "Not set") },
       { icon: Percent, label: isVi ? "Phần trăm cọc" : "Deposit Config", value: salonDetail.depositConfig ? `${salonDetail.depositConfig}%` : (isVi ? "Chưa thiết lập" : "Not set") },
-      { icon: Clock3, label: isVi ? "Giờ mở cửa" : "Operating Hours", value: salonDetail.hours === "Operating hours unavailable" ? (isVi ? "Không khả dụng" : "Operating hours unavailable") : salonDetail.hours },
+      // { icon: Clock3, label: isVi ? "Giờ mở cửa" : "Operating Hours", value: salonDetail.hours === "Operating hours unavailable" ? (isVi ? "Không khả dụng" : "Operating hours unavailable") : salonDetail.hours },
       { icon: Wrench, label: isVi ? "Số lượng nhân viên" : "Staff Amount", value: salonDetail.staff },
       {
         icon: Star,
         label: isVi ? "Đánh giá" : "Rating",
-        value: isVi ? `${salonDetail.rating || "-"} (${salonDetail.reviews || "0"} đánh giá)` : `${salonDetail.rating || "-"} (${salonDetail.reviews || "0"} reviews)`,
+        value: isVi
+          ? (salonRatings.count > 0 ? `${salonRatings.average} (${salonRatings.count} đánh giá)` : "— (0 đánh giá)")
+          : (salonRatings.count > 0 ? `${salonRatings.average} (${salonRatings.count} reviews)` : "— (0 reviews)"),
       },
     ];
-  }, [salonDetail, language]);
+  }, [salonDetail, language, salonRatings]);
 
   const operatingHoursMap = useMemo(
     () => {
@@ -553,7 +575,12 @@ export function SalonDetailPage() {
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             {/* Management Snapshot */}
             <PremiumCard noHover>
-              <h3 className="mb-4 text-[14px] font-bold text-[#2d1b35]">{t("adminSalonManagement.managementSnapshot")}</h3>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-[14px] font-bold text-[#2d1b35]">{t("adminSalonManagement.managementSnapshot")}</h3>
+                <Link to="/admin/staff" state={{ selectedSalonId: salonId }} className="text-[12px] font-bold text-[#ea4f93] hover:underline">
+                  {language === "vi" ? "Xem chi tiết" : "View Details"}
+                </Link>
+              </div>
               <div className="space-y-3">
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
                   <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.salonName")}</span>
@@ -567,10 +594,10 @@ export function SalonDetailPage() {
                   <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.staffAmount")}</span>
                   <span className="text-right text-[13px] font-medium text-[#2d1b35]">{salonDetail.staff}</span>
                 </motion.div>
-                <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
+                {/* <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
                   <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.status")}</span>
                   <span className="text-right text-[13px] font-medium text-[#2d1b35]">{getLocalizedSalonStatus(salonDetail.status, language)}</span>
-                </motion.div>
+                </motion.div> */}
               </div>
             </PremiumCard>
 

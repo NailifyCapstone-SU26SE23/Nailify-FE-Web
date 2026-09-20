@@ -3148,7 +3148,7 @@ export const translations = {
         notes: "Ghi chú",
         enterFirstName: "Nhập tên",
         enterLastName: "Nhập họ",
-        enterEmail: "Nhập email công việc",
+        enterEmail: "Nhập email",
         enterPassword: "Nhập mật khẩu tài khoản",
         enterPhone: "Nhập số điện thoại",
         enterAvatarUrl: "Nhập đường dẫn ảnh đại diện",

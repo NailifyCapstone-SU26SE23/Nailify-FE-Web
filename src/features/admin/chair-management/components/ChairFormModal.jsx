@@ -13,6 +13,7 @@ export default function ChairFormModal({
   initialChairName,
   salonId,
   salons = [],
+  existingChairs = [],
   onSuccess
 }) {
   const { t, language } = useLanguage();
@@ -93,7 +94,26 @@ export default function ChairFormModal({
         <Form.Item
           label={<span className="text-[13px] font-bold text-slate-700 uppercase tracking-wide">{t("adminChairs.chairName")}</span>}
           name="chairName"
-          rules={[{ required: true, message: t('adminChairs.pleaseInputName') }]}
+          rules={[
+            { required: true, message: t('adminChairs.pleaseInputName') },
+            { 
+              pattern: /^(?:[1-9]|10)[A-E]$/, 
+              message: language === 'vi' ? 'Tên ghế không hợp lệ (VD: 1A, 2B, 10E. Số 1-10, Chữ A-E in hoa)' : 'Invalid chair name (e.g., 1A, 2B, 10E. Number 1-10, Letter A-E uppercase)' 
+            },
+            {
+              validator: (_, value) => {
+                if (value) {
+                  const isDuplicate = existingChairs.some(
+                    (c) => c.chairName === value && (!chair || c.chairId !== chair.chairId)
+                  );
+                  if (isDuplicate) {
+                    return Promise.reject(new Error(language === 'vi' ? 'Tên ghế này đã tồn tại trong salon' : 'This chair name already exists in the salon'));
+                  }
+                }
+                return Promise.resolve();
+              }
+            }
+          ]}
         >
           <Input
             placeholder="e.g. 1A, 2B, 3C,..."
@@ -140,12 +160,12 @@ export default function ChairFormModal({
                 <span className="font-semibold text-slate-600">{t("adminChairs.inactive")}</span>
               </span>
             </Option>
-            <Option value="Maintenance">
+            {/* <Option value="Maintenance">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-amber-500"></span>
                 <span className="font-semibold text-amber-700">{t("adminChairs.maintenance")}</span>
               </span>
-            </Option>
+            </Option> */}
           </Select>
         </Form.Item>
       </Form>

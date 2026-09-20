@@ -1211,7 +1211,7 @@ export function StaffManagementPage() {
                 <div className="pt-4 border-t border-[#f0d9e8] flex gap-3">
                   <button
                     type="button"
-                    onClick={() => handleDeleteStaff(selectedStaff.id || selectedStaff.userId)}
+                    onClick={() => handleDeleteStaff(selectedStaff.userId || selectedStaff.accountId || selectedStaff.id)}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-rose-500 bg-white px-4 py-3 text-xs font-bold text-rose-600 shadow-lg transition-all hover:bg-rose-50 hover:border-rose-600 hover:scale-[1.02]"
                   >
                     <Trash2 size={14} />

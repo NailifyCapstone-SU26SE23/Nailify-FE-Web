@@ -281,7 +281,7 @@ export function AdminDashboardPage() {
       dataIndex: "revenue",
       key: "revenue",
       sorter: (a, b) => (a.revenue || 0) - (b.revenue || 0),
-      render: (value) => <span className="text-sm font-mono text-emerald-600">{value ? value.toLocaleString("vi-VN") + " ₫" : "0 ₫"}</span>,
+      render: (value) => <span className="text-sm font-mono text-emerald-600">{value ? value.toLocaleString("vi-VN") + " VND" : "0 VND"}</span>,
     },
     {
       title: t("userManagement.table.actions").toUpperCase(),
@@ -509,7 +509,7 @@ export function AdminDashboardPage() {
     dataset: { source: datasetSource },
     grid: { left: '2%', right: '2%', bottom: '3%', top: '15%', containLabel: true },
     xAxis: { type: 'category', axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
-    yAxis: { axisLabel: { ...commonAxisLabel, formatter: (value) => `${(value / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine, max: (val) => val.max === 0 ? 100000 : null },
+    yAxis: { axisLabel: { ...commonAxisLabel, formatter: (value) => `${(value / 1000).toLocaleString("vi-VN")}k VND` }, splitLine: commonSplitLine, max: (val) => val.max === 0 ? 100000 : null },
     series: [{ type: 'bar', barWidth: 16 }, { type: 'bar', barWidth: 16 }]
   };
 
@@ -517,7 +517,7 @@ export function AdminDashboardPage() {
     color: ['#14b8a6'],
     tooltip: { ...commonTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '2%', right: '6%', bottom: '3%', top: '10%', containLabel: true },
-    xAxis: { type: 'value', max: (val) => val.max === 0 ? 100000 : null, axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: { ...commonAxisLabel, formatter: (val) => `${(val / 1000).toLocaleString("vi-VN")}k ₫` }, splitLine: commonSplitLine },
+    xAxis: { type: 'value', max: (val) => val.max === 0 ? 100000 : null, axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: { ...commonAxisLabel, formatter: (val) => `${(val / 1000).toLocaleString("vi-VN")}k VND` }, splitLine: commonSplitLine },
     yAxis: { type: 'category', data: topSalonsData.length ? topSalonsData.map(d => d.name) : ['No Data'], axisLine: { lineStyle: { color: BORDER_COLOR } }, axisLabel: commonAxisLabel },
     series: [{ name: 'Revenue', type: 'bar', data: topSalonsData.length ? topSalonsData.map(d => d.value) : [0], barWidth: 12, itemStyle: { color: '#14b8a6' } }]
   };
@@ -687,7 +687,7 @@ export function AdminDashboardPage() {
                     { label: language === "vi" ? "Số Quản Lý" : "Managers Count", value: managerCount },
                     { label: language === "vi" ? "Số Lễ Tân" : "Receptionists Count", value: receptionistCount },
                     { label: language === "vi" ? "Số Nhân Viên" : "Staff Count", value: staffCount },
-                    { label: language === "vi" ? "Doanh Thu" : "Revenue", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} ₫` : "0 ₫" },
+                    { label: language === "vi" ? "Doanh Thu" : "Revenue", value: selectedRow ? `${(selectedRow.revenue || 0).toLocaleString("vi-VN")} VND` : "0 VND" },
                     { label: language === "vi" ? "Trạng Thái" : "Status", value: formatStatus(salonDetails.status) },
                     { label: language === "vi" ? "Số Điện Thoại" : "Phone", value: salonDetails.phone },
                     { label: language === "vi" ? "Địa Chỉ" : "Address", value: salonDetails.address },

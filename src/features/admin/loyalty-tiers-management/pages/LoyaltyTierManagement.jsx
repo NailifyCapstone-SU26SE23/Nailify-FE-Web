@@ -3,7 +3,6 @@ import {
     Award,
     Plus,
     Search,
-    Trash2,
     Edit3,
     Info,
     Check,
@@ -17,7 +16,8 @@ import {
     TrendingUp,
     Image as ImageIcon,
     Layers,
-    Upload
+    Upload,
+    Trash
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +29,8 @@ import {
 } from "../services/loyaltyTiersManagementService";
 import LoyaltyTierDetailModal from "../components/LoyaltyTierDetailModal";
 import { DeleteConfirmModal } from "../../quiz-management/components/DeleteConfirmModal";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { Trash2 } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { toast } from "react-hot-toast";
@@ -230,7 +232,7 @@ export function LoyaltyTierManagement() {
             description: tier.description,
             minLifetimePoints: tier.minLifetimePoints,
             maxLifetimePoints: tier.maxLifetimePoints,
-            discountRate: tier.discountRate,
+            discountRate: parseFloat((tier.discountRate * 100).toFixed(2)),
             imageUrl: tier.imageUrl,
             imageFile: null,
             backgroundColor: tier.backgroundColor,
@@ -290,14 +292,14 @@ export function LoyaltyTierManagement() {
         setIsDeleting(true);
         try {
             await deleteLoyaltyTier(deleteTarget.id);
-            setTiers(prev => prev.filter(t => t.id !== deleteTarget.id));
-            showNotification("Loyalty tier deleted successfully.");
+            setTiers(prev => prev.map(t => t.id === deleteTarget.id ? { ...t, status: 'Inactive' } : t));
+            showNotification(language === "vi" ? "Xóa cấp độ thành công." : "Loyalty tier deleted successfully.");
             if (activeTierId === deleteTarget.id) {
                 handleCancelForm();
             }
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : "Failed to delete loyalty tier.", "error");
+            showNotification(err instanceof Error ? err.message : (language === "vi" ? "Xóa cấp độ thất bại." : "Failed to delete loyalty tier."), "error");
         } finally {
             setIsDeleting(false);
             setDeleteTarget(null);
@@ -361,14 +363,19 @@ export function LoyaltyTierManagement() {
         setIsSaving(true);
         setIsLoading(true);
         try {
+            const formDataToSubmit = {
+                ...formData,
+                discountRate: parseFloat((formData.discountRate / 100).toFixed(4))
+            };
+
             if (activeTierId) {
                 // Edit mode
-                const updated = await updateLoyaltyTier(activeTierId, formData);
+                const updated = await updateLoyaltyTier(activeTierId, formDataToSubmit);
                 setTiers(prev => prev.map(t => t.id === activeTierId ? updated : t).sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
                 showNotification(isVi ? `Cấp độ '${formData.name}' đã được cập nhật thành công.` : `Tier '${formData.name}' updated successfully.`);
             } else {
                 // Create mode
-                const created = await createLoyaltyTier(formData);
+                const created = await createLoyaltyTier(formDataToSubmit);
                 setTiers(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
                 showNotification(isVi ? `Cấp độ thành viên '${formData.name}' đã được tạo thành công.` : `Loyalty tier '${formData.name}' created successfully.`);
             }
@@ -414,8 +421,8 @@ export function LoyaltyTierManagement() {
                     metrics={[
                         { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: String(totalMembers.toLocaleString()), icon: Users, color: "#ea4f93" },
                         { label: t("adminLoyaltyTiersManagement.activeTiers"), value: String(activeTiersCount), icon: Layers, color: "#ea4f93" },
-                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${maxDiscount}%`, icon: Percent, color: "#7c5cff" },
-                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${averageDiscount}%`, icon: TrendingUp, color: "#ff7a59" }
+                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${parseFloat((maxDiscount * 100).toFixed(2))}%`, icon: Percent, color: "#7c5cff" },
+                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${parseFloat((averageDiscount * 100).toFixed(2))}%`, icon: TrendingUp, color: "#ff7a59" }
                     ]}
                     className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                 />
@@ -616,7 +623,7 @@ export function LoyaltyTierManagement() {
                                                             {t("adminLoyaltyTiersManagement.discount")}
                                                         </span>
                                                         <span className="text-lg font-bold">
-                                                            {tier.discountRate > 0 ? `${tier.discountRate}%` : (t("adminLoyaltyTiersManagement.standard"))}
+                                                            {tier.discountRate > 0 ? `${parseFloat((tier.discountRate * 100).toFixed(2))}%` : (t("adminLoyaltyTiersManagement.standard"))}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -682,7 +689,7 @@ export function LoyaltyTierManagement() {
                                                     className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title={t("adminLoyaltyTiersManagement.deleteTier")}
                                                 >
-                                                    <Trash2 size={11} />
+                                                    <Trash size={11} />
                                                 </button>
                                             </div>
                                         </div>
@@ -1142,17 +1149,21 @@ export function LoyaltyTierManagement() {
             </AnimatePresence>
 
             {/* Delete Confirmation Modal */}
-            <DeleteConfirmModal
-                isOpen={!!deleteTarget}
-                isDeleting={isDeleting}
+            <ActionConfirmModal
+                open={!!deleteTarget}
+                intent="danger"
                 title={t("adminLoyaltyTiersManagement.deleteLoyaltyTier")}
                 description={
                     deleteTarget
                         ? (language === "vi"
-                            ? `Bạn có chắc chắn muốn xóa cấp độ "${deleteTarget.name}"? Hành động này không thể hoàn tác và tất cả cấu hình cấp độ sẽ bị loại bỏ vĩnh viễn.`
-                            : `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and all tier configuration will be permanently removed.`)
+                            ? `Bạn có chắc chắn muốn xóa cấp độ "${deleteTarget.name}"? Hành động này không thể hoàn tác và tất cả cấu hình cấp độ sẽ bị loại bỏ.`
+                            : `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and all tier configuration will be removed.`)
                         : ""
                 }
+                confirmText={language === "vi" ? "Xóa cấp độ" : "Delete Tier"}
+                cancelText={t("adminLoyaltyTiersManagement.cancel")}
+                confirmIcon={Trash2}
+                loading={isDeleting}
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />

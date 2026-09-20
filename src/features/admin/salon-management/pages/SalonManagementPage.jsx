@@ -360,6 +360,10 @@ function mapApiSalonToUiFormat(apiSalon) {
   }
 
 
+  const uniqueOperatingHours = Array.isArray(apiSalon.operatingHours)
+    ? Array.from(new Map(apiSalon.operatingHours.map(h => [h.dayOfWeek, h])).values())
+    : [];
+
   return {
     id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
     salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
@@ -367,7 +371,7 @@ function mapApiSalonToUiFormat(apiSalon) {
     address: apiSalon.address,
     manager: apiSalon.managerName || apiSalon.manager,
     phone: apiSalon.phone,
-    operatingHours: apiSalon.operatingHours,
+    operatingHours: uniqueOperatingHours,
     imageUrl: apiSalon.imageUrl || apiSalon.image || "",
     image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
     status: internalStatus,
@@ -488,10 +492,12 @@ export function SalonManagementPage() {
 
   const enrichedSalons = useMemo(() => {
     return salons.map(salon => {
-      const manager = managers.find(m => m.salonId === salon.salonId);
+      const salonManagers = managers.filter(m => String(m.salonId || "").toLowerCase() === String(salon.salonId || "").toLowerCase());
+      const managerNames = salonManagers.map(m => `${m.lastName} ${m.firstName}`.trim()).join(", ");
+      
       return {
         ...salon,
-        manager: manager ? `${manager.lastName} ${manager.firstName}` : salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
+        manager: managerNames || salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
       };
     });
   }, [salons, managers, language]);
