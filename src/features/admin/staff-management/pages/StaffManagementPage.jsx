@@ -18,9 +18,14 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Trash2,
+  Store,
+  MapPin,
+  ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -28,8 +33,10 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules, fetchArtistBreaks } from "../services/staffManagementService";
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
-import { fetchNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { fetchNailArtistSkills, deleteNailArtist, fetchNailArtistById } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { deleteAdminUser } from "../../user-management/services/userManagementService";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 const ALL_ROLES_VALUE = "__all__";
 
@@ -102,7 +109,7 @@ function getLocalizedRole(role, language) {
     switch (roleStr) {
       case 'STAFF_ARTIST':
       case 'NAIL_ARTIST':
-        return 'Nail Artist';
+        return 'Staff Artist';
       case 'MANAGER':
         return 'Manager';
       case 'ADMIN':
@@ -431,11 +438,17 @@ export function StaffManagementPage() {
   const [loadingSalons, setLoadingSalons] = useState(true);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [salons, setSalons] = useState([]);
-  const [selectedSalonId, setSelectedSalonId] = useState(null);
+  const location = useLocation();
+  const [selectedSalonId, setSelectedSalonId] = useState(location.state?.selectedSalonId || null);
   const [staffList, setStaffList] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  const [salonPage, setSalonPage] = useState(1);
+  const [hasMoreSalons, setHasMoreSalons] = useState(false);
+  const [isLoadingMoreSalons, setIsLoadingMoreSalons] = useState(false);
+  
   const [error, setError] = useState(null);
   useEffect(() => {
     if (error) {
@@ -459,31 +472,26 @@ export function StaffManagementPage() {
 
   const [todayBreaks, setTodayBreaks] = useState([]);
 
+  // Delete confirm state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
+
   useEffect(() => {
-    const fetchBreaksForCurrentPage = async () => {
-      const nailArtists = staffList.filter(s => s.role === 'Staff_Artist' || s.role === 'NAIL_ARTIST');
-      if (nailArtists.length === 0) {
+    const fetchBreaksForSalon = async () => {
+      if (!selectedSalonId) {
         setTodayBreaks([]);
         return;
       }
-
-      const results = await Promise.allSettled(
-        nailArtists.map(staff => {
-          if (!staff.staffId) return Promise.resolve([]);
-          return fetchArtistBreaks(staff.staffId, { status: "Approved" });
-        })
-      );
-
-      const allBreaks = [];
-      results.forEach(res => {
-        if (res.status === 'fulfilled' && res.value) {
-          allBreaks.push(...res.value);
-        }
+      const todayStr = dayjs().format("YYYY-MM-DD");
+      const breaks = await fetchArtistBreaks(null, {
+        salonId: selectedSalonId,
+        date: todayStr,
+        status: "Approved"
       });
-      setTodayBreaks(allBreaks);
+      setTodayBreaks(breaks || []);
     };
-    fetchBreaksForCurrentPage();
-  }, [staffList]);
+    fetchBreaksForSalon();
+  }, [selectedSalonId]);
 
   const todayArtistLeaves = useMemo(() => {
     const leaves = new Set();
@@ -571,7 +579,7 @@ export function StaffManagementPage() {
     }
   }, []);
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 9;
 
   const roleOptions = [
     { value: ALL_ROLES_VALUE, label: t("adminStaffManagement.allRoles") },
@@ -580,20 +588,29 @@ export function StaffManagementPage() {
     { value: "Receptionist", label: t("adminStaffManagement.receptionist") },
   ];
 
-  const loadSalons = useCallback(async () => {
+  const loadSalons = useCallback(async (page = 1) => {
     try {
-      setLoadingSalons(true);
-      setError(null);
-      const result = await fetchAdminSalons({ pageSize: 100 });
-      setSalons(result.items || []);
-      if (result.items && result.items.length > 0) {
-        setSelectedSalonId(result.items[0].id);
+      if (page === 1) {
+        setLoadingSalons(true);
+      } else {
+        setIsLoadingMoreSalons(true);
       }
+      setError(null);
+      const result = await fetchAdminSalons({ pageIndex: page, pageSize: 6 });
+      
+      if (page === 1) {
+        setSalons(result.items || []);
+      } else {
+        setSalons(prev => [...prev, ...(result.items || [])]);
+      }
+      setHasMoreSalons(result.metaData?.hasNext || false);
+      setSalonPage(page);
     } catch (err) {
       console.error("Failed to load salons:", err);
       setError(err.message || "Failed to load salons.");
     } finally {
       setLoadingSalons(false);
+      setIsLoadingMoreSalons(false);
     }
   }, []);
 
@@ -619,6 +636,28 @@ export function StaffManagementPage() {
       setLoadingStaff(false);
     }
   }, [currentPage, selectedRole]);
+
+  const handleDeleteStaff = (staffId) => {
+    setStaffToDelete(staffId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    try {
+      await deleteAdminUser(staffToDelete);
+      toast.success(language === "vi" ? "Đã xóa nhân viên thành công" : "Staff deleted successfully");
+      setIsDrawerOpen(false);
+      setSelectedStaff(null);
+      loadStaffForSalon(selectedSalonId);
+    } catch (err) {
+      console.error(err);
+      toast.error(language === "vi" ? "Không thể xóa nhân viên" : "Failed to delete staff");
+    } finally {
+      setShowDeleteConfirm(false);
+      setStaffToDelete(null);
+    }
+  };
 
   useEffect(() => {
     Promise.resolve().then(() => loadSalons());
@@ -707,70 +746,141 @@ export function StaffManagementPage() {
         />
       )}
 
-      {!loadingSalons && (
-        <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3" />
+      {selectedSalonId && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-4">
+          <button
+            onClick={() => setSelectedSalonId(null)}
+            className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
+          >
+            <ArrowLeft size={13} />
+            {language === "vi" ? "Trở về danh sách chi nhánh" : "Back to Salons"}
+          </button>
+        </div>
       )}
 
-      <div className="grid gap-4">
-        <Card >
-          <div className="rounded-2xl border border-[#f1dce7] bg-white/90 shadow-[0_6px_24px_rgba(45,27,53,0.05)] backdrop-blur-sm">
-            {/* Header */}
-            <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
-              {/* Title */}
-              <SectionHeading
-                title={t("adminStaffManagement.salonStaff")}
-                subtitle={
-                  filteredStaff.length === 1
-                    ? t("adminStaffManagement.staffCountSingle", { count: 1 })
-                    : t("adminStaffManagement.staffCount", {
-                      count: filteredStaff.length,
-                    })
-                }
-              />
-
-              {/* Controls */}
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-                {/* Salon */}
-                <div className="flex h-10 items-center gap-2 rounded-full border border-[#f1dce7] bg-[#fff9fc] px-1.5 shadow-[0_2px_8px_rgba(234,79,147,0.04)] transition-all duration-200 hover:border-[#ea4f93]/40 hover:bg-white">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fff0f7] text-[#ea4f93]">
-                    <Building2 size={15} strokeWidth={2.2} />
+      {!selectedSalonId ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {salons.map((salon) => (
+              <div
+                key={salon.id}
+                onClick={() => setSelectedSalonId(salon.id)}
+                className="group bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/50">
+                    {salon.image ? (
+                      <img
+                        src={salon.image}
+                        alt={salon.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
+                        {salon.name?.[0]?.toUpperCase() || "S"}
+                      </div>
+                    )}
+                    <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : salon.status === "Busy"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}>
+                      {language === "vi"
+                        ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
+                        : (salon.status)
+                      }
+                    </span>
                   </div>
-
-                  <Select
-                    bordered={false}
-                    placeholder={t("adminStaffManagement.selectSalon")}
-                    value={selectedSalonId}
-                    onChange={setSelectedSalonId}
-                    options={salons.map((s) => ({
-                      label: s.name,
-                      value: s.id,
-                    }))}
-                    disabled={loadingSalons}
-                    className="
-            w-[215px]
-            font-semibold
-            [&_.ant-select-selector]:!bg-transparent
-            [&_.ant-select-selector]:!px-1
-            [&_.ant-select-selection-item]:!text-[#432744]
-            [&_.ant-select-selection-item]:!font-semibold
-            [&_.ant-select-selection-placeholder]:!text-[#a88a9f]
-            [&_.ant-select-arrow]:!text-[#a88a9f]
-          "
-                    popupClassName="select-premium-dropdown"
-                  />
+                  <div className="space-y-2.5">
+                    <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
+                      {salon.name}
+                    </h3>
+                    <div className="space-y-1.5 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">{salon.address}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {language === "vi" ? "Nhân viên: " : "Staff: "}
+                          <span className="font-semibold text-slate-600">{salon.staffCount || 0}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {language === "vi" ? "Quản lý: " : "Manager: "}
+                          <span className="font-semibold text-slate-600">
+                            {!salon.manager || salon.manager === "Unassigned"
+                              ? (language === "vi" ? "Chưa có" : "Unassigned")
+                              : salon.manager}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            ))}
+          </div>
 
-                {/* Role */}
-                <Select
-                  value={selectedRole}
-                  onChange={setSelectedRole}
-                  placeholder={t("adminStaffManagement.selectRole")}
-                  options={roleOptions.map((option) => ({
-                    ...option,
-                    value: option.value ?? ALL_ROLES_VALUE,
-                  }))}
-                  disabled={loadingStaff}
-                  className="
+          {hasMoreSalons && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => loadSalons(salonPage + 1)}
+                disabled={isLoadingMoreSalons}
+                className="inline-flex items-center gap-2 rounded-full border border-[#f0d9e8] bg-white px-6 py-2.5 text-sm font-semibold text-[#ea4f93] shadow-sm hover:bg-[#fff0f8] hover:border-[#ea4f93]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isLoadingMoreSalons ? (
+                  <Spin size="small" />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+                {language === "vi" ? "Xem thêm" : "View More"}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+
+
+          {!loadingSalons && (
+            <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3" />
+          )}
+
+          <div className="grid gap-4">
+            <Card >
+              <div className="rounded-2xl border border-[#f1dce7] bg-white/90 shadow-[0_6px_24px_rgba(45,27,53,0.05)] backdrop-blur-sm">
+                {/* Header */}
+                <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  {/* Title */}
+                  <SectionHeading
+                    title={t("adminStaffManagement.salonStaff")}
+                    subtitle={
+                      filteredStaff.length === 1
+                        ? t("adminStaffManagement.staffCountSingle", { count: 1 })
+                        : t("adminStaffManagement.staffCount", {
+                          count: filteredStaff.length,
+                        })
+                    }
+                  />
+
+                  {/* Controls */}
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+                    {/* Role */}
+                    <Select
+                      value={selectedRole}
+                      onChange={setSelectedRole}
+                      placeholder={t("adminStaffManagement.selectRole")}
+                      options={roleOptions.map((option) => ({
+                        ...option,
+                        value: option.value ?? ALL_ROLES_VALUE,
+                      }))}
+                      disabled={loadingStaff}
+                      className="
           w-full
           xl:w-[170px]
           [&_.ant-select-selector]:!h-10
@@ -783,22 +893,22 @@ export function StaffManagementPage() {
           [&_.ant-select-arrow]:!text-[#a88a9f]
           hover:[&_.ant-select-selector]:!border-[#ea4f93]/40
         "
-                  popupClassName="select-premium-dropdown"
-                />
+                      popupClassName="select-premium-dropdown"
+                    />
 
-                {/* Search */}
-                <label className="relative block w-full xl:w-[220px]">
-                  <Search
-                    size={15}
-                    strokeWidth={2}
-                    className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#a88a9f]"
-                  />
+                    {/* Search */}
+                    <label className="relative block w-full xl:w-[220px]">
+                      <Search
+                        size={15}
+                        strokeWidth={2}
+                        className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#a88a9f]"
+                      />
 
-                  <input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
-                    className="
+                      <input
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
+                        className="
             h-10
             w-full
             rounded-full
@@ -820,15 +930,15 @@ export function StaffManagementPage() {
             focus:ring-2
             focus:ring-[#ea4f93]/10
           "
-                  />
-                </label>
+                      />
+                    </label>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  {/* Export */}
-                  <button
-                    type="button"
-                    className="
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      {/* Export */}
+                      <button
+                        type="button"
+                        className="
             inline-flex
             h-10
             items-center
@@ -850,15 +960,16 @@ export function StaffManagementPage() {
             hover:text-[#ea4f93]
             hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]
           "
-                  >
-                    <Download size={15} strokeWidth={2.2} />
-                    <span>{t("adminStaffManagement.export")}</span>
-                  </button>
+                      >
+                        <Download size={15} strokeWidth={2.2} />
+                        <span>{t("adminStaffManagement.export")}</span>
+                      </button>
 
-                  {/* Add Staff */}
-                  <Link
-                    to={ROUTES.adminStaffCreate}
-                    className="
+                      {/* Add Staff */}
+                      <Link
+                        to={ROUTES.adminStaffCreate}
+                        state={{ selectedSalonId }}
+                        className="
             inline-flex
             h-10
             items-center
@@ -878,66 +989,70 @@ export function StaffManagementPage() {
             hover:-translate-y-0.5
             hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
           "
-                  >
-                    <Plus size={15} strokeWidth={2.5} />
-                    <span>{t("adminStaffManagement.addStaff")}</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {loadingSalons ? (
-              <div className="flex justify-center py-10">
-                <Spin size="large" />
-              </div>
-            ) : loadingStaff ? (
-              <div className="flex justify-center py-10">
-                <Spin size="large" />
-              </div>
-            ) : filteredStaff.length === 0 ? (
-              <div className="py-10 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
-                  <Users size={32} className="text-[#ea4f93]" />
-                </div>
-                <p className="text-sm text-[#8b7382]">
-                  {selectedSalonId
-                    ? (t("adminStaffManagement.noStaffFound"))
-                    : (t("adminStaffManagement.selectSalonToView"))}
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-
-                  {filteredStaff.map((staff) => (
-                    <StaffCard
-                      key={staff.id}
-                      staff={{
-                        ...staff,
-                        hasScheduleToday: todayArtistIds.has(staff.staffId),
-                        isOnLeaveToday: todayArtistLeaves.has(staff.staffId),
-                      }}
-                      onClick={() => handleOpenDrawer(staff.userId || staff.id)}
-                    />
-                  ))}
-                </div>
-                {totalPages > 1 && (
-                  <div className="flex justify-end pt-6 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fffafb] to-white">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={setCurrentPage}
-                    />
+                      >
+                        <Plus size={15} strokeWidth={2.5} />
+                        <span>{t("adminStaffManagement.addStaff")}</span>
+                      </Link>
+                    </div>
                   </div>
-                )}
-              </>
-            )}
-          </div>
-        </Card>
+                </div>
+              </div>
 
-        {/* Staff Detail Drawer */}
+              <div className="p-6">
+                {loadingSalons ? (
+                  <div className="flex justify-center py-10">
+                    <Spin size="large" />
+                  </div>
+                ) : loadingStaff ? (
+                  <div className="flex justify-center py-10">
+                    <Spin size="large" />
+                  </div>
+                ) : filteredStaff.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
+                      <Users size={32} className="text-[#ea4f93]" />
+                    </div>
+                    <p className="text-sm text-[#8b7382]">
+                      {selectedSalonId
+                        ? (t("adminStaffManagement.noStaffFound"))
+                        : (t("adminStaffManagement.selectSalonToView"))}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+                      {filteredStaff.map((staff) => (
+                        <StaffCard
+                          key={staff.id}
+                          staff={{
+                            ...staff,
+                            hasScheduleToday: todayArtistIds.has(staff.staffId),
+                            isOnLeaveToday: todayArtistLeaves.has(staff.staffId),
+                          }}
+                          onClick={() => handleOpenDrawer(staff.userId || staff.id)}
+                        />
+                      ))}
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex justify-end pt-6 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fffafb] to-white">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* Staff Detail Drawer */}
+      {selectedSalonId && (
         <Drawer
           title={null}
           open={isDrawerOpen}
@@ -1033,7 +1148,7 @@ export function StaffManagementPage() {
                     <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? getLocalizedRole(selectedStaff.role, language) : '-'}</InfoItem>
                     <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                       <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
-                        {selectedStaff.status === 'Active' || !selectedStaff.status ? t("adminStaffManagement.workingToday") : selectedStaff.status}
+                        {selectedStaff.status === 'Active' || !selectedStaff.status ? (language === "vi" ? "Hoạt động" : "Active") : selectedStaff.status}
                       </span>
                     </InfoItem>
                   </div>
@@ -1092,8 +1207,16 @@ export function StaffManagementPage() {
                   </div>
                 )}
 
-                {/* Update Button */}
-                <div className="pt-4 border-t border-[#f0d9e8]">
+                {/* Actions */}
+                <div className="pt-4 border-t border-[#f0d9e8] flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteStaff(selectedStaff.id || selectedStaff.userId)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-rose-500 bg-white px-4 py-3 text-xs font-bold text-rose-600 shadow-lg transition-all hover:bg-rose-50 hover:border-rose-600 hover:scale-[1.02]"
+                  >
+                    <Trash2 size={14} />
+                    {language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+                  </button>
                   <Link
                     to={getAdminStaffUpdateRoute(selectedStaff.id || selectedStaff.userId)}
                     onClick={() => {
@@ -1109,7 +1232,23 @@ export function StaffManagementPage() {
             </div>
           ) : null}
         </Drawer>
-      </div>
+      )}
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+        subtitle={language === "vi" ? "Bạn có chắc chắn muốn xóa nhân viên này?" : "Are you sure you want to delete this staff?"}
+        description={language === "vi" ? "Tài khoản nhân viên sẽ chuyển sang trạng thái ngừng hoạt động." : "The staff account will be deactivated."}
+        confirmText={language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        onConfirm={confirmDeleteStaff}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setStaffToDelete(null);
+        }}
+      />
     </section>
   );
 }

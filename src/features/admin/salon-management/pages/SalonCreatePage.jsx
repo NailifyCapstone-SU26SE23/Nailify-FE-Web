@@ -61,6 +61,7 @@ function SectionHeading({ title, subtitle }) {
 
 export function SalonCreatePage() {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -142,12 +143,12 @@ export function SalonCreatePage() {
 
       setSaveResult({
         success: true,
-        message: `${formData.salonName.trim()} has been created successfully.`,
+        message: `${formData.salonName.trim()} ${language === "vi" ? "đã tạo thành công." : "has been created successfully."}`,
       });
     } catch (error) {
       setSaveResult({
         success: false,
-        message: error.message || "Failed to create salon. Please try again.",
+        message: error.message || language === "vi" ? "Tạo salon không thành công. Vui lòng thử lại." : "Failed to create salon. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -466,6 +467,7 @@ export function SalonCreatePage() {
         failureDescription={t("adminSalonManagement.unableToCreateTheSalon")}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={isVi ? "Đang chuyển hướng đến danh sách chi nhánh..." : "Redirecting to salon list..."}
       />
     </motion.section>
   );

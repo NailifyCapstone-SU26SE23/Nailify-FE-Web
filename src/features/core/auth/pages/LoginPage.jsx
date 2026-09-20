@@ -238,7 +238,7 @@ export function LoginPage() {
               </button>
 
               <div className="rounded-lg border border-gray-200 bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-gray-600">
-                <span className="inline-flex items-center align-middle gap-2 font-semibold text-black">
+                <span className="inline-flex items-center align-middle font-semibold text-black">
                   <ShieldQuestionMark size={20} />
                   {isVi ? "Chính sách truy cập: " : "Access policy: "}
                 </span>{" "}

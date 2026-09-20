@@ -378,20 +378,32 @@ export async function assignNailArtistSkills(artistId, skills) {
 
   const newSkills = [];
   const skillsToUpdate = [];
+  const skillsToDelete = [];
 
+  const selectedSkillsMap = new Map();
   skills.forEach((skill) => {
     const skillTypeId = skill.skillTypeId || skill.SkillTypeId;
     const level = skill.level ?? skill.Level ?? 0;
-
-    if (!skillTypeId) {
-      return;
+    if (skillTypeId && level > 0) {
+      selectedSkillsMap.set(skillTypeId, level);
     }
+  });
 
-    if (currentLevelBySkillId.has(skillTypeId)) {
-      if (currentLevelBySkillId.get(skillTypeId) !== level) {
-        skillsToUpdate.push({ skillTypeId, level });
-      }
+  // Determine which to delete or update
+  currentLevelBySkillId.forEach((currentLevel, skillTypeId) => {
+    if (!selectedSkillsMap.has(skillTypeId)) {
+      skillsToDelete.push(skillTypeId);
     } else {
+      const newLevel = selectedSkillsMap.get(skillTypeId);
+      if (newLevel !== currentLevel) {
+        skillsToUpdate.push({ skillTypeId, level: newLevel });
+      }
+    }
+  });
+
+  // Determine which to add
+  selectedSkillsMap.forEach((level, skillTypeId) => {
+    if (!currentLevelBySkillId.has(skillTypeId)) {
       newSkills.push({ skillTypeId, level });
     }
   });
@@ -420,6 +432,18 @@ export async function assignNailArtistSkills(artistId, skills) {
     } catch (error) {
       console.warn(`Failed to update skill ${skill.skillTypeId}.`, error);
       errors.push(`Khong the update level skill ${skill.skillTypeId}`);
+    }
+  }
+
+  for (const skillTypeId of skillsToDelete) {
+    try {
+      await axiosClient.delete(
+        `/nail-artists/${normalizedId}/skills/${skillTypeId}`,
+        { headers: getAuthHeaders() }
+      );
+    } catch (error) {
+      console.warn(`Failed to delete skill ${skillTypeId}.`, error);
+      errors.push(`Khong the xoa skill ${skillTypeId}`);
     }
   }
 

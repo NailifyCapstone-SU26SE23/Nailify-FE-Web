@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Button, Card, Col, Row, Select, Statistic, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, Button, Card, Col, Row, Select, Statistic, Table, Tag, Tooltip, Typography, DatePicker } from "antd";
 import { Eye, RefreshCw, Wallet, Snowflake, Users, ArrowDownToLine, ArrowUpFromLine, Clock, WalletCards, Calendar, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -37,6 +37,7 @@ export function WithdrawRequestsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState(undefined);
+  const [dateRange, setDateRange] = useState(null);
 
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
@@ -82,6 +83,19 @@ export function WithdrawRequestsPage() {
   const handleTableChange = (pagination) => {
     loadRequests(pagination.current);
   };
+
+  const displayedRequests = useMemo(() => {
+    let items = requests || [];
+    if (dateRange && dateRange.length === 2) {
+      const start = dayjs(dateRange[0]).startOf('day').valueOf();
+      const end = dayjs(dateRange[1]).endOf('day').valueOf();
+      items = items.filter(req => {
+        const reqDate = dayjs(req.createdAt).valueOf();
+        return reqDate >= start && reqDate <= end;
+      });
+    }
+    return items;
+  }, [requests, dateRange]);
 
   const topMetrics = useMemo(() => {
     if (!summary) return [];
@@ -246,11 +260,19 @@ export function WithdrawRequestsPage() {
 
         <Card className="shadow-sm">
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="w-full sm:w-64">
+            <div className="flex w-full flex-col sm:flex-row gap-3 sm:w-auto">
+              <DatePicker.RangePicker
+                value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+                onChange={(dates) => {
+                  setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
+                }}
+                className="w-full sm:w-[280px]"
+                format="DD/MM/YYYY"
+              />
               <Select
                 allowClear
                 placeholder={isVi ? "Lọc theo trạng thái" : "Filter by Status"}
-                className="w-full"
+                className="w-full sm:w-48"
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={[
@@ -269,7 +291,7 @@ export function WithdrawRequestsPage() {
 
           <Table
             columns={columns}
-            dataSource={requests}
+            dataSource={displayedRequests}
             rowKey="withdrawalRequestId"
             loading={loading}
             pagination={{

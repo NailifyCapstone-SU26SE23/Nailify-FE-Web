@@ -499,6 +499,7 @@ export function CustomerNailPage() {
 
   const seenPendingReviewIdsRef = useRef(new Set());
   const hasInitializedPendingReviewRef = useRef(false);
+  const recentSignalRNotificationKeysRef = useRef(new Map());
 
   const normalizeStatusKey = useCallback((status) => {
     return String(status || "")
@@ -524,7 +525,7 @@ export function CustomerNailPage() {
   }, []);
 
   const loadCustomerNails = useCallback(async (options = {}) => {
-    const { silent = false } = options;
+    const { silent = false, suppressNewRequestToast = false } = options;
     try {
       if (!silent) {
         setIsLoading(true);
@@ -584,7 +585,7 @@ export function CustomerNailPage() {
         seenPendingReviewIdsRef.current.add(id);
         newCount++;
       });
-      if (newCount > 0) {
+      if (newCount > 0 && !suppressNewRequestToast) {
         toast.success(`You have ${newCount} new request(s) awaiting review!`, {
           icon: '🔔',
           style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
@@ -617,14 +618,31 @@ export function CustomerNailPage() {
       if (messageType === "NEW_CUSTOM_NAIL_REQUEST") {
         const data = payload || type?.Payload || {};
         const customerName = data.CustomerName || data.customerName || "một khách hàng";
+        const requestId = data.CustomerNailRequestId || data.customerNailRequestId || data.CustomerNailId || data.customerNailId || data.Id || data.id;
+        const notificationKey = String(requestId || customerName || "new-custom-nail-request").trim();
+        const now = Date.now();
+        const recentKeys = recentSignalRNotificationKeysRef.current;
+        const lastSeenAt = recentKeys.get(notificationKey);
+
+        if (lastSeenAt && now - lastSeenAt < 5000) {
+          return;
+        }
+
+        recentKeys.set(notificationKey, now);
+        recentKeys.forEach((seenAt, key) => {
+          if (now - seenAt > 30000) {
+            recentKeys.delete(key);
+          }
+        });
         
         // Use toast to notify the user and refresh the list silently
         toast.success(language === "vi" ? `Có yêu cầu duyệt mẫu móng custom mới từ ${customerName}!` : `New custom nail request from ${customerName}!`, {
+          id: `custom-nail-request-${notificationKey}`,
           icon: '💅',
           style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
         });
         
-        loadCustomerNails({ silent: true });
+        loadCustomerNails({ silent: true, suppressNewRequestToast: true });
         loadStats(); // Update the stats as well
       }
     });
