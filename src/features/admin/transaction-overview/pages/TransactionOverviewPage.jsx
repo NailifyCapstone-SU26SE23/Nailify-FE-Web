@@ -489,9 +489,21 @@ export function TransactionOverviewPage() {
         render: (status) => renderStatusBadge(status)
       },
       {
+        title: language === "vi" ? "Phương thức" : "Payment Method",
+        key: "paymentMethod",
+        width: "12%",
+        render: (_, tx) => (
+          <TransactionBadge
+            walletId={tx.walletId}
+            paymentLinkId={tx.paymentLinkId}
+            language={language}
+          />
+        ),
+      },
+      {
         title: language === "vi" ? "Hành động" : "Actions",
         key: "actions",
-        width: "10%",
+        width: "8%",
         align: "right",
         render: (_, tx) => (
           <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>

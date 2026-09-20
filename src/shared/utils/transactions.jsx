@@ -8,7 +8,7 @@ export const TRANSACTION_LABELS = {
     vi: {
         walletTopUp: "Nạp tiền vào Ví",
         walletPayment: "Thanh toán bằng Ví",
-        payosPayment: "Chuyển khoản ngân hàng",
+        payosPayment: "Chuyển khoản",
         paidAt: "Thanh toán lúc",
     },
     en: {
@@ -56,7 +56,7 @@ export function TransactionBadge({
     return (
         <span
             className={`inline-flex items-center rounded-full px-2 py-0.5
-                  text-[10px] font-medium ring-1 ring-inset
+                  text-[12px] font-medium ring-1 ring-inset
                   ${badge} ${className}`}
         >
             {label}

@@ -609,6 +609,17 @@ export function TransactionManagementPage() {
                       render: (_, tx) => renderStatusBadge(tx.status)
                     },
                     {
+                      title: language === "vi" ? "Phương thức" : "Payment Method",
+                      key: "paymentMethod",
+                      render: (_, tx) => (
+                        <TransactionBadge
+                          walletId={tx.walletId}
+                          paymentLinkId={tx.paymentLinkId}
+                          language={language}
+                        />
+                      ),
+                    },
+                    {
                       title: language === "vi" ? "Hành động" : "Actions",
                       key: "actions",
                       align: "right",
@@ -703,7 +714,7 @@ export function TransactionManagementPage() {
         closeIcon={<X size={15} className="text-[#a88a9f] hover:text-[#ea4f93] transition-colors" />}
         styles={{
           content: { overflow: "hidden" },
-          header: { borderBottom: "1px solid #f1e7ed", padding: "1rem"},
+          header: { borderBottom: "1px solid #f1e7ed", padding: "1rem" },
         }}
       >
         {selectedTransaction && (
