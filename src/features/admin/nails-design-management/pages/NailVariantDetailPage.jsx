@@ -908,7 +908,9 @@ function CustomProcedureSelect({ value, onChange, availableProcedures, t, langua
 
           {specificProcs.length > 0 && (
             <div className="mb-2">
-
+              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
+                {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
+              </div>
               {specificProcs.map(proc => (
                 <div
                   key={proc.id || proc.procedureId}
@@ -1457,18 +1459,8 @@ export function NailVariantDetailPage() {
           {procedures.length ? (
             <div className="mt-4 space-y-3">
               {(() => {
-                const groupedProcs = {
-                  Common: [],
-                  ModelSpecific: []
-                };
-                procedures.forEach((item, index) => {
-                  const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
-                  if (type === "Common" || String(type).includes("Common")) {
-                    groupedProcs.Common.push({ item, index });
-                  } else {
-                    groupedProcs.ModelSpecific.push({ item, index });
-                  }
-                });
+                const procList = procedures.map((item, index) => ({ item, index }));
+                procList.sort((a, b) => (a.item.stepOrder || a.index + 1) - (b.item.stepOrder || b.index + 1));
 
                 const renderProcedureCard = ({ item, index }) => {
                   const isEditing = editingProcedureIndex === index;
@@ -1507,11 +1499,18 @@ export function NailVariantDetailPage() {
                               </div>
                               <div className="flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-3 py-1.5 text-xs font-semibold text-[#4a72d8]">
                                 <Activity size={14} className="text-[#84a3f3]" />
-                                {item.status}
+                                {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
                               </div>
                               <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${item.isRequired ? 'bg-[#fff0f7] text-[#ea4f93]' : 'bg-[#f3f4f6] text-[#9ca3af]'}`}>
                                 {item.isRequired ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
                                 {item.isRequired ? t("adminNailsDesignManagement.yes") : t("adminNailsDesignManagement.no")}
+                              </div>
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#fdf2f7] px-3 py-1.5 text-xs font-semibold text-[#c694ad]">
+                                {(() => {
+                                  const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
+                                  const isCommon = type === "Common" || String(type).includes("Common");
+                                  return language === "vi" ? (isCommon ? "Quy trình chung" : "Quy trình riêng") : (isCommon ? "Common Procedure" : "Model Specific");
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -1565,19 +1564,26 @@ export function NailVariantDetailPage() {
                                 </span>
                                 <span className="flex items-center gap-1.5 rounded-lg bg-[#eef4ff] px-2.5 py-1 text-[#4a72d8]">
                                   <Activity size={12} className="text-[#84a3f3]" />
-                                  {item.status}
+                                  {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
                                 </span>
                                 {item.isRequired && (
                                   <span className="flex items-center gap-1.5 rounded-lg bg-[#fff0f7] px-2.5 py-1 text-[#ea4f93]">
                                     <CheckCircle2 size={12} />
-                                    Required
+                                    {language === 'vi' ? 'Bắt buộc' : 'Required'}
                                   </span>
                                 )}
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#fdf2f7] px-2.5 py-1 text-[#c694ad]">
+                                  {(() => {
+                                    const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
+                                    const isCommon = type === "Common" || String(type).includes("Common");
+                                    return language === "vi" ? (isCommon ? "Quy trình chung" : "Quy trình riêng") : (isCommon ? "Common Procedure" : "Model Specific");
+                                  })()}
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity self-end sm:self-start">
+                          <div className="flex gap-2 self-end sm:self-start">
                             <button
                               type="button"
                               onClick={() => setEditingProcedureIndex(index)}
@@ -1612,13 +1618,11 @@ export function NailVariantDetailPage() {
                   if (sourceIndex === destinationIndex) return;
                   if (editingProcedureIndex !== null) return;
 
-                  const modelSpecificProcs = groupedProcs.ModelSpecific.map(g => g.item);
-                  const commonProcs = groupedProcs.Common.map(g => g.item);
+                  const newProcList = [...procList].map(p => p.item);
+                  const [reorderedItem] = newProcList.splice(sourceIndex, 1);
+                  newProcList.splice(destinationIndex, 0, reorderedItem);
 
-                  const [reorderedItem] = modelSpecificProcs.splice(sourceIndex, 1);
-                  modelSpecificProcs.splice(destinationIndex, 0, reorderedItem);
-
-                  const newProcedures = [...commonProcs, ...modelSpecificProcs].map((p, idx) => ({
+                  const newProcedures = newProcList.map((p, idx) => ({
                     ...p,
                     stepOrder: idx + 1
                   }));
@@ -1628,56 +1632,39 @@ export function NailVariantDetailPage() {
                 };
 
                 return (
-                  <div className="space-y-6">
-                    {groupedProcs.Common.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
-                          {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
-                          <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
-                        </h4>
-                        {groupedProcs.Common.map(renderProcedureCard)}
-                      </div>
-                    )}
-                    {groupedProcs.ModelSpecific.length > 0 && (
-                      <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="modelSpecificDroppable">
-                          {(provided) => (
-                            <div
-                              {...provided.droppableProps}
-                              ref={provided.innerRef}
-                              className="space-y-3"
-                            >
-                              <h4 className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] mb-3 flex items-center gap-3">
-                                {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
-                                <div className="h-[1px] flex-1 bg-[#fdf0f5]"></div>
-                              </h4>
-                              {groupedProcs.ModelSpecific.map((data, idx) => {
-                                const draggableId = `${data.item.procedureId || "draft"}-${data.index}`;
-                                return (
-                                  <Draggable key={draggableId} draggableId={draggableId} index={idx} isDragDisabled={editingProcedureIndex !== null}>
-                                    {(providedDrag, snapshot) => (
-                                      <div
-                                        ref={providedDrag.innerRef}
-                                        {...providedDrag.draggableProps}
-                                        {...providedDrag.dragHandleProps}
-                                        style={{
-                                          ...providedDrag.draggableProps.style,
-                                          ...(snapshot.isDragging ? { zIndex: 50 } : {})
-                                        }}
-                                      >
-                                        {renderProcedureCard(data)}
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                );
-                              })}
-                              {provided.placeholder}
-                            </div>
-                          )}
-                        </Droppable>
-                      </DragDropContext>
-                    )}
-                  </div>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="allProceduresDroppable">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-3"
+                        >
+                          {procList.map((data, idx) => {
+                            const draggableId = `${data.item.procedureId || "draft"}-${data.index}`;
+                            return (
+                              <Draggable key={draggableId} draggableId={draggableId} index={idx} isDragDisabled={editingProcedureIndex !== null}>
+                                {(providedDrag, snapshot) => (
+                                  <div
+                                    ref={providedDrag.innerRef}
+                                    {...providedDrag.draggableProps}
+                                    {...providedDrag.dragHandleProps}
+                                    style={{
+                                      ...providedDrag.draggableProps.style,
+                                      ...(snapshot.isDragging ? { zIndex: 50 } : {})
+                                    }}
+                                  >
+                                    {renderProcedureCard(data)}
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 );
               })()}
             </div>

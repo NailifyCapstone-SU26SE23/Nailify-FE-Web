@@ -82,11 +82,6 @@ export function WalletTransactionDetailModal({
               <DetailRow label={t("walletTransactions.referenceType")}>
                 {getWalletReferenceTypeLabel(transaction.referenceType, language)}
               </DetailRow>
-              <DetailRow label={t("walletTransactions.referenceId")}>
-                <Text copyable className="font-mono text-xs">
-                  {transaction.referenceId || "-"}
-                </Text>
-              </DetailRow>
               <DetailRow label={t("walletTransactions.createdAt")}>
                 <span className="font-mono">{transaction.createdAt ? dayjs(transaction.createdAt).format("YYYY-MM-DD HH:mm") : "-"}</span>
               </DetailRow>
@@ -103,7 +98,7 @@ export function WalletTransactionDetailModal({
 
             <div className="flex flex-1 flex-col items-center justify-center">
               {walletOwner ? (
-                <div className="flex w-full flex-col items-center">
+                <div className="flex w-full flex-col items-center text-center">
                   <Avatar
                     src={walletOwner.avatarUrl}
                     size={200}

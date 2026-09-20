@@ -318,6 +318,7 @@ export default function ChairManagementPage() {
         initialChairName={initialChairName}
         salonId={selectedSalonId}
         salons={salons}
+        existingChairs={chairs}
         onSuccess={handleModalSuccess}
       />
 
@@ -346,7 +347,7 @@ export default function ChairManagementPage() {
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
               <span className="text-slate-500 font-medium">{t("adminChairs.status")}</span>
               <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(detailChair.status).replace('border-2', '')}`}>
-                {detailChair.status === 'Active' ? t("adminChairs.active") : detailChair.status === 'Maintenance' ? t("adminChairs.maintenance") : t("adminChairs.inactive")}
+                {detailChair.status === 'Active' ? t("adminChairs.active") : t("adminChairs.inactive")}
               </span>
             </div>
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">

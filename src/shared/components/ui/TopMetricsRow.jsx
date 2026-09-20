@@ -51,8 +51,8 @@ export function TopMetricsRow({ metrics, className }) {
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   {metric.label}
                 </p>
-                <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
-                  {displayValue} <span className="text-[14px] text-slate-400 font-semibold">{displayUnit}</span>
+                <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-words">
+                  {displayValue} {displayUnit && <span className="text-[14px] text-slate-400 font-semibold whitespace-nowrap">{displayUnit}</span>}
                 </h2>
                 {/* {metric.note && (
                   <p className="mt-1 text-[11px] font-medium text-green-600">{safeStr(metric.note)}</p>

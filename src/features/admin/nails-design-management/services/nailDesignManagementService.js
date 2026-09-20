@@ -464,6 +464,9 @@ export async function fetchAdminNailDesigns({
       name: name || undefined,
       categoryIds: normalizedCategoryIds.length ? normalizedCategoryIds : undefined,
     },
+    paramsSerializer: {
+      indexes: null
+    }
   });
 
   const data = unwrapResponse(response, "Failed to load nail designs.");

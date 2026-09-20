@@ -1160,9 +1160,9 @@ export function CustomerNailDetailPage() {
             {/* Right side: Stats Cards & Actions */}
             <div className="flex min-w-0 flex-col gap-3 xl:w-full">
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              <div className="flex flex-wrap gap-3">
                 {/* System Price card */}
-                <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#d97706]">
                     {language === "vi" ? "Giá hệ thống" : "System Price"}
                   </span>
@@ -1171,7 +1171,7 @@ export function CustomerNailDetailPage() {
                   </span>
                 </div>
                 {/* System Duration card */}
-                <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#7c3aed]">
                     {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
                   </span>
@@ -1179,26 +1179,31 @@ export function CustomerNailDetailPage() {
                     {formatDuration(getSystemDuration(nail), nail?.status, language)}
                   </span>
                 </div>
-                {/* Additional Price card */}
-                <div className="rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2fa25f]">
-                    {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
-                  </span>
-                  <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
-                    {formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}
-                  </span>
-                </div>
-                {/* Additional Duration card */}
-                <div className="rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#0369a1]">
-                    {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
-                  </span>
-                  <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
-                    {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}
-                  </span>
-                </div>
+
+                {getRequestPrice(nail) != null && (
+                  <div className=" flex-1 rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2fa25f]">
+                      {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
+                    </span>
+                    <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
+                      {formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}
+                    </span>
+                  </div>
+                )}
+
+                {getRequestDuration(nail) != null && (
+                  <div className="flex-1 rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#0369a1]">
+                      {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
+                    </span>
+                    <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
+                      {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Created Date card */}
-                <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#db2777]">
                     {language === "vi" ? "Ngày tạo" : "Created"}
                   </span>

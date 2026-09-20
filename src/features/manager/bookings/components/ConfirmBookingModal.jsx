@@ -99,12 +99,6 @@ export function ConfirmBookingModal({
                   </div>
                 </div>
               )}
-              {booking.totalPrice && (
-                <div className="col-span-2 flex items-center justify-between border-t border-[#e2f5ec] pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">{isVi ? "Tổng giá trị:" : "Total Value:"}</span>
-                  <span className="text-base font-bold text-[#2fa25f]">{formatPriceVND(booking.totalPrice)}</span>
-                </div>
-              )}
             </div>
           </div>
         )}

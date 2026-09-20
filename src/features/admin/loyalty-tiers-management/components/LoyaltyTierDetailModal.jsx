@@ -189,7 +189,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
                       {t("adminLoyaltyTiersManagement.discountBenefit")}
                     </span>
                     <span className="text-xl font-bold mt-0.5 block">
-                      {tier.discountRate > 0 ? (language === "vi" ? `Giảm ${tier.discountRate}%` : `${tier.discountRate}% OFF`) : (t("adminLoyaltyTiersManagement.standardRates"))}
+                      {tier.discountRate > 0 ? (language === "vi" ? `Giảm ${parseFloat((tier.discountRate * 100).toFixed(2))}%` : `${parseFloat((tier.discountRate * 100).toFixed(2))}% OFF`) : (t("adminLoyaltyTiersManagement.standardRates"))}
                     </span>
                   </div>
                 </div>
@@ -238,13 +238,13 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
                       {t("adminLoyaltyTiersManagement.discountRate")}
                     </span>
                     <span className="text-xs font-bold text-[#3f2034]">
-                      {language === "vi" ? `Giảm ${tier.discountRate}%` : `${tier.discountRate}% Markdown`}
+                      {language === "vi" ? `Giảm ${parseFloat((tier.discountRate * 100).toFixed(2))}%` : `${parseFloat((tier.discountRate * 100).toFixed(2))}% Markdown`}
                     </span>
                   </div>
                 </div>
 
                 {/* Sort Order */}
-                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                {/* <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
                   <div className="h-8 w-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
                     <Layers size={14} />
                   </div>
@@ -254,6 +254,20 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
                     </span>
                     <span className="text-xs font-bold text-[#3f2034]">
                       {language === "vi" ? `Hạng Cấp độ #${tier.sortOrder}` : `Level Rank #${tier.sortOrder}`}
+                    </span>
+                  </div>
+                </div> */}
+                {/* Registered members count */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Users size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.totalMembers")}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {memberCount} {t("adminLoyaltyTiersManagement.active")}
                     </span>
                   </div>
                 </div>
@@ -281,20 +295,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
                   </div>
                 </div>
 
-                {/* Registered members count */}
-                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <Users size={14} />
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
-                      {t("adminLoyaltyTiersManagement.totalMembers")}
-                    </span>
-                    <span className="text-xs font-bold text-[#3f2034]">
-                      {memberCount} {t("adminLoyaltyTiersManagement.active")}
-                    </span>
-                  </div>
-                </div>
+
               </div>
 
               {/* Description box */}
