@@ -21,9 +21,10 @@ import {
   Eye,
   Clock,
 } from "lucide-react";
-import { Spin, Input, Empty, Tag, Table, DatePicker, Button } from "antd";
+import { Spin, Input, Empty, Tag, Table, DatePicker, Button, Select, Tooltip as AntTooltip } from "antd";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
@@ -57,10 +58,40 @@ function SectionHeading({ title, subtitle }) {
     </div>
   );
 }
-
-
+const getStatusDisplay = (status, isVi) => {
+  const s = status || "";
+  switch (s) {
+    case "Pending":
+      return { text: isVi ? "Chờ xác nhận" : "Pending", color: "bg-yellow-50 text-yellow-700 border-yellow-200" };
+    case "Approved":
+      return { text: isVi ? "Đã duyệt" : "Approved", color: "bg-blue-50 text-blue-700 border-blue-200" };
+    case "Rejected":
+      return { text: isVi ? "Đã từ chối" : "Rejected", color: "bg-red-50 text-red-700 border-red-200" };
+    case "Cancelled":
+      return { text: isVi ? "Đã hủy" : "Cancelled", color: "bg-gray-50 text-gray-700 border-gray-200" };
+    case "CheckedIn":
+      return { text: isVi ? "Đã Check-in" : "Checked In", color: "bg-purple-50 text-purple-700 border-purple-200" };
+    case "InProgress":
+      return { text: isVi ? "Đang thực hiện" : "In Progress", color: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+    case "ServiceCompleted":
+      return { text: isVi ? "Dịch vụ hoàn tất" : "Service Completed", color: "bg-teal-50 text-teal-700 border-teal-200" };
+    case "Completed":
+      return { text: isVi ? "Hoàn thành" : "Completed", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    case "Repaired":
+      return { text: isVi ? "Đã bảo hành" : "Repaired", color: "bg-cyan-50 text-cyan-700 border-cyan-200" };
+    case "ReschedulePending":
+      return { text: isVi ? "Chờ đổi lịch" : "Reschedule Pending", color: "bg-orange-50 text-orange-700 border-orange-200" };
+    case "RescheduleSuggested":
+      return { text: isVi ? "Đề xuất đổi lịch" : "Reschedule Suggested", color: "bg-orange-50 text-orange-700 border-orange-200" };
+    default:
+      return { text: s, color: "bg-slate-50 text-slate-700 border-slate-200" };
+  }
+};
 
 function BookingCard({ booking, index }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -87,10 +118,9 @@ function BookingCard({ booking, index }) {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 border border-emerald-200">
-          <CheckCircle size={14} className="text-emerald-600" />
-          <span className="text-[10px] font-bold text-emerald-700">
-            {booking?.status || "Completed"}
+        <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 border ${getStatusDisplay(booking?.status, isVi).color}`}>
+          <span className="text-[10px] font-bold">
+            {getStatusDisplay(booking?.status, isVi).text}
           </span>
         </div>
       </div>
@@ -226,42 +256,28 @@ export function AdminSalonBookingDetailPage() {
   }, [error]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 500);
   const [dateRange, setDateRange] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("");
 
-  const completedBookings = useMemo(() => {
-    if (!bookings) return [];
-    return bookings.filter((booking) => booking?.status?.toLowerCase() === "completed");
-  }, [bookings]);
-
-  const statsBookings = useMemo(() => {
-    if (!dateRange || dateRange.length !== 2) return completedBookings;
-    return completedBookings.filter((booking) => {
-      const recordDate = dayjs(booking.bookingDate).valueOf();
-      return recordDate >= dateRange[0] && recordDate <= dateRange[1];
-    });
-  }, [completedBookings, dateRange]);
-
-  const filteredBookings = useMemo(() => {
-    if (!searchQuery.trim()) return statsBookings;
-    const query = searchQuery.toLowerCase();
-    return statsBookings.filter(
-      (booking) =>
-        (booking?.customerName && booking.customerName.toLowerCase().includes(query)) ||
-        (booking?.customerEmail && booking.customerEmail.toLowerCase().includes(query)) ||
-        (booking?.customerPhone && booking.customerPhone.toLowerCase().includes(query))
-    );
-  }, [statsBookings, searchQuery]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const stats = useMemo(() => {
-    const totalRevenue = statsBookings.reduce(
+    const completedBookings = bookings.filter(
+      (booking) => booking?.status?.toLowerCase() === "completed"
+    );
+
+    const totalRevenue = completedBookings.reduce(
       (sum, booking) => sum + Number(booking?.totalPrice || booking?.totalAmount || 0),
       0
     );
-    const avgBookingValue = statsBookings.length > 0
-      ? totalRevenue / statsBookings.length
+    const avgBookingValue = completedBookings.length > 0
+      ? totalRevenue / completedBookings.length
       : 0;
 
-    const revenueByDate = statsBookings.reduce((acc, booking) => {
+    const revenueByDate = completedBookings.reduce((acc, booking) => {
       const date = dayjs(booking?.bookingDate).format("MMM D");
       acc[date] = (acc[date] || 0) + Number(booking?.totalPrice || booking?.totalAmount || 0);
       return acc;
@@ -288,17 +304,18 @@ export function AdminSalonBookingDetailPage() {
 
     return {
       totalRevenue,
-      totalBookings: statsBookings.length,
+      totalBookings: totalCount || bookings.length,
       avgBookingValue,
       chartData,
     };
-  }, [statsBookings, dateRange]);
+  }, [bookings, dateRange, totalCount]);
 
   const bookingColumns = useMemo(() => {
     return [
       {
         title: isVi ? "Khách hàng" : "Customer",
-        key: "customerName",
+        key: "customerInfo",
+        width: "30%",
         sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
         render: (_, booking) => (
           <div>
@@ -311,7 +328,8 @@ export function AdminSalonBookingDetailPage() {
         title: isVi ? "Ngày" : "Date",
         dataIndex: "bookingDate",
         key: "bookingDate",
-        sorter: (a, b) => new Date(a.bookingDate || 0) - new Date(b.bookingDate || 0),
+        width: "20%",
+        sorter: (a, b) => dayjs(a.bookingDate).valueOf() - dayjs(b.bookingDate).valueOf(),
         filteredValue: dateRange ? [dateRange] : null,
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
           <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -355,10 +373,11 @@ export function AdminSalonBookingDetailPage() {
       {
         title: isVi ? "Tổng tiền" : "Total",
         key: "totalAmount",
+        width: "15%",
         sorter: (a, b) => (a.totalAmount || a.totalPrice || 0) - (b.totalAmount || b.totalPrice || 0),
         render: (_, booking) => {
           const amount = booking.totalAmount || booking.totalPrice || 0;
-          const formattedAmount = `${amount.toLocaleString("vi-VN")} ₫`;
+          const formattedAmount = `${amount.toLocaleString("vi-VN")} VND`;
           return <span className="text-[14px] font-bold text-[#2d1b35]">{formattedAmount}</span>;
         },
       },
@@ -367,34 +386,91 @@ export function AdminSalonBookingDetailPage() {
         title: isVi ? "Trạng thái" : "Status",
         dataIndex: "status",
         key: "status",
+        width: "25%",
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
-        render: (status) => (
-          <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-            {status || "Completed"}
-          </span>
+        filteredValue: statusFilter ? [statusFilter] : null,
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+          <div style={{ padding: 12 }} onKeyDown={(e) => e.stopPropagation()}>
+            <Select
+              value={selectedKeys[0] || null}
+              onChange={(val) => setSelectedKeys(val ? [val] : [])}
+              style={{ width: 220, marginBottom: 12, display: 'flex' }}
+              placeholder={isVi ? "Chọn trạng thái" : "Select status"}
+              options={[
+                { value: "Pending", label: isVi ? "Chờ xác nhận" : "Pending" },
+                { value: "Approved", label: isVi ? "Đã duyệt" : "Approved" },
+                { value: "Rejected", label: isVi ? "Đã từ chối" : "Rejected" },
+                { value: "Cancelled", label: isVi ? "Đã hủy" : "Cancelled" },
+                { value: "CheckedIn", label: isVi ? "Đã Check-in" : "Checked In" },
+                { value: "InProgress", label: isVi ? "Đang thực hiện" : "In Progress" },
+                { value: "ServiceCompleted", label: isVi ? "Dịch vụ hoàn tất" : "Service Completed" },
+                { value: "Completed", label: isVi ? "Hoàn thành" : "Completed" },
+                { value: "Repaired", label: isVi ? "Đã bảo hành" : "Repaired" },
+                { value: "ReschedulePending", label: isVi ? "Chờ đổi lịch" : "Reschedule Pending" },
+                { value: "RescheduleSuggested", label: isVi ? "Đề xuất đổi lịch" : "Reschedule Suggested" },
+              ]}
+              allowClear
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setStatusFilter(selectedKeys[0] || "");
+                  confirm();
+                }}
+                size="small"
+                className="bg-[#ea4f93] flex-1"
+              >
+                {isVi ? "Lọc" : "Filter"}
+              </Button>
+              <Button
+                onClick={() => {
+                  clearFilters();
+                  setSelectedKeys([]);
+                  setStatusFilter("");
+                  confirm();
+                }}
+                size="small"
+                className="flex-1"
+              >
+                {isVi ? "Xoá" : "Reset"}
+              </Button>
+            </div>
+          </div>
         ),
+        render: (status) => {
+          const display = getStatusDisplay(status, isVi);
+          return (
+            <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold border ${display.color}`}>
+              {display.text}
+            </span>
+          );
+        },
       },
       {
         title: isVi ? "Thao tác" : "Actions",
         key: "actions",
         align: "right",
+        width: "10%",
         render: (_, booking) => {
           const bookingId = booking?.bookingId || booking?.id;
 
           return (
-            <button
-              type="button"
-              disabled={!bookingId}
-              aria-label={isVi ? "Xem chi tiết lịch hẹn" : "View booking details"}
-              onClick={() =>
-                navigate(getAdminBookingDetailRoute(bookingId), {
-                  state: { from: `/admin/bookings/${salonId}` },
-                })
-              }
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Eye size={16} />
-            </button>
+            <AntTooltip title={isVi ? "Xem chi tiết" : "View details"}>
+              <button
+                type="button"
+                disabled={!bookingId}
+                aria-label={isVi ? "Xem chi tiết lịch hẹn" : "View booking details"}
+                onClick={() =>
+                  navigate(getAdminBookingDetailRoute(bookingId), {
+                    state: { from: `/admin/bookings/${salonId}` },
+                  })
+                }
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Eye size={16} />
+              </button>
+            </AntTooltip>
           );
         },
       },
@@ -430,7 +506,14 @@ export function AdminSalonBookingDetailPage() {
       },
       {
         label: t("userManagement.table.status") || "Status",
-        value: isLoadingSalon ? "..." : (isVi && salon?.status === "Active" ? "Đang hoạt động" : salon?.status || "Active"),
+        value: (() => {
+          if (isLoadingSalon) return "...";
+          const s = salon?.status?.toLowerCase();
+          if (s === "open") return isVi ? "Mở cửa" : "Open";
+          if (s === "closed") return isVi ? "Đóng cửa" : "Closed";
+          if (s === "active") return isVi ? "Đang hoạt động" : "Active";
+          return salon?.status || "N/A";
+        })(),
         unit: "",
         note: isVi ? "Hoạt động bình thường" : "Operating normally",
         icon: Sparkles,
@@ -440,35 +523,62 @@ export function AdminSalonBookingDetailPage() {
   }, [stats, salon, isLoadingSalon, t, language]);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadSalon = async () => {
+      if (!salonId) return;
+      setIsLoadingSalon(true);
+      try {
+        const salonData = await fetchAdminSalonDetail(salonId);
+        setSalon(salonData);
+      } catch (err) {
+        console.error("Error loading salon:", err);
+      } finally {
+        setIsLoadingSalon(false);
+      }
+    };
+    loadSalon();
+  }, [salonId]);
+
+  useEffect(() => {
+    const loadBookings = async () => {
       if (!salonId) return;
 
-      setIsLoadingSalon(true);
       setIsLoadingBookings(true);
       setError("");
 
       try {
-        const [salonData, bookingsData] = await Promise.all([
-          fetchAdminSalonDetail(salonId),
-          fetchBookingsBySalonId(salonId, {
-            pageSize: 1000,
-            isAdmin: true,
-          }),
-        ]);
+        let options = {
+          pageNumber: currentPage,
+          pageSize: pageSize,
+          isAdmin: true,
+        };
 
-        setSalon(salonData);
+        if (debouncedSearch) {
+          options.search = debouncedSearch;
+        }
+
+        if (dateRange && dateRange.length === 2) {
+          options.startDate = dayjs(dateRange[0]).toISOString();
+          options.endDate = dayjs(dateRange[1]).toISOString();
+        }
+
+        if (statusFilter) {
+          options.status = statusFilter;
+        }
+
+        const bookingsData = await fetchBookingsBySalonId(salonId, options);
+
         setBookings(bookingsData?.items || []);
+        setTotalCount(bookingsData?.totalCount || bookingsData?.metaData?.totalItems || bookingsData?.items?.length || 0);
       } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err?.message || "Failed to load data.");
+        console.error("Error loading bookings:", err);
+        setError(err?.message || "Failed to load bookings.");
       } finally {
-        setIsLoadingSalon(false);
         setIsLoadingBookings(false);
       }
     };
 
-    loadData();
-  }, [salonId]);
+    loadBookings();
+  }, [salonId, currentPage, pageSize, debouncedSearch, dateRange, statusFilter]);
 
   return (
     <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
@@ -638,11 +748,11 @@ export function AdminSalonBookingDetailPage() {
       <PremiumCard>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <SectionHeading
-            title={t("adminSalonBookings.completedBookings")}
+            title={t("adminSalonBookings.completedBookings") || "Bookings"}
             subtitle={
               language === "vi"
-                ? `Hiển thị ${filteredBookings.length} lịch hẹn${searchQuery ? ` • Tìm kiếm: "${searchQuery}"` : ""}`
-                : `Showing ${filteredBookings.length} booking${filteredBookings.length !== 1 ? "s" : ""}${searchQuery ? ` • Search: "${searchQuery}"` : ""}`
+                ? `Hiển thị ${totalCount} lịch hẹn${searchQuery ? ` • Tìm kiếm: "${searchQuery}"` : ""}`
+                : `Showing ${totalCount} booking${totalCount !== 1 ? "s" : ""}${searchQuery ? ` • Search: "${searchQuery}"` : ""}`
             }
           />
           <div className="flex-1 max-w-md">
@@ -676,11 +786,20 @@ export function AdminSalonBookingDetailPage() {
             <Table
               rowKey={(record) => record?.id || record?.bookingId}
               columns={bookingColumns}
-              dataSource={filteredBookings}
+              dataSource={bookings}
               pagination={{
-                pageSize: 10,
-                showSizeChanger: false,
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalCount,
+                showSizeChanger: true,
                 className: "!mt-4",
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  if (size && size !== pageSize) {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }
+                },
               }}
               locale={{
                 emptyText: (

@@ -31,9 +31,9 @@ export function normalizeStaffMember(staff) {
 
   const result = {
     ...staff, // Keep all original fields FIRST
-    id: staff?.staffId || staff?.userId || staff?.id || "",
-    userId: staff?.userId || staff?.id || "",
-    staffId: staff?.staffId || "",
+    id: staff?.staffId || staff?.nailArtistId || staff?.userId || staff?.accountId || staff?.id || "",
+    userId: staff?.userId || staff?.accountId || staff?.id || "",
+    staffId: staff?.staffId || staff?.nailArtistId || "",
     name: fullName,
     role: staff?.role || "Staff",
     email: staff?.email || "",
@@ -54,16 +54,18 @@ export async function fetchSalonStaff(salonId, { pageIndex = 1, pageSize = 20, r
   }
 
   try {
+    const url = `/Users/salon/${normalizedSalonId}/staff`;
     const params = {
       pageNumber: pageIndex,
       pageSize,
     };
 
-    if (role) {
-      params.role = mapRoleToApi(role);
+    const mappedRole = role ? mapRoleToApi(role) : null;
+    if (mappedRole) {
+      params.role = mappedRole;
     }
 
-    const response = await axiosClient.get(`/Users/salon/${normalizedSalonId}/staff`, {
+    const response = await axiosClient.get(url, {
       headers: getAuthHeaders(),
       params,
     });
@@ -143,12 +145,6 @@ export async function createUser(userData) {
   }
 }
 
-// Update user
-// NOTE: mọi field đều là optional/partial-update — chỉ field nào có mặt trong
-// userData mới được gửi lên BE. Trước đây "email" bị gửi cứng ngay cả khi
-// không truyền vào, có nguy cơ ghi đè email hiện tại của user thành chuỗi
-// rỗng. Đã sửa để email theo cùng quy tắc "chỉ gửi nếu !== undefined" như
-// các field khác.
 export async function updateUser(userId, userData) {
   try {
     let response;
@@ -233,20 +229,6 @@ export async function updateUser(userId, userData) {
   }
 }
 
-// Assign skills to Staff Artist
-// NOTE QUAN TRỌNG: KHÔNG được gộp skill cũ (đã gán) và skill mới vào chung
-// một mảng rồi POST hết một lượt. Endpoint POST /nail-artists/{id}/skills
-// là endpoint "assign mới" (insert) — nếu gửi kèm skill đã được gán trước
-// đó, BE sẽ báo lỗi trùng bản ghi và toàn bộ request thất bại, kể cả các
-// skill mới thật sự cần assign. Đây chính là lý do "update level thì được,
-// nhưng assign thêm skill mới thì không": PUT (update level) chỉ hoạt động
-// trên skill ĐÃ tồn tại, nên fallback PUT vẫn "cứu" được phần update, còn
-// skill hoàn toàn mới thì PUT tới một bản ghi chưa tồn tại sẽ luôn fail.
-//
-// Cách xử lý đúng: tách skill thành 2 nhóm dựa trên danh sách skill hiện có
-// của artist, rồi gọi đúng API cho từng nhóm:
-//   - Skill CHƯA từng được gán  -> POST (chỉ gửi phần mới này thôi)
-//   - Skill ĐÃ được gán, đổi level -> PUT từng skill một
 export async function assignNailArtistSkills(artistId, skills) {
   let currentSkills = [];
   try {
@@ -350,18 +332,6 @@ export async function assignNailArtistSkills(artistId, skills) {
   return { success: true };
 }
 
-// Lấy lịch làm việc của 1 thợ làm móng (Staff Artist) trong 1 khoảng thời gian
-// GET /api/Schedules/artist/{artistId}
-//
-// LƯU Ý: Swagger chỉ show rõ path param bắt buộc "artistId". Mô tả endpoint
-// có nhắc "trong một khoảng thời gian" nên nhiều khả năng còn query params
-// (ví dụ fromDate/toDate hoặc startDate/endDate) chưa xác nhận được tên
-// chính xác. Hàm này viết linh hoạt:
-//   - Không truyền range -> gọi endpoint không kèm query (BE tự quyết định
-//     khoảng mặc định).
-//   - Có truyền { fromDate, toDate } -> tự thêm vào query string.
-// Nếu BE trả lỗi thiếu param hoặc field không khớp, kiểm tra lại tên param
-// đúng trong Swagger rồi chỉnh lại object `params` bên dưới.
 export async function fetchArtistSchedule(artistId, { fromDate, toDate } = {}) {
   const normalizedArtistId = String(artistId || "").trim();
 
@@ -414,4 +384,35 @@ export async function fetchTodaySchedules() {
   const data = unwrapResponse(response, "Failed to load schedules.");
 
   return Array.isArray(data?.items) ? data.items : [];
+}
+
+export async function fetchArtistBreaks(artistId, { salonId, pageNumber = 1, pageSize = 1000, date, status, orderBy } = {}) {
+  const normalizedArtistId = artistId ? String(artistId).trim() : null;
+
+  try {
+    const params = {
+      pageNumber,
+      pageSize,
+    };
+    if (normalizedArtistId) params.artistId = normalizedArtistId;
+    if (salonId) params.salonId = salonId;
+    if (date) params.date = date;
+    if (status) params.status = status;
+    if (orderBy) params.orderBy = orderBy;
+
+    const response = await axiosClient.get(`/NailArtistBreaks`, {
+      headers: getAuthHeaders(),
+      params,
+    });
+
+    const data = unwrapResponse(response, "Failed to load artist breaks.");
+
+    if (Array.isArray(data?.items)) {
+      return data.items;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching artist breaks:", error);
+    return [];
+  }
 }

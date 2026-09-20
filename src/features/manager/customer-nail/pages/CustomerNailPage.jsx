@@ -10,6 +10,7 @@ import { fetchCustomerNails, getManagerSalonId } from "../services/customerNails
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { CustomerNailStatusBadge } from "../../../../shared/components/common/CustomerNailStatusBadge";
+import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
 
 function Card({ className = "", children }) {
   return (
@@ -498,6 +499,7 @@ export function CustomerNailPage() {
 
   const seenPendingReviewIdsRef = useRef(new Set());
   const hasInitializedPendingReviewRef = useRef(false);
+  const recentSignalRNotificationKeysRef = useRef(new Map());
 
   const normalizeStatusKey = useCallback((status) => {
     return String(status || "")
@@ -523,7 +525,7 @@ export function CustomerNailPage() {
   }, []);
 
   const loadCustomerNails = useCallback(async (options = {}) => {
-    const { silent = false } = options;
+    const { silent = false, suppressNewRequestToast = false } = options;
     try {
       if (!silent) {
         setIsLoading(true);
@@ -583,7 +585,7 @@ export function CustomerNailPage() {
         seenPendingReviewIdsRef.current.add(id);
         newCount++;
       });
-      if (newCount > 0) {
+      if (newCount > 0 && !suppressNewRequestToast) {
         toast.success(`You have ${newCount} new request(s) awaiting review!`, {
           icon: '🔔',
           style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
@@ -608,6 +610,44 @@ export function CustomerNailPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // Lắng nghe SignalR cho yêu cầu custom nail mới
+  useEffect(() => {
+    const unsubscribe = notificationSignalRService.registerListener((type, payload) => {
+      const messageType = type?.MessageType || type || "";
+      if (messageType === "NEW_CUSTOM_NAIL_REQUEST") {
+        const data = payload || type?.Payload || {};
+        const customerName = data.CustomerName || data.customerName || "một khách hàng";
+        const requestId = data.CustomerNailRequestId || data.customerNailRequestId || data.CustomerNailId || data.customerNailId || data.Id || data.id;
+        const notificationKey = String(requestId || customerName || "new-custom-nail-request").trim();
+        const now = Date.now();
+        const recentKeys = recentSignalRNotificationKeysRef.current;
+        const lastSeenAt = recentKeys.get(notificationKey);
+
+        if (lastSeenAt && now - lastSeenAt < 5000) {
+          return;
+        }
+
+        recentKeys.set(notificationKey, now);
+        recentKeys.forEach((seenAt, key) => {
+          if (now - seenAt > 30000) {
+            recentKeys.delete(key);
+          }
+        });
+        
+        // Use toast to notify the user and refresh the list silently
+        toast.success(language === "vi" ? `Có yêu cầu duyệt mẫu móng custom mới từ ${customerName}!` : `New custom nail request from ${customerName}!`, {
+          id: `custom-nail-request-${notificationKey}`,
+          icon: '💅',
+          style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
+        });
+        
+        loadCustomerNails({ silent: true, suppressNewRequestToast: true });
+        loadStats(); // Update the stats as well
+      }
+    });
+    return () => unsubscribe();
+  }, [loadCustomerNails, loadStats, language]);
 
   // Reset page when filters change to prevent out of bounds
   useEffect(() => {
@@ -733,7 +773,7 @@ export function CustomerNailPage() {
         <TopMetricsRow metrics={summaryStats} />
 
         <Card className="p-0">
-          <div className="flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="bg-white/40 flex flex-col gap-4 border-b border-[#f6dce7] p-6 sm:flex-row sm:items-center sm:justify-between">
             <SectionHeading
               title={language === "vi" ? "Tất cả mẫu móng của khách hàng" : "All Customer Nails"}
               subtitle={language === "vi" ? `${totalItems} thiết kế${selectedDate ? " (lọc theo ngày)" : " có sẵn trong không gian làm việc hiện tại"}` : `${totalItems} designs${selectedDate ? " (filtered by selected date)" : " available in the current salon workspace"}`}

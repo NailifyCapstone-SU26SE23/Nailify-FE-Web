@@ -53,6 +53,7 @@ import {
   createSchedule,
   updateSchedule,
   deleteSchedule,
+  fetchNailArtistBreaks,
 } from "../../schedules/services/scheduleService";
 import { Pagination } from "../../../../shared/components/common/Pagination.jsx";
 import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
@@ -673,15 +674,11 @@ function pickField(entry, keys) {
   return null;
 }
 
-function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
+function mapSchedulesToTimeline(artists, schedules, breaks, startOfWeekDate) {
   const dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const extractDateStr = (val) => {
     if (!val) return "";
-    const str = String(val);
-    if (str.length >= 10 && str[4] === '-' && str[7] === '-') {
-      return str.slice(0, 10);
-    }
     return dayjs(val).format("YYYY-MM-DD");
   };
 
@@ -730,6 +727,22 @@ function mapSchedulesToTimeline(artists, schedules, startOfWeekDate) {
         };
       } else {
         days[dayKey] = { status: "Off" };
+      }
+
+      // Overwrite with break if there is an approved break for this date
+      const dayBreaks = (breaks || []).filter((b) => {
+        const bDate = extractDateStr(b.breakDate);
+        if (bDate !== dateStr) return false;
+
+        const bArtistId = String(b.nailArtistId || "").toLowerCase();
+        const aNailArtistId = String(artist.nailArtistId || artist.id || "").toLowerCase();
+        const aAccountId = String(artist.accountId || artist.staffId || artist.userId || "").toLowerCase();
+
+        return bArtistId === aNailArtistId || bArtistId === aAccountId;
+      });
+
+      if (dayBreaks.some((b) => b.status === "Approved")) {
+        days[dayKey] = { status: "Leave", label: "OFF" };
       }
     }
 
@@ -897,8 +910,8 @@ function TimelineSchedule({
                             <div className="flex flex-col items-center gap-1">
                               {isLeave ? (
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">On Leave</span>
-                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">Approved</span>
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">{language === "vi" ? "Đang Nghỉ" : "On Leave"}</span>
+                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã Duyệt" : "Approved"}</span>
                                 </div>
                               ) : (
                                 <>
@@ -989,6 +1002,7 @@ export function StaffManagementPage() {
   const itemsPerPage = 6;
 
   const [schedules, setSchedules] = useState([]);
+  const [breaks, setBreaks] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
 
   // Drawer state
@@ -1046,14 +1060,18 @@ export function StaffManagementPage() {
       const startStr = monday.subtract(1, "day").format("YYYY-MM-DD");
       const endStr = sunday.add(1, "day").format("YYYY-MM-DD");
 
-      const data = await fetchSchedulesBySalonId(activeSalonId, {
-        startDate: startStr,
-        endDate: endStr,
-      });
+      const [schedulesData, breaksData] = await Promise.all([
+        fetchSchedulesBySalonId(activeSalonId, {
+          startDate: startStr,
+          endDate: endStr,
+        }),
+        fetchNailArtistBreaks({ pageNumber: 1, pageSize: 1000 }),
+      ]);
 
-      const list = Array.isArray(data) ? data : data?.items || [];
+      const list = Array.isArray(schedulesData) ? schedulesData : schedulesData?.items || [];
       console.log("Timeline loaded salon schedules:", list);
       setSchedules(list);
+      setBreaks(Array.isArray(breaksData?.items) ? breaksData.items : (Array.isArray(breaksData) ? breaksData : []));
     } catch (err) {
       console.error("Failed to load schedules:", err);
       setSchedules([]);
@@ -1357,8 +1375,8 @@ export function StaffManagementPage() {
   };
 
   const weeklySchedules = useMemo(() => {
-    return mapSchedulesToTimeline(staffArtists, schedules, monday);
-  }, [staffArtists, schedules, monday]);
+    return mapSchedulesToTimeline(staffArtists, schedules, breaks, monday);
+  }, [staffArtists, schedules, breaks, monday]);
 
 
   const mapApiArtistToUiFormat = (apiArtist) => {
@@ -1410,43 +1428,43 @@ export function StaffManagementPage() {
     }
   };
 
-  useEffect(() => {
-    const loadNailArtists = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const loadNailArtists = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const activeSalonId = (await getSalonIdAsync()) || getSalonId();
-        if (activeSalonId) {
-          setSalonId(activeSalonId);
-        }
-
-        const data = await fetchNailArtists(activeSalonId);
-        const mappedDataPromises = Array.isArray(data)
-          ? data.map(async (apiArtist) => {
-            const artist = mapApiArtistToUiFormat(apiArtist);
-            try {
-              const skills = await fetchNailArtistSkills(apiArtist.nailArtistId || apiArtist.staffId || apiArtist.id || apiArtist.userId);
-              artist.skills = skills;
-            } catch (err) {
-              console.warn("Failed to load skills for artist", artist.id, err);
-              artist.skills = [];
-            }
-            return artist;
-          })
-          : [];
-        const mappedData = await Promise.all(mappedDataPromises);
-        setStaffArtists(mappedData);
-      } catch (err) {
-        console.error("Failed to load Staff Artists:", err);
-        setError(err.message || "Failed to load staff artists");
-      } finally {
-        setLoading(false);
+      const activeSalonId = (await getSalonIdAsync()) || getSalonId();
+      if (activeSalonId) {
+        setSalonId(activeSalonId);
       }
-    };
 
-    loadNailArtists();
+      const data = await fetchNailArtists(activeSalonId);
+      const mappedDataPromises = Array.isArray(data)
+        ? data.map(async (apiArtist) => {
+          const artist = mapApiArtistToUiFormat(apiArtist);
+          try {
+            const skills = await fetchNailArtistSkills(apiArtist.nailArtistId || apiArtist.staffId || apiArtist.id || apiArtist.userId);
+            artist.skills = skills;
+          } catch (err) {
+            console.warn("Failed to load skills for artist", artist.id, err);
+            artist.skills = [];
+          }
+          return artist;
+        })
+        : [];
+      const mappedData = await Promise.all(mappedDataPromises);
+      setStaffArtists(mappedData);
+    } catch (err) {
+      console.error("Failed to load Staff Artists:", err);
+      setError(err.message || "Failed to load staff artists");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadNailArtists();
+  }, [loadNailArtists]);
 
   const [ratings, setRatings] = useState([]);
 
@@ -1597,7 +1615,7 @@ export function StaffManagementPage() {
 
               <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-4.5">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_10px_25px_rgba(201,150,53,0.35)] border border-white/60 shrink-0">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_10px_25px_rgba(201,150,53,0.35)] border border-white/60 shrink-0">
                     <Users size={30} className="drop-shadow-md text-white" />
                   </div>
                   <div>
@@ -1816,7 +1834,7 @@ export function StaffManagementPage() {
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {[
-                          [item.metrics.completed, (language === "vi" ? "Số lượt đã hoàn" : "Bookings")],
+                          [item.metrics.completed, (language === "vi" ? "Số lịch hẹn" : "Bookings")],
                           [item.metrics.rating, (language === "vi" ? "Đánh giá" : "Rating")],
                           [item.metrics.revenue, (language === "vi" ? "Doanh thu" : "Revenue")],
                           [item.metrics.satisfaction, (language === "vi" ? "Độ hài lòng" : "Satisfaction")],
@@ -2286,13 +2304,13 @@ export function StaffManagementPage() {
           setIsEditScheduleModalOpen(false);
           setEditingSchedule(null);
         }}
-        schedule={selectedSchedule}
+        schedule={editingSchedule}
         staffArtists={staffArtists}
         monday={monday}
         onSuccess={() => {
-          fetchStaffData();
+          loadSchedules();
+          loadNailArtists();
         }}
-        operatingHours={salonDetails?.operatingHours}
       />
       <TransferStaffModal
         open={isTransferStaffModalOpen}

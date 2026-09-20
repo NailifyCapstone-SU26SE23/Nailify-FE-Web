@@ -69,17 +69,15 @@ function normalizeDesign(design, index, t) {
     ...design,
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
-    uiTones: [
-      design.status === "Active"
-        ? (t("adminNailsDesignManagement.active"))
-        : (t("adminNailsDesignManagement.inactive"))
-    ],
+    uiTones: hasTryOnAsset 
+      ? [(t("adminNailsDesignManagement.tryonReady"))]
+      : [],
     uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
     uiEstimatedPrice: estimatedPrice,
-    uiStatus: hasTryOnAsset
-      ? (t("adminNailsDesignManagement.tryonReady"))
-      : (t("adminNailsDesignManagement.noTryon")),
-    uiStatusTone: hasTryOnAsset ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
+    uiStatus: design.status === "Active"
+      ? (t("adminNailsDesignManagement.active"))
+      : (t("adminNailsDesignManagement.inactive")),
+    uiStatusTone: design.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -658,19 +656,21 @@ export function NailDesignManagementPage() {
                             <Pen size={14} />
                           </Link>
                         </Tooltip>
-                        <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="bottom">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setPendingDeleteDesign(design);
-                            }}
-                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff0f6] text-[#d14c84] hover:bg-[#ffe1ee] transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </Tooltip>
+                        {design?.status === "Active" && (
+                          <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="bottom">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPendingDeleteDesign(design);
+                              }}
+                              className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff0f6] text-[#d14c84] hover:bg-[#ffe1ee] transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   </div>

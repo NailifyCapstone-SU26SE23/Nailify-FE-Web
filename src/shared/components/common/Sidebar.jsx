@@ -28,6 +28,7 @@ import {
   Wand2,
   FolderTree,
   Gift,
+  BanknoteArrowUp,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
@@ -59,6 +60,7 @@ const ICON_MAP = {
   wand2: Wand2,
   "folder-tree": FolderTree,
   gift: Gift,
+  "banknote-arrow-up": BanknoteArrowUp,
 };
 
 function SidebarItem({ item, collapsed }) {

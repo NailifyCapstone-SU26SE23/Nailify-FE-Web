@@ -256,7 +256,7 @@ export function ReceptionistBookingDetail({ booking }) {
   ];
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+    <section className="flex min-h-full flex-col gap-4">
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_280px]">
         <div className="space-y-4">
           <SectionCard

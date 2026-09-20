@@ -5,7 +5,7 @@ import {
   getSalonId,
   getSalonIdAsync,
 } from "../../staff-artist-management/services/nailArtistsService";
-import { fetchSchedulesBySalonId } from "../services/scheduleService";
+import { fetchSchedulesBySalonId, fetchNailArtistBreaks } from "../services/scheduleService";
 import { calculateShiftHours } from "../utils/scheduleUtils";
 import { AVATAR_GRADIENTS } from "../constants/scheduleConstants";
 
@@ -13,6 +13,7 @@ export function useSchedules() {
   const [selectedWeekStart, setSelectedWeekStart] = useState(() => dayjs().startOf("week").add(1, "day"));
   const [staffList, setStaffList] = useState([]);
   const [schedulesList, setSchedulesList] = useState([]);
+  const [breaksList, setBreaksList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -30,12 +31,13 @@ export function useSchedules() {
       const startDateStr = selectedWeekStart.format("YYYY-MM-DD");
       const endDateStr = selectedWeekStart.add(6, "day").format("YYYY-MM-DD");
 
-      const [artistsData, schedulesData] = await Promise.all([
+      const [artistsData, schedulesData, breaksData] = await Promise.all([
         fetchNailArtists(salonId),
         fetchSchedulesBySalonId(salonId, {
           startDate: startDateStr,
           endDate: endDateStr,
         }),
+        fetchNailArtistBreaks({ pageNumber: 1, pageSize: 1000 }),
       ]);
 
       const rawArtists = Array.isArray(artistsData) ? artistsData : artistsData?.items || [];
@@ -65,6 +67,7 @@ export function useSchedules() {
 
       setStaffList(mappedArtists);
       setSchedulesList(Array.isArray(schedulesData) ? schedulesData : []);
+      setBreaksList(Array.isArray(breaksData?.items) ? breaksData.items : (Array.isArray(breaksData) ? breaksData : []));
     } catch (err) {
       console.error("Failed to load staff schedules:", err);
       setError(err.message || "Failed to load staff schedules.");
@@ -97,6 +100,25 @@ export function useSchedules() {
     return map;
   }, [schedulesList, staffList]);
 
+  const breaksMatrix = useMemo(() => {
+    const map = new Map();
+    breaksList.forEach((b) => {
+      const artistId = b.nailArtistId;
+      const dateKey = dayjs(b.breakDate).format("YYYY-MM-DD");
+      const matchingStaff = staffList.find(
+        (st) =>
+          st.id === artistId ||
+          st.nailArtistId === artistId ||
+          st.accountId === artistId
+      );
+      const targetId = matchingStaff ? matchingStaff.id : artistId;
+      const key = `${targetId}_${dateKey}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(b);
+    });
+    return map;
+  }, [breaksList, staffList]);
+
   const totalWeeklyHours = useMemo(() => {
     return schedulesList.reduce((acc, s) => acc + calculateShiftHours(s.shiftStart, s.shiftEnd), 0);
   }, [schedulesList]);
@@ -112,6 +134,7 @@ export function useSchedules() {
     staffList,
     schedulesList,
     scheduleMatrix,
+    breaksMatrix,
     isLoading,
     error,
     loadData,

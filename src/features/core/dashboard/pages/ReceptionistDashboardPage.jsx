@@ -192,7 +192,7 @@ function MetricCard({ item }) {
   const color = item.color || '#10b981';
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div
         className="absolute inset-0 opacity-[0.06]"
         style={{
@@ -274,15 +274,15 @@ function QueueDetailArtistName({ artistId, initialName }) {
     queryFn: () => fetchNailArtistById(artistId),
     enabled: !!artistId,
   });
-  
+
   if (isLoading) return <span className="opacity-50">...</span>;
-  
+
   if (artistProfile) {
-     return artistProfile.account 
-       ? `${artistProfile.account.firstName || ""} ${artistProfile.account.lastName || ""}`.trim()
-       : (artistProfile.firstName ? `${artistProfile.firstName} ${artistProfile.lastName}`.trim() : (artistProfile.name || initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned")));
+    return artistProfile.account
+      ? `${artistProfile.account.firstName || ""} ${artistProfile.account.lastName || ""}`.trim()
+      : (artistProfile.firstName ? `${artistProfile.firstName} ${artistProfile.lastName}`.trim() : (artistProfile.name || initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned")));
   }
-  
+
   return initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned");
 }
 
@@ -1417,7 +1417,7 @@ export function ReceptionistDashboardPage() {
                         <span
                           className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeTone}`}
                         >
-                          {status}
+                          {isOffToday ? (language === "vi" ? "Nghỉ hôm nay" : "Off Today") : (language === "vi" ? "Sẵn sàng" : "Available")}
                         </span>
                       </div>
                     ))
@@ -1665,9 +1665,9 @@ export function ReceptionistDashboardPage() {
               <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Thợ Phân Công" : "Assigned Staff Artist"}</span>
               <span className="text-sm font-bold text-purple-600">
                 {selectedQueueItem.assignedNailArtistId ? (
-                   <QueueDetailArtistName artistId={selectedQueueItem.assignedNailArtistId} initialName={selectedQueueItem.assignedNailArtistName} />
+                  <QueueDetailArtistName artistId={selectedQueueItem.assignedNailArtistId} initialName={selectedQueueItem.assignedNailArtistName} />
                 ) : (
-                   selectedQueueItem.assignedNailArtistName || (language === "vi" ? "Chưa phân công" : "Not Assigned")
+                  selectedQueueItem.assignedNailArtistName || (language === "vi" ? "Chưa phân công" : "Not Assigned")
                 )}
               </span>
             </div>

@@ -187,14 +187,26 @@ export async function fetchAdminSalons({
       data.items.map(async (salon) => {
         const normalizedSalon = normalizeAdminSalon(salon);
 
-        const [artist, receptionist] = await Promise.all([
-          fetchSalonStaffCount(normalizedSalon.salonId, "Staff_Artist"),
-          fetchSalonStaffCount(normalizedSalon.salonId, "Receptionist"),
+        const [allStaff, managers] = await Promise.all([
+          fetchSalonStaffSummary(normalizedSalon.salonId),
+          fetchSalonStaffSummary(normalizedSalon.salonId, "Manager")
         ]);
+
+        const totalCount = allStaff.count;
+        const managerCount = managers.count;
+        const staffCount = totalCount - managerCount; // Receptionist + Nail Artist
+        
+        let managerName = "Unassigned";
+        if (managerCount > 0 && managers.firstItem) {
+          const m = managers.firstItem;
+          managerName = `${m.lastName || ''} ${m.firstName || ''}`.trim() || "Manager";
+        }
 
         return {
           ...normalizedSalon,
-          staffCount: artist + receptionist,
+          manager: managerName,
+          staffCount: staffCount,
+          managerCount: managerCount
         };
       })
     )
@@ -225,7 +237,7 @@ export async function fetchSalonStaffCount(salonId, role) {
         params: {
           role,
           pageNumber: 1,
-          pageSize: 1,
+          pageSize: 10,
         },
       }
     );
@@ -234,6 +246,32 @@ export async function fetchSalonStaffCount(salonId, role) {
   } catch (error) {
     console.warn(`Failed to fetch staff count for salon ${salonId} role ${role}:`, error?.message);
     return 0;
+  }
+}
+
+export async function fetchSalonStaffSummary(salonId, role) {
+  try {
+    const params = {
+      pageNumber: 1,
+      pageSize: 1,
+    };
+    if (role) params.role = role;
+
+    const response = await axiosClient.get(
+      `/Users/salon/${salonId}/staff`,
+      {
+        headers: getAuthHeaders(),
+        params,
+      }
+    );
+
+    return {
+      count: response?.data?.data?.metaData?.totalItems || 0,
+      firstItem: response?.data?.data?.items?.[0] || null
+    };
+  } catch (error) {
+    console.warn(`Failed to fetch staff summary for salon ${salonId} role ${role}:`, error?.message);
+    return { count: 0, firstItem: null };
   }
 }
 

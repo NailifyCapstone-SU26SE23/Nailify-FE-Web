@@ -28,12 +28,9 @@ import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { ROLES } from "../../../../shared/constants/roles";
-import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   fetchBookingById,
-  fetchUserById,
-  managerSuggestTime,
   managerApproveReschedule,
   managerRejectReschedule,
   fetchCustomerProfileById,
@@ -47,39 +44,9 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
 import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
-import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
-
-
-const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
-const SCHEDULE_SCROLL_SENSITIVITY = 0.5;
-
-const VIETNAM_BANKS = [
-  { code: "VCB", name: "Vietcombank" },
-  { code: "TCB", name: "Techcombank" },
-  { code: "BIDV", name: "BIDV" },
-  { code: "CTG", name: "VietinBank" },
-  { code: "MB", name: "MBBank" },
-  { code: "VPB", name: "VPBank" },
-  { code: "ACB", name: "ACB" },
-  { code: "TPB", name: "TPBank" },
-  { code: "VIB", name: "VIB" },
-  { code: "HDB", name: "HDBank" },
-  { code: "STB", name: "Sacombank" },
-  { code: "SHB", name: "SHB" },
-  { code: "EIB", name: "Eximbank" },
-  { code: "MSB", name: "MSB" },
-  { code: "OCB", name: "OCB" },
-  { code: "LPB", name: "LienVietPostBank" },
-  { code: "BAB", name: "Bac A Bank" },
-  { code: "ABB", name: "ABBank" },
-  { code: "VAB", name: "VietABank" },
-  { code: "NAB", name: "Nam A Bank" },
-  { code: "KLB", name: "Kienlongbank" },
-  { code: "AGRIBANK", name: "Agribank" }
-];
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
@@ -385,33 +352,47 @@ export function ManagerBookingDetailPage() {
   const [isRefunding, setIsRefunding] = useState(false);
   const [refundForm, setRefundForm] = useState({ bankCode: "", accountNumber: "", accountName: "" });
 
+  // Just opens the confirmation — no API call
+  const handleRefundClick = () => {
+    if (isRefunding) return;
+    setIsRefundConfirmOpen(true);
+  };
+
+  // The real work — only fires after user confirms in the modal
   const handleRefundSubmit = async () => {
-    if (!refundForm.bankCode || !refundForm.accountNumber || !refundForm.accountName) {
-      toast.error(language === "vi" ? "Vui lòng nhập đầy đủ thông tin ngân hàng" : "Please fill in all bank details");
+    if (!normalizedBookingId) {
+      toast.error(language === "vi" ? "Thiếu mã đặt lịch" : "Missing booking ID");
       return;
     }
 
     setIsRefunding(true);
+    const toastId = toast.loading(
+      language === "vi" ? "Đang xử lý hoàn tiền..." : "Processing refund..."
+    );
+
     try {
-      const refundPayload = {
-        bankCode: refundForm.bankCode,
-        accountNumber: refundForm.accountNumber,
-        accountName: refundForm.accountName
-      };
+      await processRefund(normalizedBookingId);
 
-      await processRefund(normalizedBookingId, refundPayload);
-
-      // Check Status
-      const depositTx = transactions && transactions.length > 0 ? transactions[0] : null;
-      if (depositTx && depositTx.orderCode) {
+      const depositTx = transactions?.[0] ?? null;
+      if (depositTx?.orderCode) {
         await checkPaymentStatus(depositTx.orderCode);
       }
 
-      toast.success(language === "vi" ? "Đã gửi yêu cầu hoàn tiền thành công!" : "Refund processed successfully!");
-      setIsRefundBankModalOpen(false);
-      loadBooking({ silent: true });
+      toast.success(
+        language === "vi" ? "Đã gửi yêu cầu hoàn tiền thành công!" : "Refund processed successfully!",
+        { id: toastId }
+      );
+
+      setIsRefundConfirmOpen(false);
+      await loadBooking({ silent: true });
     } catch (err) {
-      toast.error(err.message || (language === "vi" ? "Lỗi khi xử lý hoàn tiền" : "Failed to process refund"));
+      console.error("Refund failed:", err);
+      toast.error(
+        err?.message ||
+        (language === "vi" ? "Lỗi khi xử lý hoàn tiền" : "Failed to process refund"),
+        { id: toastId }
+      );
+      // keep modal open so user can retry
     } finally {
       setIsRefunding(false);
     }
@@ -430,11 +411,8 @@ export function ManagerBookingDetailPage() {
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false);
   const [bookingNotesText, setBookingNotesText] = useState("");
 
-  // On-site Add-on & Interleaving State (BR-01 & BR-03)
-  const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
-  const [interleavingData, setInterleavingData] = useState(null);
-  const [evaluatingInterleaving, setEvaluatingInterleaving] = useState(false);
-  const [assigningPrep, setAssigningPrep] = useState(false);
+  const [isRefundConfirmOpen, setIsRefundConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const customerTier = useMemo(() => {
     if (!customer || !loyaltyTiers || loyaltyTiers.length === 0 || customer.lifetimePoints === undefined) return null;
@@ -648,9 +626,7 @@ export function ManagerBookingDetailPage() {
   const isFinalStatus =
     normalizedStatus.includes("cancel") ||
     normalizedStatus.includes("reject") ||
-    normalizedStatus.includes("complete") ||
-    normalizedStatus.includes("confirmed") ||
-    normalizedStatus.includes("approved");
+    normalizedStatus.includes("complete");
 
 
   return (
@@ -681,51 +657,41 @@ export function ManagerBookingDetailPage() {
                 <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
                   {t("manager.bookings.bookingDetails")}
                 </h1>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[#E5C687]/80 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3.5 py-1 text-xs font-bold text-[#9E731A] shadow-2xs">
-                  #{String(booking?.bookingId || bookingId).slice(0, 8).toUpperCase()}
-                </span>
+
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
                 </span>
-
-                {/* Warning for unrefunded cancelled bookings */}
-                {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-3.5 py-1 text-xs font-bold text-[#E11D48] shadow-2xs">
-                    {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
-                  </span>
-                )}
               </div>
-              <p className="mt-1.5 text-xs text-[#9E8497] font-medium max-w-xl">
-                {t("manager.bookings.desc")}
-              </p>
             </div>
 
             {/* Header Action Buttons Bar */}
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                type="button"
-                onClick={() => setIsEditNotesModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-[#F3D7E4] bg-white px-4 py-2.5 text-xs font-bold text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF5FA] transition-all shadow-xs"
-              >
-                <Edit3 size={15} className="text-[#E84F93]" />
-                <span>{t("manager.common.edit")}</span>
-              </motion.button> */}
-
               {/* Refund Button */}
               {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
                 <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={!isRefunding ? { scale: 1.03 } : {}}
+                  whileTap={!isRefunding ? { scale: 0.97 } : {}}
                   type="button"
-                  onClick={() => setIsRefundBankModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#E11D48] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#BE123C] hover:shadow-lg transition-all"
+                  onClick={handleRefundClick}
+                  disabled={isRefunding}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#FECDD3] bg-[#E11D48] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#BE123C] hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#E11D48]"
                 >
-                  <Banknote size={15} />
-                  <span>{language === "vi" ? "Nhập TK Hoàn tiền" : "Refund Bank Info"}</span>
+                  {isRefunding ? (
+                    <>
+                      <Spin size="small" className="text-white" />
+                      <span>{language === "vi" ? "Đang xử lý..." : "Processing..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Banknote size={15} />
+                      <span>
+                        {language === "vi" ? "Hoàn tiền về Ví khách hàng" : "Refund to Customer Wallet"}
+                      </span>
+                    </>
+                  )}
                 </motion.button>
+
               )}
 
               {/* Propose Reschedule Button */}
@@ -1187,9 +1153,6 @@ export function ManagerBookingDetailPage() {
                       const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
                       const txLabel = isDeposit ? (language === "vi" ? "Tiền cọc" : "Deposit") : (language === "vi" ? "Tiền trả còn lại" : "Remaining Balance");
 
-                      const actualTotal = booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice;
-                      const percentage = actualTotal > 0 ? Math.round((tx.amount / actualTotal) * 100) : 0;
-
                       return (
                         <div
                           key={tx.transactionId}
@@ -1200,11 +1163,7 @@ export function ManagerBookingDetailPage() {
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
-                                {percentage > 0 && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-[#FFF0F5] text-[#E84F93] text-[9px] font-bold tracking-wider border border-[#F3D6E5]/60">
-                                    {percentage}%
-                                  </span>
-                                )}
+                               
                               </div>
                               <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                             </div>
@@ -1406,7 +1365,40 @@ export function ManagerBookingDetailPage() {
           )}
         </div>
       </Modal>
-
+      <ActionConfirmModal
+        open={isRefundConfirmOpen}
+        intent="danger"
+        title={language === "vi" ? "Xác nhận hoàn tiền" : "Confirm Refund"}
+        subtitle={
+          language === "vi"
+            ? "Hành động này sẽ hoàn tiền về ví khách hàng"
+            : "This will refund the amount to the customer's wallet"
+        }
+        description={
+          language === "vi"
+            ? "Số tiền sẽ được chuyển ngay vào ví khách hàng. Hành động này không thể hoàn tác."
+            : "The amount will be credited to the customer's wallet immediately. This action cannot be undone."
+        }
+        confirmText={language === "vi" ? "Xác nhận hoàn tiền" : "Confirm Refund"}
+        cancelText={language === "vi" ? "Giữ nguyên" : "Keep As Is"}
+        confirmIcon={Banknote}
+        loading={isRefunding}
+        onConfirm={handleRefundSubmit}
+        onCancel={() => !isRefunding && setIsRefundConfirmOpen(false)}
+        item={{
+          title: booking?.customerName || "Customer",
+          meta: `${booking?.date ?? ""} · ${booking?.time ?? ""}`.trim(),
+          note: `Booking ID: ${normalizedBookingId}`,
+        }}
+        warnings={[
+          language === "vi"
+            ? "Hoàn tiền là hành động không thể hoàn tác."
+            : "Refunds are irreversible.",
+          language === "vi"
+            ? "Khách hàng sẽ nhận được thông báo qua email/ứng dụng."
+            : "The customer will be notified via email/app.",
+        ]}
+      />
       {/* Action Modals */}
       <ConfirmBookingModal
         open={isConfirmModalOpen}
@@ -1448,34 +1440,6 @@ export function ManagerBookingDetailPage() {
           onSuccess={() => loadBooking({ silent: true })}
         />
       )}
-
-      {/* Refund Warning Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2 text-[#E11D48]">
-            <AlertTriangle size={20} />
-            <span>{language === "vi" ? "Cần hoàn tiền" : "Refund Required"}</span>
-          </div>
-        }
-        open={isRefundWarningOpen}
-        onCancel={() => setIsRefundWarningOpen(false)}
-        footer={
-          <button
-            type="button"
-            onClick={() => setIsRefundWarningOpen(false)}
-            className="px-4 py-2 bg-[#E84F93] hover:bg-[#D43F7D] text-white rounded-xl font-bold transition-colors"
-          >
-            {language === "vi" ? "Đã hiểu" : "Got it"}
-          </button>
-        }
-        centered
-      >
-        <p className="text-[#4B5563]">
-          {language === "vi"
-            ? "Đơn đặt lịch này đã bị hủy nhưng chưa hoàn tiền cho khách. Vui lòng tiến hành hoàn tiền!"
-            : "This booking was cancelled but the customer hasn't been refunded yet. Please process the refund!"}
-        </p>
-      </Modal>
 
       {/* Transaction Details Modal */}
       <Modal
@@ -1564,102 +1528,6 @@ export function ManagerBookingDetailPage() {
           </div>
         </div>
       </Modal>
-
-      {/* Refund Bank Info Modal */}
-      <Modal
-        open={isRefundBankModalOpen}
-        onCancel={() => setIsRefundBankModalOpen(false)}
-        footer={null}
-        closable={false}
-        centered
-        width={400}
-        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
-      >
-        <div className="bg-white p-6 font-sans">
-          <div className="flex items-center justify-between mb-4 border-b border-[#F3E2EC] pb-3">
-            <h3 className="text-base font-bold text-[#E11D48] flex items-center gap-2">
-              <Banknote size={18} /> {language === "vi" ? "Thông tin TK Hoàn tiền" : "Refund Bank Details"}
-            </h3>
-            <button type="button" onClick={() => setIsRefundBankModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
-              <X size={18} />
-            </button>
-          </div>
-          <div className="space-y-4">
-            <p className="text-xs text-[#9E8497] leading-relaxed">
-              {language === "vi" ? "Khách hàng đã thanh toán cọc nhưng lịch hẹn đã bị hủy. Vui lòng nhập tài khoản ngân hàng của khách để tiến hành hoàn tiền." : "Customer has paid a deposit but the booking was cancelled. Please enter their bank account details to process the refund."}
-            </p>
-
-            <div>
-              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Ngân hàng" : "Bank"}</label>
-              <Select
-                showSearch
-                value={refundForm.bankCode || undefined}
-                placeholder={language === "vi" ? "Chọn ngân hàng..." : "Select bank..."}
-                optionFilterProp="children"
-                onChange={(value) => setRefundForm({ ...refundForm, bankCode: value })}
-                options={VIETNAM_BANKS.map(bank => ({
-                  value: bank.code,
-                  label: (
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-6 flex items-center justify-center bg-white rounded border border-[#F3E2EC] p-0.5 overflow-hidden">
-                        <img
-                          src={`https://api.vietqr.io/img/${bank.code}.png`}
-                          alt={bank.code}
-                          className="max-w-full max-h-full object-contain"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold text-[#2B182B]">{bank.code} - {bank.name}</span>
-                    </div>
-                  ),
-                  searchtext: `${bank.code} ${bank.name}`.toLowerCase()
-                }))}
-                filterOption={(input, option) => option?.searchtext?.includes(input.toLowerCase())}
-                className="w-full h-10"
-                style={{ borderRadius: 12 }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Số tài khoản" : "Account Number"}</label>
-              <Input
-                value={refundForm.accountNumber}
-                onChange={(e) => setRefundForm({ ...refundForm, accountNumber: e.target.value })}
-                placeholder="Nhập số tài khoản..."
-                className="rounded-xl border-[#F3D7E4] focus:border-[#E84F93]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-[#2B182B] mb-1.5">{language === "vi" ? "Tên chủ tài khoản" : "Account Holder Name"}</label>
-              <Input
-                value={refundForm.accountName}
-                onChange={(e) => setRefundForm({ ...refundForm, accountName: e.target.value.toUpperCase() })}
-                placeholder="VD: NGUYEN VAN A"
-                className="rounded-xl border-[#F3D7E4] focus:border-[#E84F93]"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsRefundBankModalOpen(false)}
-                className="rounded-xl border border-[#F3D7E4] px-4 py-2 text-xs font-bold text-[#2B182B] hover:bg-[#FAF0F5]"
-              >
-                {language === "vi" ? "Hủy" : "Cancel"}
-              </button>
-              <button
-                type="button"
-                onClick={handleRefundSubmit}
-                disabled={isRefunding}
-                className="rounded-xl bg-gradient-to-r from-[#E11D48] to-[#BE123C] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {isRefunding ? <Spin size="small" className="text-white" /> : <Check size={14} />}
-                {language === "vi" ? "Xác nhận & Hoàn tiền" : "Submit Refund"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
     </motion.section>
   );
 }

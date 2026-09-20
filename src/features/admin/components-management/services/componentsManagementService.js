@@ -62,6 +62,7 @@ export function normalizeAdminComponent(component) {
     componentType: String(component?.componentType || "").trim(),
     price: Number(component?.price || 0),
     duration: Number(component?.duration || 0),
+    status: String(component?.status || "").trim(),
     priceLabel: formatComponentCurrency(component?.price || 0),
     durationLabel: formatComponentDuration(component?.duration || 0),
     initials: String(component?.name || "")

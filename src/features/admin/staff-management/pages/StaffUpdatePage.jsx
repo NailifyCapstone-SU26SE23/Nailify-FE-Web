@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { Select } from "antd";
+import { Select, Rate } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
@@ -28,6 +28,7 @@ import {
 import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { updateUser } from "../services/staffManagementService";
+import { fetchSkillTypes, fetchNailArtistSkills, assignNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const inputWrapperClassName =
@@ -90,6 +91,8 @@ export function StaffUpdatePage() {
   const [saveResult, setSaveResult] = useState(null);
   const [formData, setFormData] = useState(createEmptyStaffForm);
   const [salons, setSalons] = useState([]);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [selectedSkills, setSelectedSkills] = useState({});
   const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
@@ -135,9 +138,10 @@ export function StaffUpdatePage() {
       setIsNotFound(false);
 
       try {
-        const [userData, salonsData] = await Promise.all([
+        const [userData, salonsData, skillsData] = await Promise.all([
           fetchUserById(staffId),
           fetchAdminSalons({ pageSize: 100 }),
+          fetchSkillTypes({ pageSize: 100 }).catch(() => ({ items: [] }))
         ]);
 
         if (!isMounted) {
@@ -145,6 +149,7 @@ export function StaffUpdatePage() {
         }
 
         setSalons(salonsData.items || []);
+        setSkillTypes(skillsData?.items || []);
 
         const matchingSalon = salonsData?.items?.find(
           (salon) => salon.salonId === userData.salonId || salon.id === userData.salonId
@@ -183,6 +188,22 @@ export function StaffUpdatePage() {
         }
 
         setFormData(staffForm);
+
+        if (staffForm.role === "Staff_Artist" && nailArtistId) {
+          try {
+            const existingSkills = await fetchNailArtistSkills(nailArtistId);
+            const skillsMap = {};
+            existingSkills.forEach(s => {
+              if (s.skillTypeId) {
+                skillsMap[s.skillTypeId] = s.level;
+              }
+            });
+            setSelectedSkills(skillsMap);
+          } catch (err) {
+            console.error("Failed to fetch artist skills:", err);
+          }
+        }
+
         setIsLoading(false);
       } catch (error) {
         console.error("StaffUpdatePage load error:", error);
@@ -292,6 +313,20 @@ export function StaffUpdatePage() {
       console.log("Updating user with data:", userUpdateData);
       await updateUser(formData.userId, userUpdateData);
 
+      if (formData.role === "Staff_Artist" && formData.staffId) {
+        const skillsPayload = Object.entries(selectedSkills)
+          .map(([skillTypeId, level]) => ({ skillTypeId, level: level || 0 }));
+        
+        if (skillsPayload.length > 0) {
+          try {
+            await assignNailArtistSkills(formData.staffId, skillsPayload);
+            console.log("Assigned/Updated skills successfully.");
+          } catch (err) {
+            console.error("Failed to assign/update skills:", err);
+          }
+        }
+      }
+
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
@@ -319,6 +354,7 @@ export function StaffUpdatePage() {
     navigate(ROUTES.adminStaff, {
       state: {
         flashMessage: saveResult?.message,
+        selectedSalonId: formData.salonId || salons[0]?.id,
       },
     });
   }, [navigate, saveResult?.message]);
@@ -329,7 +365,11 @@ export function StaffUpdatePage() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(ROUTES.adminStaff);
+    navigate(ROUTES.adminStaff, {
+      state: {
+        selectedSalonId: formData.salonId,
+      },
+    });
   };
 
   if (isNotFound) {
@@ -396,13 +436,13 @@ export function StaffUpdatePage() {
                 },
                 {
                   label: t("adminStaffManagement.role"),
-                  value: formData.role ? formData.role.replace(/_/g, ' ') : "-",
+                  value: formData.role ? (language === "vi" ? { "Staff_Artist": "Nhân viên làm móng", "Manager": "Quản lý", "Receptionist": "Lễ tân" }[formData.role] || formData.role : formData.role.replace(/_/g, ' ')) : "-",
                   icon: ShieldCheck,
                   color: "#8b5cf6"
                 },
                 {
                   label: t("adminStaffManagement.status"),
-                  value: formData.status || "-",
+                  value: formData.status ? (language === "vi" ? { "Active": "Hoạt động", "Inactive": "Ngừng hoạt động" }[formData.status] || formData.status : formData.status) : "-",
                   icon: Sparkles,
                   color: "#10b981"
                 }
@@ -478,11 +518,9 @@ export function StaffUpdatePage() {
                       value={formData.role}
                       onChange={(value) => handleInputChange("role", value)}
                       options={[
-                        { value: "--", label: "--" },
-                        { value: "Admin", label: "Admin" },
-                        { value: "Manager", label: "Manager" },
-                        { value: "Receptionist", label: "Receptionist" },
-                        { value: "Staff_Artist", label: "Staff Artist" },
+                        { value: "Manager", label: t("adminStaffManagement.manager") || (language === "vi" ? "Quản lý" : "Manager") },
+                        { value: "Receptionist", label: t("adminStaffManagement.receptionist") || (language === "vi" ? "Lễ tân" : "Receptionist") },
+                        { value: "Staff_Artist", label: t("adminStaffManagement.staffArtist") || (language === "vi" ? "Nhân viên làm móng" : "Staff Artist") },
                       ]}
                       className="w-full"
                       size="large"
@@ -517,8 +555,8 @@ export function StaffUpdatePage() {
                       value={formData.status}
                       onChange={(value) => handleInputChange("status", value)}
                       options={[
-                        { value: "Active", label: "Active" },
-                        { value: "Inactive", label: "Inactive" },
+                        { value: "Active", label: language === "vi" ? "Hoạt động" : "Active" },
+                        { value: "Inactive", label: language === "vi" ? "Ngừng hoạt động" : "Inactive" },
                       ]}
                       className="w-full"
                       size="large"
@@ -566,6 +604,50 @@ export function StaffUpdatePage() {
                   </div>
                 </div>
               </section>
+
+              {formData.role === "Staff_Artist" && (
+                <section className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50 mt-5">
+                  <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
+                    <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
+                    {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
+                  </h2>
+                  
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {skillTypes.map((skill) => (
+                      <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[14px] font-bold text-slate-700">
+                            {skill.name}
+                          </span>
+                          {selectedSkills[skill.skillTypeId || skill.id] > 0 && (
+                            <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+                              Level {selectedSkills[skill.skillTypeId || skill.id]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center">
+                          <Rate
+                            value={selectedSkills[skill.skillTypeId || skill.id] || 0}
+                            onChange={(value) => {
+                              setSelectedSkills(prev => ({
+                                ...prev,
+                                [skill.skillTypeId || skill.id]: value
+                              }));
+                            }}
+                            className="text-rose-400"
+                            allowClear
+                          />
+                        </div>
+                        {skill.description && (
+                          <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 font-medium">
+                            {skill.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
             <aside className="space-y-5">
@@ -599,7 +681,7 @@ export function StaffUpdatePage() {
                     {formData.fullName || (t("adminStaffManagement.staffMember"))}
                   </h4>
                   <p className="text-[10px] font-semibold text-slate-400">
-                    {formData.role ? formData.role.replace(/_/g, ' ') : (t("adminStaffManagement.role"))}
+                    {formData.role ? (language === "vi" ? { "Staff_Artist": "Nhân viên làm móng", "Manager": "Quản lý", "Receptionist": "Lễ tân" }[formData.role] || formData.role : formData.role.replace(/_/g, ' ')) : (t("adminStaffManagement.role"))}
                   </p>
                   <p className="mt-4 text-[11px] font-medium text-slate-400">
                     {t("adminStaffManagement.assignedSalon") + ":"}{" "}
@@ -677,6 +759,7 @@ export function StaffUpdatePage() {
         failureDescription={language === "vi" ? "Không thể cập nhật hồ sơ nhân viên." : "Unable to update the staff member."}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến danh sách nhân viên..." : "Redirecting to staff list..."}
       />
     </section>
   );

@@ -111,3 +111,21 @@ export async function deleteSchedule(scheduleId) {
   });
   return unwrapResponse(response, "Failed to delete schedule.");
 }
+
+export async function fetchNailArtistBreaks(params = {}) {
+  const { pageNumber = 1, pageSize = 1000, artistId, date, status, salonId } = params;
+  const normalizedSalonId = String(salonId || getSalonId() || "").trim();
+
+  const response = await axiosClient.get("/NailArtistBreaks", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      salonId: normalizedSalonId || undefined,
+      artistId,
+      date,
+      status,
+    },
+  });
+  return unwrapResponse(response, "Failed to load nail artist breaks.");
+}

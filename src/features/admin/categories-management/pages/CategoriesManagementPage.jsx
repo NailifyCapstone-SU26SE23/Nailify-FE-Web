@@ -12,7 +12,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
@@ -28,10 +28,8 @@ import {
 } from "../services/categoriesManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
-
-
 function CategoryStatusBadge({ status }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const normalizedStatus = String(status || "").toLowerCase();
   const isStatusActive = normalizedStatus === "active";
   const className = isStatusActive
@@ -73,15 +71,7 @@ export function CategoriesManagementPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
 
-  useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
-
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -336,16 +326,6 @@ export function CategoriesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-        {flashMessage ? (
-          <div className="rounded-[16px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">{error}</div>
-        ) : null}
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>

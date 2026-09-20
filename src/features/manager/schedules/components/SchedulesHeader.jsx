@@ -52,7 +52,7 @@ export function SchedulesHeader({
       <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
         <Col>
           <Space align="start" size="middle">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E84F93] to-[#F43F5E] text-white shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#E84F93] to-[#F43F5E] text-white shadow-md">
               <Calendar size={24} />
             </div>
             <div>

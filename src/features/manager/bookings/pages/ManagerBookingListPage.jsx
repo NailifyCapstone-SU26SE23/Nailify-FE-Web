@@ -1076,11 +1076,6 @@ export function ManagerBookingListPage() {
       render: (_, row) => (
         <div className="flex flex-col items-start gap-1">
           <StatusPill status={row.status} />
-          {(row.status === "Rejected" || row.status === "Cancelled" || row.status === "Canceled") && row.amountPaid > 0 && !row.isRefunded && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#FECDD3] bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-bold text-[#E11D48] shadow-2xs whitespace-nowrap">
-              {language === "vi" ? "CHƯA HOÀN TIỀN" : "NOT REFUNDED"}
-            </span>
-          )}
         </div>
       ),
     },
@@ -1202,7 +1197,7 @@ export function ManagerBookingListPage() {
             <div className="max-w-2xl">
               <div className="flex items-center gap-4">
                 <motion.div
-                  className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
                   whileHover={{ scale: 1.06, rotate: 3 }}
                   transition={{ type: "spring", stiffness: 400, damping: 12 }}
                 >
@@ -1471,7 +1466,7 @@ export function ManagerBookingListPage() {
                       <SkeletonLoader />
                     ) : filteredAppointments.length === 0 ? (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
                           <Search size={28} />
                         </div>
                         <p className="text-base font-bold text-[#2B182B]">{t("manager.bookings.noBookings") || "No bookings found"}</p>

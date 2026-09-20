@@ -1,20 +1,29 @@
-import { X, XCircle, Clock, User, DollarSign, AlertTriangle } from "lucide-react";
+import { X, XCircle, Clock, User, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { Modal, Spin, Input, Checkbox, Select } from "antd";
 import toast from "react-hot-toast";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { rejectBooking } from "../services/bookingsService";
-import { motion } from "framer-motion";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
-const REJECT_REASONS = [
-  { label: "Customer not responding to calls/messages", value: "no_response" },
-  { label: "Invalid or incomplete booking details", value: "invalid_details" },
-  { label: "Requested service currently unavailable", value: "service_unavailable" },
-  { label: "Deposit or payment verification issue", value: "payment_issue" },
-  { label: "Policy violation or suspicious activity", value: "suspicious" },
-  { label: "Other reason", value: "other" },
-];
+const REJECT_REASONS = {
+  en: [
+    { label: "Customer not responding to calls/messages", value: "no_response" },
+    { label: "Invalid or incomplete booking details", value: "invalid_details" },
+    { label: "Requested service currently unavailable", value: "service_unavailable" },
+    { label: "Deposit or payment verification issue", value: "payment_issue" },
+    { label: "Policy violation or suspicious activity", value: "suspicious" },
+    { label: "Other reason", value: "other" },
+  ],
+  vi: [
+    { label: "Khách hàng không phản hồi cuộc gọi/tin nhắn", value: "no_response" },
+    { label: "Thông tin đặt lịch không hợp lệ hoặc chưa đầy đủ", value: "invalid_details" },
+    { label: "Dịch vụ yêu cầu hiện không khả dụng", value: "service_unavailable" },
+    { label: "Vấn đề xác minh tiền cọc hoặc thanh toán", value: "payment_issue" },
+    { label: "Vi phạm chính sách hoặc hoạt động đáng ngờ", value: "suspicious" },
+    { label: "Lý do khác", value: "other" },
+  ],
+};
 
 export function RejectBookingModal({
   open,
@@ -67,6 +76,10 @@ export function RejectBookingModal({
     setIsConfirmed(false);
   };
 
+  function formatPriceVND(value) {
+    return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+  }
+
   return (
     <Modal
       open={open}
@@ -74,20 +87,15 @@ export function RejectBookingModal({
       footer={null}
       centered
       destroyOnClose
-      width={500}
+      width={820}
       styles={{
-        content: { padding: 0, borderRadius: 28, overflow: "hidden", border: "none" },
+        content: { overflow: "hidden", border: "none" },
         mask: { backdropFilter: "blur(6px)", backgroundColor: "rgba(64, 37, 66, 0.4)" },
       }}
     >
       {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#e1447f] to-[#b32b5d] px-6 pt-8 pb-10 text-white font-sans">
-        <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-white/10 blur-xl"></div>
-        <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-black/10 blur-lg"></div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#e1447f] to-[#b32b5d] px-6 pt-4 pb-4 text-white font-sans">
         <div className="relative flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white shadow-inner">
-            <XCircle size={26} className="drop-shadow-md animate-pulse" />
-          </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight">{language === "vi" ? "Từ chối yêu cầu đặt lịch" : "Reject Booking"}</h2>
             <p className="mt-1 text-xs text-rose-100/90 font-medium">{language === "vi" ? "Hành động này sẽ từ chối yêu cầu đặt lịch của khách hàng" : "This action will reject the customer's appointment request"}</p>
@@ -96,94 +104,106 @@ export function RejectBookingModal({
       </div>
 
       {/* Body */}
-      <div className="-mt-6 rounded-t-[28px] bg-white px-6 pt-8 pb-6 space-y-5 relative z-10 font-sans">
-        {/* Alert Banner */}
-        <div className="flex gap-3 rounded-2xl border border-[#ffd4e5] bg-[#fffafc] p-4 shadow-[0_2px_8px_rgba(225,68,127,0.03)]">
-          <AlertTriangle size={18} className="shrink-0 text-[#e1447f] mt-0.5" />
-          <div>
-            <p className="text-xs font-bold text-[#7c2847]">{language === "vi" ? "Cảnh báo hành động" : "Action Warning"}</p>
-            <p className="mt-1 text-xs text-[#a34468] leading-relaxed font-medium">
-              {language === "vi" ? "Hành động này sẽ từ chối yêu cầu đặt lịch của khách hàng" : "Rejecting an appointment request cannot be undone. An email/push notification will be sent to the customer immediately."}
-            </p>
-          </div>
-        </div>
+      <div className="bg-white px-6 pt-6 space-y-5 relative z-10 font-sans">
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-stretch">
+          {/* LEFT — Booking Details */}
+          <div className="flex flex-col space-y-3 rounded-2xl border border-[#ffd4e5]/60 bg-gradient-to-b from-[#fffcfd] to-[#fff5f8] p-4 shadow-[0_4px_16px_rgba(225,68,127,0.02)]">
+            {Object.keys(booking).length > 0 ? (
+              <div className="flex flex-1 flex-col justify-between gap-4">
+                {/* Customer */}
+                {booking.customerName && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+                      {language === "vi" ? "Khách hàng" : "Customer"}
+                    </label>
+                    <div className="flex h-10 items-center gap-2 rounded-xl border border-[#f0d9e8] bg-white px-3 text-xs">
+                      <User size={14} className="shrink-0 text-[#e1447f]" />
+                      <span className="font-semibold text-[#402542]">{booking.customerName}</span>
+                    </div>
+                  </div>
+                )}
 
-        {/* Booking Details */}
-        {Object.keys(booking).length > 0 && (
-          <div className="space-y-3 rounded-2xl border border-[#ffd4e5]/60 bg-gradient-to-b from-[#fffcfd] to-[#fff5f8] p-4 shadow-[0_4px_16px_rgba(225,68,127,0.02)]">
-            <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#e1447f]/80">
-              Booking Details
-            </h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-1">
-              {booking.customerName && (
-                <div className="flex items-center gap-2.5 text-xs">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#ffe5ee] text-[#e1447f] shadow-sm">
-                    <User size={14} />
+                {/* Time Slot */}
+                {booking.date && booking.time && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+                      {language === "vi" ? "Thời gian đặt lịch" : "Time Slot"}
+                    </label>
+                    <div className="flex h-10 items-center gap-2 rounded-xl border border-[#f0d9e8] bg-white px-3 text-xs">
+                      <Clock size={14} className="shrink-0 text-[#e1447f]" />
+                      <span className="font-semibold text-[#402542]">
+                        {booking.time} ({booking.date})
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Khách hàng" : "Customer"}</p>
-                    <p className="font-bold text-[#402542] text-[13px]">{booking.customerName}</p>
+                )}
+
+                {/* Total Value */}
+                {booking.totalPrice && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+                      {language === "vi" ? "Tổng giá trị" : "Total Value"}
+                    </label>
+                    <div className="flex h-10 items-center rounded-xl border border-[#f0d9e8] bg-white px-3 text-xs">
+                      <span className="text-base font-bold text-[#e1447f]">{formatPriceVND(booking.totalPrice)}</span>
+                    </div>
                   </div>
-                </div>
-              )}
-              {booking.date && booking.time && (
-                <div className="flex items-center gap-2.5 text-xs">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#ffe5ee] text-[#e1447f] shadow-sm">
-                    <Clock size={14} />
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-[#8e7b89] font-semibold uppercase tracking-wider">{language === "vi" ? "Thời gian đặt lịch" : "Time Slot"}</p>
-                    <p className="font-bold text-[#402542] text-[13px]">{booking.time} ({booking.date})</p>
-                  </div>
-                </div>
-              )}
-              {booking.totalPrice && (
-                <div className="col-span-2 flex items-center justify-between border-t border-[#ffd4e5]/30 pt-2 mt-1 text-xs">
-                  <span className="font-semibold text-[#8e7b89]">{language === "vi" ? "Tổng giá trị" : "Total Value"}:</span>
-                  <span className="text-base font-bold text-[#e1447f]">{booking.totalPrice}</span>
-                </div>
-              )}
+                )}
+              </div>
+            ) : (
+              <p className="pt-1 text-xs text-[#c49aaf]">
+                {language === "vi" ? "Không có thông tin đặt lịch" : "No booking information available"}
+              </p>
+            )}
+          </div>
+
+          {/* RIGHT — Reason + Notes */}
+          <div className="flex flex-col gap-4">
+            {/* Reason Selection */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+                {language === "vi" ? "Lý do từ chối" : "Rejection Reason"}{" "}
+                <span className="text-[#e1447f] font-bold">*</span>
+              </label>
+              <Select
+                value={reason || undefined}
+                onChange={setReason}
+                placeholder={language === "vi" ? "Chọn lý do từ chối" : "Select rejection reason..."}
+                disabled={isLoading}
+                options={REJECT_REASONS[language] ?? REJECT_REASONS.en}
+                style={{ width: "100%" }}
+              />
             </div>
-          </div>
-        )}
 
-        {/* Reason Selection */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            {language === "vi" ? "Lý do từ chối" : "Rejection Reason"} <span className="text-[#e1447f] font-bold">*</span>
-          </label>
-          <Select
-            value={reason || undefined}
-            onChange={setReason}
-            placeholder={language === "vi" ? "Chọn lý do từ chối" : "Select rejection reason..."}
-            disabled={isLoading}
-            options={REJECT_REASONS}
-            style={{
-              width: "100%",
-            }}
-          />
-        </div>
-
-        {/* Details Field */}
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
-            {language === "vi" ? "Ghi chú thêm (Tùy chọn)" : "Additional Notes (Optional)"}
-          </label>
-          <Input.TextArea
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            placeholder={language === "vi" ? "Nhập ghi chú thêm về việc từ chối này..." : "Provide additional details regarding this rejection..."}
-            rows={3}
-            maxLength={300}
-            disabled={isLoading}
-            className="border-[#f0d9e8] focus:border-[#ea4f93] hover:border-[#ea4f93] focus:shadow-[0_0_0_2px_rgba(234,79,147,0.1)] text-xs rounded-xl transition-all"
-            style={{
-              fontFamily: "inherit",
-              resize: "none",
-            }}
-          />
-          <div className="flex justify-end">
-            <span className="text-[9px] font-bold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">{details.length}/300</span>
+            {/* Details Field — grows to fill remaining height */}
+            <div className="flex flex-1 flex-col space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[#8b7282]">
+                {language === "vi" ? "Ghi chú thêm (Tùy chọn)" : "Additional Notes (Optional)"}
+              </label>
+              <Input.TextArea
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder={
+                  language === "vi"
+                    ? "Nhập ghi chú thêm về việc từ chối này..."
+                    : "Provide additional details regarding this rejection..."
+                }
+                maxLength={300}
+                disabled={isLoading}
+                className="flex-1 border-[#f0d9e8] focus:border-[#ea4f93] hover:border-[#ea4f93] focus:shadow-[0_0_0_2px_rgba(234,79,147,0.1)] text-xs rounded-xl transition-all"
+                style={{
+                  fontFamily: "inherit",
+                  resize: "none",
+                  minHeight: "96px",
+                }}
+              />
+              <div className="flex justify-end">
+                <span className="text-[9px] font-bold text-[#c49aaf] bg-[#fff5f9] px-2 py-0.5 rounded-full border border-[#fce4ee]">
+                  {details.length}/300
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -227,7 +247,7 @@ export function RejectBookingModal({
           </button>
         </div>
       </div>
-    </Modal>
+    </Modal >
   );
 }
 

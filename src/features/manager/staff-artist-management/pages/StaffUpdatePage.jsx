@@ -515,7 +515,7 @@ export function StaffUpdatePage() {
                   ) : (
                     <div className="flex flex-col items-center gap-3">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg text-xl font-bold">
-                         {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
+                        {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-medium text-slate-500">{language === "vi" ? "Chưa có ảnh đại diện" : "No avatar provided"}</p>
@@ -648,6 +648,7 @@ export function StaffUpdatePage() {
         failureDescription={language === "vi" ? "Không thể cập nhật nghệ sĩ." : "Unable to update the artist."}
         onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến danh sách nghệ sĩ..." : "Redirecting to artist list..."}
       />
     </section>
   );

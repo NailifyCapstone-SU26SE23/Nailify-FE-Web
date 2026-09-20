@@ -1064,8 +1064,6 @@ export function StaffBookingDetailPage() {
     navigate(getStaffBookingDesignStudioRoute(bookingId), {
       state: {
         designStudio: {
-          booking: staffBookingDetail || { id: bookingId },
-          bookingDetail: staffBookingDetail || null,
           bookingCode: staffBookingDetail ? formatBookingCode(staffBookingDetail.bookingId) : "",
           customerName: staffBookingDetail?.customerName || formValues?.customerName,
           staffName: staffBookingDetail?.artistName,
@@ -1081,7 +1079,6 @@ export function StaffBookingDetailPage() {
             staffBookingDetail?.checkOutImagesUrl ||
             DEFAULT_DESIGN_IMAGE,
           totalDuration: staffBookingDetail?.totalDuration || 0,
-          currentDesignDetail: resolvedStaffExperience?.design?.variantDetail || null,
         },
       },
     });

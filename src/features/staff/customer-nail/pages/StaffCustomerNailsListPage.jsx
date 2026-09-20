@@ -12,7 +12,7 @@ import { CustomerNailStatusBadge } from "../../../../shared/components/common/Cu
 function Card({ className = "", children }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`rounded-lg border border-[#f8deea] bg-white shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
     >
       {children}
     </article>

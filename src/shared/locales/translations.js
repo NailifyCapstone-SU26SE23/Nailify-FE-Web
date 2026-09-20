@@ -179,7 +179,8 @@ export const translations = {
       "admin-analytics": "Analytics",
       "admin-reviews": "Reviews",
       "admin-complaints": "Complaints",
-      "admin-profile": "Profile"
+      "admin-profile": "Profile",
+      "admin-withdraw-requests": "Withdraw Requests",
     },
 
     // Header Content Titles & Descriptions (EN)
@@ -446,7 +447,7 @@ export const translations = {
       ownerStatus: "Owner Status",
       walletOwner: "Wallet Owner",
       walletOwnerUnavailable: "Wallet owner information is unavailable.",
-      transactionInformation: "Transaction Information",
+      transactionInformation: "Transaction Details",
       amount: "Amount",
       balanceBefore: "Balance Before",
       balanceAfter: "Balance After",
@@ -2727,7 +2728,7 @@ export const translations = {
       "manager-customer-nails": "Mẫu móng khách hàng",
       "manager-schedules": "Lịch làm việc",
       "manager-staff": "Nhân viên làm móng",
-      "manager-breaks": "Thời gian nghỉ",
+      "manager-breaks": "Yêu cầu nghỉ phép",
       "manager-transactions": "Giao dịch",
       "manager-customers": "Khách hàng",
       "manager-reports": "Thống kê",
@@ -2759,7 +2760,8 @@ export const translations = {
       "admin-analytics": "Thống kê hệ thống",
       "admin-reviews": "Quản lý Đánh giá",
       "admin-complaints": "Khiếu nại",
-      "admin-profile": "Hồ sơ cá nhân"
+      "admin-profile": "Hồ sơ cá nhân",
+      "admin-withdraw-requests": "Yêu cầu rút tiền",
     },
 
     // Loyalty Transactions (VI)

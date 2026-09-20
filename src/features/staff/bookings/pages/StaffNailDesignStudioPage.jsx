@@ -524,17 +524,17 @@ Pill.propTypes = {
 function TemplateCard({ item, isSelected, onSelect }) {
   return (
     <article
-      className={`overflow-hidden rounded-lg border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
+      className={`flex flex-col overflow-hidden rounded-lg border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
         }`}
     >
       <img
         src={item.image}
         alt={item.name}
-        className="h-28 w-full object-cover"
+        className="h-28 w-full shrink-0 object-cover"
         loading="lazy"
         referrerPolicy="no-referrer"
       />
-      <div className="p-3">
+      <div className="flex flex-1 flex-col p-3">
         <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.tags.map((tag) => (
@@ -546,7 +546,7 @@ function TemplateCard({ item, isSelected, onSelect }) {
             </span>
           ))}
         </div>
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-auto pt-4 flex items-end justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
             <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
@@ -1234,27 +1234,29 @@ ChoiceGrid.propTypes = {
 
 export function StaffNailDesignStudioPage() {
   const { language } = useLanguage();
+  const isVi = language === 'vi';
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
   const studioState = location.state?.designStudio ?? null;
-  const booking = getMockBookingById(bookingId) ?? studioState?.booking ?? null;
   const studio = useMemo(() => {
-    const mockStudio = getStaffDesignStudioExperienceById(bookingId);
-
-    if (mockStudio) {
-      return mockStudio;
-    }
-
     if (!studioState) {
       return null;
     }
 
-    const baseStudio = getStaffDesignStudioExperienceById("BKG-2408");
-
-    if (!baseStudio) {
-      return null;
-    }
+    const baseStudio = {
+      bookingCode: "",
+      customerName: "",
+      staffName: "",
+      statusLabel: "",
+      selectedDesign: { id: "", name: isVi ? "Thiết kế riêng" : "Custom design", image: "", tags: [] },
+      filters: [],
+      builder: {
+        initialSelection: { shape: "", length: "", finish: "", decorations: [], extras: [] },
+        colors: [{ swatch: "#f8b4d9" }, { swatch: "#f3e8ff" }],
+        shapes: [], finishes: [], decorations: [], extras: []
+      }
+    };
 
     return {
       ...baseStudio,
@@ -1268,9 +1270,9 @@ export function StaffNailDesignStudioPage() {
         image: studioState.selectedDesignImage || baseStudio.selectedDesign.image,
       },
     };
-  }, [bookingId, studioState]);
+  }, [studioState]);
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign?.id ?? "");
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [isProcedureModalOpen, setIsProcedureModalOpen] = useState(false);
   const [commonProcedures, setCommonProcedures] = useState([]);
@@ -1417,7 +1419,7 @@ export function StaffNailDesignStudioPage() {
           },
         });
 
-        const payload = unwrapApiResponse(response, "Failed to load nail design templates.");
+        const payload = unwrapApiResponse(response, isVi ? "Không thể tải mẫu thiết kế móng." : "Failed to load nail design templates.");
         const items = Array.isArray(payload?.items) ? payload.items.map((item) => buildDesignTemplateFromApi(item, language)) : [];
 
         if (!isMounted) {
@@ -1435,7 +1437,7 @@ export function StaffNailDesignStudioPage() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : "Failed to load nail design templates.";
+        const message = error instanceof Error ? error.message : isVi ? "Không thể tải mẫu thiết kế móng." : "Failed to load nail design templates.";
         setDesignError(message);
       } finally {
         if (isMounted) {
@@ -1547,7 +1549,7 @@ export function StaffNailDesignStudioPage() {
           return;
         }
 
-        const message = error instanceof Error ? error.message : "Failed to load builder catalog.";
+        const message = error instanceof Error ? error.message : isVi ? "Không thể tải danh mục xây dựng." : "Failed to load builder catalog.";
         setBuilderCatalogError(message);
       } finally {
         if (isMounted) {
@@ -1703,12 +1705,12 @@ export function StaffNailDesignStudioPage() {
   );
   const suggestedCustomerNailName = useMemo(() => {
     const parts = [
-      selectedVariant?.name || selectedDesign?.name || studio?.selectedDesign?.name || "Custom design",
+      selectedVariant?.name || selectedDesign?.name || studio?.selectedDesign?.name || (isVi ? "Thiết kế tùy chỉnh" : "Custom design"),
       selectedShape,
       selectedFinish,
     ].filter(Boolean);
 
-    return parts.join(" • ").trim() || "Custom Nail Design";
+    return parts.join(" • ").trim() || (isVi ? "Thiết kế móng tùy chỉnh" : "Custom Nail Design");
   }, [selectedDesign?.name, selectedFinish, selectedShape, selectedVariant?.name, studio?.selectedDesign?.name]);
   const customerNailName = useMemo(
     () => String(customerNailNameDraft || "").trim() || suggestedCustomerNailName,
@@ -1742,53 +1744,6 @@ export function StaffNailDesignStudioPage() {
     () => componentPlacements.find((item) => item.key === selectedPlacementKey) ?? activeFingerPlacements[0] ?? null,
     [activeFingerPlacements, componentPlacements, selectedPlacementKey],
   );
-  // const estimationRows = useMemo(() => {
-  //   const rows = [];
-
-  //   if (selectedShapeOption) {
-  //     rows.push({
-  //       key: `shape-${selectedShapeOption.id}`,
-  //       label: `Shape • ${selectedShapeOption.label}`,
-  //       price: selectedShapeOption.price,
-  //       duration: selectedShapeOption.duration,
-  //     });
-  //   }
-
-  //   if (selectedSurfaceOption) {
-  //     rows.push({
-  //       key: `surface-${selectedSurfaceOption.id}`,
-  //       label: `Finish / Texture • ${selectedSurfaceOption.label}`,
-  //       price: selectedSurfaceOption.price,
-  //       duration: selectedSurfaceOption.duration,
-  //     });
-  //   }
-
-  //   selectedDecorationEntries.forEach((item, index) => {
-  //     rows.push({
-  //       key: `decoration-${item.option.id}-${item.fingerIndex}-${index}`,
-  //       label: `${NAIL_LABELS[item.fingerIndex]} • ${item.option.label}`,
-  //       price: item.option.price,
-  //       duration: item.option.duration,
-  //     });
-  //   });
-
-  //   selectedExtraOptions.forEach((item) => {
-  //     rows.push({
-  //       key: `extra-${item.id}`,
-  //       label: (
-  //         <>
-  //           <span className="font-semibold text-black">Extra</span>
-  //           {" • "}
-  //           {item.label}
-  //         </>
-  //       ),
-  //       price: item.price,
-  //       duration: item.duration,
-  //     });
-  //   });
-
-  //   return rows;
-  // }, [selectedDecorationEntries, selectedExtraOptions, selectedShapeOption, selectedSurfaceOption]);
 
   const estimationRows = useMemo(() => {
     const nailRows = [];
@@ -1797,7 +1752,7 @@ export function StaffNailDesignStudioPage() {
     if (selectedShapeOption) {
       nailRows.push({
         key: `shape-${selectedShapeOption.id}`,
-        label: `Shape • ${selectedShapeOption.label}`,
+        label: `${isVi ? "Kiểu dáng" : "Shape"} • ${selectedShapeOption.label}`,
         price: selectedShapeOption.price,
         duration: selectedShapeOption.duration,
       });
@@ -1805,8 +1760,8 @@ export function StaffNailDesignStudioPage() {
 
     if (selectedSurfaceOption) {
       nailRows.push({
-        key: `surface-${selectedSurfaceOption.id}`,
-        label: `Finish / Texture • ${selectedSurfaceOption.label}`,
+        key: `${isVi ? "Bề mặt móng" : "surface"}-${selectedSurfaceOption.id}`,
+        label: `${isVi ? "Bề mặt móng" : "Finish / Texture"} • ${selectedSurfaceOption.label}`,
         price: selectedSurfaceOption.price,
         duration: selectedSurfaceOption.duration,
       });
@@ -1814,7 +1769,7 @@ export function StaffNailDesignStudioPage() {
 
     selectedDecorationEntries.forEach((item, index) => {
       nailRows.push({
-        key: `decoration-${item.option.id}-${item.fingerIndex}-${index}`,
+        key: `${isVi ? "Trang trí móng" : "decoration"}-${item.option.id}-${item.fingerIndex}-${index}`,
         label: `${NAIL_LABELS[item.fingerIndex]} • ${item.option.label}`,
         price: item.option.price,
         duration: item.option.duration,
@@ -1837,7 +1792,7 @@ export function StaffNailDesignStudioPage() {
       key: "summary-nail-price",
       label: (
         <span className="font-bold text-[#38253a]">
-          Summary Nail Price
+          {isVi ? "Tổng giá móng" : "Summary Nail Price"}
         </span>
       ),
       price: nailPrice,
@@ -1850,7 +1805,7 @@ export function StaffNailDesignStudioPage() {
         key: `extra-${item.id}`,
         label: (
           <>
-            <span className="font-semibold text-black">Extra</span>
+            <span className="font-semibold text-black">{isVi ? "Dịch vụ bổ sung" : "Extra"}</span>
             {" • "}
             {item.label}
           </>
@@ -1924,6 +1879,7 @@ export function StaffNailDesignStudioPage() {
     const nextPlacements = [];
 
     nextDecorations.forEach((items, fingerIndex) => {
+      const itemCounts = new Map();
       items.forEach((label) => {
         const option = decorationOptionMap.get(label);
 
@@ -1931,12 +1887,35 @@ export function StaffNailDesignStudioPage() {
           return;
         }
 
-        const key = buildPlacementKey(fingerIndex, label, option.customerComponentId || option.componentId || option.id || label);
-        nextPlacements.push(currentMap.get(key) ?? buildDefaultPlacement(
-          option,
-          fingerIndex,
-          option.customerComponentId || option.componentId || option.id || label,
-        ));
+        const count = itemCounts.get(label) || 0;
+        itemCounts.set(label, count + 1);
+        const uniqueSuffix = count > 0 ? `-${count}` : "";
+        const uniqueToken = (option.customerComponentId || option.componentId || option.id || label) + uniqueSuffix;
+
+        const key = buildPlacementKey(fingerIndex, label, uniqueToken);
+        
+        let placement = currentMap.get(key);
+        if (!placement) {
+          placement = buildDefaultPlacement(
+            option,
+            fingerIndex,
+            uniqueToken
+          );
+          
+          if (count > 0) {
+            // Offset duplicate components slightly (e.g. 5% = 0.05) so they don't overlap completely
+            placement.posX += count * 0.05;
+            placement.posY += count * 0.05;
+            placement.zIndex += count;
+            placement.configJson = JSON.stringify({
+              scale: placement.scale,
+              rotation: placement.rotation,
+              zIndex: placement.zIndex,
+            });
+          }
+        }
+        
+        nextPlacements.push(placement);
       });
     });
 
@@ -2260,7 +2239,7 @@ export function StaffNailDesignStudioPage() {
       const variantDetail = await fetchStaffNailVariantDetail(normalizedVariantId);
       applyVariantToBuilder(variantDetail);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load selected variant detail.";
+      const message = error instanceof Error ? error.message : isVi ? "Không thể tải chi tiết biến thể đã chọn." : "Failed to load selected variant detail.";
       setDesignError(message);
     }
   };
@@ -2325,7 +2304,7 @@ export function StaffNailDesignStudioPage() {
     setShowAllDesigns((current) => !current);
   };
 
-  if (!booking || !studio) {
+  if (!studio) {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
@@ -2348,9 +2327,7 @@ export function StaffNailDesignStudioPage() {
           return items;
         }
 
-        return items.includes(decoration)
-          ? items.filter((item) => item !== decoration)
-          : [...items, decoration];
+        return [...items, decoration];
       });
 
       syncPlacementsFromDecorations(nextDecorations);
@@ -2461,6 +2438,29 @@ export function StaffNailDesignStudioPage() {
     );
   };
 
+  const handleRemovePlacements = (placementKeys) => {
+    if (!placementKeys || placementKeys.length === 0) return;
+    markAsCustomized();
+    
+    setComponentPlacements((currentPlacements) => {
+      const nextPlacements = currentPlacements.filter(p => !placementKeys.includes(p.key));
+      
+      setNailDecorations(() => {
+        const newDecorations = Array.from({ length: 5 }, () => []);
+        nextPlacements.forEach(p => {
+           if (p.fingerIndex >= 0 && p.fingerIndex < 5) {
+             newDecorations[p.fingerIndex].push(p.label);
+           }
+        });
+        return newDecorations;
+      });
+
+      return nextPlacements;
+    });
+    
+    setSelectedPlacementKey((current) => placementKeys.includes(current) ? "" : current);
+  };
+
   const handlePreviewNailSelect = (fingerIndex) => {
     setActiveNailIndex(fingerIndex);
     const firstPlacement = componentPlacements.find((item) => item.fingerIndex === fingerIndex);
@@ -2507,7 +2507,7 @@ export function StaffNailDesignStudioPage() {
       toast.success(language === "vi" ? "Lưu quy trình thành công!" : "Procedures assigned successfully!");
       handleCloseProcedureModal();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to assign procedures.";
+      const msg = err instanceof Error ? err.message : isVi ? "Không thể gán quy trình." : "Failed to assign procedures.";
       toast.error(msg);
     } finally {
       setIsAssigningProcedures(false);
@@ -2524,8 +2524,8 @@ export function StaffNailDesignStudioPage() {
       setConfirmedCustomerNail(null);
       setIsDesignConfirmed(true);
       setDesignActionError("");
-      setDesignActionSuccess("Variant confirmed successfully. You can update this booking now.");
-      toast.success("Variant confirmed successfully.");
+      setDesignActionSuccess(isVi ? "Variant đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
+      toast.success(isVi ? "Variant đã được xác nhận." : "Variant confirmed successfully.");
       return;
     }
 
@@ -2564,8 +2564,8 @@ export function StaffNailDesignStudioPage() {
 
       setConfirmedCustomerNail(createdCustomerNail);
       setIsDesignConfirmed(true);
-      setDesignActionSuccess("Custom nail created successfully. You can update this booking now.");
-      toast.success("Custom nail created successfully.");
+      setDesignActionSuccess(isVi ? "Thiết kế móng tùy chỉnh đã được tạo thành công. Bây giờ bạn có thể cập nhật booking này." : "Custom nail created successfully. You can update this booking now.");
+      toast.success(isVi ? "Thiết kế móng tùy chỉnh đã được tạo thành công." : "Custom nail created successfully.");
 
       const customerNailId = Number(createdCustomerNail?.customerNailId || 0);
       if (customerNailId) {
@@ -2580,11 +2580,11 @@ export function StaffNailDesignStudioPage() {
           setModelSpecificProcedures(specificData?.items || []);
         } catch (err) {
           console.error("Failed to fetch procedures", err);
-          toast.error("Failed to load procedures list.");
+          toast.error(isVi ? "Không thể tải danh sách quy trình." : "Failed to load procedures list.");
         }
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create customer nail.";
+      const message = error instanceof Error ? error.message : isVi ? "Không thể tạo thiết kế móng." : "Failed to create customer nail.";
       setIsDesignConfirmed(false);
       setConfirmedCustomerNail(null);
       setDesignActionError(message);
@@ -2600,7 +2600,7 @@ export function StaffNailDesignStudioPage() {
     }
 
     if (!isUuidLike(resolvedBookingApiId)) {
-      setDesignActionError("A valid booking ID is required before updating the booking.");
+      setDesignActionError(isVi ? "Cần có ID booking hợp lệ trước khi cập nhật booking." : "A valid booking ID is required before updating the booking.");
       return;
     }
 
@@ -2612,7 +2612,7 @@ export function StaffNailDesignStudioPage() {
       const nextBookingDetail = bookingDetail ?? await fetchStaffBookingDetail(resolvedBookingApiId);
 
       if (!nextBookingDetail) {
-        throw new Error("Booking detail is not available for update.");
+        throw new Error(isVi ? "Không thể cập nhật booking chi tiết." : "Booking detail is not available for update.");
       }
 
       const nextCustomerNailId = isVariantSelectionMode
@@ -2621,7 +2621,7 @@ export function StaffNailDesignStudioPage() {
       const nextNailVariantId = isVariantSelectionMode ? resolvedSelectedVariantId : null;
 
       if (!nextNailVariantId && !nextCustomerNailId) {
-        throw new Error("Please confirm a nail variant or create a custom nail before updating the booking.");
+        throw new Error(isVi ? "Vui lòng xác nhận biến thể móng hoặc tạo thiết kế móng tùy chỉnh trước khi cập nhật booking." : "Please confirm a nail variant or create a custom nail before updating the booking.");
       }
 
       const existingBookingItems = Array.isArray(nextBookingDetail?.bookingItems) ? nextBookingDetail.bookingItems : [];
@@ -2683,16 +2683,16 @@ export function StaffNailDesignStudioPage() {
       setBookingDetail(updatedBooking);
       setDesignActionSuccess(
         isVariantSelectionMode
-          ? "Booking updated successfully with the selected nail variant."
-          : "Booking updated successfully with the new customer nail design.",
+          ? isVi ? "Booking đã được cập nhật với biến thể móng đã chọn." : "Booking updated successfully with the selected nail variant."
+          : isVi ? "Booking đã được cập nhật với thiết kế móng tùy chỉnh." : "Booking updated successfully with the new customer nail design.",
       );
       toast.success(
         isVariantSelectionMode
-          ? "Booking updated successfully with the selected nail variant."
-          : "Booking updated successfully with the new customer nail design.",
+          ? isVi ? "Booking đã được cập nhật với biến thể móng đã chọn." : "Booking updated successfully with the selected nail variant."
+          : isVi ? "Booking đã được cập nhật với thiết kế móng tùy chỉnh." : "Booking updated successfully with the new customer nail design.",
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update booking design.";
+      const message = error instanceof Error ? error.message : isVi ? "Không thể cập nhật thiết kế booking." : "Failed to update booking design.";
       setDesignActionError(message);
       toast.error(message);
     } finally {
@@ -2711,7 +2711,7 @@ export function StaffNailDesignStudioPage() {
                 type="text"
                 value={designQuery}
                 onChange={(event) => setDesignQuery(event.target.value)}
-                placeholder="Search nails designs..."
+                placeholder={isVi ? "Tìm kiếm mẫu móng..." : "Search nails designs..."}
                 className="h-11 w-full rounded-[12px] border border-[#f4dbe7] bg-[#fffafc] pl-11 pr-4 text-sm text-[#594456] outline-none transition focus:border-[#ef6aac]"
               />
             </label>
@@ -2729,11 +2729,11 @@ export function StaffNailDesignStudioPage() {
               <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-bold text-[#38253a]">Ready-Made Design Templates</h2>
+                    <h2 className="text-sm font-bold text-[#38253a]">{isVi ? "Danh sách mẫu móng" : "Ready-Made Design Templates"}</h2>
                     <p className="mt-1 text-[11px] text-[#a8899c]">
                       {designView === "designs"
-                        ? "Select a template to view its available variants"
-                        : "Review the variants for the selected design"}
+                        ? isVi ? "Chọn một mẫu để xem các biến thể có sẵn" : "Select a template to view its available variants"
+                        : isVi ? "Xem các biến thể cho mẫu đã chọn" : "Review the variants for the selected design"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2743,7 +2743,7 @@ export function StaffNailDesignStudioPage() {
                         onClick={handleBackToDesigns}
                         className="rounded-full border border-[#f2bfd4] bg-[#fff4f8] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]"
                       >
-                        ← Back to designs
+                        {isVi ? "Quay lại" : "Back to designs"}
                       </button>
                     ) : null}
                     <button
@@ -2753,9 +2753,9 @@ export function StaffNailDesignStudioPage() {
                     >
                       {designView === "designs"
                         ? showAllDesigns
-                          ? "Show preview mode"
-                          : `See all ${designTemplates.length} designs`
-                        : `${designVariants.length} variants`}
+                          ? isVi ? "Hiện chế độ xem trước" : "Show preview mode"
+                          : isVi ? `Xem tất cả ${designTemplates.length} mẫu` : `See all ${designTemplates.length} designs`
+                        : isVi ? `${designVariants.length} biến thể` : `${designVariants.length} variants`}
                     </button>
                   </div>
                 </div>
@@ -2763,9 +2763,9 @@ export function StaffNailDesignStudioPage() {
                   <p className="text-[11px] font-medium text-[#b48ba0]">
                     {designView === "designs"
                       ? showAllDesigns
-                        ? `Showing all ${designTemplates.length} designs`
-                        : `Showing ${Math.min(templateWindowSize, designTemplates.length)} preview templates at a time`
-                      : `Showing ${designVariants.length} variant${designVariants.length === 1 ? "" : "s"}`}
+                        ? isVi ? `Hiển thị tất cả ${designTemplates.length} mẫu` : `Showing all ${designTemplates.length} designs`
+                        : isVi ? `Hiển thị ${Math.min(templateWindowSize, designTemplates.length)} mẫu xem trước cùng lúc` : `Showing ${Math.min(templateWindowSize, designTemplates.length)} preview templates at a time`
+                      : isVi ? `Hiển thị ${designVariants.length} biến thể` : `Showing ${designVariants.length} variant${designVariants.length === 1 ? "" : "s"}`}
                   </p>
                   <p className="text-[11px] font-bold text-[#ea4f93]">
                     {designView === "designs"
@@ -2790,7 +2790,7 @@ export function StaffNailDesignStudioPage() {
                         type="button"
                         onClick={() => handleTemplateSlide("prev")}
                         className="absolute -left-5 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.12)] transition hover:bg-[#fff1f7] xl:inline-flex"
-                        aria-label="Show previous nail templates"
+                        aria-label={isVi ? "Hiển thị mẫu trước" : "Show previous nail templates"}
                       >
                         <ChevronLeft size={20} />
                       </button>
@@ -2798,7 +2798,7 @@ export function StaffNailDesignStudioPage() {
                         type="button"
                         onClick={() => handleTemplateSlide("next")}
                         className="absolute -right-5 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.12)] transition hover:bg-[#fff1f7] xl:inline-flex"
-                        aria-label="Show next nail templates"
+                        aria-label={isVi ? "Hiển thị mẫu tiếp theo" : "Show next nail templates"}
                       >
                         <ChevronRight size={20} />
                       </button>
@@ -2809,7 +2809,7 @@ export function StaffNailDesignStudioPage() {
                     {designView === "designs" ? (
                       isDesignsLoading ? (
                         <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
-                          Loading nail designs from the API...
+                          {language === "vi" ? "Đang tải danh sách mẫu móng..." : "Loading nail designs..."}
                         </p>
                       ) : (
                         visibleTemplates.map((item) => (
@@ -2823,7 +2823,7 @@ export function StaffNailDesignStudioPage() {
                       )
                     ) : isVariantsLoading ? (
                       <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
-                        Loading variants...
+                        {isVi ? "Đang tải danh sách biến thể..." : "Loading variants..."}
                       </p>
                     ) : (
                       visibleTemplates.map((item) => (
@@ -2831,7 +2831,7 @@ export function StaffNailDesignStudioPage() {
                           key={item.id}
                           type="button"
                           onClick={() => void handleVariantSelect(item.id)}
-                          className={`overflow-hidden rounded-lg border bg-white text-left shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${selectedVariantId === String(item.id)
+                          className={`flex flex-col overflow-hidden rounded-lg border bg-white text-left shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${selectedVariantId === String(item.id)
                             ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20"
                             : "border-[#f4dbe7]"
                             }`}
@@ -2839,11 +2839,11 @@ export function StaffNailDesignStudioPage() {
                           <img
                             src={item.image}
                             alt={item.name}
-                            className="h-28 w-full object-cover"
+                            className="h-28 w-full shrink-0 object-cover"
                             loading="lazy"
                             referrerPolicy="no-referrer"
                           />
-                          <div className="p-3">
+                          <div className="flex w-full flex-1 flex-col p-3">
                             <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
                             <div className="mt-3 flex flex-wrap gap-2">
                               {item.tags.map((tag) => (
@@ -2852,7 +2852,7 @@ export function StaffNailDesignStudioPage() {
                                 </span>
                               ))}
                             </div>
-                            <div className="mt-4 flex items-end justify-between gap-3">
+                            <div className="mt-auto pt-4 flex items-end justify-between gap-3 text-left">
                               <div>
                                 <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
                                 <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
@@ -2871,14 +2871,14 @@ export function StaffNailDesignStudioPage() {
 
               <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-bold text-[#38253a]">Layer-Based Custom Builder</h2>
+                  <h2 className="text-sm font-bold text-[#38253a]">{isVi ? "Trình tạo móng tùy chỉnh dựa trên layer" : "Layer-Based Custom Builder"}</h2>
                   <span
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold ${selectedVariantId
                       ? "border-orange-200 bg-orange-100 text-orange-600"
                       : "border-green-200 bg-green-100 text-green-600"
                       }`}
                   >
-                    {selectedVariantId ? "Variant Selected" : "Customizing"}
+                    {selectedVariantId ? (isVi ? "Chọn biến thể" : "Variant Selected") : (isVi ? "Tùy chỉnh" : "Customizing")}
                   </span>
                 </div>
 
@@ -2887,7 +2887,7 @@ export function StaffNailDesignStudioPage() {
                     <div>
                       <div className="mb-3 flex items-center gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">0</span>
-                        <p className="text-xs font-bold text-[#ea4f93]">Nail Name</p>
+                        <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Tên móng" : "Nail Name"}</p>
                       </div>
                       <input
                         type="text"
@@ -2902,7 +2902,7 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">1</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Nail Shape</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Hình dạng móng" : "Nail Shape"}</p>
                     </div>
                     {builderCatalogError ? <p className="mb-3 text-[11px] font-semibold text-[#d14c84]">{builderCatalogError}</p> : null}
                     <ChoiceGrid
@@ -2917,7 +2917,7 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">2</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Nail Length</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Độ dài móng" : "Nail Length"}</p>
                     </div>
                     <ChoiceGrid
                       items={lengthVariantOptions.length ? lengthVariantOptions : [{ label: selectedLength || "Short", variantLabel: selectedShape }]}
@@ -2931,17 +2931,17 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">3</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Finger Colors</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Màu móng" : "Finger Colors"}</p>
                     </div>
                     <div className="space-y-4 rounded-[18px] border border-[#f4dbe7] bg-[#fff8fc] p-4">
                       <div>
-                        <p className="mb-3 text-[10px] font-bold text-[#ea4f93]">Choose fingers first</p>
+                        <p className="mb-3 text-[10px] font-bold text-[#ea4f93]">{isVi ? "Chọn ngón tay trước" : "Choose fingers first"}</p>
                         <div className="flex flex-wrap gap-2">
                           <Pill
                             active={selectedColorFingerIndices.length === NAIL_LABELS.length}
                             onClick={() => setSelectedColorFingerIndices([0, 1, 2, 3, 4])}
                           >
-                            All fingers
+                            {isVi ? "Tất cả" : "All fingers"}
                           </Pill>
                           {NAIL_LABELS.map((label, index) => (
                             <Pill
@@ -2968,7 +2968,7 @@ export function StaffNailDesignStudioPage() {
                           active={selectedColorMode === "solid"}
                           onClick={() => updateFingerColors((item) => ({ ...item, mode: "solid" }))}
                         >
-                          Solid
+                          {isVi ? "Đơn sắc" : "Solid"}
                         </Pill>
                         <Pill
                           active={selectedColorMode === "gradient"}
@@ -2978,22 +2978,22 @@ export function StaffNailDesignStudioPage() {
                             gradientStops: normalizeFingerColorConfig(item).gradientStops,
                           }))}
                         >
-                          Gradient
+                          {isVi ? "Gradient" : "Gradient"}
                         </Pill>
                       </div>
                       {selectedColorMode === "gradient" ? (
                         <div className="space-y-3 rounded-[14px] border border-[#f4dbe7] bg-white p-3">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-[10px] font-bold text-[#ea4f93]">Gradient Stops</p>
-                              <p className="mt-1 text-[10px] text-[#a98c9f]">Add multiple colors for rainbow-style nails.</p>
+                              <p className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Gradient Stops" : "Gradient Stops"}</p>
+                              <p className="mt-1 text-[10px] text-[#a98c9f]">{isVi ? "Thêm nhiều màu cho phong cách móng cầu vồng." : "Add multiple colors for rainbow-style nails."}</p>
                             </div>
                             <button
                               type="button"
                               onClick={handleAddGradientStop}
                               className="rounded-full border border-[#f2bfd4] bg-[#fff5fa] px-3 py-1 text-[10px] font-bold text-[#ea4f93]"
                             >
-                              + Add color
+                              {isVi ? "Thêm màu" : "Add color"}
                             </button>
                           </div>
                           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -3004,7 +3004,7 @@ export function StaffNailDesignStudioPage() {
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-[10px] font-bold text-[#ea4f93]">
-                                    Stop {stopIndex + 1}
+                                    {isVi ? `Điểm màu ${stopIndex + 1}` : `Stop ${stopIndex + 1}`}
                                   </span>
                                   <button
                                     type="button"
@@ -3012,7 +3012,7 @@ export function StaffNailDesignStudioPage() {
                                     disabled={selectedGradientStops.length <= 2}
                                     className="text-[10px] font-bold text-[#c48aa4] disabled:cursor-not-allowed disabled:opacity-40"
                                   >
-                                    Remove
+                                    {isVi ? "Xóa" : "Remove"}
                                   </button>
                                 </div>
                                 <div className="mt-3 flex items-center gap-3">
@@ -3034,7 +3034,7 @@ export function StaffNailDesignStudioPage() {
                       ) : (
                         <div className="grid gap-3 md:grid-cols-2">
                           <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
-                            <span className="text-[10px] font-bold text-[#ea4f93]">Primary Color</span>
+                            <span className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Màu chính" : "Primary Color"}</span>
                             <div className="mt-3 flex items-center gap-3">
                               <input
                                 type="color"
@@ -3059,7 +3059,7 @@ export function StaffNailDesignStudioPage() {
                         </div>
                       )}
                       <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white p-3">
-                        <p className="text-[10px] font-bold text-[#a98c9f]">Live Color Formula</p>
+                        <p className="text-[10px] font-bold text-[#a98c9f]">{isVi ? "Công thức màu trực tiếp" : "Live Color Formula"}</p>
                         <div className="mt-2 flex items-center gap-3">
                           <span
                             className="h-10 w-10 rounded-full border border-[#f2bfd4]"
@@ -3068,11 +3068,12 @@ export function StaffNailDesignStudioPage() {
                               : { backgroundColor: selectedPrimaryColor }}
                           />
                           <div>
-                            <p className="text-[10px] font-bold text-[#ea4f93]">{selectedColorMode === "gradient" ? "Gradient RGB" : "Solid RGB"}</p>
+                            <p className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Gradient RGB" : "Gradient RGB"}</p>
                             <p className="mt-1 text-[10px] text-[#38253a]">{selectedColor}</p>
                             <p className="mt-1 text-[10px] text-[#a98c9f]">
-                              Applying to {selectedColorFingerIndices.length === NAIL_LABELS.length
-                                ? "all fingers"
+                              {isVi ? "Áp dụng cho" : "Applying to"}
+                              {selectedColorFingerIndices.length === NAIL_LABELS.length
+                                ? isVi ? "tất cả các ngón" : "all fingers"
                                 : selectedColorFingerIndices.map((index) => NAIL_LABELS[index]).join(", ")}
                             </p>
                           </div>
@@ -3084,7 +3085,7 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">4</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Finish / Texture</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Kết thúc / Kết cấu" : "Finish / Texture"}</p>
                     </div>
                     <ChoiceGrid
                       items={surfaceOptions.length ? surfaceOptions : studio.builder.finishes}
@@ -3097,14 +3098,14 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">5</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Decorations</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Trang trí" : "Decorations"}</p>
                     </div>
                     <div className="mb-3 flex flex-wrap gap-2">
                       <Pill
                         active={activeNailIndex === -1}
                         onClick={() => setActiveNailIndex(-1)}
                       >
-                        All fingers
+                        {isVi ? "Tất cả" : "All fingers"}
                       </Pill>
                       {NAIL_LABELS.map((label, index) => (
                         <Pill
@@ -3117,7 +3118,7 @@ export function StaffNailDesignStudioPage() {
                       ))}
                     </div>
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
-                      Editing decoration for {activeNailIndex === -1 ? "all fingers" : `${NAIL_LABELS[activeNailIndex]} nail`}
+                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : `${NAIL_LABELS[activeNailIndex]} nail`}
                     </p>
                     {(() => {
                       const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
@@ -3173,7 +3174,7 @@ export function StaffNailDesignStudioPage() {
                   <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">6</span>
-                      <p className="text-xs font-bold text-[#ea4f93]">Extra Services</p>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Dịch vụ bổ sung" : "Extra Services"}</p>
                     </div>
                     <ChoiceGrid
                       items={extraServiceOptions.length ? extraServiceOptions : studio.builder.extras}
@@ -3188,7 +3189,7 @@ export function StaffNailDesignStudioPage() {
                   <SectionTitle icon={Star} title="Price & Duration Estimation" />
                   <div className="mt-4 space-y-3 text-sm text-[#8a6f83]">
                     {isBuilderCatalogLoading ? (
-                      <p className="text-[11px] font-semibold text-[#a8899c]">Loading builder options from API...</p>
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Đang tải danh sách dịch vụ..." : "Loading builder options from API..."}</p>
                     ) : estimationRows.length > 0 ? (
                       estimationRows.map((item) => (
                         <div key={item.key} className="flex items-center justify-between gap-3 border-b border-[#f6d8e7] pb-2">
@@ -3200,16 +3201,16 @@ export function StaffNailDesignStudioPage() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-[11px] font-semibold text-[#a8899c]">Select shape, finish, decorations, and extra services to see the estimate.</p>
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Chọn hình dạng, kết thúc, trang trí và dịch vụ bổ sung để xem ước tính." : "Select shape, finish, decorations, and extra services to see the estimate."}</p>
                     )}
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-base font-bold text-[#38253a]">Estimated Total</p>
+                    <p className="text-base font-bold text-[#38253a]">{isVi ? "Tổng ước tính" : "Estimated Total"}</p>
                     <p className="text-[1.6rem] font-bold text-green-600">{totalEstimatedPriceLabel}</p>
                   </div>
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#d34f88]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]" />
-                    Estimated Duration: {totalEstimatedDurationLabel}
+                    {isVi ? "Thời gian ước tính" : "Estimated Duration"}: {totalEstimatedDurationLabel}
                   </div>
                 </div>
 
@@ -3232,14 +3233,9 @@ export function StaffNailDesignStudioPage() {
                       : "cursor-not-allowed border border-[#f2bfd4] bg-[#fff4f8] text-[#c7a0b4]"
                       }`}
                   >
-                    {isUpdatingBookingDesign ? "Updating Booking..." : "Update Booking Design"}
+                    {isUpdatingBookingDesign ? isVi ? "Đang cập nhật..." : "Updating Booking..." : isVi ? "Cập nhật thiết kế" : "Update Booking Design"}
                   </button>
-                  {/* <button
-                    type="button"
-                    className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Save Design
-                  </button> */}
+
                   <button
                     type="button"
                     onClick={handleConfirmDesign}
@@ -3250,21 +3246,21 @@ export function StaffNailDesignStudioPage() {
                       }`}
                   >
                     {isConfirmingDesign
-                      ? "Creating Nail..."
+                      ? isVi ? "Đang tạo móng..." : "Creating Nail..."
                       : isDesignConfirmed
                         ? isVariantSelectionMode
-                          ? "Variant Confirmed"
-                          : "Design Confirmed"
+                          ? isVi ? "Đã xác nhận biến thể" : "Variant Confirmed"
+                          : isVi ? "Đã xác nhận thiết kế" : "Design Confirmed"
                         : isVariantSelectionMode
-                          ? "Confirm Variant"
-                          : "Confirm Design"}
+                          ? isVi ? "Xác nhận biến thể" : "Confirm Variant"
+                          : isVi ? "Xác nhận thiết kế" : "Confirm Design"}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(detailRoute)}
                     className="rounded-[12px] border border-[#ded2da] bg-white px-4 py-3 text-xs font-bold text-[#846e7f]"
                   >
-                    Back to Booking Detail
+                    {isVi ? "Quay lại chi tiết đơn đặt hàng" : "Back to Booking Detail"}
                   </button>
                 </div>
               </article>
@@ -3272,7 +3268,7 @@ export function StaffNailDesignStudioPage() {
 
             <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
               <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Palette} title="Live Nail Preview" />
+                <SectionTitle icon={Palette} title={isVi ? "Hình ảnh móng sống" : "Live Nail Preview"} />
                 <InteractiveStudioPreview
                   previewRef={previewContainerRef}
                   finish={selectedFinish}
@@ -3294,13 +3290,14 @@ export function StaffNailDesignStudioPage() {
                   onSelectNail={handlePreviewNailSelect}
                   onSelectPlacement={setSelectedPlacementKey}
                   onPlacementChange={updatePlacementConfig}
+                  onRemovePlacements={handleRemovePlacements}
                 />
                 <div className="mt-4 rounded-[12px] border border-[#f2bfd4] bg-white/70 px-3 py-2 text-center text-[10px] font-bold text-[#b07d97]">
                   {isDesignConfirmed
                     ? isVariantSelectionMode
-                      ? "Variant confirmed. Update Booking Design is now ready."
-                      : "Custom nail confirmed. Update Booking Design is now ready."
-                    : "Confirm Design first to unlock Update Booking Design."}
+                      ? isVi ? "Đã xác nhận biến thể. Cập nhật thiết kế ngay bây giờ." : "Variant confirmed. Update Booking Design is now ready."
+                      : isVi ? "Đã xác nhận thiết kế. Cập nhật thiết kế ngay bây giờ." : "Custom nail confirmed. Update Booking Design is now ready."
+                    : isVi ? "Xác nhận thiết kế trước để mở khóa Cập nhật thiết kế." : "Confirm Design first to unlock Update Booking Design."}
                 </div>
               </article>
             </aside>

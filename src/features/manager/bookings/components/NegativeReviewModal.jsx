@@ -3,10 +3,13 @@ import { Modal, Button, Rate } from "antd";
 import { MessageSquareWarning, X, AlertOctagon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export const NegativeReviewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [alertData, setAlertData] = useState(null);
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   useEffect(() => {
     // Lắng nghe SignalR cho cảnh báo NegativeReviewAlert
@@ -69,18 +72,18 @@ export const NegativeReviewModal = () => {
                   </div>
 
                   <h2 className="mb-2 text-2xl font-bold tracking-tight text-gray-900">
-                    Bình Luận Tiêu Cực!
+                    {isVi ? "Bình Luận Tiêu Cực!" : "Negative Review!"}
                   </h2>
                   <p className="mb-6 text-sm text-gray-500">
-                    Hệ thống AI vừa phát hiện một đánh giá xấu từ khách hàng. Cần kiểm tra ngay để tránh rủi ro truyền thông!
+                    {isVi ? "Hệ thống AI vừa phát hiện một đánh giá xấu từ khách hàng. Cần kiểm tra ngay để tránh rủi ro truyền thông!" : "The AI system has just detected a negative review from the customer. Check immediately to avoid communication risks!"}
                   </p>
 
                   <div className="w-full space-y-3 rounded-xl border border-orange-100 bg-orange-50/50 p-4 text-left">
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium text-gray-700">Mã đơn: <span className="font-bold">#{alertData?.bookingId?.substring(0, 8) || alertData?.BookingId?.substring(0, 8) || "N/A"}</span></span>
+                      <span className="font-medium text-gray-700">{isVi ? "Mã đơn" : "Booking ID"}: <span className="font-bold">#{alertData?.bookingId?.substring(0, 8) || alertData?.BookingId?.substring(0, 8) || "N/A"}</span></span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">Đánh giá:</span>
+                      <span className="font-medium text-gray-700">{isVi ? "Đánh giá" : "Rating"}:</span>
                       <Rate disabled defaultValue={alertData?.stars || alertData?.Stars || 1} className="text-sm text-orange-500" />
                     </div>
 
@@ -88,7 +91,7 @@ export const NegativeReviewModal = () => {
                       <div className="flex items-start gap-2">
                         <MessageSquareWarning size={16} className="text-orange-600 mt-1 flex-shrink-0" />
                         <div className="text-sm italic text-gray-700 bg-white p-3 rounded-lg border border-orange-100 w-full shadow-sm">
-                          "{alertData?.comment || alertData?.Comment || "Khách hàng không để lại bình luận chi tiết."}"
+                          "{alertData?.comment || alertData?.Comment || (isVi ? "Khách hàng không để lại bình luận chi tiết." : "The customer did not leave a detailed comment.")}"
                         </div>
                       </div>
                     </div>
@@ -100,7 +103,7 @@ export const NegativeReviewModal = () => {
                       className="flex-1 rounded-xl border-gray-200"
                       onClick={handleClose}
                     >
-                      Bỏ qua
+                      {isVi ? "Bỏ qua" : "Skip"}
                     </Button>
                     <Button
                       type="primary"
@@ -108,7 +111,7 @@ export const NegativeReviewModal = () => {
                       className="flex-1 rounded-xl bg-orange-600 hover:bg-orange-700 border-none shadow-[0_8px_16px_-4px_rgba(249,115,22,0.4)]"
                       onClick={handleProcess}
                     >
-                      Xử lý ngay
+                      {isVi ? "Xử lý ngay" : "Process now"}
                     </Button>
                   </div>
                 </div>

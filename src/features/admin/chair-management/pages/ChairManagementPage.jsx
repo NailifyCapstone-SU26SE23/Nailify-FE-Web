@@ -259,29 +259,31 @@ export default function ChairManagementPage() {
                             onClick={() => openEditModal(chair)}
                           />
                         </Tooltip>
-                        <Popconfirm
-                          title={t("adminChairs.deleteConfirmTitle")}
-                          description={t("adminChairs.deleteConfirmDesc")}
-                          onConfirm={(e) => {
-                            e.stopPropagation();
-                            handleDelete(chair.chairId);
-                          }}
-                          okText={t("adminChairs.yes")}
-                          cancelText={t("adminChairs.no")}
-                          okButtonProps={{ danger: true, className: 'rounded-lg font-semibold' }}
-                          cancelButtonProps={{ className: 'rounded-lg font-semibold' }}
-                        >
-                          <Tooltip title={t("adminChairs.delete")}>
-                            <Button
-                              type="text"
-                              size="small"
-                              danger
-                              icon={<Trash2 size={16} />}
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center justify-center w-7 h-7 rounded-lg px-0"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </Tooltip>
-                        </Popconfirm>
+                        {chair?.status === "Active" && (
+                          <Popconfirm
+                            title={t("adminChairs.deleteConfirmTitle")}
+                            description={t("adminChairs.deleteConfirmDesc")}
+                            onConfirm={(e) => {
+                              e.stopPropagation();
+                              handleDelete(chair.chairId);
+                            }}
+                            okText={t("adminChairs.yes")}
+                            cancelText={t("adminChairs.no")}
+                            okButtonProps={{ danger: true, className: 'rounded-lg font-semibold' }}
+                            cancelButtonProps={{ className: 'rounded-lg font-semibold' }}
+                          >
+                            <Tooltip title={t("adminChairs.delete")}>
+                              <Button
+                                type="text"
+                                size="small"
+                                danger
+                                icon={<Trash2 size={16} />}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center justify-center w-7 h-7 rounded-lg px-0"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </Tooltip>
+                          </Popconfirm>
+                        )}
                       </div>
                     </div>
                   );

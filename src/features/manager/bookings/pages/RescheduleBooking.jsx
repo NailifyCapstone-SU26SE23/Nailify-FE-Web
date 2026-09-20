@@ -364,16 +364,16 @@ export function RescheduleBooking() {
     <section className="flex min-h-[100dvh] flex-col gap-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <article className="relative overflow-hidden rounded-[28px] border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
+        <article className="relative overflow-hidden rounded-lg border-none bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 shadow-[0_20px_40px_-15px_rgba(234,79,147,0.12)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.35)]">
                 <Clock size={26} />
               </div>
               <div>
-                <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
+                {/* <span className="inline-flex rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-[#ea4f93] shadow-[0_6px_14px_rgba(234,79,147,0.08)] backdrop-blur">
                   {language === "vi" ? "Portal quản lý" : "Manager portal"}
-                </span>
+                </span> */}
                 <h1 className="text-2xl font-bold text-[#2d1b35] mt-1.5 tracking-tight">{t("manager.bookings.rescheduleTime") || "Reschedule Requests"}</h1>
                 <p className="text-xs text-[#a88a9f] mt-0.5">
                   {language === "vi" ? "Phê duyệt, từ chối hoặc đề xuất thời gian mới cho yêu cầu dời lịch của khách hàng" : "Approve, reject, or suggest new times for customer reschedule requests"}
@@ -406,7 +406,7 @@ export function RescheduleBooking() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <article className="overflow-hidden rounded-[28px] border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)]">
+        <article className="overflow-hidden rounded-lg border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)]">
           {/* Filters Bar */}
           <div className="border-b border-[#f5e2ec] bg-gradient-to-b from-[#fff9fb] to-white p-5 lg:p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -445,7 +445,7 @@ export function RescheduleBooking() {
                   placeholder={t("manager.bookings.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-10 w-full rounded-2xl border border-[#f3d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition-all duration-300 ease-out placeholder:text-[#c8b0bf] hover:border-[#f0b7cf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
+                  className="h-10 w-full rounded-lg border border-[#f3d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition-all duration-300 ease-out placeholder:text-[#c8b0bf] hover:border-[#f0b7cf] focus:border-[#ea4f93] focus:ring-2 focus:ring-[#ea4f93]/10"
                 />
               </div>
             </div>

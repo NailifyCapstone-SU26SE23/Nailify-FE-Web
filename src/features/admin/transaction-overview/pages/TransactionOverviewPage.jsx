@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Modal, message, Select, Spin, Alert, Table } from "antd";
+import { Modal, message, Select, Spin, Alert, Table, Tooltip, DatePicker } from "antd";
 import {
   Search,
   Eye,
@@ -99,9 +99,10 @@ export function TransactionOverviewPage() {
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [transactionsError, setTransactionsError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState(null);
 
   // Receipt Modal state
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -190,11 +191,22 @@ export function TransactionOverviewPage() {
     setLoadingTransactions(true);
     setTransactionsError(null);
     try {
-      const data = await fetchAdminTransactions({
+      let options = {
         pageNumber: currentPage,
         pageSize,
         salonId: selectedSalon.id
-      });
+      };
+
+      if (dateRange && dateRange.length === 2) {
+        options.startDate = dayjs(dateRange[0]).toISOString();
+        options.endDate = dayjs(dateRange[1]).toISOString();
+      }
+
+      if (statusFilter && statusFilter !== "all") {
+        options.status = statusFilter;
+      }
+
+      const data = await fetchAdminTransactions(options);
 
       if (data && data.items && data.items.length > 0) {
         const enrichedItems = await Promise.all(
@@ -225,7 +237,7 @@ export function TransactionOverviewPage() {
     if (selectedSalon) {
       loadTransactions();
     }
-  }, [selectedSalon, currentPage, pageSize]);
+  }, [selectedSalon, currentPage, pageSize, dateRange, statusFilter]);
 
   // Load booking details and transaction detail when selected transaction changes
   useEffect(() => {
@@ -315,10 +327,6 @@ export function TransactionOverviewPage() {
   const processedTransactions = useMemo(() => {
     let items = transactionsData.items || [];
 
-    if (statusFilter !== "all") {
-      items = items.filter(t => t.status?.toLowerCase() === statusFilter.toLowerCase());
-    }
-
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       items = items.filter(
@@ -330,7 +338,7 @@ export function TransactionOverviewPage() {
     }
 
     return items;
-  }, [transactionsData.items, searchQuery, statusFilter]);
+  }, [transactionsData.items, searchQuery]);
 
   // Determine if server is returning paginated data or a flat array of all records
   const isServerPaginated = useMemo(() => {
@@ -498,7 +506,7 @@ export function TransactionOverviewPage() {
         },
         render: (_, tx) => (
           <span className="font-mono font-bold text-[#2fa25f] text-sm">
-            {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "-")}
+            {tx.amountPaid != null ? formatCurrency(tx.amountPaid) : (tx.booking?.amountPaid != null ? formatCurrency(tx.booking.amountPaid) : "0 VND")}
           </span>
         )
       },
@@ -529,17 +537,19 @@ export function TransactionOverviewPage() {
         width: "3%",
         align: "right",
         render: (_, tx) => (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedTransaction(tx);
-              setModalVisible(true);
-            }}
-            title={language === "vi" ? "Xem chi tiết biên lai giao dịch" : "View transaction receipt details"}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-          >
-            <Eye size={13} className="stroke-[2]" />
-          </button>
+          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTransaction(tx);
+                setModalVisible(true);
+              }}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
+            >
+              <Eye size={13} className="stroke-[2]" />
+            </button>
+          </Tooltip>
         )
       }
     ];
@@ -983,11 +993,23 @@ export function TransactionOverviewPage() {
                 )}
               </div>
 
-              {/* Status Dropdown */}
-              <div className="flex items-center gap-3 self-end sm:self-auto">
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
+                <DatePicker.RangePicker
+                  value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+                  onChange={(dates) => {
+                    setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
+                    setCurrentPage(1);
+                  }}
+                  className="h-11 rounded-full border-slate-200 px-4"
+                  format="DD/MM/YYYY"
+                />
                 <Select
                   value={statusFilter}
-                  onChange={(val) => setStatusFilter(val)}
+                  onChange={(val) => {
+                    setStatusFilter(val);
+                    setCurrentPage(1);
+                  }}
                   className="w-40 h-11 select-premium-antd"
                   popupClassName="select-premium-dropdown"
                   prefix={

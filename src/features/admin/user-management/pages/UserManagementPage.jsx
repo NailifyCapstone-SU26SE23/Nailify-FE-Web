@@ -348,7 +348,7 @@ export function UserManagementPage() {
   const displayedUsers = useMemo(() => {
     return users.map((user) => ({
       ...user,
-      salon: user.salonId ? salonNameById[user.salonId] || "Assigned salon" : "No salon",
+      salon: user.salonId ? salonNameById[user.salonId] || (language === "vi" ? "Chưa có chi nhánh" : "No salon") : (language === "vi" ? "Chưa có chi nhánh" : "No salon assigned"),
     }));
   }, [salonNameById, users]);
 

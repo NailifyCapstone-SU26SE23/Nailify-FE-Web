@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import toast from "react-hot-toast";
 
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -34,6 +35,7 @@ import {
 import { fetchAdminServices, createAdminService, updateAdminService, deleteAdminService } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
 
 
 
@@ -58,6 +60,7 @@ Pill.propTypes = {
 };
 
 function StatusBadge({ status }) {
+  const { language } = useLanguage();
   const isActive = status === "Active";
 
   return (
@@ -73,7 +76,7 @@ function StatusBadge({ status }) {
           isActive ? "bg-[#20ab77]" : "bg-[#b8bec8]",
         ].join(" ")}
       />
-      {status}
+      {language === "vi" ? (isActive ? "Hoạt động" : "Ngừng hoạt động") : status}
     </span>
   );
 }
@@ -233,7 +236,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : status}
                 </option>
               ))}
             </select>
@@ -323,7 +326,9 @@ function ServiceDetailModal({ service, onClose }) {
               className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
                 }`}
             >
-              {service.status}
+              {language === "vi" 
+                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
+                : service.status}
             </span>
           </div>
         </div>
@@ -568,32 +573,39 @@ export function ServicePricingManagementPage() {
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
   }, []);
 
-  const getServiceActionItems = useCallback((service) => [
-    {
-      key: "view-service",
-      label: language === "vi" ? "Xem chi tiết" : "View Details",
-      icon: Eye,
-      onSelect: () => setDetailService(service),
-    },
-    {
-      key: "edit-service",
-      label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
-      icon: Pencil,
-      onSelect: () => openEditService(service),
-    },
-    {
-      key: "delete-service",
-      label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () =>
-        setDeleteState({
-          type: "service",
-          recordId: service.id,
-          label: service.name,
-        }),
-    },
-  ], [openEditService, t, language]);
+  const getServiceActionItems = useCallback((service) => {
+    const actions = [
+      {
+        key: "view-service",
+        label: language === "vi" ? "Xem chi tiết" : "View Details",
+        icon: Eye,
+        onSelect: () => setDetailService(service),
+      },
+      {
+        key: "edit-service",
+        label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
+        icon: Pencil,
+        onSelect: () => openEditService(service),
+      },
+    ];
+
+    if (service?.status === "Active") {
+      actions.push({
+        key: "delete-service",
+        label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
+        icon: Trash2,
+        className: "text-[#d14c84]",
+        onSelect: () =>
+          setDeleteState({
+            type: "service",
+            recordId: service.id,
+            label: service.name,
+          }),
+      });
+    }
+
+    return actions;
+  }, [openEditService, t, language]);
 
   const submitServiceForm = async () => {
     setServiceError("");
@@ -608,7 +620,9 @@ export function ServicePricingManagementPage() {
       setServiceModal({ open: false, mode: "create", recordId: null });
       setRefreshKey(k => k + 1);
     } catch (error) {
-      setServiceError(error.message || (language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service."));
+      const errorMsg = getErrorMessage(error, language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service.");
+      setServiceError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -868,7 +882,9 @@ export function ServicePricingManagementPage() {
               setFlashMessage(language === "vi" ? "Xóa dịch vụ thành công!" : "Service deleted successfully!");
               setRefreshKey(k => k + 1);
             } catch (error) {
-              setFlashMessage(error.message || (language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service."));
+              const errorMsg = getErrorMessage(error, language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service.");
+              setFlashMessage(errorMsg);
+              toast.error(errorMsg);
             }
             setDeleteState(null);
           }}

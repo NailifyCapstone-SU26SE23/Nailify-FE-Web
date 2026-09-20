@@ -36,6 +36,7 @@ export function ManagerSchedulesPage() {
     staffList,
     schedulesList,
     scheduleMatrix,
+    breaksMatrix,
     isLoading,
     error,
     loadData,
@@ -253,6 +254,7 @@ export function ManagerSchedulesPage() {
           <SchedulesTable
             staffList={filteredStaff}
             scheduleMatrix={scheduleMatrix}
+            breaksMatrix={breaksMatrix}
             weekDays={weekDays}
             selectedDayKey={selectedDayKey}
             showShiftTimes={showShiftTimes}

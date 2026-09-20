@@ -138,6 +138,19 @@ export function SalonDetailPage() {
 
   const menuRef = useRef(null);
 
+  const getLocalizedSalonStatus = (status, lang) => {
+    if (!status) return "";
+    const lower = status.toLowerCase();
+    if (lang === "vi") {
+      if (lower === "open" || lower === "active") return "Đang hoạt động";
+      if (lower === "closed" || lower === "inactive") return "Đóng cửa";
+      return status;
+    }
+    if (lower === "open" || lower === "active") return "Open";
+    if (lower === "closed" || lower === "inactive") return "Closed";
+    return status;
+  };
+
   const salonDetail = useMemo(() => {
     if (!salonForm && !salonRow) {
       return null;
@@ -254,14 +267,14 @@ export function SalonDetailPage() {
     if (!salonRow || !salonId) {
       return;
     }
-    
+
     setIsDeleting(true);
     try {
       await deleteAdminSalon(salonId);
       toast.success(
-        language === "vi" 
-          ? `Chi nhánh ${salonRow.name} đã được đóng cửa thành công.` 
-          : `${salonRow.name} has been closed successfully.`, 
+        language === "vi"
+          ? `Chi nhánh ${salonRow.name} đã được đóng cửa thành công.`
+          : `${salonRow.name} has been closed successfully.`,
         { id: "salon-detail-flash-msg" }
       );
       setRefreshKey(prev => prev + 1);
@@ -350,17 +363,19 @@ export function SalonDetailPage() {
           </div>
 
           <div className="flex gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={() => setShowDeleteModal(true)}
-              disabled={isLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Trash2 size={16} />
-              {t("adminSalonManagement.delete")}
-            </motion.button>
+            {salonDetail?.status === "Open" && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Trash2 size={16} />
+                {t("adminSalonManagement.delete")}
+              </motion.button>
+            )}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
@@ -480,7 +495,7 @@ export function SalonDetailPage() {
                     className={`inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-2.5 text-[12px] font-bold ${salonDetail.statusColor}`}
                   >
                     <span className="h-2 w-2 rounded-full bg-current" />
-                    {language === "vi" && salonDetail.status === "Open" ? "Đang hoạt động" : salonDetail.status}
+                    {getLocalizedSalonStatus(salonDetail.status, language)}
                   </span>
                 </div>
               </div>
@@ -554,7 +569,7 @@ export function SalonDetailPage() {
                 </motion.div>
                 <motion.div variants={fadeInUp} className="flex items-center justify-between gap-3 rounded-[16px] bg-[#fff8fb] px-4 py-3">
                   <span className="text-[12px] font-semibold text-[#a88a9f]">{t("adminSalonManagement.status")}</span>
-                  <span className="text-right text-[13px] font-medium text-[#2d1b35]">{language === "vi" && salonDetail.status === "Open" ? "Đang hoạt động" : salonDetail.status}</span>
+                  <span className="text-right text-[13px] font-medium text-[#2d1b35]">{getLocalizedSalonStatus(salonDetail.status, language)}</span>
                 </motion.div>
               </div>
             </PremiumCard>
