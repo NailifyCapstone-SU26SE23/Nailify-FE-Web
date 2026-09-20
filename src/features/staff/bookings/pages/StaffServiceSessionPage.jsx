@@ -3484,11 +3484,7 @@ export function StaffServiceSessionPage() {
         confirmIcon={CheckCircle2}
         onConfirm={handleCompleteSession}
         onCancel={() => setShowCompleteConfirm(false)}
-        highlights={[data.customerName, data.serviceLabel, data.totalAmount]}
-        details={[
-          { label: isVi ? "Hoàn thành lúc" : "Completed At", value: data.completedAt },
-          { label: isVi ? "Số tiền còn lại" : "Remaining Balance", value: data.remainingBalance },
-        ]}
+        highlights={[data.customerName, data.serviceLabel]}
         warnings={[
           isVi ? "Đảm bảo ảnh sau khi làm và các kiểm tra quy trình đã hoàn tất chính xác." : "Completing this session should only happen after the final photo and completion checks are done.",
         ]}

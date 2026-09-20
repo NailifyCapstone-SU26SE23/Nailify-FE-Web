@@ -2339,7 +2339,7 @@ export const translations = {
         updateSuccess: "Customer updated successfully!"
       },
       payments: {
-        checkoutTitle: "Checkout Payment",
+        checkoutTitle: "Check-out",
         checkoutDesc: "Complete checkout and register payment for the booking.",
         summaryTitle: "Booking Summary",
         customerInfo: "Customer Info",
@@ -4736,7 +4736,7 @@ export const translations = {
         scannerTitle: "Quét mã QR",
         scannerStarting: "Đang khởi động camera...",
         scannerError: "Không thể truy cập camera.",
-        checkoutBtn: "Thanh toán",
+        checkoutBtn: "Check-out",
         checkinBtn: "Nhận khách",
         assignArtistBtn: "Phân công thợ",
         bookingQueueNote: "Hàng chờ đặt lịch",
@@ -4848,7 +4848,7 @@ export const translations = {
         updateSuccess: "Đã cập nhật thông tin thành công!"
       },
       payments: {
-        checkoutTitle: "Thanh toán hóa đơn",
+        checkoutTitle: "Check-out",
         checkoutDesc: "Hoàn tất thanh toán và ghi nhận hóa đơn dịch vụ.",
         summaryTitle: "Tóm tắt dịch vụ",
         customerInfo: "Thông tin khách",

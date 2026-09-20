@@ -708,13 +708,11 @@ export function ReceptionistBookingDetailPage() {
 
   }, [language, booking]);
 
-  const totalAmount = formatCurrency(booking?.totalPrice);
   const price = formatCurrency(booking?.price);
   const discount = formatCurrency(booking?.discount);
   const depositPaid = formatCurrency(booking?.amountPaid);
   const remainingBalance = formatCurrency(booking?.amountDue);
-  // const depositPaid = formatCurrency(booking?.amountDue);
-  // const remainingBalance = formatCurrency(booking?.amountPaid);
+  const amountDue = booking?.amountDue ?? 0;
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
   const actionAvailability = useMemo(
@@ -971,13 +969,37 @@ export function ReceptionistBookingDetailPage() {
     }
   }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
 
-  const handleCheckout = useCallback(() => {
-    if (!bookingId || !actionAvailability.canCheckout) {
+  const handleCheckout = useCallback(async () => {
+    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
       return;
     }
 
-    navigate(getReceptionistBookingCheckoutRoute(bookingId));
-  }, [actionAvailability.canCheckout, bookingId, navigate]);
+    const amountDue = booking?.amountDue ?? 0;
+
+    if (amountDue > 0) {
+      navigate(getReceptionistBookingCheckoutRoute(bookingId));
+      return;
+    }
+
+    setIsCheckoutSubmitting(true);
+    try {
+      await checkoutReceptionistBooking(bookingId);
+      toast.success(isVi ? "Đã checkout thành công." : "Checked out successfully.");
+      await handleRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (isVi ? "Thanh toán thất bại." : "Checkout failed."));
+    } finally {
+      setIsCheckoutSubmitting(false);
+    }
+  }, [
+    actionAvailability.canCheckout,
+    bookingId,
+    booking?.amountDue,
+    navigate,
+    isCheckoutSubmitting,
+    isVi,
+    handleRefresh,
+  ]);
 
   const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {
@@ -1301,7 +1323,7 @@ export function ReceptionistBookingDetailPage() {
             subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
           // badge="API Validated"
           >
-            <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
+            <div className="grid gap-5">
               <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between">
@@ -1316,44 +1338,46 @@ export function ReceptionistBookingDetailPage() {
                     <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
                     <span className="font-bold text-[#2B182B]">{depositPaid}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
-                    <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
-                  </div>
+                  {amountDue > 0 && (
+
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
+                      <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Fresh Emerald Green Highlighted Total */}
-                <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
-                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{remainingBalance}</p>
+                {amountDue > 0 && (
+                  <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">
+                        {t("receptionist.payments.totalAmount") || "Total Amount Payable"}
+                      </p>
+                      <p className="text-3xl font-bold text-[#047857] leading-none mt-1">
+                        {remainingBalance}
+                      </p>
+                    </div>
                   </div>
-                  {/* <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
-                    <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
-                  </span> */}
-                </div>
+                )}
               </div>
 
-              <div className="flex flex-col justify-center gap-3.5">
+              {booking.status != "Completed" && booking.status != "Cancelled" && (
                 <button
                   type="button"
                   onClick={handleCheckout}
-                  disabled={!actionAvailability.canCheckout}
+                  disabled={!actionAvailability.canCheckout || isCheckoutSubmitting}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <CreditCard size={16} />
-                  {t("receptionist.payments.checkoutTitle") || "Add Payment"}
+                  {isCheckoutSubmitting ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={16} />
+                  )}
+                  {isCheckoutSubmitting
+                    ? (isVi ? "Đang xử lý..." : "Processing...")
+                    : (t("receptionist.payments.checkoutTitle") || "Checkout")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Print Receipt")}
-                  disabled={!actionAvailability.canPrintReceipt}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-bold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
-                >
-                  <Printer size={16} />
-                  {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
-                </button>
-              </div>
+              )}
             </div>
           </DetailCard>
 
