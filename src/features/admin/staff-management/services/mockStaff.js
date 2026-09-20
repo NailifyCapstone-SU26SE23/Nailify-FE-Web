@@ -107,7 +107,7 @@ export const STAFF_CREATE_STATUS_OPTIONS = [
 ];
 
 export const STAFF_SALON_OPTIONS = [
-  "Nailify Central",
+  "",
   "Nailify Uptown",
   "Nailify Downtown",
   "Nailify Eastside",
@@ -290,7 +290,7 @@ const STAFF_FORM_SEED = {
     email: "sophia.lee@nailify.com",
     phone: "+1 (555) 101-2001",
     role: "SENIOR_ARTIST",
-    assignedSalon: "Nailify Central",
+    assignedSalon: "",
     status: "ACTIVE",
     employmentType: "Full-time",
     experience: "6 years",
@@ -370,7 +370,7 @@ export const createEmptyStaffForm = () => ({
   email: "",
   phone: "",
   role: "Staff_Artist",
-  assignedSalon: "Nailify Central",
+  assignedSalon: "",
   status: "ONBOARDING",
   employmentType: "Full-time",
   experience: "",

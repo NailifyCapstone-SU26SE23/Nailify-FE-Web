@@ -40,8 +40,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
   const { t, language } = useLanguage();
   const displayName =
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
-    formValues.name ||
-    "New internal account";
+    formValues.name || (language === "vi" ? "Tài khoản mới" : "New User");
   const [avatarPreview, setAvatarPreview] = useState("");
   const [hasImageError, setHasImageError] = useState(false);
 

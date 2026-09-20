@@ -495,7 +495,7 @@ export function CustomerNailPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [metaData, setMetaData] = useState(null);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   const seenPendingReviewIdsRef = useRef(new Set());
   const hasInitializedPendingReviewRef = useRef(false);
@@ -610,6 +610,15 @@ export function CustomerNailPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // Auto refetch every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadCustomerNails({ silent: true, suppressNewRequestToast: true });
+      loadStats();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [loadCustomerNails, loadStats]);
 
   // Lắng nghe SignalR cho yêu cầu custom nail mới
   useEffect(() => {

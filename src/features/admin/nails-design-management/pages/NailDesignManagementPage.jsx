@@ -143,17 +143,12 @@ export function NailDesignManagementPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [designs, setDesigns] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
     pageSize: 8,
-    totalItems: 0,
-    hasPrevious: false,
-    hasNext: false,
-    firstRowOnPage: 0,
-    lastRowOnPage: 0,
   });
+  const [allFetchedDesigns, setAllFetchedDesigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -196,29 +191,35 @@ export function NailDesignManagementPage() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadGlobalMetrics = async () => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      setError("");
       try {
         const response = await fetchAdminNailDesigns({
           pageNumber: 1,
           pageSize: 10000,
-          name: debouncedQuery,
-          categoryIds: selectedCategoryIds,
+          name: "",
+          categoryIds: [],
         });
 
         if (!isMounted) return;
 
         const allItems = response.items || [];
+        setAllFetchedDesigns(allItems);
         setGlobalMetrics({
           activeDesigns: allItems.filter(d => d.status === "Active").length,
           tryOnReady: allItems.filter(d => !!d.previewImage).length,
         });
       } catch (err) {
-        console.error("Failed to load global metrics", err);
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : "Failed to load nail designs.");
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
-    void loadGlobalMetrics();
+    void fetchAllData();
     return () => { isMounted = false; };
-  }, [debouncedQuery, selectedCategoryIds]);
+  }, [refreshKey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -267,71 +268,52 @@ export function NailDesignManagementPage() {
     return () => window.clearTimeout(timerId);
   }, [query]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const filteredAndSortedAllDesigns = useMemo(() => {
+    let result = allFetchedDesigns;
 
-    const loadDesigns = async () => {
-      setIsLoading(true);
-      setError("");
+    // Filter by query
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      result = result.filter(d => (d.name || "").toLowerCase().includes(q) || (d.description || "").toLowerCase().includes(q));
+    }
 
-      try {
-        const response = await fetchAdminNailDesigns({
-          pageNumber: metaData.currentPage,
-          pageSize: metaData.pageSize,
-          name: debouncedQuery,
-          categoryIds: selectedCategoryIds,
-        });
+    // Filter by categories (OR Logic)
+    if (selectedCategoryIds.length > 0) {
+      result = result.filter(d => {
+        const catIds = d.categoryIds || [];
+        return selectedCategoryIds.some(selectedId => catIds.includes(selectedId));
+      });
+    }
 
-        if (!isMounted) {
-          return;
-        }
-
-        setDesigns((prev) => metaData.currentPage === 1 ? response.items : [...prev, ...response.items]);
-        setMetaData(response.metaData);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        setDesigns([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail designs.");
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadDesigns();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedCategoryIds, refreshKey]);
-
-  const normalizedDesigns = useMemo(
-    () => designs.map((design, index) => normalizeDesign(design, index, t)),
-    [designs, t],
-  );
-
-  const sortedDesigns = useMemo(() => {
-    let result = [...normalizedDesigns];
-
+    // Sort
     if (sortBy === "name-asc") {
-      result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      result = [...result].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     } else if (sortBy === "name-desc") {
-      result.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+      result = [...result].sort((a, b) => (b.name || "").localeCompare(a.name || ""));
     }
 
     return result;
-  }, [normalizedDesigns, sortBy]);
+  }, [allFetchedDesigns, debouncedQuery, selectedCategoryIds, sortBy]);
+
+  const visibleDesigns = useMemo(() => {
+    return filteredAndSortedAllDesigns.slice(0, metaData.currentPage * metaData.pageSize);
+  }, [filteredAndSortedAllDesigns, metaData.currentPage, metaData.pageSize]);
+
+  const normalizedDesigns = useMemo(
+    () => visibleDesigns.map((design, index) => normalizeDesign(design, index, t)),
+    [visibleDesigns, t],
+  );
+
+  const totalItemsCount = filteredAndSortedAllDesigns.length;
+  const totalPagesCount = Math.max(1, Math.ceil(totalItemsCount / metaData.pageSize));
+  const hasNextPage = (metaData.currentPage * metaData.pageSize) < totalItemsCount;
 
   const summaryCards = useMemo(
     () => [
       {
         label: t("adminNailsDesignManagement.totalDesigns"),
-        value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
+        value: totalItemsCount.toLocaleString(),
+        note: `${totalPagesCount} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
         color: "#ea4f93",
       },
@@ -357,7 +339,7 @@ export function NailDesignManagementPage() {
         color: "#f5a623",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language, t],
+    [totalItemsCount, totalPagesCount, normalizedDesigns, globalMetrics, language, t],
   );
 
   const filterItems = useMemo(() => {
@@ -591,7 +573,7 @@ export function NailDesignManagementPage() {
                 </div>
               </div>
             ) : (
-              sortedDesigns.map((design) => (
+              normalizedDesigns.map((design) => (
                 <article
                   key={design.id}
                   className="relative flex h-full flex-col overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
@@ -688,11 +670,11 @@ export function NailDesignManagementPage() {
           <div className="mt-4 flex flex-col items-center justify-center pt-2">
             <p className="text-[11px] text-[#c694ad] mb-3">
               {language === "vi"
-                ? `Hiển thị ${normalizedDesigns.length} trong số ${metaData.totalItems} thiết kế`
-                : `Showing ${normalizedDesigns.length} of ${metaData.totalItems} designs`
+                ? `Hiển thị ${normalizedDesigns.length} trong số ${totalItemsCount} thiết kế`
+                : `Showing ${normalizedDesigns.length} of ${totalItemsCount} designs`
               }
             </p>
-            {metaData.hasNext && (
+            {hasNextPage && (
               <button
                 type="button"
                 disabled={isLoading}

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Select, Rate } from "antd";
+import { Select, Rate, message } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
@@ -60,8 +60,13 @@ export function StaffCreatePage() {
         const fetchedSalons = salonList.items || [];
         setSalons(fetchedSalons);
         
-        if (!location.state?.selectedSalonId && fetchedSalons.length > 0) {
-          setFormData(prev => ({ ...prev, salonId: fetchedSalons[0].id }));
+        if (location.state?.selectedSalonId) {
+          const preSelected = fetchedSalons.find(s => s.id === location.state.selectedSalonId);
+          setFormData(prev => ({ 
+            ...prev, 
+            salonId: location.state.selectedSalonId,
+            assignedSalon: preSelected ? preSelected.name : ""
+          }));
         }
       } catch (err) {
         console.error("Failed to load salons", err);
@@ -109,6 +114,10 @@ export function StaffCreatePage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!formData.salonId) {
+      message.error(language === "vi" ? "Vui lòng chọn một chi nhánh phân bổ." : "Please select an assigned salon.");
+      return;
+    }
     setShowSaveModal(true);
   };
 
@@ -549,7 +558,7 @@ export function StaffCreatePage() {
         onCancel={() => !isSaving && setShowSaveModal(false)}
         highlights={[formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New staff member"), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role]}
         details={[
-          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
+          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || salons.find(s => s.id === formData.salonId)?.name || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}
       />
 
