@@ -545,33 +545,29 @@ export function ReceptionistCheckoutPaymentPage() {
                 <span className="text-2xl font-bold text-[#d54186]">{formatCurrency(remainingValue)}</span>
               </div>
             </div>
-
-            {/* <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#f5d7e4] pt-4">
-              <span className="text-lg font-bold text-[#412643]">{t("receptionist.bookings.price") || "Total Amount"}</span>
-              <span className="text-2xl font-bold text-green-700">{formatCurrency(totalValue)}</span>
-            </div> */}
           </SummaryCard>
 
           <SummaryCard title={t("receptionist.payments.payMethod") || "Payment Method"}>
-            <div className="mb-4 w-fit">
+            <div>
               <Radio.Group
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mx-auto grid w-fit grid-cols-2 gap-8"
-                style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+                className="!grid !w-full grid-cols-2 gap-4
+             [&_.ant-radio-button-wrapper]:!w-full
+             [&_.ant-radio-button-wrapper]:!h-auto"
               >
                 <Radio.Button
                   value="payos"
                   className="
-                            group !h-24 !rounded-2xl !border-2 !border-[#f3d7e2]
-                            !bg-white transition-all duration-200
-                            hover:-translate-y-1 hover:shadow-lg
-                            data-[checked=true]:!border-[#ea4f93]
-                            data-[checked=true]:!bg-[#fff3f8]
-                            data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
-                          "
+  group !h-24 !w-full !rounded-2xl !border-2 !border-[#f3d7e2]
+  !bg-white transition-all duration-200
+  hover:-translate-y-1 hover:shadow-lg
+  data-[checked=true]:!border-[#ea4f93]
+  data-[checked=true]:!bg-[#fff3f8]
+  data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
+"
                 >
-                  <div className="flex h-full items-center gap-3">
+                  <div className="flex h-16 items-center gap-3">
                     <div
                       className="
                                 flex h-12 w-12 items-center justify-center rounded-xl
@@ -598,15 +594,15 @@ export function ReceptionistCheckoutPaymentPage() {
                 <Radio.Button
                   value="cod"
                   className="
-                            group !h-24 !rounded-2xl !border-2 !border-[#f3d7e2]
-                            !bg-white transition-all duration-200
-                            hover:-translate-y-1 hover:shadow-lg
-                            data-[checked=true]:!border-[#ea4f93]
-                            data-[checked=true]:!bg-[#fff3f8]
-                            data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
-                          "
+  group !h-24 !w-full !rounded-2xl !border-2 !border-[#f3d7e2]
+  !bg-white transition-all duration-200
+  hover:-translate-y-1 hover:shadow-lg
+  data-[checked=true]:!border-[#ea4f93]
+  data-[checked=true]:!bg-[#fff3f8]
+  data-[checked=true]:shadow-[0_8px_24px_rgba(234,79,147,0.18)]
+"
                 >
-                  <div className="flex h-full items-center gap-3">
+                  <div className="flex h-16 items-center gap-3">
                     <div
                       className="
                                 flex h-12 w-12 items-center justify-center rounded-xl
@@ -624,7 +620,7 @@ export function ReceptionistCheckoutPaymentPage() {
                         {language === "vi" ? "Tiền mặt" : "Cash"}
                       </p>
                       <p className="text-xs text-[#8d6a7b]">
-                        {language === "vi" ? "Thanh toán tại salon" : "Pay at salon"}
+                        {language === "vi" ? "Thanh toán tiền mặt" : "Pay with cash"}
                       </p>
                     </div>
                   </div>
@@ -656,125 +652,28 @@ export function ReceptionistCheckoutPaymentPage() {
               </div>
             )}
 
-
-            {/* Mock buttons for testing PaymentStatusPage (kept visible as requested) */}
             {paymentMethod === 'payos' && (
-              <div className="flex flex-col gap-4 mt-4">
+              <div className="flex flex-col items-center justify-center p-6 border border-[#f3cade] rounded-lg bg-[#fffafb] mt-4">
+                <QrCode size={48} className="text-[#ea4f93] mb-4" />
+                <p className="text-lg font-bold text-[#412643] mb-4">
+                  {language === "vi" ? "Thanh toán qua PayOS" : "Pay with PayOS"}
+                </p>
+
                 <button
                   type="button"
                   onClick={handleCheckout}
                   disabled={isCreatingPayment}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1888f3] px-2 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(24,136,243,0.22)] disabled:opacity-50"
+                  className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isCreatingPayment ? <LoaderCircle size={14} className="animate-spin" /> : null}
-                  {language === "vi" ? "Thanh toán qua PayOS" : "Checkout with PayOS"}
+                  {isCreatingPayment ? (
+                    <LoaderCircle size={18} className="animate-spin" />
+                  ) : (
+                    <Check size={18} />
+                  )}
+                  {t("receptionist.dashboard.checkoutBtn") || "Complete Checkout"}
                 </button>
-
               </div>
             )}
-          </SummaryCard>
-
-          <SummaryCard title={language === "vi" ? "Xem trước hóa đơn" : "Receipt Preview"}>
-            <div className="bg-[#faf8f5] border border-[#e6decb] p-5 rounded-[1.75rem] shadow-[0_8px_24px_rgba(97,76,60,0.03)] relative overflow-hidden text-[#4a3f35] border-t-4 border-t-[#ea4f93]">
-              {/* Dashed edge header */}
-              <div className="text-center pb-3.5 border-b border-dashed border-[#e6decb] space-y-1">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#a88a9f]">{language === "vi" ? "Hóa đơn Nailify" : "Nailify Receipt"}</h3>
-                <div className="font-mono text-[9px] text-[#a88a9f]">
-                  {formatDate(booking.bookingDate)} {completedTime ? `, ${completedTime}` : ""}
-                </div>
-              </div>
-
-              {/* Customer & Salon Details inside Receipt */}
-              <div className="py-3.5 space-y-2 border-b border-dashed border-[#e6decb] text-xs">
-                <div className="flex justify-between gap-3">
-                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.bookings.customer") || "Customer"}</span>
-                  <span className="font-bold text-[#2d1b35] text-right truncate">{customerDisplayName}</span>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.bookings.salon") || "Salon"}</span>
-                  <span className="font-bold text-[#ea4f93] text-right truncate">{salonProfile?.name || booking.salonName || "Nailify Salon"}</span>
-                </div>
-                <div className="flex justify-between gap-3 border-t border-dashed border-[#e6decb]/40 pt-2 mt-1.5">
-                  <span className="text-[#a88a9f] shrink-0">{t("receptionist.payments.payMethod") || "Payment Method"}</span>
-                  <span className="font-bold text-[#2d1b35] text-right">
-                    {paymentStage === "paid" ? (language === "vi" ? "Thanh toán còn lại" : "Remaining balance") : (language === "vi" ? "Thanh toán 100%" : "Full payment")}
-                  </span>
-                </div>
-              </div>
-
-              {/* Billing Breakdown inside Receipt */}
-              <div className="py-3.5 space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">{t("receptionist.payments.subtotal") || "Subtotal"}</span>
-                  <span className="font-mono font-semibold text-[#2d1b35]">{formatCurrency(subtotalValue)}</span>
-                </div>
-
-                {discountValue > 0 && (
-                  <div className="flex justify-between pl-2.5 text-[11px]">
-                    <span className="text-[#a88a9f] italic">↳ {t("receptionist.payments.promotion") || "Discount"}</span>
-                    <span className="font-mono text-emerald-600 font-medium">
-                      -{formatCurrency(discountValue)}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between border-t border-dashed border-[#e6decb] pt-2">
-                  <span className="text-[#a88a9f] font-bold">{t("receptionist.bookings.price") || "Total Price"}</span>
-                  <span className="font-mono font-bold text-[#2d1b35]">{formatCurrency(totalValue)}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">{t("receptionist.payments.deposit") || "Deposit paid"}</span>
-                  <span className="font-mono text-[#ea4f93] font-bold">{formatCurrency(depositValue)}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-[#a88a9f]">{t("receptionist.payments.totalAmount") || "Remaining balance"}</span>
-                  <span className="font-mono text-[#2d1b35] font-semibold">{formatCurrency(remainingValue)}</span>
-                </div>
-              </div>
-
-              {/* Barcode footer */}
-              <div className="border-t border-dashed border-[#e6decb] pt-3.5 text-center space-y-1.5">
-                <div className="flex justify-center items-center gap-[2px] opacity-25 h-6 select-none">
-                  {[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 6].map((w, i) => (
-                    <div key={i} className="bg-black h-full" style={{ width: `${w}px` }} />
-                  ))}
-                </div>
-                <div className="text-[9px] uppercase tracking-[0.25em] text-[#a88a9f] font-mono">
-                  {language === "vi" ? "Nailify Inc — Xin cảm ơn quý khách" : "Nailify Inc — Thank You"}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => toast.success(language === "vi" ? "In hóa đơn đã sẵn sàng trong giao diện." : "Print bill is ready in UI.")}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
-              >
-                <Printer size={14} />
-                {language === "vi" ? "In Hóa đơn" : "Print Bill"}
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.success(language === "vi" ? "Chức năng gửi hóa đơn đã sẵn sàng để tích hợp API thanh toán." : "Receipt send flow is ready for payment API integration.")}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-white px-4 py-3 text-sm font-bold text-[#d54186]"
-              >
-                <Mail size={14} />
-                {language === "vi" ? "Gửi hóa đơn cho khách" : "Send Receipt to Customer"}
-              </button>
-              <Link
-                to={ROUTES.receptionistBookings}
-                className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${paymentStage === "paid"
-                  ? "border-[#dcebdc] bg-[#eef9f1] text-[#1f9d61]"
-                  : "border-[#f3d7e2] bg-[#fffafb] text-[#8f7b88]"
-                  }`}
-              >
-                <ShieldCheck size={14} />
-                {t("receptionist.dashboard.checkoutBtn") || "Finish Checkout"}
-              </Link>
-            </div>
           </SummaryCard>
         </div>
 
