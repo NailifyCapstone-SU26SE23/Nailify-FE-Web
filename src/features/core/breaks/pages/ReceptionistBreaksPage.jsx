@@ -60,7 +60,7 @@ export function ReceptionistBreaksPage() {
         pageNumber: currentPage,
         pageSize,
         artistId: filterArtistId || undefined,
-        date: filterDate ? dayjs(filterDate).toISOString() : undefined,
+        date: filterDate ? dayjs(filterDate).format('YYYY-MM-DD') : undefined,
       });
 
       if (response) {
@@ -159,7 +159,7 @@ export function ReceptionistBreaksPage() {
       title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
       key: "date",
       sorter: (a, b) => dayjs(a.breakDate).unix() - dayjs(b.breakDate).unix(),
-      render: (_, item) => <span className="px-2">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+      render: (_, item) => <span className="px-2">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
     },
     {
       title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thời gian" : "Time Window"}</span>,
@@ -352,7 +352,7 @@ export function ReceptionistBreaksPage() {
                 <div className="text-sm text-slate-600 space-y-1.5 border-t border-[#f7ebdf] pt-2">
                   <div className="flex justify-between">
                     <span className="text-[#a88a9d]">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
-                    <span className="font-semibold text-slate-800">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+                    <span className="font-semibold text-slate-800">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#a88a9d]">{language === "vi" ? "Thời gian:" : "Time Window:"}</span>
@@ -420,7 +420,7 @@ export function ReceptionistBreaksPage() {
           },
           {
             label: language === "vi" ? "Ngày nghỉ" : "Break Date",
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : ""
           },
           {
             label: language === "vi" ? "Thời gian" : "Time Window",
@@ -465,7 +465,7 @@ export function ReceptionistBreaksPage() {
 
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
                     <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
-                    <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
+                    <span className="font-semibold">{dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")}</span>
                   </div>
 
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">

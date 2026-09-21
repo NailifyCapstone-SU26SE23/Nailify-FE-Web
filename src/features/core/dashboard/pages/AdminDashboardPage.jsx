@@ -21,6 +21,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 // Technical Light Theme Palette
 const TECH_COLORS = ["#0ea5e9", "#f59e0b", "#10b981", "#6366f1", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16"];
@@ -601,11 +602,10 @@ export function AdminDashboardPage() {
             onChange={handleFilterModeChange}
             className="rounded-md bg-slate-100 p-1 font-semibold text-slate-700"
           />
-          <DatePicker.RangePicker
+          <DateRangePicker
             value={dateRange}
             onChange={handleDateRangeChange}
             className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
-            format="YYYY-MM-DD"
           />
         </div>
       </div>

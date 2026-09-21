@@ -1419,7 +1419,7 @@ export function CustomerNailDetailPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-[#3f2240] truncate font-serif">{comp.name || "Custom Accessory"}</p>
+                          <p className="text-sm font-bold text-[#3f2240] truncate ">{comp.name || "Custom Accessory"}</p>
                           <p className="mt-0.5 text-xs text-[#a18560]">
                             Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
                           </p>

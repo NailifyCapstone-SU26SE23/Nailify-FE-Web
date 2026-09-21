@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Table, Tooltip } from "antd";
+import { Table, Tooltip, Select } from "antd";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -35,10 +35,8 @@ import {
   PROMOTION_TYPE_OPTIONS,
 } from "../services/promotionManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
-
-
-
-function formatDateTime(value) {
+import dayjs from "dayjs";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker"; function formatDateTime(value) {
   if (!value) {
     return "--";
   }
@@ -96,6 +94,7 @@ export function PromotionsManagementPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [scopeFilter, setScopeFilter] = useState("");
   const [discountTypeFilter, setDiscountTypeFilter] = useState("");
+  const [dateRange, setDateRange] = useState(null);
   const [promotions, setPromotions] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
@@ -247,17 +246,29 @@ export function PromotionsManagementPage() {
   }, [metaData.currentPage, metaData.totalPages]);
 
   const filteredPromotions = useMemo(() => {
-    if (!debouncedQuery) {
-      return promotions;
+    let result = promotions;
+
+    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2) {
+      const [start, end] = dateRange;
+      if (start && end) {
+        result = result.filter(item => {
+          const d = dayjs(item.startDate || item.createdAt);
+          return d.isAfter(start.startOf('day')) && d.isBefore(end.endOf('day'));
+        });
+      }
     }
 
-    return promotions.filter((item) =>
-      [item.name, item.description, item.type, item.scope]
-        .join(" ")
-        .toLowerCase()
-        .includes(debouncedQuery),
-    );
-  }, [debouncedQuery, promotions]);
+    if (debouncedQuery) {
+      result = result.filter((item) =>
+        [item.name, item.description, item.type, item.scope]
+          .join(" ")
+          .toLowerCase()
+          .includes(debouncedQuery),
+      );
+    }
+
+    return result;
+  }, [debouncedQuery, promotions, dateRange]);
 
   const columns = useMemo(
     () => [
@@ -414,9 +425,9 @@ export function PromotionsManagementPage() {
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
-            <label className="relative flex-1">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-3 shadow-[0_12px_26px_rgba(236,72,153,0.05)] 2xl:flex-row 2xl:items-start 2xl:justify-between">
+          <div className="flex w-full flex-wrap gap-3 items-center flex-1">
+            <label className="relative flex-1 min-w-[250px]">
               <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]" />
               <input
                 value={query}
@@ -426,43 +437,57 @@ export function PromotionsManagementPage() {
               />
             </label>
 
-            <select
-              value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả các loại" : "All types"}</option>
-              {PROMOTION_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{getPromotionTypeLabel(option, t)}</option>
-              ))}
-            </select>
+            <DateRangePicker
+              value={dateRange}
+              onChange={(dates) => setDateRange(dates)}
+              className="h-10 w-full sm:w-auto"
+            />
 
-            <select
-              value={scopeFilter}
-              onChange={(event) => setScopeFilter(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả phạm vi" : "All scopes"}</option>
-              {PROMOTION_SCOPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{getPromotionScopeLabel(option, t)}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+              <Select
+                value={typeFilter || undefined}
+                onChange={(val) => setTypeFilter(val || "")}
+                className="h-10 select-premium-antd min-w-[140px]"
+                popupClassName="select-premium-dropdown"
+                placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả các loại" : "All types"}
+                allowClear
+                options={PROMOTION_TYPE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: getPromotionTypeLabel(option, t)
+                }))}
+              />
 
-            <select
-              value={discountTypeFilter}
-              onChange={(event) => setDiscountTypeFilter(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">{t("userManagement.table.actions") === "Thao tác" ? "Tất cả giảm giá" : "All discounts"}</option>
-              {PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>{getPromotionDiscountTypeLabel(option, t)}</option>
-              ))}
-            </select>
+              <Select
+                value={scopeFilter || undefined}
+                onChange={(val) => setScopeFilter(val || "")}
+                className="h-10 select-premium-antd min-w-[140px]"
+                popupClassName="select-premium-dropdown"
+                placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả phạm vi" : "All scopes"}
+                allowClear
+                options={PROMOTION_SCOPE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: getPromotionScopeLabel(option, t)
+                }))}
+              />
+
+              <Select
+                value={discountTypeFilter || undefined}
+                onChange={(val) => setDiscountTypeFilter(val || "")}
+                className="h-10 select-premium-antd min-w-[140px]"
+                popupClassName="select-premium-dropdown"
+                placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả giảm giá" : "All discounts"}
+                allowClear
+                options={PROMOTION_DISCOUNT_TYPE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: getPromotionDiscountTypeLabel(option, t)
+                }))}
+              />
+            </div>
           </div>
 
           <Link
             to={ROUTES.adminPromotionsCreate}
-            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] h-10"
           >
             <Plus size={13} className="mr-1.5 shrink-0" />
             {t("promotions.btnCreate")}

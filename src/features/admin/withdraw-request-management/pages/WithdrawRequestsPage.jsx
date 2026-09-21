@@ -21,6 +21,7 @@ import {
   getWithdrawRequestStatusLabel,
 } from "../utils/withdrawRequestUtils";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 const { Title, Text } = Typography;
 
@@ -261,13 +262,12 @@ export function WithdrawRequestsPage() {
         <Card className="shadow-sm">
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex w-full flex-col sm:flex-row gap-3 sm:w-auto">
-              <DatePicker.RangePicker
+              <DateRangePicker
                 value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
                 onChange={(dates) => {
                   setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
                 }}
                 className="w-full sm:w-[280px]"
-                format="DD/MM/YYYY"
               />
               <Select
                 allowClear

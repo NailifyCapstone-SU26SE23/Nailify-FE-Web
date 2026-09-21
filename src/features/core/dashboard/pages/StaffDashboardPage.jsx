@@ -30,6 +30,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import DateRangePicker from "../../../../shared/components/ui/DateRangePicker";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
@@ -204,7 +205,40 @@ function getStatusTone(status) {
   }
 }
 
-
+function formatDisplay(s, language) {
+  switch (s) {
+    case "Checked In":
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "In Progress":
+    case "InProgress":
+      return language === "vi" ? "Đang tiến hành" : "In Progress";
+    case "Pending":
+      return language === "vi" ? "Đang chờ" : "Pending";
+    case "Confirmed":
+    case "Approved":
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
+    case "Completed":
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
+    case "ServiceCompleted":
+      return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
+    case "Rejected":
+      return language === "vi" ? "Đã từ chối" : "Rejected";
+    case "Cancelled":
+    case "Canceled":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
+    case "ReschedulePending":
+      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+    case "RescheduleSuggested":
+      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa chữa" : "Repaired";
+    case "All":
+      return language === "vi" ? "Tất cả" : "All";
+    default:
+      return s;
+  }
+}
 
 function StatusChip({ label, className }) {
   return (
@@ -214,7 +248,7 @@ function StatusChip({ label, className }) {
   );
 }
 
-function MobileBookingCard({ booking, actions }) {
+function MobileBookingCard({ booking, actions, language }) {
   return (
     <article className="w-full min-w-0 rounded-[18px] border border-[#f8dce8] bg-[#fff9fc] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -225,7 +259,7 @@ function MobileBookingCard({ booking, actions }) {
             <span className="text-[11px] text-[#c28ca6]">{formatBookingWindow(booking)}</span>
           </div>
         </div>
-        <StatusChip label={booking.status} className={getStatusTone(booking.status)} />
+        <StatusChip label={formatDisplay(booking.status, language)} className={getStatusTone(booking.status)} />
       </div>
 
       <div className="mt-4 flex min-w-0 items-center gap-3">
@@ -635,6 +669,7 @@ export function StaffDashboardPage() {
                         key={booking.id}
                         booking={booking}
                         actions={getActionItems(booking)}
+                        language={language}
                       />
                     ))}
                     {!sortedBookings.length ? (
@@ -1025,7 +1060,7 @@ export function StaffDashboardPage() {
       dataIndex: "status",
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
-      render: (value) => <StatusChip label={value} className={getStatusTone(value)} />,
+      render: (value) => <StatusChip label={formatDisplay(value, language)} className={getStatusTone(value)} />,
     },
     {
       title: language === "vi" ? "Hành động" : "Action",
@@ -1112,14 +1147,13 @@ export function StaffDashboardPage() {
               }}
               className="rounded-md bg-slate-100 p-1 font-semibold"
             />
-            <DatePicker.RangePicker
+            <DateRangePicker
               value={dateRange}
               onChange={(dates) => {
                 setDateRange(dates || [dayjs(), dayjs()]);
                 setFilterMode("Custom");
               }}
-              className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
-              format="YYYY-MM-DD"
+              className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500 h-[32px]"
             />
           </div>
         </div>

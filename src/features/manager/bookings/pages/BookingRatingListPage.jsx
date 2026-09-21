@@ -21,7 +21,8 @@ import { fetchBookingRatingsBySalonId, fetchUserById } from "../services/booking
 import { fetchAllSalonStaff, getSalonId, fetchNailArtistById } from "../../staff-artist-management/services/nailArtistsService";
 import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDate } from "../../../../shared/utils/formatDate";
-import { Spin, Alert, Select, Modal, DatePicker } from "antd";
+import { Spin, Alert, Select, Modal } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import dayjs from "dayjs";
 import { Pagination } from "../../../../shared/components/common/Pagination";
@@ -190,7 +191,7 @@ export function BookingRatingListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [scoreFilter, setScoreFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
-  const [filterDate, setFilterDate] = useState(null);
+  const [filterDateRange, setFilterDateRange] = useState(null);
 
   // Response modal state
   const [replyModalVisible, setReplyModalVisible] = useState(false);
@@ -375,8 +376,14 @@ export function BookingRatingListPage() {
       });
     }
 
-    if (filterDate) {
-      items = items.filter(r => dayjs(r.createdAt).isSame(filterDate, 'day'));
+    if (filterDateRange && Array.isArray(filterDateRange) && filterDateRange.length === 2) {
+      const [start, end] = filterDateRange;
+      if (start && end) {
+        items = items.filter(r => {
+          const d = dayjs(r.createdAt);
+          return d.isAfter(start.startOf('day')) && d.isBefore(end.endOf('day'));
+        });
+      }
     }
 
     if (sortBy === "recent") {
@@ -388,12 +395,12 @@ export function BookingRatingListPage() {
     }
 
     return items;
-  }, [ratings, searchQuery, scoreFilter, sortBy, usersMap, filterDate]);
+  }, [ratings, searchQuery, scoreFilter, sortBy, usersMap, filterDateRange]);
 
   // Reset page when filters change to prevent out of bounds
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, scoreFilter, sortBy, filterDate]);
+  }, [searchQuery, scoreFilter, sortBy, filterDateRange]);
 
   // Calculate total pages for client-side pagination
   const totalPages = useMemo(() => {
@@ -498,10 +505,10 @@ export function BookingRatingListPage() {
             <div className="lg:col-span-7 space-y-6">
 
               {/* Search & Filters Command Bar */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+              <div className="flex flex-col gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
+                <div className="flex flex-row justify-between items-center gap-3 w-full">
+                  <div className="flex items-center gap-1.5 w-full bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
                     {["all", "5", "4", "3", "2", "1"].map((score) => (
                       <button
                         key={score}
@@ -518,19 +525,16 @@ export function BookingRatingListPage() {
                     ))}
                   </div>
 
-                  <DatePicker
-                    placeholder={language === "vi" ? "Lọc theo ngày" : "Filter by date"}
-                    value={filterDate}
-                    onChange={(date) => setFilterDate(date)}
-                    className="h-10 rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
-                    suffixIcon={<Calendar size={13} className="text-[#a88a9f]" />}
-                    allowClear
+                  <DateRangePicker
+                    value={filterDateRange}
+                    onChange={(dates) => setFilterDateRange(dates)}
+                    className="h-10 w-auto rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
                   />
 
                   <Select
                     value={sortBy}
                     onChange={(val) => setSortBy(val)}
-                    className="w-36 h-10 select-premium-antd"
+                    className="w-[300px] h-10 !rounded-lg border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300 select-premium-antd"
                     popupClassName="select-premium-dropdown"
                     options={[
                       { value: "recent", label: language === "vi" ? "Mới nhất" : "Most Recent" },
@@ -540,16 +544,17 @@ export function BookingRatingListPage() {
                     style={{ borderRadius: "0.875rem" }}
                   />
                 </div>
-              </div>
-              <div className="relative flex-1 w-full bg-white rounded-lg">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
-                <input
-                  type="text"
-                  placeholder={language === "vi" ? "Tìm kiếm theo tên khách hàng hoặc mã đơn..." : "Search by customer name or order code..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 rounded-lg"
-                />
+
+                <div className="relative flex-1 w-full bg-white rounded-lg">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+                  <input
+                    type="text"
+                    placeholder={language === "vi" ? "Tìm kiếm theo tên khách hàng hoặc mã đơn..." : "Search by customer name or order code..."}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-white w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300 rounded-lg"
+                  />
+                </div>
               </div>
 
               {/* Feed List */}

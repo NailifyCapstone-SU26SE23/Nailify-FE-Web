@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   Table,
   Modal,
-  DatePicker,
   Select,
   Input,
   Button,
@@ -12,6 +11,7 @@ import {
   Spin,
   ConfigProvider,
 } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -679,37 +679,22 @@ export function ReceptionistBookingListPage() {
           </div>
 
           <div className="mt-4 rounded-lg border border-[#F7D8E6] bg-white p-4">
-            <div className="grid gap-3 grid-cols-3">
+            <div className="grid gap-3 grid-cols-2">
 
               <div>
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
-                  {t("receptionist.bookings.dateFrom")}
+                  {t("receptionist.bookings.dateFrom")} - {t("receptionist.bookings.dateTo")}
                 </p>
-
-                <DatePicker
-                  value={dateFrom ? dayjs(dateFrom) : null}
-                  onChange={(date) =>
-                    setDateFrom(date ? date.format("YYYY-MM-DD") : "")
-                  }
-                  format="DD/MM/YYYY"
-                  className="w-full"
-                  size="large"
-                />
-              </div>
-
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
-                  {t("receptionist.bookings.dateTo")}
-                </p>
-
-                <DatePicker
-                  value={dateTo ? dayjs(dateTo) : null}
-                  onChange={(date) =>
-                    setDateTo(date ? date.format("YYYY-MM-DD") : "")
-                  }
-                  format="DD/MM/YYYY"
-                  className="w-full"
-                  size="large"
+                <DateRangePicker
+                  value={dateFrom || dateTo ? [
+                    dateFrom ? dayjs(dateFrom) : null,
+                    dateTo ? dayjs(dateTo) : null
+                  ] : null}
+                  onChange={(dates) => {
+                    setDateFrom(dates?.[0] ? dates[0].format("YYYY-MM-DD") : "");
+                    setDateTo(dates?.[1] ? dates[1].format("YYYY-MM-DD") : "");
+                  }}
+                  className="w-full h-10 border-[#F7D8E6] focus:border-[#E84F93] hover:border-[#F0B7CF] text-[12px] rounded-xl"
                 />
               </div>
 

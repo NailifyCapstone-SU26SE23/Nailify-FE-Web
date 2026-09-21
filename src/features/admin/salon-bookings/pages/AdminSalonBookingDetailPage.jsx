@@ -25,6 +25,7 @@ import { Spin, Input, Empty, Tag, Table, DatePicker, Button, Select, Tooltip as 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { useDebounce } from "../../../../shared/hooks/useDebounce";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
@@ -759,14 +760,14 @@ export function AdminSalonBookingDetailPage() {
                         {salon?.phone}
                       </p>
                     </div>
-                    <div>
+                    {/* <div>
                       <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
                         <Clock size={12} /> {t("adminSalonBookings.operatingHours")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
                         {salon?.hours}
                       </p>
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
                         <MapPin size={12} /> {t("adminSalonBookings.location")}
@@ -794,7 +795,7 @@ export function AdminSalonBookingDetailPage() {
             }
           />
           <div className="flex flex-1 items-center gap-3 max-w-2xl justify-end">
-            <DatePicker.RangePicker
+            <DateRangePicker
               value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
               onChange={(dates) => {
                 if (dates) {
@@ -803,8 +804,7 @@ export function AdminSalonBookingDetailPage() {
                   setDateRange(null);
                 }
               }}
-              className="h-10 rounded-full border-[#f0b7cf] px-4 shadow-inner shadow-[#fff0f8] !bg-white hover:border-[#ea4f93] focus:border-[#ea4f93]"
-              placeholder={[isVi ? "Từ ngày" : "Start Date", isVi ? "Đến ngày" : "End Date"]}
+              className="min-w-[260px] h-10 rounded-full border-[#f0b7cf] px-4 shadow-inner shadow-[#fff0f8] !bg-white hover:border-[#ea4f93] focus:border-[#ea4f93]"
             />
             <div className="flex w-full max-w-md items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-4 shadow-inner shadow-[#fff0f8]">
               <Search size={18} className="text-[#ea4f93]" />

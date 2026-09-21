@@ -26,6 +26,7 @@ import { RefundConfirmModal } from "../components/RefundConfirmModal";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { getManagerBookingDetailRoute } from "../../../../shared/constants/routes";
 
 const fadeInUp = {
@@ -90,6 +91,7 @@ export function TransactionManagementPage() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState(null);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -139,7 +141,7 @@ export function TransactionManagementPage() {
   // Reset page when search or status filter changes to prevent offset bugs
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, dateRangeFilter]);
 
   // Load booking details when selected transaction changes
   useEffect(() => {
@@ -194,8 +196,19 @@ export function TransactionManagementPage() {
       );
     }
 
+    // Filter by date range
+    if (dateRangeFilter && Array.isArray(dateRangeFilter) && dateRangeFilter.length === 2) {
+      const [start, end] = dateRangeFilter;
+      if (start && end) {
+        items = items.filter(t => {
+          const d = dayjs(t.createdAt);
+          return d.isAfter(start.startOf('day')) && d.isBefore(end.endOf('day'));
+        });
+      }
+    }
+
     return items;
-  }, [transactionsData.items, searchQuery, statusFilter]);
+  }, [transactionsData.items, searchQuery, statusFilter, dateRangeFilter]);
 
   const sortedTransactions = useMemo(() => {
     const [sortKey, sortOrder] = selectedSort.split("-");
@@ -414,34 +427,50 @@ export function TransactionManagementPage() {
         />
 
         {/* Filters Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
           {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
-            <input
-              type="text"
-              placeholder={t("manager.bookings.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+          <div className="flex flex-col items-start gap-2 w-full">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
+              {language === "vi" ? "Tìm kiếm" : "Search"}
+            </div>
+            <div className="relative flex-1 w-full h-9">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+              <input
+                type="text"
+                placeholder={t("manager.bookings.searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-4 py-2 rounded-full border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+
+          {/* Date Filter */}
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Khoảng thời gian" : "Date Range"}:</div>
+            <DateRangePicker
+              value={dateRangeFilter}
+              onChange={(dates) => setDateRangeFilter(dates)}
+              className="h-9 min-w-[260px] rounded-xl border border-slate-200"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
-              >
-                <X size={13} />
-              </button>
-            )}
           </div>
 
           {/* Status Dropdown */}
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Trạng thái" : "Status"}:</span>
+          <div className="flex flex-col items-start gap-2 self-end sm:self-auto">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Trạng thái" : "Status"}:</div>
             <Select
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
-              className="w-40 h-11 select-premium-antd"
+              className="w-40 h-9 select-premium-antd !rounded-lg"
               popupClassName="select-premium-dropdown"
               options={[
                 { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },

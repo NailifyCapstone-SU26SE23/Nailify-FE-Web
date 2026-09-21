@@ -16,7 +16,8 @@ import {
   Wallet,
   CalendarCheck2
 } from "lucide-react";
-import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
+import { Spin, Alert, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
@@ -625,11 +626,10 @@ export function ManagerDashboardPage() {
             onChange={handleFilterModeChange}
             className="rounded-md bg-slate-100 p-1 font-semibold"
           />
-          <DatePicker.RangePicker
+          <DateRangePicker
             value={dateRange}
             onChange={handleDateRangeChange}
             className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
-            format="YYYY-MM-DD"
           />
         </div>
       </div>

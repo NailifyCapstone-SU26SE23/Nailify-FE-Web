@@ -20,8 +20,8 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
-const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
 export function WalletTransactionsManagementPage() {
@@ -313,13 +313,9 @@ export function WalletTransactionsManagementPage() {
                 value={filters.status}
                 onChange={(status) => setFilters((prev) => ({ ...prev, status }))}
               />
-              <RangePicker
+              <DateRangePicker
                 className="!h-11 !w-full sm:!w-auto"
                 value={filters.dateRange}
-                placeholder={[
-                  t("walletTransactions.startDate"),
-                  t("walletTransactions.endDate"),
-                ]}
                 onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
                 disabledDate={(date) => date && date > dayjs().endOf("day").add(365, "day")}
               />

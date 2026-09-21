@@ -6,6 +6,8 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { Gift, TrendingDown, TrendingUp } from "lucide-react";
+import dayjs from "dayjs";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 const { Title, Text } = Typography;
 
@@ -29,6 +31,7 @@ export function LoyaltyTransactionsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
 
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -159,6 +162,16 @@ export function LoyaltyTransactionsManagementPage() {
       if (filterType === "Redeemed" && item.transactionType !== "Redeem" && item.transactionType !== "Burn") return false;
     }
 
+    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2) {
+      const [start, end] = dateRange;
+      if (start && end) {
+        const d = dayjs(item.createdAt || item.createdDate);
+        if (d.isBefore(start.startOf('day')) || d.isAfter(end.endOf('day'))) {
+          return false;
+        }
+      }
+    }
+
     if (searchTerm) {
       const cust = customersMap[item.customerId || item.userId];
       if (!cust) return false;
@@ -211,7 +224,12 @@ export function LoyaltyTransactionsManagementPage() {
             className="w-full sm:max-w-xs"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Space>
+          <Space className="flex-wrap">
+            <DateRangePicker
+              value={dateRange}
+              onChange={(dates) => setDateRange(dates)}
+              className="h-8"
+            />
             <Select
               placeholder={isVi ? "Loại giao dịch" : "Transaction Type"}
               allowClear
