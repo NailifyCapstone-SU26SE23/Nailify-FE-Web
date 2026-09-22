@@ -26,6 +26,7 @@ import {
   deleteAdminShapeMethodConfig,
 } from "../services/nailShapesManagementService";
 import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button } from "antd";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 
 function validateForm(formValues, language) {
   const isVi = language === "vi";
@@ -523,20 +524,13 @@ export function NailShapeDetailPage() {
                   key: 'actions',
                   align: 'right',
                   render: (_, record) => (
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        type="text"
-                        icon={<Pencil size={16} />}
-                        onClick={() => handleOpenConfigModal(record)}
-                        className="text-slate-500 hover:text-blue-600"
-                      />
-                      <Button
-                        type="text"
-                        danger
-                        icon={<Trash2 size={16} />}
-                        onClick={() => setConfigPendingDelete(record)}
-                      />
-                    </div>
+                    <ActionButtons
+                      onEdit={() => handleOpenConfigModal(record)}
+                      onDelete={() => setConfigPendingDelete(record)}
+                      showView={false}
+                      showApprove={false}
+                      showReject={false}
+                    />
                   )
                 }
               ]}

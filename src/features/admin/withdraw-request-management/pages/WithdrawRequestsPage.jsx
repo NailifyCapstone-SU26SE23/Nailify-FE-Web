@@ -11,6 +11,7 @@ dayjs.extend(timezone);
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { getAdminWithdrawRequestDetailRoute } from "../../../../shared/constants/routes";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import {
   fetchSystemSummary,
   fetchWithdrawalRequests,
@@ -204,18 +205,12 @@ export function WithdrawRequestsPage() {
       width: 90,
       render: (_, record) => (
         <div className="flex justify-center">
-          <Tooltip title="View Detail">
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] shadow-xs transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#ea4f93] hover:text-white active:scale-95"
-              onClick={(event) => {
-                event.stopPropagation();
-                navigate(getAdminWithdrawRequestDetailRoute(record.withdrawalRequestId));
-              }}
-            >
-              <Eye size={13} className="stroke-[2]" />
-            </button>
-          </Tooltip>
+          <ActionButtons
+            onView={(event) => {
+              event.stopPropagation();
+              navigate(getAdminWithdrawRequestDetailRoute(record.withdrawalRequestId));
+            }}
+          />
         </div>
       ),
     },

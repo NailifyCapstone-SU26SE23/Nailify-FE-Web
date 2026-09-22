@@ -329,7 +329,9 @@ export function AssignArtistModal({
                             )}
                             {staff.status && !staff.isBusy && (
                               <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]">
-                                {staff.status}
+                                {language === "vi" 
+                                  ? (staff.status === "Active" ? "Hoạt động" : staff.status === "Inactive" ? "Ngừng hoạt động" : staff.status === "Suspended" ? "Đình chỉ" : staff.status)
+                                  : staff.status}
                               </span>
                             )}
                           </div>

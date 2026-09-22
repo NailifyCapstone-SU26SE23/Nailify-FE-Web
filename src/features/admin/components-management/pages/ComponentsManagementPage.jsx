@@ -19,7 +19,7 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import {
   ROUTES,
   getAdminComponentDetailRoute,
@@ -289,37 +289,12 @@ export function ComponentsManagementPage() {
         key: "actions",
         align: "right",
         render: (_, component) => (
-          <div className="flex items-center justify-end gap-1.5">
-            <Tooltip title={t("adminComponents.viewDetail")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminComponentDetailRoute(component.componentId))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Eye size={12} />
-              </button>
-            </Tooltip>
-            <Tooltip title={t("adminComponents.editComponent")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminComponentDetailRoute(component.componentId), { state: { startInEdit: true } })}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Pencil size={12} />
-              </button>
-            </Tooltip>
-            {component.status === "Active" && (
-              <Tooltip title={t("adminComponents.deleteComponent")}>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(component)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </Tooltip>
-            )}
-          </div>
+          <ActionButtons
+            onView={() => navigate(getAdminComponentDetailRoute(component.componentId))}
+            onEdit={() => navigate(getAdminComponentDetailRoute(component.componentId), { state: { startInEdit: true } })}
+            onDelete={() => setDeleteTarget(component)}
+            showDelete={component?.status === "Active"}
+          />
         ),
       },
     ], [navigate, t],

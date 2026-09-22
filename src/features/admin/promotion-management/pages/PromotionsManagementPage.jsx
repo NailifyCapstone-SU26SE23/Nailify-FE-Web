@@ -19,7 +19,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip, Select } from "antd";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import {
   ROUTES,
   getAdminPromotionDetailRoute,
@@ -346,37 +346,12 @@ export function PromotionsManagementPage() {
         key: "actions",
         align: "right",
         render: (_, promotion) => (
-          <div className="flex items-center justify-end gap-1.5">
-            <Tooltip title={t("view") || "View Detail"}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Eye size={12} />
-              </button>
-            </Tooltip>
-            <Tooltip title={t("promotionDetail.editTitle")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId), { state: { startInEdit: true } })}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Pencil size={12} />
-              </button>
-            </Tooltip>
-            {promotion?.status === "Active" && (
-              <Tooltip title={t("promotionDetail.deleteBtn")}>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(promotion)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </Tooltip>
-            )}
-          </div>
+          <ActionButtons
+            onView={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId))}
+            onEdit={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId), { state: { startInEdit: true } })}
+            onDelete={() => setDeleteTarget(promotion)}
+            showDelete={promotion?.status === "Active"}
+          />
         ),
       },
     ],

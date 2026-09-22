@@ -719,7 +719,7 @@ export function AdminSalonBookingRatingPage() {
                         const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
-                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
+                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || (isVi ? "Thợ làm móng" : "Staff Artist");
 
                         // Check if there is an operational comment response in the API/mock
                         const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";

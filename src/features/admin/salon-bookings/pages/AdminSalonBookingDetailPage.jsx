@@ -30,7 +30,11 @@ import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalonDetail } from "../../salon-management/services/salonManagementService";
-import { getAdminBookingDetailRoute, ROUTES } from "../../../../shared/constants/routes";
+import {
+  ROUTES,
+  getAdminBookingDetailRoute,
+} from "../../../../shared/constants/routes";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -481,21 +485,14 @@ export function AdminSalonBookingDetailPage() {
           const bookingId = booking?.bookingId || booking?.id;
 
           return (
-            <AntTooltip title={isVi ? "Xem chi tiết" : "View details"}>
-              <button
-                type="button"
-                disabled={!bookingId}
-                aria-label={isVi ? "Xem chi tiết lịch hẹn" : "View booking details"}
-                onClick={() =>
-                  navigate(getAdminBookingDetailRoute(bookingId), {
-                    state: { from: `/admin/bookings/${salonId}` },
-                  })
-                }
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Eye size={16} />
-              </button>
-            </AntTooltip>
+            <ActionButtons
+              onView={() =>
+                navigate(getAdminBookingDetailRoute(bookingId), {
+                  state: { from: `/admin/bookings/${salonId}` },
+                })
+              }
+              showView={!!bookingId}
+            />
           );
         },
       },

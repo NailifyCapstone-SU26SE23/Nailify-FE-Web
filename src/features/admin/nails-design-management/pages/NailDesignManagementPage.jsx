@@ -24,7 +24,9 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
+// import { LoadingSpinner } from "../../../../shared/components/ui/LoadingSpinner";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 const DESIGN_CARD_PRESETS = [
@@ -69,7 +71,7 @@ function normalizeDesign(design, index, t) {
     ...design,
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
-    uiTones: hasTryOnAsset 
+    uiTones: hasTryOnAsset
       ? [(t("adminNailsDesignManagement.tryonReady"))]
       : [],
     uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
@@ -620,39 +622,22 @@ export function NailDesignManagementPage() {
 
                     <div className="mt-auto flex items-center justify-center gap-3 border-t border-[#fdf2f7] pt-4">
                       <div className="flex gap-3">
-                        <Tooltip title={t("adminNailsDesignManagement.view")} placement="bottom">
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-white text-[#8c7085] hover:bg-[#fbf4f8] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Eye size={14} />
-                          </Link>
-                        </Tooltip>
-                        <Tooltip title={t("adminNailsDesignManagement.edit")} placement="bottom">
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] text-[#ea4f93] hover:bg-[#ffe1ee] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Pen size={14} />
-                          </Link>
-                        </Tooltip>
-                        {design?.status === "Active" && (
-                          <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="bottom">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setPendingDeleteDesign(design);
-                              }}
-                              className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff0f6] text-[#d14c84] hover:bg-[#ffe1ee] transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </Tooltip>
-                        )}
+                        <ActionButtons
+                          onView={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id));
+                          }}
+                          onEdit={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id)); // The original code goes to the same detail page for edit
+                          }}
+                          onDelete={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPendingDeleteDesign(design);
+                          }}
+                          showDelete={design?.status === "Active"}
+                        />
                       </div>
                     </div>
                   </div>

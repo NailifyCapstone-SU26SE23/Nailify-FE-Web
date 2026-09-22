@@ -324,7 +324,9 @@ export function SkillTypeDetailPage() {
                     <ShieldCheck size={14} className="shrink-0 text-rose-300" />
                     <div>
                       <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status}</p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        {language === "vi" ? (skillType?.status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : skillType?.status}
+                      </p>
                     </div>
                   </div>
                 </div>

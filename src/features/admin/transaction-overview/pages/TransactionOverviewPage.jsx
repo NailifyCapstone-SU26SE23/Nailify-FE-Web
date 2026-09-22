@@ -26,7 +26,9 @@ import { fetchAdminTransactions, fetchAdminTransactionById } from "../services/t
 import { fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { CalendarRange } from "lucide-react";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 
 const fadeInUp = {
@@ -507,19 +509,13 @@ export function TransactionOverviewPage() {
         width: "8%",
         align: "right",
         render: (_, tx) => (
-          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedTransaction(tx);
-                setModalVisible(true);
-              }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-            >
-              <Eye size={13} className="stroke-[2]" />
-            </button>
-          </Tooltip>
+          <ActionButtons
+            onView={(e) => {
+              e.stopPropagation();
+              setSelectedTransaction(tx);
+              setModalVisible(true);
+            }}
+          />
         )
       }
     ];

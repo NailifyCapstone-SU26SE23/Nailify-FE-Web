@@ -8,6 +8,7 @@ import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { Gift, TrendingDown, TrendingUp } from "lucide-react";
 import dayjs from "dayjs";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 
 const { Title, Text } = Typography;
 
@@ -143,15 +144,9 @@ export function LoyaltyTransactionsManagementPage() {
       title: isVi ? "Thao tác" : "Actions",
       key: "actions",
       render: (_, record) => (
-        <Tooltip title={isVi ? "Xem chi tiết" : "View Details"}>
-          <Button
-            className="!rounded-full !border-[#c9799f] !text-[#c9799f] hover:!border-pink-500 hover:!text-pink-500 hover:!bg-pink-50"
-            type="primary"
-            ghost
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record.loyaltyTransactionId || record.id)}
-          />
-        </Tooltip>
+        <ActionButtons
+          onView={() => handleViewDetail(record.loyaltyTransactionId || record.id)}
+        />
       ),
     },
   ];
@@ -266,8 +261,8 @@ export function LoyaltyTransactionsManagementPage() {
         }}
         footer={[
           <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Close
-          </Button>
+            {language === "vi" ? "Đóng" : "Close"}
+          </Button>,
         ]}
         width={700}
       >

@@ -29,6 +29,7 @@ import {
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -630,65 +631,28 @@ export function ManagerArtistBreakPage() {
                       const isPending = st === "pending" || st === "chờ duyệt";
                       return (
                         <div className="flex items-center justify-end gap-2">
-                          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedBreak(item);
-                                setIsViewModalOpen(true);
-                              }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all cursor-pointer"
-                            >
-                              <Eye size={15} />
-                            </button>
-                          </Tooltip>
-                          {isPending ? (
-                            <>
-                              <Tooltip title={language === "vi" ? "Phê duyệt" : "Approve"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setIsApproveModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <Check size={16} strokeWidth={2.5} />
-                                </button>
-                              </Tooltip>
-
-                              <Tooltip title={language === "vi" ? "Từ chối" : "Reject"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setRejectReasonInput("");
-                                    setIsRejectModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <X size={16} strokeWidth={2.5} />
-                                </button>
-                              </Tooltip>
-                            </>
-                          ) : (
-                            null
-                          )}
-
-                          {item.status === "Pending" && (
-                            <Tooltip title={language === "vi" ? "Xóa yêu cầu" : "Delete request"}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedBreak(item);
-                                  setIsDeleteOpen(true);
-                                }}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </Tooltip>
-                          )}
+                          <ActionButtons
+                            onView={() => {
+                              setSelectedBreak(item);
+                              setIsViewModalOpen(true);
+                            }}
+                            onApprove={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsApproveModalOpen(true);
+                            } : undefined}
+                            onReject={isPending ? () => {
+                              setSelectedBreak(item);
+                              setRejectReasonInput("");
+                              setIsRejectModalOpen(true);
+                            } : undefined}
+                            onDelete={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsDeleteOpen(true);
+                            } : undefined}
+                            showApprove={isPending}
+                            showReject={isPending}
+                            showDelete={isPending}
+                          />
                         </div>
                       );
                     }

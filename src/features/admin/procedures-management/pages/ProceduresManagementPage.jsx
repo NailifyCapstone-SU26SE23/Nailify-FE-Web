@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
   ROUTES,
@@ -308,37 +309,12 @@ export function ProceduresManagementPage() {
         key: "actions",
         align: "right",
         render: (_, procedure) => (
-          <div className="flex items-center justify-end gap-1.5">
-            <Tooltip title={t("adminProcedures.viewDetail")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Eye size={12} />
-              </button>
-            </Tooltip>
-            <Tooltip title={t("adminProcedures.editProcedure")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId), { state: { startInEdit: true } })}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Pencil size={12} />
-              </button>
-            </Tooltip>
-            {procedure?.status === "Active" && (
-              <Tooltip title={t("adminProcedures.deleteProcedure")}>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(procedure)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </Tooltip>
-            )}
-          </div>
+          <ActionButtons
+            onView={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId))}
+            onEdit={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId), { state: { startInEdit: true } })}
+            onDelete={() => setDeleteTarget(procedure)}
+            showDelete={procedure?.status === "Active"}
+          />
         ),
       },
     ], [navigate, t, language],

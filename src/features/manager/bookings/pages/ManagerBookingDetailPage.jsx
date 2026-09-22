@@ -874,7 +874,7 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone"}>
                   <a
                     href={`tel:${customer?.phone || booking?.phone}`}
-                    className="inline-flex items-center gap-2 font-bold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
+                    className="py-4 inline-flex items-center gap-2 font-bold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
                   >
                     <Phone size={13} className="shrink-0 text-[#E84F93]" />
                     <span>{customer?.phone || booking?.phone}</span>
@@ -886,7 +886,7 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label={language === "vi" ? "Email" : "Email"}>
                   <a
                     href={`mailto:${customer?.email || booking?.email}`}
-                    className="inline-flex items-center gap-2 font-medium text-[#2B182B] hover:text-[#E84F93] bg-[#FAF6F8] px-3 py-1.5 rounded-xl border border-[#F3E2EC] text-xs w-full truncate"
+                    className="py-4 inline-flex items-center gap-2 font-medium text-[#2B182B] hover:text-[#E84F93] bg-[#FAF6F8] px-3 py-1.5 rounded-xl border border-[#F3E2EC] text-xs w-full truncate"
                   >
                     <Mail size={13} className="shrink-0 text-[#9E8497]" />
                     <span className="truncate">{customer?.email || booking?.email}</span>
@@ -1173,7 +1173,9 @@ export function ManagerBookingDetailPage() {
                                 String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                                   'bg-[#F3F4F6] text-[#6B7280]'
                                 }`}>
-                                {tx.status}
+                                {language === "vi" 
+                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "failed" ? "Thất bại" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : tx.status)
+                                  : tx.status}
                               </span>
                             </div>
                           </div>
@@ -1484,7 +1486,9 @@ export function ManagerBookingDetailPage() {
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {selectedTransactionDetail.status}
+                    {language === "vi" 
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "failed" ? "Thất bại" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : selectedTransactionDetail.status)
+                      : selectedTransactionDetail.status}
                   </span>
                 </div>
 

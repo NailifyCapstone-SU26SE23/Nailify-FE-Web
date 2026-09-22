@@ -26,6 +26,7 @@ import { RefundConfirmModal } from "../components/RefundConfirmModal";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { getManagerBookingDetailRoute } from "../../../../shared/constants/routes";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
@@ -654,16 +655,12 @@ export function TransactionManagementPage() {
                       align: "right",
                       render: (_, tx) => (
                         <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
-                          <button
-                            onClick={() => {
+                          <ActionButtons
+                            onView={() => {
                               setSelectedTransaction(tx);
                               setDrawerVisible(true);
                             }}
-                            title="View receipt detail"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-                          >
-                            <Eye size={13} className="stroke-[2]" />
-                          </button>
+                          />
                         </div>
                       )
                     }

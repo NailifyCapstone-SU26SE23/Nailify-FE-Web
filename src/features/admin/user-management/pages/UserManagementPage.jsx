@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Select, Table, Tooltip } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
@@ -507,44 +508,20 @@ export function UserManagementPage() {
         const deleteLabel = language === "vi" ? "Xóa" : "Delete";
 
         return (
-          <div className="flex items-center justify-end gap-2 duration-300">
-            <Tooltip title={viewLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(detailRoute);
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
-              >
-                <Eye size={15} />
-              </button>
-            </Tooltip>
-            <Tooltip title={editLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(detailRoute, { state: { requestEdit: true } });
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
-              >
-                <PencilLine size={15} />
-              </button>
-            </Tooltip>
-            <Tooltip title={deleteLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setUserToDelete(user);
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#e53e3e] hover:shadow-[0_4px_12px_rgba(229,62,62,0.08)]"
-              >
-                <Trash2 size={15} />
-              </button>
-            </Tooltip>
-          </div>
+          <ActionButtons
+            onView={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute);
+            }}
+            onEdit={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute, { state: { requestEdit: true } });
+            }}
+            onDelete={(e) => {
+              e.stopPropagation();
+              setUserToDelete(user);
+            }}
+          />
         );
       },
     },

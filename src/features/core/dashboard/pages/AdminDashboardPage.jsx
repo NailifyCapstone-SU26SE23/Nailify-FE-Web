@@ -20,6 +20,7 @@ import { useAdminDashboard, useSalonDetails, useManagersList, useSalonsList, use
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import ReactECharts from "echarts-for-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
@@ -288,22 +289,10 @@ export function AdminDashboardPage() {
       title: t("userManagement.table.actions").toUpperCase(),
       key: "action",
       render: (_, salon) => (
-        <Tooltip
-          placement="top"
-          title={language === "vi" ? "Xem chi tiết" : "View Detail"}
-        >
-          <button
-            type="button"
-            onClick={() => salon.originalId && setSelectedSalonId(salon.originalId)}
-            disabled={!salon.originalId}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-200 ${salon.originalId
-              ? "border-sky-100 bg-sky-50 text-sky-600 hover:border-sky-200 hover:bg-sky-100 hover:text-sky-700 hover:shadow-sm"
-              : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
-              }`}
-          >
-            <Eye size={15} strokeWidth={2.2} />
-          </button>
-        </Tooltip>
+        <ActionButtons
+          onView={salon.originalId ? () => setSelectedSalonId(salon.originalId) : undefined}
+          showView={!!salon.originalId}
+        />
       ),
     },
   ]), [t]);

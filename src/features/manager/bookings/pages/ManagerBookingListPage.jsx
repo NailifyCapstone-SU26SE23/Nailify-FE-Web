@@ -54,6 +54,7 @@ import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
@@ -1087,14 +1088,7 @@ export function ManagerBookingListPage() {
       align: "center",
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <Tooltip title={t("manager.common.view")}>
-            <button
-              onClick={() => handleViewBooking(row.id)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
-            >
-              <Eye size={14} />
-            </button>
-          </Tooltip>
+          <ActionButtons onView={() => handleViewBooking(row.id)} />
         </div>
       ),
     },
