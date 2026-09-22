@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ROUTES, getReceptionistBookingDetailRoute } from "../../../../shared/constants/routes";
-import { cancelPayment, getBookingIdByOrderCode } from "../services/receptionistPaymentService";
+import { cancelPayment, getBookingIdByOrderCode, getPaymentStatus } from "../services/receptionistPaymentService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export default function PaymentStatusPage() {
@@ -28,6 +28,12 @@ export default function PaymentStatusPage() {
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const orderCode = searchParams.get("orderCode");
+
+  useEffect(() => {
+    if (!orderCode) return;
+    getPaymentStatus(orderCode).catch(() => { });
+  }, [orderCode]);
+
   return <PaymentResultPage isSuccess orderCode={orderCode} />;
 }
 
