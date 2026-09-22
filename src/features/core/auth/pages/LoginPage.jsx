@@ -40,8 +40,8 @@ export function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@nailify.com",
-      password: "123456",
+      email: "",
+      password: "",
     },
   });
   const { language } = useLanguage();

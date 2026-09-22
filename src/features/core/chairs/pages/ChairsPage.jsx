@@ -158,7 +158,9 @@ export function ChairsPage() {
 
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Trạng thái hệ thống" : "System Status"}</span>
-              <span className="font-bold">{selectedChair.status}</span>
+              <span className="font-bold">
+                {language === "vi" ? (selectedChair.status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : selectedChair.status}
+              </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">

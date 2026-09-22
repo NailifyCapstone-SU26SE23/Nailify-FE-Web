@@ -52,6 +52,36 @@ const getStatusColor = (status) => {
   }
 };
 
+const formatStatusDisplay = (status, language) => {
+  switch (status) {
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "InProgress":
+      return language === "vi" ? "Đang tiến hành" : "In Progress";
+    case "Pending":
+      return language === "vi" ? "Đang chờ" : "Pending";
+    case "Approved":
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
+    case "ServiceCompleted":
+      return language === "vi" ? "Đã hoàn thành DV" : "Service Completed";
+    case "Completed":
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
+    case "Rejected":
+      return language === "vi" ? "Đã từ chối" : "Rejected";
+    case "Cancelled":
+    case "Canceled":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
+    case "ReschedulePending":
+      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+    case "RescheduleSuggested":
+      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã bảo hành" : "Repaired";
+    default:
+      return status;
+  }
+};
+
 function SectionTitle({ icon: Icon, title }) {
   return (
     <div className="flex items-center gap-2">
@@ -86,6 +116,7 @@ InfoCard.propTypes = {
 };
 
 function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
+  const { language } = useLanguage();
   const hasProcedureAction = typeof onOpenServiceProcedures === "function";
 
   return (
@@ -94,12 +125,12 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
           <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
             {hasProcedureAction ? (
-              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thao tác" : "Action"}</p>
             ) : null}
           </div>
 
@@ -116,27 +147,27 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                   <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
                   {service.nailServiceName ? (
                     <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                      Nail service: {service.nailServiceName}
+                      {language === "vi" ? "Dịch vụ làm móng: " : "Nail service: "}{service.nailServiceName}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "SL" : "Qty"}</p>
                   <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
                     {service.quantity || 1}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Giá" : "Price"}</p>
                   <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
                     {service.price}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                   <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-bold text-[#8c63ef]">
                     {service.duration}
                   </span>
@@ -144,14 +175,13 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
 
                 {hasProcedureAction ? (
                   <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thao tác" : "Action"}</p>
                     {service.canViewProcedures ? (
                       <ActionDropdown
-                        label="Actions"
                         items={[
                           {
                             key: `view-procedures-${service.id || index}`,
-                            label: "View Procedures",
+                            label: language === "vi" ? "Xem Quy trình" : "View Procedures",
                             icon: ClipboardList,
                             onSelect: () => onOpenServiceProcedures(service),
                           },
@@ -520,8 +550,7 @@ export function StaffBookingConsultationDetail({
   }, [customerData, loyaltyTiers]);
 
   return (
-    <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+    <section className="flex min-h-full flex-col gap-6">
       <div className="mt-2 space-y-6">
         <article className="rounded-lg border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
 
@@ -645,7 +674,7 @@ export function StaffBookingConsultationDetail({
               <div className="flex items-center gap-2">
                 <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
                   <Clock size={11} className="mr-1 inline-block fill-current" />
-                  {data.statusLabel}
+                  {formatStatusDisplay(data.statusLabel, language)}
                 </Tag>
                 <button
                   type="button"

@@ -587,7 +587,7 @@ export function StaffBookingListPage() {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
       render: (_, booking) => (
-        <ActionDropdown items={getActionItems(booking)} />
+        <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
       )
     }
   ];
@@ -770,7 +770,7 @@ export function StaffBookingListPage() {
                               </p>
                               <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
                             </div>
-                            <ActionDropdown items={getActionItems(booking)} />
+                            <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
                           </div>
                         </article>
                       ))}

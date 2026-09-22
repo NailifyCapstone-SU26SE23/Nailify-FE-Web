@@ -518,7 +518,7 @@ export function ReceptionistBookingDetailPage() {
       currency: 'VND'
     }).format(amount);
   }
-  
+
   const isVi = language === "vi";
 
   const loadBookingHistories = useCallback(async () => {
@@ -1140,7 +1140,7 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#FFF9FC_0%,#FFF4F8_100%)] p-2">
+    <section className="flex min-h-full flex-col gap-5">
       {/* 1. TOP HEADER BAR */}
       <div className="rounded-[26px] border border-[#F3E2EC] bg-white/90 backdrop-blur-md px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1184,7 +1184,7 @@ export function ReceptionistBookingDetailPage() {
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
-            badge={booking.status || null}
+            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận' : String(booking.status).toLowerCase() === 'checkedin' ? 'Đang phục vụ' : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán' : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành' : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status) : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -1426,7 +1426,7 @@ export function ReceptionistBookingDetailPage() {
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
                 <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
-                  {booking.status || "Checked In"}
+                  {booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận' : String(booking.status).toLowerCase() === 'checkedin' ? 'Đang phục vụ' : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán' : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành' : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status) : booking.status) : (language === "vi" ? "Đang phục vụ" : "Checked In")}
                 </span>
               </div>
 
@@ -1477,7 +1477,13 @@ export function ReceptionistBookingDetailPage() {
                             String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                               'bg-[#F3F4F6] text-[#6B7280]'
                             }`}>
-                            {tx.status}
+                            {language === "vi"
+                              ? (String(tx.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                                : String(tx.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                                  : String(tx.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                                    : String(tx.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                      : String(tx.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : tx.status)
+                              : tx.status}
                           </span>
                         </div>
                       </div>
@@ -1563,7 +1569,7 @@ export function ReceptionistBookingDetailPage() {
           <DetailCard
             title={language === "vi" ? "Dòng thời gian hoạt động đặt lịch" : "Booking Operations Timeline"}
             subtitle={language === "vi" ? "Nhật ký kiểm tra theo thời gian thực" : "Real-time timestamped audit log"}
-            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+            badge={isBookingHistoriesLoading ? (language === "vi" ? "Đang tải..." : "Loading...") : `${bookingHistories.length} ${language === "vi" ? "Sự kiện" : "Events"}`}
           >
             {isBookingHistoriesLoading ? (
               <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
@@ -2386,7 +2392,13 @@ export function ReceptionistBookingDetailPage() {
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {selectedTransactionDetail.status}
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                        : String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                          : String(selectedTransactionDetail.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                            : String(selectedTransactionDetail.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                              : String(selectedTransactionDetail.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : selectedTransactionDetail.status)
+                      : selectedTransactionDetail.status}
                   </span>
                 </div>
 

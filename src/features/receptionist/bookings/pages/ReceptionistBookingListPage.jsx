@@ -385,6 +385,7 @@ export function ReceptionistBookingListPage() {
       key: "action",
       render: (_, booking) => (
         <ActionDropdown
+          label={language === "vi" ? "Thao tác" : "Actions"}
           items={[
             {
               key: "view",
@@ -734,7 +735,7 @@ export function ReceptionistBookingListPage() {
               <Input
                 size="large"
                 prefix={<Search size={17} color="#D47AA8" />}
-                placeholder="Search booking ID, customer, artist..."
+                placeholder={language === "vi" ? "Tìm kiếm khách hàng, thợ làm móng..." : "Search customer,staff artist..."}
                 value={draftQuery}
                 onChange={(e) => setDraftQuery(e.target.value)}
                 allowClear
@@ -835,6 +836,7 @@ export function ReceptionistBookingListPage() {
                         <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
                       </div>
                       <ActionDropdown
+                        label={language === "vi" ? "Thao tác" : "Actions"}
                         items={[
                           {
                             key: "view",

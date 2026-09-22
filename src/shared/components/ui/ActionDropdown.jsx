@@ -2,14 +2,17 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PropTypes } from "../../utils/propTypes";
+import { useLanguage } from "../../hooks/useLanguage";
 
 export function ActionDropdown({
   align = "right",
   buttonClassName = "",
   items,
-  label = "Actions",
+  label,
   menuClassName = "",
 }) {
+  const { language } = useLanguage();
+  const displayLabel = label || (language === "vi" ? "Thao tác" : "Actions");
   const [isOpen, setIsOpen] = useState(false);
   const [openDirection, setOpenDirection] = useState("down");
   const [menuStyle, setMenuStyle] = useState(null);
@@ -100,7 +103,7 @@ export function ActionDropdown({
         onClick={() => setIsOpen((current) => !current)}
         className={`inline-flex items-center gap-1.5 rounded-full border border-[#f6cfe0] bg-[#fff6fa] px-3 py-1.5 text-xs font-bold text-[#ea4f93] transition hover:bg-[#ffeef5] ${buttonClassName}`}
       >
-        <span>{label}</span>
+        <span>{displayLabel}</span>
         <ChevronDown size={13} className={`transition ${isOpen ? "rotate-180" : ""}`} />
       </button>
 

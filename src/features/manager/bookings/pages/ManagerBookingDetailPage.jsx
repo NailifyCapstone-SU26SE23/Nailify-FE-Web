@@ -1174,7 +1174,7 @@ export function ManagerBookingDetailPage() {
                                   'bg-[#F3F4F6] text-[#6B7280]'
                                 }`}>
                                 {language === "vi" 
-                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "failed" ? "Thất bại" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : tx.status)
+                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "overdue" ? "Quá hạn" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : String(tx.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : tx.status)
                                   : tx.status}
                               </span>
                             </div>
@@ -1487,7 +1487,7 @@ export function ManagerBookingDetailPage() {
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
                     {language === "vi" 
-                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "failed" ? "Thất bại" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : selectedTransactionDetail.status)
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "overdue" ? "Quá hạn" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : String(selectedTransactionDetail.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : selectedTransactionDetail.status)
                       : selectedTransactionDetail.status}
                   </span>
                 </div>

@@ -767,11 +767,11 @@ export function StaffCustomerNailReviewPage() {
         artistNotes,
         procedures
       );
-      toast.success("Estimation and procedures submitted to Manager successfully!");
+      toast.success(language === "vi" ? "Đã gửi ước tính báo giá và quy trình cho Quản lý thành công!" : "Estimation and procedures submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
       console.error("Error submitting quote:", err);
-      toast.error(err.message || "Failed to submit quote.");
+      toast.error(err.message || (language === "vi" ? "Gửi báo giá thất bại." : "Failed to submit quote."));
     } finally {
       setIsSubmitting(false);
     }
@@ -912,7 +912,7 @@ export function StaffCustomerNailReviewPage() {
                 onApplyToQuote={({ totalDuration, totalPrice }) => {
                   setQuotedDuration(totalDuration);
                   setQuotedPrice(totalPrice > 0 ? totalPrice : "");
-                  toast.success("Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!");
+                  toast.success(language === "vi" ? "Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!" : "Successfully synced total duration & cost to Quote!");
                 }}
               />
 
