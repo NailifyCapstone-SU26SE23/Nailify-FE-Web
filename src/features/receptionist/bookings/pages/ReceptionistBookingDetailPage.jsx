@@ -511,6 +511,14 @@ export function ReceptionistBookingDetailPage() {
     enabled: !!bookingId,
   });
 
+  function formatVND(amount) {
+    if (amount === null || amount === undefined) return "N/A";
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  }
+  
   const isVi = language === "vi";
 
   const loadBookingHistories = useCallback(async () => {
@@ -1464,8 +1472,13 @@ export function ReceptionistBookingDetailPage() {
                           <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
-
+                          <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(tx.amount)}</p>
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                            String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                              'bg-[#F3F4F6] text-[#6B7280]'
+                            }`}>
+                            {tx.status}
+                          </span>
                         </div>
                       </div>
 
