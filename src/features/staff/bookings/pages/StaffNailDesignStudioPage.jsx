@@ -892,7 +892,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLITTER - Sparkles
+  // GLITTER - Sparkles
   if (name.includes("glitter")) {
     return (
       <>
@@ -902,7 +902,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  // GLOSSY (Default) - Natural shine
   return (
     <>
       <div className="pointer-events-none absolute inset-0" style={{
@@ -1893,7 +1893,7 @@ export function StaffNailDesignStudioPage() {
         const uniqueToken = (option.customerComponentId || option.componentId || option.id || label) + uniqueSuffix;
 
         const key = buildPlacementKey(fingerIndex, label, uniqueToken);
-        
+
         let placement = currentMap.get(key);
         if (!placement) {
           placement = buildDefaultPlacement(
@@ -1901,7 +1901,7 @@ export function StaffNailDesignStudioPage() {
             fingerIndex,
             uniqueToken
           );
-          
+
           if (count > 0) {
             // Offset duplicate components slightly (e.g. 5% = 0.05) so they don't overlap completely
             placement.posX += count * 0.05;
@@ -1914,7 +1914,7 @@ export function StaffNailDesignStudioPage() {
             });
           }
         }
-        
+
         nextPlacements.push(placement);
       });
     });
@@ -2441,23 +2441,23 @@ export function StaffNailDesignStudioPage() {
   const handleRemovePlacements = (placementKeys) => {
     if (!placementKeys || placementKeys.length === 0) return;
     markAsCustomized();
-    
+
     setComponentPlacements((currentPlacements) => {
       const nextPlacements = currentPlacements.filter(p => !placementKeys.includes(p.key));
-      
+
       setNailDecorations(() => {
         const newDecorations = Array.from({ length: 5 }, () => []);
         nextPlacements.forEach(p => {
-           if (p.fingerIndex >= 0 && p.fingerIndex < 5) {
-             newDecorations[p.fingerIndex].push(p.label);
-           }
+          if (p.fingerIndex >= 0 && p.fingerIndex < 5) {
+            newDecorations[p.fingerIndex].push(p.label);
+          }
         });
         return newDecorations;
       });
 
       return nextPlacements;
     });
-    
+
     setSelectedPlacementKey((current) => placementKeys.includes(current) ? "" : current);
   };
 

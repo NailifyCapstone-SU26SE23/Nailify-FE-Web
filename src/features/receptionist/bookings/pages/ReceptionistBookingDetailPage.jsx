@@ -1184,7 +1184,14 @@ export function ReceptionistBookingDetailPage() {
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
-            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận' : String(booking.status).toLowerCase() === 'checkedin' ? 'Đang phục vụ' : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán' : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành' : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status) : booking.status) : null}
+            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận'
+              : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                  : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                    : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
+                      : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
+              : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -1426,7 +1433,15 @@ export function ReceptionistBookingDetailPage() {
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
                 <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
-                  {booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận' : String(booking.status).toLowerCase() === 'checkedin' ? 'Đang phục vụ' : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán' : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành' : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status) : booking.status) : (language === "vi" ? "Đang phục vụ" : "Checked In")}
+                  {booking.status ?
+                    (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
+                      String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                          : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                            : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
+                              : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                                : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                  : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
                 </span>
               </div>
 
@@ -2107,7 +2122,7 @@ export function ReceptionistBookingDetailPage() {
 
                             {(hasPassive || procedure.canOverlap) ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
+                                {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">

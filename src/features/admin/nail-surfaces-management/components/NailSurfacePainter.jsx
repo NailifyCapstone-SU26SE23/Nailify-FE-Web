@@ -3,6 +3,7 @@ import { Environment, ContactShadows, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function applyCoffinShape(geometry) {
   const positions = geometry.attributes.position;
@@ -36,6 +37,8 @@ function applyCoffinShape(geometry) {
 }
 
 function PainterMesh({ brushType, brushSize, onCanvasChange, initialMaskDataUrl }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const geoRef = useRef();
   const materialRef = useRef();
 
@@ -170,10 +173,10 @@ export function NailSurfacePainter({ brushType = 'glossy', brushSize = 20, onSav
       </Canvas>
       <div className="absolute top-3 left-0 w-full flex flex-col items-center pointer-events-none gap-1">
         <div className="bg-white/90 backdrop-blur px-4 py-2 rounded-full text-[12px] font-black text-[#ea4f93] shadow-[0_4px_15px_rgba(234,79,147,0.2)]">
-          ✨ DRAW DIRECTLY ON THE NAIL ✨
+          {isVi ? "VẼ TRỰC TIẾP TRÊN MÓNG" : "DRAW DIRECTLY ON THE NAIL"}
         </div>
         <div className="bg-slate-800/80 backdrop-blur px-3 py-1 rounded-full text-[10px] text-white">
-          Right-click and drag to rotate
+          {isVi ? "Click chuột phải và kéo để xoay" : "Right-click and drag to rotate"}
         </div>
       </div>
     </div>

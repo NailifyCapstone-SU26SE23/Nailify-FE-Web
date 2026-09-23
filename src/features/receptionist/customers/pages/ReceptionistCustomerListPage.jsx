@@ -2031,7 +2031,7 @@ export function ReceptionistCustomerListPage() {
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               {totalCalculatedPrice > 0 ? (
                 <div className="flex items-center gap-2.5 bg-[#FAF0F5] px-3.5 py-1.5 rounded-xl border border-[#F2D6E3] text-xs font-bold text-[#C97A9E]">
-                  <span>{language === "vi" ? "✨ Tổng dịch vụ & mẫu móng:" : "✨ Total services & variants:"}</span>
+                  <span>{language === "vi" ? "Tổng dịch vụ & mẫu móng:" : "Total services & variants:"}</span>
                   <span className="font-bold text-[#B86B8E] text-sm">
                     {totalCalculatedPrice.toLocaleString("vi-VN")}đ
                   </span>

@@ -287,7 +287,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLITTER - Sparkles
+  // GLITTER - Sparkles
   if (name.includes("glitter")) {
     return (
       <>
@@ -297,7 +297,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  // GLOSSY (Default) - Natural shine
   return (
     <>
       <div className="pointer-events-none absolute inset-0" style={{
@@ -1228,7 +1228,7 @@ export function InteractiveStudioPreview({
                         : "border-[#f5d2e1] bg-white hover:border-[#ea4f93]"
                         }`}
                     >
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedItemsToRemove.includes(item.key)}
                         onChange={(e) => {
                           if (e.target.checked) {

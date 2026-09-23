@@ -254,6 +254,8 @@ export function ReceptionistBookingListPage() {
           booking.artistName,
           booking.salonName,
           booking.status,
+          booking.phone,
+          booking.email,
           booking.services.join(" "),
         ]
           .join(" ")
@@ -331,7 +333,12 @@ export function ReceptionistBookingListPage() {
       dataIndex: "customerName",
       key: "customerName",
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
-      render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
+      render: (value, booking) => (
+        <div>
+          <p className="text-sm font-bold text-[#412643]">{value}</p>
+          {booking.phone && <p className="mt-1 text-xs text-[#a68b98]">{booking.phone}</p>}
+        </div>
+      ),
     },
     {
       title: t("receptionist.bookings.salon") || "Salon",

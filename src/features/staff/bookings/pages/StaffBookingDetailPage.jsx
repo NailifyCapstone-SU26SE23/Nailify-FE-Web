@@ -240,6 +240,7 @@ function buildStaffExperienceFromBooking(
         name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
+        rawPrice: resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0,
         price: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
         duration: normalizeBookingItemDuration(resolvedService?.duration ?? item?.serviceDuration ?? item?.duration),
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
@@ -259,6 +260,7 @@ function buildStaffExperienceFromBooking(
         name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? (language === "vi" ? "Móng của khách hàng" : "Customer Nail") : (language === "vi" ? "Biến thể móng" : "Nail Variant"),
         quantity,
+        rawPrice: resolvedNailDetail?.price ?? 0,
         price: formatCurrency(resolvedNailDetail?.price ?? 0),
         duration: normalizeBookingItemDuration(resolvedNailDetail?.duration),
         canViewProcedures: Boolean(bookingItemId),
@@ -274,10 +276,13 @@ function buildStaffExperienceFromBooking(
     const key = `${entry.detailLabel}_${entry.name}_${entry.price}_${entry.duration}`;
     if (!serviceEntriesMap.has(key)) {
       const copy = { ...entry };
+      copy.totalPrice = formatCurrency(copy.rawPrice * copy.quantity);
       serviceEntriesMap.set(key, copy);
       bookingServiceEntries.push(copy);
     } else {
-      serviceEntriesMap.get(key).quantity += entry.quantity;
+      const existing = serviceEntriesMap.get(key);
+      existing.quantity += entry.quantity;
+      existing.totalPrice = formatCurrency(existing.rawPrice * existing.quantity);
     }
   });
   const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {

@@ -289,12 +289,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const paymentReference = `VNPAY-${String(booking?.bookingId || bookingId || "PAY").slice(-6).toUpperCase()}`;
   const paymentBadge =
     paymentStage === "paid"
-      ? "Paid"
+      ? (language === "vi" ? "Đã thanh toán" : "Paid")
       : paymentStage === "processing"
-        ? "Processing"
+        ? (language === "vi" ? "Đang xử lý" : "Processing")
         : paymentStage === "cancelled"
-          ? "Cancelled"
-          : "Awaiting Payment";
+          ? (language === "vi" ? "Đã hủy" : "Cancelled")
+          : (language === "vi" ? "Chờ thanh toán" : "Awaiting Payment");
   const paymentBadgeClassName =
     paymentStage === "paid"
       ? "bg-[#e8f8ef] text-[#1f9d61]"

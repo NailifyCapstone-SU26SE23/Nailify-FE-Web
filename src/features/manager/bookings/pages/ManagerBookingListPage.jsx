@@ -771,7 +771,7 @@ export function ManagerBookingListPage() {
     if (!isUnassigned && staffArtistId && bookingIdToAssign) {
       try {
         await assignArtistToBookingOld(bookingIdToAssign, staffArtistId);
-        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`, { icon: "✨" });
+        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`);
         loadBookings();
       } catch (err) {
         console.error("Failed to assign artist via drag & drop:", err);
@@ -780,8 +780,7 @@ export function ManagerBookingListPage() {
       }
     } else {
       toast.success(
-        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`,
-        { icon: "✨" }
+        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`
       );
     }
   };

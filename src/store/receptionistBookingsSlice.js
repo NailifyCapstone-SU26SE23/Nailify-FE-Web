@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { fetchReceptionistBookings, fetchReceptionistSalonDetail, getReceptionistSalonId } from "../features/receptionist/bookings/services/receptionistBookingService";
+import { fetchReceptionistBookings, fetchReceptionistSalonDetail, getReceptionistSalonId, fetchCustomersList } from "../features/receptionist/bookings/services/receptionistBookingService";
 
 const RECEPTIONIST_BOOKING_FETCH_SIZE = 10;
 
@@ -34,13 +34,20 @@ export const fetchReceptionistBookingsThunk = createAsyncThunk(
   "receptionistBookings/fetchBookings",
   async ({ startDate, endDate } = {}, { rejectWithValue }) => {
     try {
-      const firstPageResult = await fetchReceptionistBookings({
-        startDate,
-        endDate,
-        pageNumber: 1,
-        pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
-        includePagination: true,
-      });
+      const [firstPageResult, customersResponse] = await Promise.all([
+        fetchReceptionistBookings({
+          startDate,
+          endDate,
+          pageNumber: 1,
+          pageSize: RECEPTIONIST_BOOKING_FETCH_SIZE,
+          includePagination: true,
+        }),
+        fetchCustomersList(1, 1000).catch(() => ({ items: [] }))
+      ]);
+
+      const customers = customersResponse?.items || [];
+      const customerMap = new Map();
+      customers.forEach(c => customerMap.set(c.userId, c));
       let allBookings = Array.isArray(firstPageResult?.items) ? [...firstPageResult.items] : [];
       const totalPages = Math.max(1, Number(firstPageResult?.pagination?.totalPages || 1));
 
@@ -64,7 +71,15 @@ export const fetchReceptionistBookingsThunk = createAsyncThunk(
           }
         });
       }
-      return allBookings.map(normalizeBooking);
+      return allBookings.map(b => {
+        const normalized = normalizeBooking(b);
+        const customerInfo = customerMap.get(b.customerId || b.customer?.id || b.customer?.userId);
+        return {
+          ...normalized,
+          phone: customerInfo?.phone || "",
+          email: customerInfo?.email || ""
+        };
+      });
     } catch (error) {
       return rejectWithValue(error.message || "Failed to load bookings.");
     }

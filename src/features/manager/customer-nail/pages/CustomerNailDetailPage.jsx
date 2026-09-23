@@ -218,7 +218,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  //GLOSSY (Default) - Natural shine
   const shine = config.shine || 0.45;
   const blur = config.blur || 0;
   const effectiveBlur = Math.max(4, blur * 20);

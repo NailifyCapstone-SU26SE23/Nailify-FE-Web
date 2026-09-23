@@ -746,7 +746,19 @@ export function ProfilePage() {
                           <Clock3 size={16} />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, color: TEXT_DARK }}>{slot.dayName}</div>
+                          <div style={{ fontWeight: 700, color: TEXT_DARK }}>
+                            {language === "vi" 
+                              ? {
+                                  Monday: "Thứ Hai",
+                                  Tuesday: "Thứ Ba",
+                                  Wednesday: "Thứ Tư",
+                                  Thursday: "Thứ Năm",
+                                  Friday: "Thứ Sáu",
+                                  Saturday: "Thứ Bảy",
+                                  Sunday: "Chủ Nhật"
+                                }[slot.dayName] || slot.dayName
+                              : slot.dayName}
+                          </div>
                           <Text type="secondary" style={{ fontSize: 12 }}>
                             {slot.isClosed
                               ? t("profile.closed")
