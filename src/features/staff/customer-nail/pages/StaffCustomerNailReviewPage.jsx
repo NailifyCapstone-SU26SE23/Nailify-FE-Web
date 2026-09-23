@@ -46,7 +46,7 @@ function InfoTile({ label, value, valueClassName = "text-[#3f2240]" }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{title}</h3>
+      <h3 className="text-lg font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#a988a0]">{subtitle}</p> : null}
     </div>
   );
@@ -959,7 +959,7 @@ export function StaffCustomerNailReviewPage() {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#d43d81] text-white shadow-sm shrink-0">
                         <Sparkles size={14} />
                       </span>
-                      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
+                      <h3 className="text-lg  font-bold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
                     </div>
                     <p className="mt-1 text-xs text-[#a988a0]">
                       {language === "vi" ? "Giá và thời gian được hệ thống tính toán cho yêu cầu này." : "System-calculated price and duration for this request."}

@@ -17,10 +17,8 @@ import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import {
-  ROUTES,
-  getAdminCategoryDetailRoute,
-} from "../../../../shared/constants/routes";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { ROUTES, getAdminCategoryDetailRoute } from "../../../../shared/constants/routes";
 import {
   deleteAdminCategory,
   fetchAdminCategories,
@@ -259,35 +257,11 @@ export function CategoriesManagementPage() {
         key: "actions",
         align: "right",
         render: (_, category) => (
-          <div className="flex items-center justify-end gap-1.5">
-            <Tooltip title={t("adminCategories.viewDetail")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminCategoryDetailRoute(category.categoryId))}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Eye size={12} />
-              </button>
-            </Tooltip>
-            <Tooltip title={t("adminCategories.editCategory")}>
-              <button
-                type="button"
-                onClick={() => navigate(getAdminCategoryDetailRoute(category.categoryId), { state: { startInEdit: true } })}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Pencil size={12} />
-              </button>
-            </Tooltip>
-            <Tooltip title={t("adminCategories.deleteCategory")}>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(category)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-              >
-                <Trash2 size={12} />
-              </button>
-            </Tooltip>
-          </div>
+          <ActionButtons
+            onView={() => navigate(getAdminCategoryDetailRoute(category.categoryId))}
+            onEdit={() => navigate(getAdminCategoryDetailRoute(category.categoryId), { state: { startInEdit: true } })}
+            onDelete={() => setDeleteTarget(category)}
+          />
         ),
       },
     ], [navigate, t],
@@ -370,7 +344,7 @@ export function CategoriesManagementPage() {
               disabled={isFilterLoading}
               className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93] disabled:opacity-70"
             >
-              <option value="">All category types</option>
+              <option value="">{language === "vi" ? "Tất cả loại danh mục" : "All Category Types"}</option>
               {categoryTypes.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}

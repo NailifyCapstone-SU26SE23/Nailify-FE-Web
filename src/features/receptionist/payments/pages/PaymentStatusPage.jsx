@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CalendarDays, CheckCircle2, LoaderCircle, XCircle } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ROUTES, getReceptionistBookingDetailRoute } from "../../../../shared/constants/routes";
-import { checkoutReceptionistBooking } from "../../bookings/services/receptionistBookingService";
-import { cancelPayment, getBookingIdByOrderCode } from "../services/receptionistPaymentService";
+import { cancelPayment, getBookingIdByOrderCode, getPaymentStatus } from "../services/receptionistPaymentService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 export default function PaymentStatusPage() {
@@ -25,23 +24,15 @@ export default function PaymentStatusPage() {
   return <PaymentResultPage isSuccess={isSuccess} orderCode={orderCode} />;
 }
 
+// PaymentSuccessPage — no checkout here, just display
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const orderCode = searchParams.get("orderCode");
 
   useEffect(() => {
-    const bookingId = localStorage.getItem("pendingPaymentBookingId");
-    if (bookingId) {
-      checkoutReceptionistBooking(bookingId)
-        .then(() => {
-          console.log("Successfully checked out booking:", bookingId);
-          localStorage.removeItem("pendingPaymentBookingId");
-        })
-        .catch((err) => {
-          console.error("Failed to automatically checkout booking after payment:", err);
-        });
-    }
-  }, []);
+    if (!orderCode) return;
+    getPaymentStatus(orderCode).catch(() => { });
+  }, [orderCode]);
 
   return <PaymentResultPage isSuccess orderCode={orderCode} />;
 }

@@ -25,7 +25,8 @@ import { fetchAdminSalons } from "../../salon-management/services/salonManagemen
 import { fetchBookingRatingsBySalonId, fetchUserById } from "../../../manager/bookings/services/bookingsService";
 import { fetchAllSalonStaff } from "../../../manager/staff-artist-management/services/nailArtistsService";
 import { formatDate } from "../../../../shared/utils/formatDate";
-import { Spin, Alert, Select, DatePicker } from "antd";
+import { Spin, Alert, Select } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import dayjs from "dayjs";
@@ -239,7 +240,7 @@ export function AdminSalonBookingRatingPage() {
   const handleBackToSalons = () => {
     setSelectedSalon(null);
     setRatings([]);
-  };  
+  };
 
   // Derived global metrics for the header
   const totalNetworkReviews = useMemo(() => {
@@ -260,7 +261,7 @@ export function AdminSalonBookingRatingPage() {
     // Filter by search query
     if (salonSearchQuery.trim()) {
       const query = salonSearchQuery.toLowerCase();
-      items = items.filter(s => 
+      items = items.filter(s =>
         (s.name || "").toLowerCase().includes(query) ||
         (s.address || "").toLowerCase().includes(query)
       );
@@ -310,8 +311,14 @@ export function AdminSalonBookingRatingPage() {
     }
 
     // Filter by date
-    if (reviewFilterDate) {
-      items = items.filter(r => dayjs(r.createdAt).isSame(reviewFilterDate, 'day'));
+    if (reviewFilterDate && Array.isArray(reviewFilterDate) && reviewFilterDate.length === 2) {
+      const [start, end] = reviewFilterDate;
+      if (start && end) {
+        items = items.filter(r => {
+          const d = dayjs(r.createdAt);
+          return d.isAfter(start.startOf('day')) && d.isBefore(end.endOf('day'));
+        });
+      }
     }
 
     // Sort options
@@ -637,20 +644,24 @@ export function AdminSalonBookingRatingPage() {
                 {/* Left column: reviews list (7 cols) */}
                 <div className="lg:col-span-7 space-y-6">
                   {/* Reviews search & filters bar */}
-                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
-                    <div className="relative flex-1 max-w-md">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
-                      <input
-                        type="text"
-                        placeholder={isVi ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search by customer, Staff Artist, or comment..."}
-                        value={reviewSearchQuery}
-                        onChange={(e) => setReviewSearchQuery(e.target.value)}
-                        className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
-                      />
+                  <div className="flex flex-col gap-4 bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.01)]">
+                    <div className="flex gap-2">
+                      <div className="relative w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+                        <input
+                          type="text"
+                          placeholder={isVi ? "Tìm theo tên khách hàng, email hoặc số điện thoại..." : "Search by customer, Staff Artist, or comment..."}
+                          value={reviewSearchQuery}
+                          onChange={(e) => setReviewSearchQuery(e.target.value)}
+                          className="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+                        />
+                      </div>
+
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
+
+                    <div className="flex  items-center gap-2">
+                      <div className="w-full flex items-center gap-1.5 bg-[#fcf9fb] p-1 rounded-2xl border border-[#f1e7ed]">
                         {["all", "5", "4", "3", "2"].map((score) => (
                           <button
                             key={score}
@@ -666,12 +677,10 @@ export function AdminSalonBookingRatingPage() {
                           </button>
                         ))}
                       </div>
-
-                      <DatePicker
-                        placeholder={isVi ? "Lọc theo ngày" : "Filter by date"}
+                      <DateRangePicker
                         value={reviewFilterDate}
-                        onChange={(date) => setReviewFilterDate(date)}
-                        className="h-10 rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
+                        onChange={(dates) => setReviewFilterDate(dates)}
+                        className="h-10 w-auto rounded-[0.875rem] border border-slate-200 px-3 text-xs md:text-sm shadow-2xs hover:border-[#ea4f93] focus:border-[#ea4f93] transition-all duration-300"
                         suffixIcon={<Calendar size={13} className="text-[#a88a9f]" />}
                         allowClear
                       />
@@ -710,7 +719,7 @@ export function AdminSalonBookingRatingPage() {
                         const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
-                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || "Staff Artist";
+                        const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || (isVi ? "Thợ làm móng" : "Staff Artist");
 
                         // Check if there is an operational comment response in the API/mock
                         const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";

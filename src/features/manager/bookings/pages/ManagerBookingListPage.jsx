@@ -28,12 +28,14 @@ import {
   Image as ImageIcon,
   Edit3,
   ArrowUpDown,
+  RefreshCcw,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
-import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip, Table } from "antd";
+import { Spin, Alert, Drawer, Modal, Tooltip, Table } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -52,6 +54,7 @@ import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
@@ -1085,14 +1088,7 @@ export function ManagerBookingListPage() {
       align: "center",
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <Tooltip title={t("manager.common.view")}>
-            <button
-              onClick={() => handleViewBooking(row.id)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
-            >
-              <Eye size={14} />
-            </button>
-          </Tooltip>
+          <ActionButtons onView={() => handleViewBooking(row.id)} />
         </div>
       ),
     },
@@ -1394,9 +1390,9 @@ export function ManagerBookingListPage() {
                     </div>
 
                     {/* Search + Date filters */}
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_130px_130px_auto]">
+                    <div className="mt-4 flex flex-wrap items-end gap-3">
                       {/* Search */}
-                      <div>
+                      <div className="w-full flex-1 min-w-[200px]">
                         <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
                           {t("manager.common.search")}
                         </span>
@@ -1411,50 +1407,36 @@ export function ManagerBookingListPage() {
                         </div>
                       </div>
 
-                      {/* Date From */}
+                      {/* Date Range */}
                       <div>
                         <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
-                          {t("manager.bookings.dateFrom")}
+                          {t("manager.bookings.dateFrom")} - {t("manager.bookings.dateTo")}
                         </span>
-                        <DatePicker
-                          value={dateFrom}
-                          onChange={handleDateFromChange}
-                          placeholder={t("manager.bookings.dateFrom")}
-                          format="DD/MM/YYYY"
-                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
-                        />
-                      </div>
-
-                      {/* Date To */}
-                      <div>
-                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
-                          {t("manager.bookings.dateTo")}
-                        </span>
-                        <DatePicker
-                          value={dateTo}
-                          onChange={(d) => setDateTo(d)}
+                        <DateRangePicker
+                          value={dateFrom || dateTo ? [dateFrom, dateTo] : null}
+                          onChange={(dates) => {
+                            setDateFrom(dates?.[0] || null);
+                            setDateTo(dates?.[1] || null);
+                          }}
                           disabled={viewMode !== "table"}
-                          placeholder={t("manager.bookings.dateTo")}
-                          format="DD/MM/YYYY"
-                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
+                          className="h-9 w-full min-w-[260px] rounded-xl border border-[#F3D7E4] bg-white text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
                         />
                       </div>
 
                       {/* Reset */}
-                      <div className="flex items-end">
+                      <div className="w-auto">
                         <motion.button
                           whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
                           whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
                           onClick={handleResetFilters}
                           disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
-                          className={`h-9 rounded-xl border px-4 text-[12px] font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
+                          className={`flex items-center justify-center gap-2 h-9 w-auto rounded-xl border px-4 font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
                             ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA]"
                             : "cursor-not-allowed border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8]"
                             }`}
                         >
-                          {t("manager.common.reset")}
+                          <RefreshCcw size={16} />
+                          {language === 'vi' ? "Đặt lại" : "Reset"}
                         </motion.button>
                       </div>
                     </div>

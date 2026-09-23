@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import toast from "react-hot-toast";
 
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -509,11 +510,15 @@ export function ServicePricingManagementPage() {
           label = t("servicePricing.metric.mostBooked");
         } else if (label === "Highest Revenue Service") {
           label = t("servicePricing.metric.highestRevenue");
+        } else if (label === "Total Services") {
+          label = language === "vi" ? "Tổng số dịch vụ" : "Total Services";
+        } else if (label === "Avg Service Price") {
+          label = language === "vi" ? "Giá dịch vụ trung bình" : "Avg Service Price";
         }
         return { ...item, label };
       });
     },
-    [services, t],
+    [services, t, language],
   );
 
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
@@ -573,39 +578,7 @@ export function ServicePricingManagementPage() {
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
   }, []);
 
-  const getServiceActionItems = useCallback((service) => {
-    const actions = [
-      {
-        key: "view-service",
-        label: language === "vi" ? "Xem chi tiết" : "View Details",
-        icon: Eye,
-        onSelect: () => setDetailService(service),
-      },
-      {
-        key: "edit-service",
-        label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
-        icon: Pencil,
-        onSelect: () => openEditService(service),
-      },
-    ];
-
-    if (service?.status === "Active") {
-      actions.push({
-        key: "delete-service",
-        label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () =>
-          setDeleteState({
-            type: "service",
-            recordId: service.id,
-            label: service.name,
-          }),
-      });
-    }
-
-    return actions;
-  }, [openEditService, t, language]);
+  // Removed getServiceActionItems
 
   const submitServiceForm = async () => {
     setServiceError("");
@@ -678,25 +651,21 @@ export function ServicePricingManagementPage() {
       title: t("userManagement.table.actions"),
       key: "actions",
       render: (_, service) => (
-        <div className="flex items-center gap-2">
-          {getServiceActionItems(service).map((item) => {
-            const Icon = item.icon;
-            return (
-              <Tooltip key={item.key} title={item.label}>
-                <button
-                  type="button"
-                  onClick={item.onSelect}
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a17a91] hover:bg-[#fff0f5] hover:text-[#e84d92] transition-colors shadow-sm border border-[#f4d5e3] ${item.className || ""}`}
-                >
-                  <Icon size={14} />
-                </button>
-              </Tooltip>
-            );
-          })}
-        </div>
+        <ActionButtons
+          onView={() => setDetailService(service)}
+          onEdit={() => openEditService(service)}
+          onDelete={() =>
+            setDeleteState({
+              type: "service",
+              recordId: service.id,
+              label: service.name,
+            })
+          }
+          showDelete={service?.status === "Active"}
+        />
       ),
     },
-  ]), [getServiceActionItems, t]);
+  ]), [t, language]);
 
   return (
     <>

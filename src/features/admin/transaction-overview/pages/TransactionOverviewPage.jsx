@@ -20,12 +20,15 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { fetchAdminTransactions, fetchAdminTransactionById } from "../services/transactionService";
 import { fetchBookingById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { CalendarRange } from "lucide-react";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 
 const fadeInUp = {
@@ -506,19 +509,13 @@ export function TransactionOverviewPage() {
         width: "8%",
         align: "right",
         render: (_, tx) => (
-          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedTransaction(tx);
-                setModalVisible(true);
-              }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-            >
-              <Eye size={13} className="stroke-[2]" />
-            </button>
-          </Tooltip>
+          <ActionButtons
+            onView={(e) => {
+              e.stopPropagation();
+              setSelectedTransaction(tx);
+              setModalVisible(true);
+            }}
+          />
         )
       }
     ];
@@ -941,7 +938,7 @@ export function TransactionOverviewPage() {
             />
 
             {/* Filters Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-2 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center bg-white/90 backdrop-blur-sm p-2 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
               {/* Search bar */}
               <div className="relative flex-1 w-full">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
@@ -963,15 +960,14 @@ export function TransactionOverviewPage() {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 self-end sm:self-auto">
-                <DatePicker.RangePicker
+              <div className="flex flex-col lg:flex-row items-center gap-3 self-end sm:self-auto">
+                <DateRangePicker
                   value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
                   onChange={(dates) => {
                     setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
                     setCurrentPage(1);
                   }}
                   className="h-11 rounded-full border-slate-200 px-4"
-                  format="DD/MM/YYYY"
                 />
                 <Select
                   value={statusFilter}
@@ -979,7 +975,7 @@ export function TransactionOverviewPage() {
                     setStatusFilter(val);
                     setCurrentPage(1);
                   }}
-                  className="w-40 h-11 select-premium-antd"
+                  className="lg:w-40 w-full h-11 select-premium-antd"
                   popupClassName="select-premium-dropdown"
                   prefix={
                     <ListFilter

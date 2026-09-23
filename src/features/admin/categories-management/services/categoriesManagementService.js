@@ -35,7 +35,7 @@ function normalizeMetaData(metaData, defaults) {
   };
 }
 
-export const CATEGORY_STATUS_OPTIONS = ["Active", "InActive", "Inactive"];
+export const CATEGORY_STATUS_OPTIONS = ["Active", "Inactive"];
 
 export function normalizeAdminCategory(category) {
   return {

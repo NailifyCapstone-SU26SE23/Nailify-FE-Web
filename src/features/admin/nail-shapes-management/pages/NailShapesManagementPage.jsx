@@ -18,7 +18,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import {
   ROUTES,
   getAdminNailShapeDetailRoute,
@@ -320,37 +320,12 @@ export function NailShapesManagementPage() {
                           ? (shape.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
                           : shape.status || "Inactive"}
                       </span>
-                      <div className="flex items-center justify-center gap-1.5 ">
-                        <Tooltip title={t("adminNailShapesManagement.viewDetail")}>
-                          <button
-                            type="button"
-                            onClick={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId))}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                          >
-                            <Eye size={12} />
-                          </button>
-                        </Tooltip>
-                        <Tooltip title={t("adminNailShapesManagement.editShape")}>
-                          <button
-                            type="button"
-                            onClick={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } })}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                          >
-                            <Pencil size={12} />
-                          </button>
-                        </Tooltip>
-                        {shape?.status === "Active" && (
-                          <Tooltip title={t("adminNailShapesManagement.deleteShape")}>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(shape)}
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-[#fff0f0] text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </Tooltip>
-                        )}
-                      </div>
+                      <ActionButtons
+                        onView={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId))}
+                        onEdit={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId), { state: { startInEdit: true } })}
+                        onDelete={() => setDeleteTarget(shape)}
+                        showDelete={shape?.status === "Active"}
+                      />
                     </div>
                   </div>
                 ))}

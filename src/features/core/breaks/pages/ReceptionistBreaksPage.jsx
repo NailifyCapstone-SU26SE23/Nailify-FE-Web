@@ -9,10 +9,13 @@ import {
   RefreshCw,
   UserRound,
   X,
-  Eye
+  Eye,
+  CircleCheck,
+  CircleX
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   fetchBreaks,
@@ -60,7 +63,7 @@ export function ReceptionistBreaksPage() {
         pageNumber: currentPage,
         pageSize,
         artistId: filterArtistId || undefined,
-        date: filterDate ? dayjs(filterDate).toISOString() : undefined,
+        date: filterDate ? dayjs(filterDate).format('YYYY-MM-DD') : undefined,
       });
 
       if (response) {
@@ -141,7 +144,7 @@ export function ReceptionistBreaksPage() {
 
   const columns = [
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thợ nail" : "Staff Artist"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thợ nail" : "Staff Artist"}</span>,
       key: "artist",
       sorter: (a, b) => getArtistName(a.nailArtistId).localeCompare(getArtistName(b.nailArtistId)),
       render: (_, item) => (
@@ -156,13 +159,13 @@ export function ReceptionistBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
       key: "date",
       sorter: (a, b) => dayjs(a.breakDate).unix() - dayjs(b.breakDate).unix(),
-      render: (_, item) => <span className="px-2">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+      render: (_, item) => <span className="px-2">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thời gian" : "Time Window"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thời gian" : "Time Window"}</span>,
       key: "time",
       sorter: (a, b) => {
         const timeA = a.startTime ? a.startTime.substring(0, 5) : "";
@@ -177,7 +180,7 @@ export function ReceptionistBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Lý do" : "Reason"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Lý do" : "Reason"}</span>,
       key: "reason",
       sorter: (a, b) => (a.reason || "").localeCompare(b.reason || ""),
       render: (_, item) => (
@@ -187,13 +190,13 @@ export function ReceptionistBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Trạng thái" : "Status"}</span>,
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (_, item) => <div className="px-2">{getStatusBadge(item.status)}</div>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Lý do từ chối" : "Reject Reason"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Lý do từ chối" : "Reject Reason"}</span>,
       key: "rejectReason",
       sorter: (a, b) => (a.rejectReason || "").localeCompare(b.rejectReason || ""),
       render: (_, item) => (
@@ -203,21 +206,18 @@ export function ReceptionistBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thao tác" : "Action"}</span>,
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
       align: 'right',
       render: (_, item) => (
-        <div className="flex justify-end gap-2 px-2">
-          <button
-            onClick={() => {
+        <div className="flex justify-end px-2">
+          <ActionButtons
+            onView={() => {
               setSelectedBreak(item);
               setIsDetailOpen(true);
             }}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
-            title={language === "vi" ? "Chi tiết" : "Details"}
-          >
-            <Eye size={13} />
-          </button>
+          // onDelete={() => openDeleteModal(item)}
+          />
         </div>
       )
     }
@@ -352,7 +352,7 @@ export function ReceptionistBreaksPage() {
                 <div className="text-sm text-slate-600 space-y-1.5 border-t border-[#f7ebdf] pt-2">
                   <div className="flex justify-between">
                     <span className="text-[#a88a9d]">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
-                    <span className="font-semibold text-slate-800">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+                    <span className="font-semibold text-slate-800">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#a88a9d]">{language === "vi" ? "Thời gian:" : "Time Window:"}</span>
@@ -363,24 +363,14 @@ export function ReceptionistBreaksPage() {
                     <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
                   )}
                 </div>
-                <div className="pt-2 border-t border-[#f7ebdf] flex gap-2">
-                  <button
-                    onClick={() => {
+                <div className="pt-2 border-t border-[#f7ebdf] flex justify-end">
+                  <ActionButtons
+                    onView={() => {
                       setSelectedBreak(item);
                       setIsDetailOpen(true);
                     }}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 py-2.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
-                  >
-                    <Eye size={12} />
-                    {language === "vi" ? "Chi tiết" : "Details"}
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal(item)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition cursor-pointer"
-                  >
-                    <Trash2 size={12} />
-                    {language === "vi" ? "Hủy" : "Cancel"}
-                  </button>
+                  // onDelete={() => openDeleteModal(item)}
+                  />
                 </div>
               </div>
             ))}
@@ -420,7 +410,7 @@ export function ReceptionistBreaksPage() {
           },
           {
             label: language === "vi" ? "Ngày nghỉ" : "Break Date",
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : ""
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : ""
           },
           {
             label: language === "vi" ? "Thời gian" : "Time Window",
@@ -465,7 +455,7 @@ export function ReceptionistBreaksPage() {
 
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
                     <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
-                    <span className="font-semibold">{dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}</span>
+                    <span className="font-semibold">{dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")}</span>
                   </div>
 
                   <div className="flex justify-between border-b border-[#f7dfeb] pb-2">

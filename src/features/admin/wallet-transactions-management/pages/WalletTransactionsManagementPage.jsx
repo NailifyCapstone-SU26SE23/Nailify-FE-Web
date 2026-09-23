@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, DatePicker, Select, Table, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
-import { Calendar, Eye, RefreshCw, Search, WalletCards, X } from "lucide-react";
+import { Calendar, Download, Eye, RefreshCw, Search, WalletCards } from "lucide-react";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
@@ -20,8 +21,8 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
-const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
 export function WalletTransactionsManagementPage() {
@@ -305,18 +306,12 @@ export function WalletTransactionsManagementPage() {
       width: 90,
       render: (_, record) => (
         <div className="flex justify-center">
-          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View detail"}>
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] shadow-xs transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#ea4f93] hover:text-white active:scale-95"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleViewDetail(record.walletTransactionId);
-              }}
-            >
-              <Eye size={13} className="stroke-[2]" />
-            </button>
-          </Tooltip>
+          <ActionButtons
+            onView={(event) => {
+              event.stopPropagation();
+              handleViewDetail(record.walletTransactionId);
+            }}
+          />
         </div>
       ),
     },
@@ -408,19 +403,11 @@ export function WalletTransactionsManagementPage() {
                 value={filters.status}
                 onChange={(status) => setFilters((prev) => ({ ...prev, status }))}
               />
-              <RangePicker
+              <DateRangePicker
                 className="!h-11 !w-full sm:!w-auto"
                 value={filters.dateRange}
-                placeholder={[
-                  t("walletTransactions.startDate"),
-                  t("walletTransactions.endDate"),
-                ]}
-                onChange={(dateRange) =>
-                  setFilters((prev) => ({ ...prev, dateRange }))
-                }
-                disabledDate={(date) =>
-                  date && date > dayjs().endOf("day").add(365, "day")
-                }
+                onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
+                disabledDate={(date) => date && date > dayjs().endOf("day").add(365, "day")}
               />
             </div>
           </div>

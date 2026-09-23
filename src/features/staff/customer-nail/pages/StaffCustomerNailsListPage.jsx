@@ -76,7 +76,7 @@ function RequestCard({ request, language }) {
             className="pointer-events-none h-full w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:-rotate-2"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl font-serif text-white shadow-inner">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl  text-white shadow-inner">
             {initials}
           </div>
         )}
@@ -90,7 +90,7 @@ function RequestCard({ request, language }) {
       </div>
 
       <div className="flex flex-col p-5">
-        <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
+        <h4 className="line-clamp-1 text-lg  font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
           {nail.name || "Untitled Design"}
         </h4>
 

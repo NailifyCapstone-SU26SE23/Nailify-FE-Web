@@ -24,6 +24,8 @@ import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
 } from "../../../../shared/constants/routes";
+import DateRangePicker from "../../../../shared/components/ui/DateRangePicker";
+import dayjs from "dayjs";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -600,26 +602,22 @@ export function StaffBookingListPage() {
           <div className="space-y-4">
             <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="grid gap-3 md:grid-cols-3">
-                <label className="space-y-2">
+                <label className="space-y-2 md:col-span-2 lg:col-span-1">
                   <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                    {language === "vi" ? "Từ ngày" : "Date From"}
+                    {language === "vi" ? "Khoảng thời gian" : "Date Range"}
                   </span>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(event) => setDateFrom(event.target.value)}
-                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
-                  />
-                </label>
-                <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                    {language === "vi" ? "Đến ngày" : "Date To"}
-                  </span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(event) => setDateTo(event.target.value)}
-                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] px-3 text-sm text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+                  <DateRangePicker
+                    value={dateFrom || dateTo ? [dateFrom ? dayjs(dateFrom) : null, dateTo ? dayjs(dateTo) : null] : null}
+                    onChange={(dates) => {
+                      if (dates) {
+                        setDateFrom(dates[0] ? dates[0].format("YYYY-MM-DD") : "");
+                        setDateTo(dates[1] ? dates[1].format("YYYY-MM-DD") : "");
+                      } else {
+                        setDateFrom("");
+                        setDateTo("");
+                      }
+                    }}
+                    className="h-10 rounded-xl bg-[#fff9fc] border-[#f5d7e4] transition hover:border-[#ef6bb4]"
                   />
                 </label>
 

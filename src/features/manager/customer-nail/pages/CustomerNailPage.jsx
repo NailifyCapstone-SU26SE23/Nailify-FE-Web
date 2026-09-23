@@ -431,7 +431,7 @@ function CustomerNailCard({ nail, language }) {
             </div>
           </div>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl font-serif text-white shadow-inner">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl  text-white shadow-inner">
             {initials}
           </div>
         )}
@@ -450,7 +450,7 @@ function CustomerNailCard({ nail, language }) {
       <div className="flex flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
+            <h4 className="line-clamp-1 text-lg  font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
               {nail.name || "Untitled Design"}
             </h4>
           </div>
@@ -643,14 +643,14 @@ export function CustomerNailPage() {
             recentKeys.delete(key);
           }
         });
-        
+
         // Use toast to notify the user and refresh the list silently
         toast.success(language === "vi" ? `Có yêu cầu duyệt mẫu móng custom mới từ ${customerName}!` : `New custom nail request from ${customerName}!`, {
           id: `custom-nail-request-${notificationKey}`,
           icon: '💅',
           style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
         });
-        
+
         loadCustomerNails({ silent: true, suppressNewRequestToast: true });
         loadStats(); // Update the stats as well
       }
