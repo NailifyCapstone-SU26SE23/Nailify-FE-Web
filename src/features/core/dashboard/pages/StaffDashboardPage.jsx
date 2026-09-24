@@ -1124,7 +1124,7 @@ export function StaffDashboardPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex h-[32px] items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+              className="inline-flex h-[32px] w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
             >
               <RefreshCcw size={16} />
               {language === "vi" ? "Làm mới" : "Refresh"}

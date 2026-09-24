@@ -49,10 +49,6 @@ function normalizeFingerIndex(value) {
     return 0;
   }
 
-  if (normalized >= 1 && normalized <= 5) {
-    return normalized - 1;
-  }
-
   return clamp(normalized, 0, 4);
 }
 
@@ -160,10 +156,18 @@ function buildFingerColorConfigs(colorJson) {
 
   const nextConfigs = defaults.map(() => ({ ...sharedColor }));
 
-  parsed.fingers.forEach((finger) => {
-    const fingerIndex = normalizeFingerIndex(finger?.fingerIndex);
+  // Detect whether fingerIndex values are 1-based (legacy) or 0-based (new)
+  const allFingers = parsed.fingers;
+  const maxIdx = Math.max(...allFingers.map((f) => Number(f?.fingerIndex ?? 0)));
+  const isOneBased = maxIdx >= 1 && allFingers.every((f) => Number(f?.fingerIndex ?? 0) >= 1) && maxIdx <= 5;
+  const isZeroBased = allFingers.some((f) => Number(f?.fingerIndex ?? -1) === 0);
+  const useLegacy = isOneBased && !isZeroBased;
 
-    if (fingerIndex < 0) {
+  allFingers.forEach((finger) => {
+    const rawIdx = Number(finger?.fingerIndex ?? 0);
+    const fingerIndex = useLegacy ? clamp(rawIdx - 1, 0, 4) : normalizeFingerIndex(rawIdx);
+
+    if (fingerIndex < 0 || fingerIndex > 4) {
       return;
     }
 

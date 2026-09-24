@@ -201,7 +201,7 @@ export function WithdrawRequestsPage() {
     {
       title: isVi ? "Thao tác" : "Action",
       key: "action",
-      fixed: "right",
+      fixed: "center",
       width: 90,
       render: (_, record) => (
         <div className="flex justify-center">

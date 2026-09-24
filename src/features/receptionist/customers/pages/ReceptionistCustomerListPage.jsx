@@ -903,7 +903,7 @@ export function ReceptionistCustomerListPage() {
         color: "#10b981",
       },
       {
-        label: language === "vi" ? "Hàng Chờ Walk-In" : "Walk-in Queue",
+        label: language === "vi" ? "Hàng Chờ Khách Vãng Lai" : "Walk-in Queue",
         value: walkInGuests.filter((g) => g.status !== "completed").length,
         note: language === "vi" ? "Lượt khách trong ngày" : "Daily check-ins",
         icon: Clock,
@@ -1047,7 +1047,7 @@ export function ReceptionistCustomerListPage() {
                 }`}
             >
               <Clock size={14} />
-              {language === "vi" ? "Hàng Chờ Walk-In" : "Live Walk-In Queue"}
+              {language === "vi" ? "Hàng Chờ Khách Vãng Lai" : "Live Walk-In Queue"}
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[#FAF0F5] text-[#C97A9E] text-[10px] border border-[#F2D6E3]">
                 {walkInGuests.length}
               </span>
@@ -1060,7 +1060,7 @@ export function ReceptionistCustomerListPage() {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#C97A9E] hover:bg-[#B86B8E] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <Plus size={15} />
-            Check-In Walk-In
+            {language === "vi" ? "Check-in Khách vãng lai" : "Check-In Walk-In"}
           </button>
         </div>
       </div>

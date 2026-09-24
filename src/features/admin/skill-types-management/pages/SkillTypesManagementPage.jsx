@@ -242,7 +242,7 @@ export function SkillTypesManagementPage() {
       {
         title: t("adminSkillTypes.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, skillType) => (
           <ActionButtons
             onView={() => navigate(getAdminSkillTypeDetailRoute(skillType.skillTypeId))}

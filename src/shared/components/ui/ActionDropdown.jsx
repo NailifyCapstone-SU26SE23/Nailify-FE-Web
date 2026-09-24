@@ -5,7 +5,7 @@ import { PropTypes } from "../../utils/propTypes";
 import { useLanguage } from "../../hooks/useLanguage";
 
 export function ActionDropdown({
-  align = "right",
+  align = "",
   buttonClassName = "",
   items,
   label,
@@ -144,7 +144,7 @@ export function ActionDropdown({
 }
 
 ActionDropdown.propTypes = {
-  align: PropTypes.oneOf(["left", "right"]),
+  align: PropTypes.oneOf(["left", "center"]),
   buttonClassName: PropTypes.string,
   items: PropTypes.arrayOf(
     PropTypes.shape({

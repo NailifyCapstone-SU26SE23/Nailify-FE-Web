@@ -22,7 +22,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { useQuery } from "@tanstack/react-query";
-import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
+import { fetchStaffCustomerDetail, fetchLoyaltyTiers, fetchStaffShapeMethodConfigDetail } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const getStatusColor = (status) => {
@@ -255,6 +255,12 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
     return null;
   }
 
+  const { data: shapeMethodConfig } = useQuery({
+    queryKey: ["shapeMethodConfig", variantDetail?.shapeMethodConfigId],
+    queryFn: () => fetchStaffShapeMethodConfigDetail(variantDetail.shapeMethodConfigId),
+    enabled: Boolean(variantDetail?.shapeMethodConfigId),
+  });
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
       <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] border border-[#f1cade] bg-white shadow-[0_30px_80px_rgba(63,43,63,0.24)]">
@@ -287,8 +293,16 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 compact={true}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
-                <InfoCard label="Duration" value={formatVariantDuration(variantDetail.duration)} note="" />
+                <InfoCard label={language === "vi" ? "Giá cơ bản" : "Base Price"} value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
+                {shapeMethodConfig && (
+                  <InfoCard 
+                    label={shapeMethodConfig.name} 
+                    value={formatVariantCurrency(shapeMethodConfig.price)} 
+                    note="" 
+                    tone="success" 
+                  />
+                )}
+                <InfoCard label={language === "vi" ? "Thời lượng" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
               </div>
             </div>
 

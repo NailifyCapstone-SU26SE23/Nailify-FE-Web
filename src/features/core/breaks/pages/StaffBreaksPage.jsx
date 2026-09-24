@@ -285,7 +285,7 @@ export function StaffBreaksPage() {
     {
       title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
-      align: 'right',
+      align: 'center',
       render: (_, item) => (
         <div className="px-2">
           <ActionButtons
@@ -679,7 +679,7 @@ export function StaffBreaksPage() {
 
                     {selectedBreak.rejectReason && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-rose-500 font-medium">{language === "vi" ? "Phản hồi từ chối:" : "Rejection Reason:"}</span>
+                        <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Phản hồi từ chối:" : "Rejection Reason:"}</span>
                         <p className="font-semibold text-rose-600 whitespace-pre-wrap">{selectedBreak.rejectReason}</p>
                       </div>
                     )}

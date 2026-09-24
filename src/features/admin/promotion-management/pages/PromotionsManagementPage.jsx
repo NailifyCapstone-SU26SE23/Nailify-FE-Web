@@ -344,7 +344,7 @@ export function PromotionsManagementPage() {
       {
         title: t("userManagement.table.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, promotion) => (
           <ActionButtons
             onView={() => navigate(getAdminPromotionDetailRoute(promotion.promotionId))}

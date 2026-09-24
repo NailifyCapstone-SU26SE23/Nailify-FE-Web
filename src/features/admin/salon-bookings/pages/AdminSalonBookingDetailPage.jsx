@@ -479,7 +479,7 @@ export function AdminSalonBookingDetailPage() {
       {
         title: isVi ? "Thao tác" : "Actions",
         key: "actions",
-        align: "right",
+        align: "center",
         width: "10%",
         render: (_, booking) => {
           const bookingId = booking?.bookingId || booking?.id;

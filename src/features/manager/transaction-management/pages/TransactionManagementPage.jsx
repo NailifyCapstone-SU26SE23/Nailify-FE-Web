@@ -652,9 +652,9 @@ export function TransactionManagementPage() {
                     {
                       title: language === "vi" ? "Hành động" : "Actions",
                       key: "actions",
-                      align: "right",
+                      align: "center",
                       render: (_, tx) => (
-                        <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
+                        <div onClick={(e) => e.stopPropagation()} className="flex justify-center">
                           <ActionButtons
                             onView={() => {
                               setSelectedTransaction(tx);

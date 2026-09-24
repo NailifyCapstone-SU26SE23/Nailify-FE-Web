@@ -869,7 +869,7 @@ export function StaffCustomerNailReviewPage() {
                     />
                   </div>
                   <p className="mt-2 text-sm text-[#9c6f87]">
-                    {language === "vi" ? "Đánh giá các lớp thiết kế, thành phần tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
+                    {language === "vi" ? "Đánh giá các lớp thiết kế, phụ kiện tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
                   </p>
                 </div>
               </div>
