@@ -439,3 +439,15 @@ export async function fetchBookingRating(bookingId) {
     throw error;
   }
 }
+
+export async function fetchCustomersList(pageNumber = 1, pageSize = 1000) {
+  const response = await axiosClient.get(`/Users/customers`, {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+    }
+  });
+
+  return unwrapResponse(response, "Failed to load customers list.");
+}

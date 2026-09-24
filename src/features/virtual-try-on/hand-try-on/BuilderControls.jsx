@@ -4,6 +4,7 @@ import {
   getNailShapes,
   getNailSurfaces,
 } from "../../../services/nailDesign.service";
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 
 /* ─── Curated Professional Nail Color Palette ───────────────────────── */
 const NAIL_COLORS = [
@@ -54,6 +55,7 @@ function getSurfaceIcon(name) {
 
 /* ─── Main BuilderControls Component ────────────────────────────────── */
 export function BuilderControls() {
+  const { t } = useLanguage();
   const [nailShapes, setNailShapes] = useState([]);
   const [nailSurfaces, setNailSurfaces] = useState([]);
   const [componentsByType, setComponentsByType] = useState({
@@ -208,7 +210,7 @@ export function BuilderControls() {
     <div className="builder-controls-grid">
       <section className="builder-panel builder-style-panel">
         {/* ─── Nail Shape ─── */}
-        <div className="section-title">Nail Shape</div>
+        <div className="section-title">{t("handTryOn.builderControls.nailShape")}</div>
         <div className="shape-selector">
           {nailShapes.length > 0 ? (
             nailShapes.map((shape, index) => {
@@ -236,13 +238,13 @@ export function BuilderControls() {
               );
             })
           ) : (
-            <div className="empty-layers">No nail shapes found</div>
+            <div className="empty-layers">{t("handTryOn.builderControls.noShapes")}</div>
           )}
         </div>
 
         {/* ─── Nail Color — Paint Studio ─── */}
         <div className="section-title">
-          <span>Nail Color</span>
+          <span>{t("handTryOn.builderControls.nailColor")}</span>
         </div>
 
         {/* Mode Tabs */}
@@ -254,7 +256,7 @@ export function BuilderControls() {
               type="button"
             >
               <span className="paint-tab-icon">🎨</span>
-              <span className="paint-tab-label">Solid</span>
+              <span className="paint-tab-label">{t("handTryOn.builderControls.solid")}</span>
             </button>
             <button
               className={`paint-mode-tab ${colorMode === "gradient" ? "active" : ""}`}
@@ -262,7 +264,7 @@ export function BuilderControls() {
               type="button"
             >
               <span className="paint-tab-icon">🌈</span>
-              <span className="paint-tab-label">Gradient</span>
+              <span className="paint-tab-label">{t("handTryOn.builderControls.gradient")}</span>
             </button>
           </div>
 
@@ -284,7 +286,7 @@ export function BuilderControls() {
                 type="color"
                 id="custom-color"
                 defaultValue="#FF4081"
-                title="Custom Color"
+                title={t("handTryOn.builderControls.customColor")}
               />
             </div>
           </div>
@@ -311,11 +313,11 @@ export function BuilderControls() {
 
             {/* Premium Ombre Presets */}
             <div className="gradient-presets-section">
-              <span className="gradient-presets-title">Ombre Presets</span>
+              <span className="gradient-presets-title">{t("handTryOn.builderControls.ombrePresets")}</span>
               <div className="gradient-presets-grid">
                 {[
                   {
-                    name: "French Ombre",
+                    name: t("handTryOn.builderControls.presets.frenchOmbre"),
                     c1: "#FFB6C1",
                     c2: "#FFFFFF",
                     c3: "#FFFFFF",
@@ -324,7 +326,7 @@ export function BuilderControls() {
                     bg: "linear-gradient(180deg, #FFB6C1, #FFFFFF)",
                   },
                   {
-                    name: "Sunset Glow",
+                    name: t("handTryOn.builderControls.presets.sunsetGlow"),
                     c1: "#FF4081",
                     c2: "#FFD700",
                     c3: "#FFD700",
@@ -333,7 +335,7 @@ export function BuilderControls() {
                     bg: "linear-gradient(180deg, #FF4081, #FFD700)",
                   },
                   {
-                    name: "Berry Sorbet",
+                    name: t("handTryOn.builderControls.presets.berrySorbet"),
                     c1: "#E91E63",
                     c2: "#FFB6C1",
                     c3: "#FFFFFF",
@@ -342,7 +344,7 @@ export function BuilderControls() {
                     bg: "linear-gradient(180deg, #E91E63, #FFB6C1, #FFFFFF)",
                   },
                   {
-                    name: "Ocean Mist",
+                    name: t("handTryOn.builderControls.presets.oceanMist"),
                     c1: "#0D47A1",
                     c2: "#42A5F5",
                     c3: "#42A5F5",
@@ -416,7 +418,7 @@ export function BuilderControls() {
             >
               {/* Color count toggle */}
               <div className="gradient-stop-count">
-                <span className="gradient-dir-label">Colors</span>
+                <span className="gradient-dir-label">{t("handTryOn.builderControls.colors")}</span>
                 <div className="stop-count-selector">
                   <label className="stop-count-chip">
                     <input
@@ -425,11 +427,11 @@ export function BuilderControls() {
                       value="2"
                       defaultChecked
                     />{" "}
-                    2 Colors (Ombre)
+                    {t("handTryOn.builderControls.twoColors")}
                   </label>
                   <label className="stop-count-chip">
-                    <input type="radio" name="stop-count" value="3" /> 3 Colors
-                    (Trio)
+                    <input type="radio" name="stop-count" value="3" />{" "}
+                    {t("handTryOn.builderControls.threeColors")}
                   </label>
                 </div>
               </div>
@@ -437,44 +439,44 @@ export function BuilderControls() {
               {/* Color stops with clear labels */}
               <div className="gradient-stop-group">
                 <label className="gradient-stop-label">
-                  <span className="gradient-stop-title">Base Color</span>
+                  <span className="gradient-stop-title">{t("handTryOn.builderControls.baseColor")}</span>
                   <input
                     type="color"
                     id="gradient-color-1"
                     defaultValue="#FF4081"
-                    title="Base Color"
+                    title={t("handTryOn.builderControls.baseColor")}
                   />
                 </label>
                 {stopCount === 3 ? (
                   <>
                     <label className="gradient-stop-label">
-                      <span className="gradient-stop-title">Middle Color</span>
+                      <span className="gradient-stop-title">{t("handTryOn.builderControls.middleColor")}</span>
                       <input
                         type="color"
                         id="gradient-color-2"
                         defaultValue="#FFFFFF"
-                        title="Middle Color"
+                        title={t("handTryOn.builderControls.middleColor")}
                       />
                     </label>
                     <label className="gradient-stop-label">
-                      <span className="gradient-stop-title">Tip Color</span>
+                      <span className="gradient-stop-title">{t("handTryOn.builderControls.tipColor")}</span>
                       <input
                         type="color"
                         id="gradient-color-3"
                         defaultValue="#000000"
-                        title="Tip Color"
+                        title={t("handTryOn.builderControls.tipColor")}
                       />
                     </label>
                   </>
                 ) : (
                   <>
                     <label className="gradient-stop-label">
-                      <span className="gradient-stop-title">Tip Color</span>
+                      <span className="gradient-stop-title">{t("handTryOn.builderControls.tipColor")}</span>
                       <input
                         type="color"
                         id="gradient-color-2"
                         defaultValue="#FFFFFF"
-                        title="Tip Color"
+                        title={t("handTryOn.builderControls.tipColor")}
                       />
                     </label>
                     {/* Render gradient-color-3 in a hidden container to prevent script error or styling clash */}
@@ -491,17 +493,17 @@ export function BuilderControls() {
 
               {/* Direction picker — simple style terms */}
               <div className="gradient-direction-picker">
-                <span className="gradient-dir-label">Style</span>
+                <span className="gradient-dir-label">{t("handTryOn.builderControls.style")}</span>
                 <select
                   id="gradient-type"
                   className="gradient-type-select"
                   defaultValue="linear"
                 >
-                  <option value="linear">↕ Vertical (Top to Bottom)</option>
+                  <option value="linear">{t("handTryOn.builderControls.vertical")}</option>
                   <option value="horizontal">
-                    ↔ Horizontal (Left to Right)
+                    {t("handTryOn.builderControls.horizontal")}
                   </option>
-                  <option value="radial">◎ Radial (Center Outward)</option>
+                  <option value="radial">{t("handTryOn.builderControls.radial")}</option>
                 </select>
               </div>
             </div>
@@ -510,7 +512,7 @@ export function BuilderControls() {
 
         {/* ─── Nail Surface ─── */}
         <div className="material-section">
-          <div className="section-title">Nail Surface</div>
+          <div className="section-title">{t("handTryOn.builderControls.nailSurface")}</div>
           <div className="material-grid">
             {nailSurfaces.length > 0 ? (
               nailSurfaces.map((surface, index) => (
@@ -527,7 +529,7 @@ export function BuilderControls() {
                 </button>
               ))
             ) : (
-              <div className="empty-layers">No nail surfaces found</div>
+              <div className="empty-layers">{t("handTryOn.builderControls.noSurfaces")}</div>
             )}
           </div>
         </div>
@@ -540,34 +542,38 @@ export function BuilderControls() {
           type="button"
         >
           <span className="material-icons">upload_file</span>
-          Upload Custom Nail Image
+          {t("handTryOn.builderControls.uploadCustomImage")}
         </button>
         <ComponentPicker
-          title="Gem"
+          title={t("handTryOn.builderControls.gem")}
           type="gem"
           components={componentsByType[0]}
+          emptyText={t("handTryOn.builderControls.noGems")}
         />
         <ComponentPicker
-          title="Sticker"
+          title={t("handTryOn.builderControls.sticker")}
           type="sticker"
           components={componentsByType[1]}
+          emptyText={t("handTryOn.builderControls.noStickers")}
         />
         <ComponentPicker
-          title="Charm"
+          title={t("handTryOn.builderControls.charm")}
           type="charm"
           components={componentsByType[2]}
+          emptyText={t("handTryOn.builderControls.noCharms")}
         />
         <ComponentPicker
-          title="Art"
+          title={t("handTryOn.builderControls.art")}
           type="art"
           components={componentsByType[3]}
+          emptyText={t("handTryOn.builderControls.noArt")}
         />
       </section>
     </div>
   );
 }
 
-function ComponentPicker({ components, title, type }) {
+function ComponentPicker({ components, title, type, emptyText }) {
   return (
     <>
       <div className="section-title">{title}</div>
@@ -591,7 +597,7 @@ function ComponentPicker({ components, title, type }) {
           ))
         ) : (
           <div className="empty-layers">
-            No {title.toLowerCase()} components found
+            {emptyText || `No ${typeof title === "string" ? title.toLowerCase() : ""} components found`}
           </div>
         )}
       </div>

@@ -444,11 +444,11 @@ export function StaffManagementPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   const [salonPage, setSalonPage] = useState(1);
   const [hasMoreSalons, setHasMoreSalons] = useState(false);
   const [isLoadingMoreSalons, setIsLoadingMoreSalons] = useState(false);
-  
+
   const [error, setError] = useState(null);
   useEffect(() => {
     if (error) {
@@ -597,7 +597,7 @@ export function StaffManagementPage() {
       }
       setError(null);
       const result = await fetchAdminSalons({ pageIndex: page, pageSize: 6 });
-      
+
       if (page === 1) {
         setSalons(result.items || []);
       } else {

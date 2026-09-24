@@ -239,7 +239,7 @@ export function CategoryTypesManagementPage() {
       {
         title: t("adminCategoryTypes.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, categoryType) => (
           <ActionButtons
             onView={() => navigate(getAdminCategoryTypeDetailRoute(categoryType.categoryTypeId))}

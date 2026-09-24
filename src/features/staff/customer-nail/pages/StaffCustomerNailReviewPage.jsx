@@ -292,7 +292,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  // GLOSSY (Default) - Natural shine
   const shine = config.shine || 0.45;
   const blur = config.blur || 0;
   const effectiveBlur = Math.max(4, blur * 20);
@@ -767,11 +767,11 @@ export function StaffCustomerNailReviewPage() {
         artistNotes,
         procedures
       );
-      toast.success("Estimation and procedures submitted to Manager successfully!");
+      toast.success(language === "vi" ? "Đã gửi ước tính báo giá và quy trình cho Quản lý thành công!" : "Estimation and procedures submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
       console.error("Error submitting quote:", err);
-      toast.error(err.message || "Failed to submit quote.");
+      toast.error(err.message || (language === "vi" ? "Gửi báo giá thất bại." : "Failed to submit quote."));
     } finally {
       setIsSubmitting(false);
     }
@@ -869,7 +869,7 @@ export function StaffCustomerNailReviewPage() {
                     />
                   </div>
                   <p className="mt-2 text-sm text-[#9c6f87]">
-                    {language === "vi" ? "Đánh giá các lớp thiết kế, thành phần tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
+                    {language === "vi" ? "Đánh giá các lớp thiết kế, phụ kiện tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
                   </p>
                 </div>
               </div>
@@ -912,7 +912,7 @@ export function StaffCustomerNailReviewPage() {
                 onApplyToQuote={({ totalDuration, totalPrice }) => {
                   setQuotedDuration(totalDuration);
                   setQuotedPrice(totalPrice > 0 ? totalPrice : "");
-                  toast.success("Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!");
+                  toast.success(language === "vi" ? "Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!" : "Successfully synced total duration & cost to Quote!");
                 }}
               />
 

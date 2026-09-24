@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { DatePicker, Spin, Table, ConfigProvider, Tooltip } from "antd";
 import dayjs from "dayjs";
+import "dayjs/locale/vi";
+import "dayjs/locale/en";
+import viVN from "antd/locale/vi_VN";
+import enUS from "antd/locale/en_US";
 import toast from "react-hot-toast";
 import {
   CalendarDays,
@@ -16,6 +20,7 @@ import {
 } from "lucide-react";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import {
   fetchBreaks,
@@ -78,8 +83,9 @@ export function StaffBreaksPage() {
   }, [currentPage, filterDate, language]);
 
   useEffect(() => {
+    dayjs.locale(language === "vi" ? "vi" : "en");
     loadBreaks();
-  }, [loadBreaks]);
+  }, [loadBreaks, language]);
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
@@ -230,13 +236,13 @@ export function StaffBreaksPage() {
 
   const columns = [
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
       key: "date",
       sorter: (a, b) => dayjs(a.breakDate).unix() - dayjs(b.breakDate).unix(),
       render: (_, item) => <span className="px-2 font-semibold">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thời gian" : "Time"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Thời gian" : "Time"}</span>,
       key: "time",
       sorter: (a, b) => {
         const timeA = a.startTime ? a.startTime.substring(0, 5) : "";
@@ -251,7 +257,7 @@ export function StaffBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Lý do" : "Reason"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Lý do" : "Reason"}</span>,
       key: "reason",
       sorter: (a, b) => (a.reason || "").localeCompare(b.reason || ""),
       render: (_, item) => (
@@ -261,13 +267,13 @@ export function StaffBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Trạng thái" : "Status"}</span>,
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
       render: (_, item) => <div className="px-2">{getStatusBadge(item.status)}</div>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Phản hồi từ chối" : "Rejection Reason"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Phản hồi từ chối" : "Rejection Reason"}</span>,
       key: "rejectReason",
       sorter: (a, b) => (a.rejectReason || "").localeCompare(b.rejectReason || ""),
       render: (_, item) => (
@@ -277,44 +283,23 @@ export function StaffBreaksPage() {
       )
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-semibold">{language === "vi" ? "Thao tác" : "Action"}</span>,
+      title: <span className="text-xs uppercase font-semibold">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
-      align: 'right',
+      align: 'center',
       render: (_, item) => (
-        <div className="flex justify-center gap-2 px-2">
-          <Tooltip title={language === "vi" ? "Chi tiết" : "Details"}>
-            <button
-              onClick={() => openDetailModal(item)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
-
-            >
-              <Eye size={13} />
-            </button>
-          </Tooltip>
-          {String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt" ? (
-            <>
-              <Tooltip title={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}>
-                <button
-                  onClick={() => openEditModal(item)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-
-                >
-                  <Edit2 size={13} />
-                </button>
-              </Tooltip>
-              <Tooltip title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}>
-                <button
-                  onClick={() => openDeleteModal(item)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
-                  title={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </Tooltip>
-            </>
-          ) : (
-            null
-          )}
+        <div className="px-2">
+          <ActionButtons
+            onView={() => openDetailModal(item)}
+            onEdit={(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") ? () => openEditModal(item) : undefined}
+            onDelete={(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") ? () => openDeleteModal(item) : undefined}
+            showView={true}
+            showEdit={String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt"}
+            showDelete={String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt"}
+            showApprove={false}
+            showReject={false}
+            editTooltip={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
+            deleteTooltip={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
+          />
         </div>
       )
     }
@@ -349,15 +334,18 @@ export function StaffBreaksPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#f1e7ed] bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Lọc theo ngày:" : "Filter by date:"}</span>
-          <DatePicker
-            value={filterDate ? dayjs(filterDate) : null}
-            onChange={(date, dateString) => {
-              setFilterDate(dateString || "");
-              setCurrentPage(1);
-            }}
-            className="rounded-xl border-[#f4c1d8] hover:border-[#ea4f93] focus:border-[#ea4f93]"
-            format="YYYY-MM-DD"
-          />
+          <ConfigProvider locale={language === "vi" ? viVN : enUS}>
+            <DatePicker
+              value={filterDate ? dayjs(filterDate) : null}
+              onChange={(date) => {
+                setFilterDate(date ? date.format("YYYY-MM-DD") : "");
+                setCurrentPage(1);
+              }}
+              className="rounded-xl border-[#f4c1d8] hover:border-[#ea4f93] focus:border-[#ea4f93]"
+              format="DD/MM/YYYY"
+              placeholder={language === "vi" ? "Chọn ngày" : "Select date"}
+            />
+          </ConfigProvider>
           {filterDate && (
             <button
               onClick={() => {
@@ -441,32 +429,19 @@ export function StaffBreaksPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-[#f7ebdf]">
-                  <button
-                    onClick={() => openDetailModal(item)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-100 bg-indigo-50 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 transition"
-                  >
-                    <Eye size={12} />
-                    {language === "vi" ? "Chi tiết" : "Details"}
-                  </button>
-                  {(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") && (
-                    <>
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-                      >
-                        <Edit2 size={12} />
-                        {language === "vi" ? "Sửa" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => openDeleteModal(item)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition"
-                      >
-                        <Trash2 size={12} />
-                        {language === "vi" ? "Hủy" : "Cancel"}
-                      </button>
-                    </>
-                  )}
+                <div className="pt-2 border-t border-[#f7ebdf]">
+                  <ActionButtons
+                    onView={() => openDetailModal(item)}
+                    onEdit={(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") ? () => openEditModal(item) : undefined}
+                    onDelete={(String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt") ? () => openDeleteModal(item) : undefined}
+                    showView={true}
+                    showEdit={String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt"}
+                    showDelete={String(item.status || "").toLowerCase() === "pending" || String(item.status || "").toLowerCase() === "chờ duyệt"}
+                    showApprove={false}
+                    showReject={false}
+                    editTooltip={language === "vi" ? "Sửa yêu cầu" : "Edit Request"}
+                    deleteTooltip={language === "vi" ? "Hủy yêu cầu" : "Cancel Request"}
+                  />
                 </div>
               </div>
             ))}
@@ -704,7 +679,7 @@ export function StaffBreaksPage() {
 
                     {selectedBreak.rejectReason && (
                       <div className="flex flex-col gap-1">
-                        <span className="text-rose-500 font-medium">{language === "vi" ? "Phản hồi từ chối:" : "Rejection Reason:"}</span>
+                        <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Phản hồi từ chối:" : "Rejection Reason:"}</span>
                         <p className="font-semibold text-rose-600 whitespace-pre-wrap">{selectedBreak.rejectReason}</p>
                       </div>
                     )}

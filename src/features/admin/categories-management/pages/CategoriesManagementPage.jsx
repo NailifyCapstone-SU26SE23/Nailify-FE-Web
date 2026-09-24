@@ -255,7 +255,7 @@ export function CategoriesManagementPage() {
       {
         title: t("adminCategories.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, category) => (
           <ActionButtons
             onView={() => navigate(getAdminCategoryDetailRoute(category.categoryId))}

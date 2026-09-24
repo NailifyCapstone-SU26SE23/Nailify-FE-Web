@@ -101,7 +101,7 @@ export function ExtraServiceModal({
                         </p>
                       </div>
                       <span className="inline-flex shrink-0 rounded-full border border-[#cdeed7] bg-[#effcf3] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1f9e5b]">
-                        {service.status}
+                        {language === "vi" ? (String(service.status).toLowerCase() === "active" ? "Hoạt động" : String(service.status).toLowerCase() === "inactive" ? "Ngừng hoạt động" : service.status) : service.status}
                       </span>
                     </div>
                     <div className="mt-3 flex justify-between ">

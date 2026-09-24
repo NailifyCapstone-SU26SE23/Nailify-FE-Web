@@ -1237,7 +1237,17 @@ export function StaffServiceSessionPage() {
           stepOrder: index + 1,
           checked: ["completed", "done"].includes(normalizedStatus),
           label: `${isVi ? "Bước" : "Step"} ${index + 1}: ${procedureName}`,
-          statusLabel: String(procedure.status || "").trim(),
+          statusLabel: (function(status, lang) {
+            const norm = String(status || "").trim();
+            const lower = norm.toLowerCase();
+            if (lang === "vi") {
+              if (lower === "pending" || lower === "waiting") return "Đang chờ";
+              if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
+              if (lower === "completed" || lower === "done") return "Hoàn thành";
+              if (lower === "skipped") return "Đã bỏ qua";
+            }
+            return norm;
+          })(procedure.status, language),
           canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
           canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
           canComplete: isInProgressStatus && isAssignedToCurrentArtist && !isBlocked,
@@ -1310,6 +1320,17 @@ export function StaffServiceSessionPage() {
         estimatedStartTime: estStart,
         estimatedEndTime: estEnd,
         stepOrder: index + 1,
+        statusLabel: (function(status, lang) {
+            const norm = String(status || "").trim();
+            const lower = norm.toLowerCase();
+            if (lang === "vi") {
+              if (lower === "pending" || lower === "waiting") return "Đang chờ";
+              if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
+              if (lower === "completed" || lower === "done") return "Hoàn thành";
+              if (lower === "skipped") return "Đã bỏ qua";
+            }
+            return norm;
+        })(procedure.status, language),
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
         canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
         canComplete: isInProgressStatus && isAssignedToCurrentArtist && !isBlocked,

@@ -38,7 +38,7 @@ export function SchedulesTable({
       width: 250,
       render: (_, staff) => (
         <div className="flex items-center gap-3 group/staff px-2">
-          <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${staff.gradient} text-xs font-bold text-white shadow-sm ring-2 ${staff.ring}`}>
+          <div className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.gradient} text-xs font-bold text-white shadow-sm ring-2 ${staff.ring}`}>
             {staff.initials}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#10B981]" />
           </div>
@@ -87,7 +87,7 @@ export function SchedulesTable({
           const cellKey = `${staff.id}_${dateKey}`;
           const shifts = scheduleMatrix.get(cellKey) || [];
           const breaks = breaksMatrix?.get(cellKey) || [];
-          
+
           const hasApprovedBreak = breaks.some(b => b.status === "Approved");
 
           if (hasApprovedBreak) {

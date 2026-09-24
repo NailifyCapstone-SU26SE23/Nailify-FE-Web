@@ -28,7 +28,7 @@ export const ActionButtons = ({
   const defaultRejectTooltip = language === "vi" ? "Từ chối" : "Reject";
 
   return (
-    <div className="flex items-center justify-end gap-1.5">
+    <div className="flex items-center justify-center gap-1.5">
       {showView && onView && (
         <Tooltip title={viewTooltip || defaultViewTooltip}>
           <button

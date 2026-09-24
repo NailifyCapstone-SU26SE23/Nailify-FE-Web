@@ -94,17 +94,15 @@ function NailSurface3DLayer({ surface, handType = "tips" }) {
         gl={{ alpha: true, antialias: true }}
       >
         <ambientLight intensity={isMatte ? 0.6 : 0.3} />
-        {/* Strong front directional light to guarantee specular gloss line in center */}
         <directionalLight position={[0, 0, 8]} intensity={2.2} />
         <directionalLight position={[5, 10, 5]} intensity={1.5} />
         <directionalLight position={[-5, -10, 5]} intensity={0.5} />
         <Environment preset="studio" />
 
-        {/* Generic convex sphere providing 3D curvature. CSS shapeMask clips it to exact nail shape. */}
         <mesh scale={[1.4, 2.8, 0.6]}>
           <sphereGeometry args={[1, 64, 64]} />
           <meshPhysicalMaterial
-            color={new THREE.Color(0x000000)} // Black base becomes 100% transparent via CSS mix-blend-screen
+            color={new THREE.Color(0x000000)}
             roughness={roughness}
             metalness={metalness}
             clearcoat={clearcoat}
@@ -117,7 +115,6 @@ function NailSurface3DLayer({ surface, handType = "tips" }) {
     </div>
   );
 }
-
 
 function isHexColor(value) {
   return /^#(?:[0-9a-f]{3}){1,2}$/i.test(String(value || "").trim());
@@ -132,12 +129,10 @@ function extractVariantColors(colorJson) {
       value.forEach(collectColors);
       return;
     }
-
     if (value && typeof value === "object") {
       Object.values(value).forEach(collectColors);
       return;
     }
-
     if (typeof value === "string") {
       const normalized = value.trim();
       if (isHexColor(normalized)) {
@@ -182,11 +177,7 @@ function DetailCard({ title, children }) {
 
 function parseVariantColorConfig(colorJson) {
   const rawValue = String(colorJson || "").trim();
-
-  if (!rawValue) {
-    return null;
-  }
-
+  if (!rawValue) return null;
   try {
     return JSON.parse(rawValue);
   } catch {
@@ -195,37 +186,17 @@ function parseVariantColorConfig(colorJson) {
 }
 
 function getColorGradientStops(colorConfig) {
-  if (!colorConfig) {
-    return [];
-  }
-
-  if (Array.isArray(colorConfig)) {
-    return colorConfig;
-  }
-
-  if (Array.isArray(colorConfig.gradient)) {
-    return colorConfig.gradient;
-  }
-
-  if (Array.isArray(colorConfig.gradient?.stops)) {
-    return colorConfig.gradient.stops;
-  }
-
-  if (Array.isArray(colorConfig.gradientStops)) {
-    return colorConfig.gradientStops;
-  }
-
+  if (!colorConfig) return [];
+  if (Array.isArray(colorConfig)) return colorConfig;
+  if (Array.isArray(colorConfig.gradient)) return colorConfig.gradient;
+  if (Array.isArray(colorConfig.gradient?.stops)) return colorConfig.gradient.stops;
+  if (Array.isArray(colorConfig.gradientStops)) return colorConfig.gradientStops;
   return [];
 }
 
 function buildFingerColorStyle(colorConfig, fingerIndex) {
-  if (!colorConfig) {
-    return { backgroundColor: "#f9c2d8" };
-  }
-
-  if (typeof colorConfig === "string") {
-    return { backgroundColor: colorConfig };
-  }
+  if (!colorConfig) return { backgroundColor: "#f9c2d8" };
+  if (typeof colorConfig === "string") return { backgroundColor: colorConfig };
 
   if (Array.isArray(colorConfig)) {
     const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f9c2d8").trim();
@@ -239,17 +210,14 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
 
   if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
     const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
-
     if (finger) {
       const fingerStops = getColorGradientStops(finger);
       if (fingerStops.length > 1) {
         return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
       }
-
       if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
         return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
       }
-
       if (finger.color || finger.primaryColor) {
         return { backgroundColor: finger.color || finger.primaryColor };
       }
@@ -259,14 +227,8 @@ function buildFingerColorStyle(colorConfig, fingerIndex) {
   if (colorConfig.mode === "gradient" && colorConfig.primaryColor && colorConfig.secondaryColor) {
     return { background: `linear-gradient(to bottom, ${colorConfig.primaryColor}, ${colorConfig.secondaryColor})` };
   }
-
-  if (colorConfig.color) {
-    return { backgroundColor: colorConfig.color };
-  }
-
-  if (colorConfig.primaryColor) {
-    return { backgroundColor: colorConfig.primaryColor };
-  }
+  if (colorConfig.color) return { backgroundColor: colorConfig.color };
+  if (colorConfig.primaryColor) return { backgroundColor: colorConfig.primaryColor };
 
   return { backgroundColor: "#f9c2d8" };
 }
@@ -277,10 +239,9 @@ function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
   const nailHeight = fingerLength * 1.2 * length;
   const nailBottom = fingerLength * 0.75;
   const totalHeight = nailHeight * 1.5;
-  const originX = canvasW / 2;                      // ctx.translate x
-  const originY = canvasH / 2 + canvasH * 0.16;    // ctx.translate y
+  const originX = canvasW / 2;
+  const originY = canvasH / 2 + canvasH * 0.16;
   return {
-    // Absolute pixel coords of dest rectangle on canvas
     destX: originX - nailWidth / 2,
     destY: originY + nailBottom - totalHeight,
     destW: nailWidth,
@@ -293,29 +254,19 @@ function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
 function componentStyleFromDecoration(posX, posY, scale, rotation) {
   const layout = getBuilderCanvasLayout();
   const { destX, destY, destW, destH, canvasW, canvasH } = layout;
-
-  // Center of dest area in canvas pixels
   const cx = destX + destW / 2;
   const cy = destY + destH / 2;
-
-  // Decoration center in canvas pixels
   const decCX = cx + Number(posX || 0) * destW;
   const decCY = cy + Number(posY || 0) * destH;
-
-  // Convert to % of canvas (= % of nail card)
   const leftPct = (decCX / canvasW) * 100;
   const topPct = (decCY / canvasH) * 100;
   const widthPct = (destW * Number(scale || 0.2)) / canvasW * 100;
   const heightPct = (destH * Number(scale || 0.2)) / canvasH * 100;
-
   return { leftPct, topPct, widthPct, heightPct };
 }
 
 function parseComponentConfig(configJson) {
-  if (!configJson) {
-    return {};
-  }
-
+  if (!configJson) return {};
   try {
     return typeof configJson === "string" ? JSON.parse(configJson) : configJson;
   } catch {
@@ -325,22 +276,15 @@ function parseComponentConfig(configJson) {
 
 function getFingerAlignmentClass(fingerName) {
   switch (fingerName) {
-    case "Thumb":
-      return "translate-y-8 -rotate-[14deg] md:translate-y-10";
-    case "Index":
-      return "translate-y-2 -rotate-[4deg]";
-    case "Middle":
-      return "-translate-y-3";
-    case "Ring":
-      return "rotate-[2deg]";
-    case "Pinky":
-      return "translate-y-6 rotate-[10deg] md:translate-y-8";
-    default:
-      return "";
+    case "Thumb": return "translate-y-8 -rotate-[14deg] md:translate-y-10";
+    case "Index": return "translate-y-2 -rotate-[4deg]";
+    case "Middle": return "-translate-y-3";
+    case "Ring": return "rotate-[2deg]";
+    case "Pinky": return "translate-y-6 rotate-[10deg] md:translate-y-8";
+    default: return "";
   }
 }
 
-// Default coordinates for nails on the hand images
 const DEFAULT_COORDINATES = {
   "woman": {
     "1": { "left": 14.27, "top": 44.34, "width": 7.4, "height": 17.5, "rotation": -54 },
@@ -369,14 +313,13 @@ const EMPTY_SUMMARY = {
 };
 
 function NailVariantHandPreview({ variantDetail }) {
-  const { language } = useLanguage();
-  const [viewMode, setViewMode] = useState("tips"); // "tips" or "hand"
-  const [handType, setHandType] = useState("woman"); // "woman" or "man"
+  const { t, language } = useLanguage();
+  const [viewMode, setViewMode] = useState("tips");
+  const [handType, setHandType] = useState("woman");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
   const [coords, setCoords] = useState(DEFAULT_COORDINATES);
   const [draggingFinger, setDraggingFinger] = useState(null);
   const [selectedFinger, setSelectedFinger] = useState(1);
@@ -388,6 +331,17 @@ function NailVariantHandPreview({ variantDetail }) {
   const colorConfig = useMemo(
     () => parseVariantColorConfig(variantDetail?.colorJson),
     [variantDetail?.colorJson],
+  );
+
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
   );
 
   const fingerDefinitions = [
@@ -413,7 +367,7 @@ function NailVariantHandPreview({ variantDetail }) {
 
   const handleMouseDown = (e) => {
     if (viewMode !== "hand") return;
-    if (clickToPlace) return; // let click handler manage this
+    if (clickToPlace) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
   };
@@ -421,7 +375,6 @@ function NailVariantHandPreview({ variantDetail }) {
   const handleHandClick = (e) => {
     if (!clickToPlace || !handImgRef.current) return;
     e.stopPropagation();
-    // Compute position relative to the inner hand image element
     const rect = handImgRef.current.getBoundingClientRect();
     const xPct = ((e.clientX - rect.left) / rect.width) * 100;
     const yPct = ((e.clientY - rect.top) / rect.height) * 100;
@@ -436,7 +389,6 @@ function NailVariantHandPreview({ variantDetail }) {
         }
       }
     }));
-    // Auto-advance to next finger
     if (selectedFinger < 5) setSelectedFinger(f => f + 1);
   };
 
@@ -458,7 +410,6 @@ function NailVariantHandPreview({ variantDetail }) {
       }));
       return;
     }
-
     if (!isDragging) return;
     setPan({
       x: e.clientX - dragStart.x,
@@ -488,71 +439,67 @@ function NailVariantHandPreview({ variantDetail }) {
 
   return (
     <div className="rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-      {/* View Switch Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#fce6f3] pb-4">
         <div className="flex rounded-full bg-[#ffeef5]/60 p-1 border border-[#fce6f3]">
           <button
             onClick={() => setViewMode("tips")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ${viewMode === "tips" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
-            {language === "vi" ? "Móng lẻ" : "Individual Nails"}
+            {t("handPreview.individualNails")}
           </button>
           <button
             onClick={() => setViewMode("hand")}
             className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${viewMode === "hand" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            {language === "vi" ? "Tay mẫu" : "View on Hand"}
+            {t("handPreview.viewOnHand")}
           </button>
         </div>
 
         {viewMode === "hand" && (
           <div className="flex flex-wrap items-center gap-3">
-            {/* Gender Switch */}
             <div className="flex rounded-full bg-white p-1 border border-[#fcd5e6]">
               <button
                 onClick={() => setHandType("woman")}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${handType === "woman" ? "bg-[#ea4f93] text-white" : "text-[#c694ad] hover:text-[#ea4f93]"}`}
               >
-                Woman
+                {t("handPreview.woman")}
               </button>
               <button
                 onClick={() => setHandType("man")}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${handType === "man" ? "bg-[#ea4f93] text-white" : "text-[#c694ad] hover:text-[#ea4f93]"}`}
               >
-                Man
+                {t("handPreview.man")}
               </button>
             </div>
 
-            {/* Zoom controls */}
             <div className="flex rounded-full bg-white border border-[#fcd5e6] overflow-hidden">
               <button
                 onClick={() => handleZoom("in")}
-                title="Zoom In"
+                title={t("handPreview.zoomIn")}
                 className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition border-r border-[#fcd5e6]"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleZoom("out")}
-                title="Zoom Out"
+                title={t("handPreview.zoomOut")}
                 className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition border-r border-[#fcd5e6]"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 onClick={handleReset}
-                title="Reset Zoom/Pan"
+                title={t("handPreview.resetZoomPan")}
                 className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Calibration Toggle */}
             <button
               onClick={() => setShowCalibration(!showCalibration)}
-              title="Calibration sliders"
+              title={t("handPreview.calibrationSliders")}
               className={`p-1.5 rounded-full border transition ${showCalibration ? "bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm" : "bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]"}`}
             >
               <Sliders className="w-4 h-4" />
@@ -574,7 +521,6 @@ function NailVariantHandPreview({ variantDetail }) {
                 <div className="relative group">
                   <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
 
-                  {/* Nail card — large w-24 h-48 format */}
                   <div className="relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]">
                     <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
                       <div className="absolute inset-0 h-full w-full" style={colorStyle} />
@@ -589,8 +535,6 @@ function NailVariantHandPreview({ variantDetail }) {
                         const config = parseComponentConfig(componentItem.configJson);
                         const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
                         const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-
-                        // Apply 2.5x scaling multiplier to make the accessories legible on the card
                         const displaySizePercent = scale * 2.5 * 100;
 
                         return (
@@ -628,7 +572,7 @@ function NailVariantHandPreview({ variantDetail }) {
                 </div>
 
                 <span className="rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
-                  {finger.label}
+                  {fingerLabels[finger.fingerIndex - 1]}
                 </span>
               </div>
             );
@@ -656,7 +600,6 @@ function NailVariantHandPreview({ variantDetail }) {
                 transition: isDragging ? 'none' : 'transform 0.15s ease-out'
               }}
             >
-              {/* Hand Image */}
               <img
                 src={currentHandImg}
                 alt="Hand preview"
@@ -664,10 +607,9 @@ function NailVariantHandPreview({ variantDetail }) {
                 className="w-full h-full object-contain select-none pointer-events-none"
               />
 
-              {/* Click-to-place crosshair for selected finger */}
               {clickToPlace && (() => {
                 const coord = coords[handType][selectedFinger];
-                const fingerLabel = fingerDefinitions.find(f => f.fingerIndex === selectedFinger)?.label;
+                const fingerLabel = fingerLabels[selectedFinger - 1];
                 return (
                   <div
                     className="absolute pointer-events-none"
@@ -721,8 +663,6 @@ function NailVariantHandPreview({ variantDetail }) {
                           const config = parseComponentConfig(componentItem.configJson);
                           const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
                           const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
-
-                          // Apply 2.5x scaling multiplier to make accessories legible on the hand fingertips
                           const displaySizePercent = scale * 2.5 * 100;
 
                           return (
@@ -763,17 +703,19 @@ function NailVariantHandPreview({ variantDetail }) {
             </div>
           </div>
 
-          {/* Calibration Panel */}
           {showCalibration && (
             <div className="rounded-lg border border-[#f7d7e5] bg-white p-5 space-y-4 shadow-sm">
-              {/* Header */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-[#ea4f93]">Calibrate Nail Positions</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-[#ea4f93]">
+                    {t("handPreview.calibratePositions")}
+                  </h4>
                   <p className="text-[10px] text-[#c694ad]">
                     {clickToPlace
-                      ? `Click on the fingernail in the image to place nail ${fingerDefinitions.find(f => f.fingerIndex === selectedFinger)?.label}. (${selectedFinger}/5)`
-                      : 'Drag the nails directly on the image, or use the sliders below to adjust.'}
+                      ? t("handPreview.clickInstructions")
+                        .replace("{finger}", fingerLabels[selectedFinger - 1])
+                        .replace("{current}", String(selectedFinger))
+                      : t("handPreview.dragInstructions")}
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -782,19 +724,18 @@ function NailVariantHandPreview({ variantDetail }) {
                       setClickToPlace(v => !v);
                       if (!clickToPlace) setSelectedFinger(1);
                     }}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold border transition ${clickToPlace ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'
-                      }`}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold border transition ${clickToPlace ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'}`}
                   >
-                    {clickToPlace ? '✓ Click-to-Place ON' : 'Click-to-Place'}
+                    {clickToPlace ? t("handPreview.clickToPlaceOn") : t("handPreview.clickToPlace")}
                   </button>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(JSON.stringify(coords, null, 2));
-                      toast.success("Coordinates copied! Paste into DEFAULT_COORDINATES to save.");
+                      toast.success(t("handPreview.coordinatesCopied"));
                     }}
                     className="rounded-full bg-[#432744] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#2e1a30] transition"
                   >
-                    Copy Config
+                    {t("handPreview.copyConfig")}
                   </button>
                 </div>
               </div>
@@ -806,7 +747,7 @@ function NailVariantHandPreview({ variantDetail }) {
                     onClick={() => setSelectedFinger(fd.fingerIndex)}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${selectedFinger === fd.fingerIndex ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'}`}
                   >
-                    {fd.label}
+                    {fingerLabels[fd.fingerIndex - 1]}
                   </button>
                 ))}
               </div>
@@ -1222,7 +1163,6 @@ export function NailVariantDetailPage() {
 
       await createVariantNailComponents(variantId, pendingTryOnConfig);
 
-      // clear state and reload variant
       navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true });
 
       const [detail, loadedProcedures] = await Promise.all([
@@ -1322,14 +1262,13 @@ export function NailVariantDetailPage() {
         </div>
       </div>
 
-      <DetailCard title="Summary">
+      <DetailCard title={t("adminNailsDesignManagement.summary")}>
         <div className="mt-5 grid grid-cols-4 gap-3">
           {[
             [t("adminNailsDesignManagement.totalBookings"), summary.totalBookings],
             [t("adminNailsDesignManagement.favorites"), summary.totalFavorites],
             [t("adminNailsDesignManagement.avgRating"), `${summary.averageRating.toFixed(2)}★`],
             [t("adminNailsDesignManagement.ratingCount"), summary.ratingCount],
-
           ].map(([label, value]) => (
             <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
               <p className="text-xs font-semibold text-[#c694af]">{label}</p>
@@ -1390,7 +1329,6 @@ export function NailVariantDetailPage() {
         )}
       </DetailCard>
 
-
       {pendingTryOnConfig && !error ? (
         <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
           <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">
@@ -1440,20 +1378,20 @@ export function NailVariantDetailPage() {
           </div>
         </DetailCard>
 
-        <DetailCard title={language === 'vi' ? `Bước quy trình` : `Procedure Steps`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-[#8c7085]">{language === 'vi' ? `Thứ tự các bước được khởi tạo từ đầu` : `Step order is initialized from the beginning`}</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={addProcedureDraft}
-                disabled={isSavingProcedures || editingProcedureIndex !== null}
-                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:opacity-50"
-              >
-                <Plus size={13} className="mr-1.5 inline" />
-                {t("adminNailsDesignManagement.addStep")}
-              </button>
-            </div>
+        <DetailCard>
+          <div className="flex flex-row items-center justify-between gap-3 -mt-4">
+            <h1 className="text-xl font-bold text-[#432744]">
+              {t("adminNailsDesignManagement.procedureSteps")}
+            </h1>
+            <button
+              type="button"
+              onClick={addProcedureDraft}
+              disabled={isSavingProcedures || editingProcedureIndex !== null}
+              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:opacity-50"
+            >
+              <Plus size={13} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.addStep")}
+            </button>
           </div>
 
           {procedures.length ? (
@@ -1471,7 +1409,7 @@ export function NailVariantDetailPage() {
                         <div className="grid gap-5 md:grid-cols-[80px_minmax(0,1fr)]">
                           <label className="space-y-2">
                             <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c694ad]">
-                              Order
+                              {t("adminNailsDesignManagement.order")}
                             </span>
                             <input
                               value={String(item.stepOrder || index + 1)}
@@ -1532,7 +1470,7 @@ export function NailVariantDetailPage() {
                               }}
                               className="rounded-full border border-[#f4c6da] bg-white px-5 py-2.5 text-xs font-bold text-[#8c7085] hover:bg-[#fff0f7] hover:text-[#ea4f93] transition"
                             >
-                              Cancel
+                              {t("adminNailsDesignManagement.cancel")}
                             </button>
                             <button
                               type="button"
@@ -1541,7 +1479,7 @@ export function NailVariantDetailPage() {
                               className="flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_25px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
                             >
                               {isSavingProcedures ? <LoaderCircle size={14} className="animate-spin" /> : <Save size={14} />}
-                              Save Step
+                              {t("adminNailsDesignManagement.saveStep")}
                             </button>
                           </div>
                         </div>
@@ -1556,7 +1494,9 @@ export function NailVariantDetailPage() {
                             </div>
 
                             <div className="flex flex-col mt-0.5">
-                              <span className="font-bold text-[#432744] text-lg mb-2">{item.name || "Unnamed Step"}</span>
+                              <span className="font-bold text-[#432744] text-lg mb-2">
+                                {item.name || t("adminNailsDesignManagement.unnamedStep")}
+                              </span>
                               <div className="flex flex-wrap gap-2 text-[11px] font-bold">
                                 <span className="flex items-center gap-1.5 rounded-lg bg-[#f8f9fa] px-2.5 py-1 text-[#6d5669]">
                                   <Clock size={12} className="text-[#a1909e]" />
@@ -1589,7 +1529,7 @@ export function NailVariantDetailPage() {
                               onClick={() => setEditingProcedureIndex(index)}
                               disabled={isSavingProcedures || editingProcedureIndex !== null}
                               className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#f4d4e2] text-[#ea4f93] shadow-sm hover:bg-[#ea4f93] hover:text-white hover:border-[#ea4f93] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Edit step"
+                              title={t("adminNailsDesignManagement.editStep")}
                             >
                               <PencilLine size={14} />
                             </button>
@@ -1598,7 +1538,7 @@ export function NailVariantDetailPage() {
                               onClick={() => void removeProcedureDraft(index)}
                               disabled={isSavingProcedures || editingProcedureIndex !== null}
                               className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#fecdd3] text-rose-500 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Remove step"
+                              title={t("adminNailsDesignManagement.removeStep")}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -1697,7 +1637,7 @@ export function NailVariantDetailPage() {
                 {t("adminNailsDesignManagement.variantDetail")}
               </p>
               <h2 className="mt-2 text-lg font-bold text-[#432744]">
-                {language === "vi" ? "Chỉnh sửa biến thể" : "Edit Variant"}
+                {t("adminNailsDesignManagement.editVariant")}
               </h2>
             </div>
             <button
@@ -1807,7 +1747,6 @@ export function NailVariantDetailPage() {
         onConfirm={handleDeleteVariant}
         onCancel={() => !isDeletingVariant && setShowDeleteVariantConfirm(false)}
       />
-    </section>
+    </section >
   );
 }
-

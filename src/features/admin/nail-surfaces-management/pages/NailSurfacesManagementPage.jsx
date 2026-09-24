@@ -234,11 +234,10 @@ export function NailSurfacesManagementPage() {
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (status) => (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-              status === "Active"
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status === "Active"
                 ? "bg-[#e7fbf4] text-[#23b68b]"
                 : "bg-[#fff0f5] text-[#eb5a99]"
-            }`}
+              }`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-[#23b68b]" : "bg-[#eb5a99]"}`}></span>
             {status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
@@ -248,7 +247,7 @@ export function NailSurfacesManagementPage() {
       {
         title: t("adminNailSurfacesManagement.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, surface) => (
           <ActionButtons
             onView={() => navigate(getAdminNailSurfaceDetailRoute(surface.nailSurfaceId))}

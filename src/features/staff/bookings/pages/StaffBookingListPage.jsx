@@ -268,12 +268,12 @@ const translateSummaryText = (text, language) => {
     "+4.1% this week": "+4.1% tuần này",
     "Watch reschedules": "Chú ý đổi lịch",
     "Follow-up needed": "Cần theo dõi",
-    "Loaded from salon booking API": "Tải từ API đặt lịch của tiệm",
+    "Loaded from salon booking": "Tải từ đặt lịch của tiệm",
     "Loaded from artist schedule": "Tải từ lịch trình của thợ",
     "Awaiting service progress": "Đang chờ tiến trình dịch vụ",
     "Finished today": "Đã hoàn thành hôm nay",
     "Today": "Hôm nay",
-    "Total loaded from API": "Tổng được tải từ API",
+    "Total loaded": "Tổng được tải",
     "Salon Bookings": "Lịch hẹn toàn tiệm",
     "My Bookings": "Lịch hẹn của tôi"
   };
@@ -449,11 +449,11 @@ export function StaffBookingListPage() {
     const revenue = activeBookings.reduce((sum, booking) => sum + booking.totalPriceValue, 0);
 
     const baseItems = [
-      { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking API" : "Loaded from artist schedule", icon: CalendarDays, color: "#ea4f93" },
+      { label: isSalonScopeForStaff ? "Salon Bookings" : "Assigned Today", value: String(activeBookings.length), note: isSalonScopeForStaff ? "Loaded from salon booking" : "Loaded from artist schedule", icon: CalendarDays, color: "#ea4f93" },
       { label: "Pending", value: String(pendingCount), note: "Awaiting service progress", icon: Clock3, color: "#f59e0b" },
       { label: "Completed", value: String(completedCount), note: "Finished today", icon: DollarSign, color: "#2fa25f" },
       { label: "Cancelled", value: String(cancelledCount), note: "Today", icon: XCircle, color: "#e1447f" },
-      { label: "Revenue", value: revenue, note: "Total loaded from API", icon: AlertTriangle, color: "#8b5cf6", unit: "VND" },
+      { label: "Revenue", value: revenue, note: "Total loaded", icon: AlertTriangle, color: "#8b5cf6", unit: "VND" },
     ];
 
     return baseItems.map(item => ({
@@ -587,7 +587,7 @@ export function StaffBookingListPage() {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
       render: (_, booking) => (
-        <ActionDropdown items={getActionItems(booking)} />
+        <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
       )
     }
   ];
@@ -770,7 +770,7 @@ export function StaffBookingListPage() {
                               </p>
                               <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
                             </div>
-                            <ActionDropdown items={getActionItems(booking)} />
+                            <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
                           </div>
                         </article>
                       ))}

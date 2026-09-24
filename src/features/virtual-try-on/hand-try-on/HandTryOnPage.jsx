@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal } from "antd";
+import { Modal, Spin } from "antd";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { BuilderView } from "./BuilderView";
@@ -18,9 +18,11 @@ import {
   findSurfaceId,
 } from "../../admin/nails-design-management/utils/variantTryOnUtils";
 import { getAdminNailVariantDetailRoute } from "../../../shared/constants/routes";
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 import "./tryOn.css";
 
 export function HandTryOnPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const { designId, variantId: routeVariantId } = useParams();
@@ -43,7 +45,6 @@ export function HandTryOnPage() {
 
   const getConfigSignature = () => {
     if (!taskHandle) return "";
-
     try {
       return JSON.stringify(taskHandle.getSerializedConfig());
     } catch {
@@ -59,12 +60,10 @@ export function HandTryOnPage() {
       navigate(routeState.returnTo, options);
       return;
     }
-
     if (designId && activeVariantId) {
       navigate(getAdminNailVariantDetailRoute(designId, activeVariantId), options);
       return;
     }
-
     navigate(-1);
   };
 
@@ -74,10 +73,8 @@ export function HandTryOnPage() {
         navigate(routeState.returnTo);
         return;
       }
-
       navigate(-1);
     };
-
     window.addEventListener("nailify:try-on-return", handleTryOnReturn);
     return () =>
       window.removeEventListener("nailify:try-on-return", handleTryOnReturn);
@@ -85,7 +82,6 @@ export function HandTryOnPage() {
 
   useEffect(() => {
     if (!taskHandle) return;
-
     let ignore = false;
 
     const loadAndStartRequestedMode = async () => {
@@ -115,7 +111,7 @@ export function HandTryOnPage() {
         setLoadError(
           requestError instanceof Error
             ? requestError.message
-            : "Unable to load try-on data.",
+            : t("handTryOn.loadErrorFallback"),
         );
       } finally {
         if (!ignore) setIsLoadingTryOn(false);
@@ -123,7 +119,6 @@ export function HandTryOnPage() {
     };
 
     void loadAndStartRequestedMode();
-
     return () => {
       ignore = true;
     };
@@ -133,6 +128,7 @@ export function HandTryOnPage() {
     routeState?.tryOnConfig,
     taskHandle,
     tryOnMode,
+    t,
   ]);
 
   const handleReturnToForm = () => {
@@ -140,26 +136,20 @@ export function HandTryOnPage() {
       setShowLeaveConfirm(true);
       return;
     }
-
     navigateBackToSource();
   };
 
   const handleSaveDraft = () => {
-    if (!taskHandle) {
-      return;
-    }
-
+    if (!taskHandle) return;
     setShowSaveConfirm(true);
   };
 
   const confirmSave = async () => {
     if (!taskHandle) return;
-
     const nextConfig = taskHandle.getSerializedConfig();
 
     if (!activeVariantId) {
       if (!routeState?.returnTo) return;
-
       setInitialConfigSignature(JSON.stringify(nextConfig));
       setShowSaveConfirm(false);
       navigate(routeState.returnTo, {
@@ -185,7 +175,7 @@ export function HandTryOnPage() {
       const nailSurfaceId = findSurfaceId(references.surfaces, nextConfig);
 
       if (!nailShapeId || !nailSurfaceId) {
-        throw new Error("Nail shape and surface references are required.");
+        throw new Error(t("handTryOn.shapeSurfaceRequired"));
       }
 
       await updateAdminNailVariant(activeVariantId, {
@@ -200,10 +190,14 @@ export function HandTryOnPage() {
 
       setInitialConfigSignature(JSON.stringify(nextConfig));
       setShowSaveConfirm(false);
-      toast.success("Saved try-on changes.");
+      toast.success(t("handTryOn.saveSuccess"));
       navigateBackToSource({ replace: true });
     } catch (saveError) {
-      setLoadError(saveError instanceof Error ? saveError.message : "Failed to save try-on changes.");
+      setLoadError(
+        saveError instanceof Error
+          ? saveError.message
+          : t("handTryOn.saveError"),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -215,10 +209,7 @@ export function HandTryOnPage() {
   };
 
   const handleLegacyDraftReturn = () => {
-    if (!taskHandle || !routeState?.returnTo) {
-      return;
-    }
-
+    if (!taskHandle || !routeState?.returnTo) return;
     navigate(routeState.returnTo, {
       state: {
         draftValues: routeState.draftValues,
@@ -229,28 +220,62 @@ export function HandTryOnPage() {
     });
   };
 
+  const isLoading = isLoadingTryOn || Boolean(loadError);
+
   return (
     <div className="app-container">
-      {isLoadingTryOn || loadError ? (
-        <div className="dashboard-page">
-          <section
-            className={
-              loadError
-                ? "dashboard-shell dashboard-alert"
-                : "dashboard-shell dashboard-empty"
-            }
+      {isLoading ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[linear-gradient(180deg,#fff9fc_0%,#fff2f8_100%)] px-6 py-10">
+          <div
+            className={`w-full max-w-md rounded-[28px] border p-8 text-center shadow-[0_18px_40px_rgba(236,72,153,0.10)] ${loadError
+              ? "border-[#f5c6d8] bg-[linear-gradient(180deg,#fff6fa_0%,#ffeef6_100%)]"
+              : "border-[#f6dbe8] bg-[linear-gradient(180deg,#fff9fc_0%,#fff2f8_100%)]"
+              }`}
           >
-            {loadError ?? "Loading try-on setup..."}
-          </section>
+            {loadError ? (
+              <>
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#ffe4ef] text-[#e1447f]">
+                  <span className="text-2xl font-bold">!</span>
+                </div>
+                <h2 className="mt-4 text-lg font-bold text-[#432744]">
+                  {t("handTryOn.errorTitle")}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#8f6b80]">
+                  {loadError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigateBackToSource()}
+                  className="mt-6 inline-flex items-center justify-center rounded-full border border-[#f4c1d8] bg-white px-5 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.08)] transition hover:bg-[#fff7fb]"
+                >
+                  {t("handTryOn.backButton")}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ffe7f2]">
+                  <Spin size="large" />
+                </div>
+                <h2 className="mt-5 text-lg font-bold text-[#432744]">
+                  {t("handTryOn.loadingTitle")}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#8f6b80]">
+                  {t("handTryOn.loadingSubtitle")}
+                </p>
+                <div className="mx-auto mt-6 h-1.5 w-40 overflow-hidden rounded-full bg-[#ffe7f2]">
+                  <div className="h-full w-1/2 animate-pulse rounded-full bg-[#ea4f93]" />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
+
       <main
         ref={containerRef}
         className="main-content"
         style={
-          isLoadingTryOn || loadError
-            ? { height: 0, overflow: "hidden", visibility: "hidden" }
-            : undefined
+          isLoading ? { height: 0, overflow: "hidden", visibility: "hidden" } : undefined
         }
       >
         <div className="task-container" id="hand-landmarker-root">
@@ -273,28 +298,30 @@ export function HandTryOnPage() {
           />
         </div>
       </main>
+
       <Modal
         open={showSaveConfirm}
-        title="Do you want to save changes?"
-        okText={isSaving ? "Saving..." : "Yes"}
-        cancelText="Cancel"
+        title={t("handTryOn.saveConfirmTitle")}
+        okText={isSaving ? t("handTryOn.saving") : t("handTryOn.yes")}
+        cancelText={t("handTryOn.cancel")}
         onOk={() => void confirmSave()}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         confirmLoading={isSaving}
         maskClosable={!isSaving}
         keyboard={!isSaving}
       >
-        <p>Pressing Yes will update this nail variant try-on setup right away.</p>
+        <p>{t("handTryOn.saveConfirmBody")}</p>
       </Modal>
+
       <Modal
         open={showLeaveConfirm}
-        title="There are unsaved changes"
-        okText="Leave"
-        cancelText="Stay"
+        title={t("handTryOn.leaveConfirmTitle")}
+        okText={t("handTryOn.leave")}
+        cancelText={t("handTryOn.stay")}
         onOk={confirmLeave}
         onCancel={() => setShowLeaveConfirm(false)}
       >
-        <p>Do you want to leave without saving?</p>
+        <p>{t("handTryOn.leaveConfirmBody")}</p>
       </Modal>
     </div>
   );

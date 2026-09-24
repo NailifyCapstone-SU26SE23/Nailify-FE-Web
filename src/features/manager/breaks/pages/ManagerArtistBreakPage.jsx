@@ -625,12 +625,12 @@ export function ManagerArtistBreakPage() {
                   {
                     title: language === "vi" ? "Thao tác" : "Actions",
                     key: "actions",
-                    align: "right",
+                    align: "center",
                     render: (_, item) => {
                       const st = String(item.status || "").toLowerCase();
                       const isPending = st === "pending" || st === "chờ duyệt";
                       return (
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           <ActionButtons
                             onView={() => {
                               setSelectedBreak(item);

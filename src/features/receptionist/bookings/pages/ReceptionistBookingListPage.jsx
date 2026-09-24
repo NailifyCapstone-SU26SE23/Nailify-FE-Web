@@ -254,6 +254,8 @@ export function ReceptionistBookingListPage() {
           booking.artistName,
           booking.salonName,
           booking.status,
+          booking.phone,
+          booking.email,
           booking.services.join(" "),
         ]
           .join(" ")
@@ -331,7 +333,12 @@ export function ReceptionistBookingListPage() {
       dataIndex: "customerName",
       key: "customerName",
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
-      render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
+      render: (value, booking) => (
+        <div>
+          <p className="text-sm font-bold text-[#412643]">{value}</p>
+          {booking.phone && <p className="mt-1 text-xs text-[#a68b98]">{booking.phone}</p>}
+        </div>
+      ),
     },
     {
       title: t("receptionist.bookings.salon") || "Salon",
@@ -385,6 +392,7 @@ export function ReceptionistBookingListPage() {
       key: "action",
       render: (_, booking) => (
         <ActionDropdown
+          label={language === "vi" ? "Thao tác" : "Actions"}
           items={[
             {
               key: "view",
@@ -633,7 +641,7 @@ export function ReceptionistBookingListPage() {
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", color: "#d98b1d", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", color: "#1f9d61", icon: CalendarDays },
-            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
+            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total revenue", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
           ]}
           className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         />
@@ -645,7 +653,7 @@ export function ReceptionistBookingListPage() {
                 {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
               </p>
               <p className="mt-1 text-sm text-[#b38a9f]">
-                {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
+                {salonMeta === "Bookings Management" ? t("receptionist.bookings.desc") : salonMeta}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -734,7 +742,7 @@ export function ReceptionistBookingListPage() {
               <Input
                 size="large"
                 prefix={<Search size={17} color="#D47AA8" />}
-                placeholder="Search booking ID, customer, artist..."
+                placeholder={language === "vi" ? "Tìm kiếm khách hàng, thợ làm móng..." : "Search customer,staff artist..."}
                 value={draftQuery}
                 onChange={(e) => setDraftQuery(e.target.value)}
                 allowClear
@@ -835,6 +843,7 @@ export function ReceptionistBookingListPage() {
                         <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
                       </div>
                       <ActionDropdown
+                        label={language === "vi" ? "Thao tác" : "Actions"}
                         items={[
                           {
                             key: "view",

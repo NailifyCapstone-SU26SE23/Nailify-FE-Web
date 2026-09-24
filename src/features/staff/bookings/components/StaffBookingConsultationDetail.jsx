@@ -22,7 +22,7 @@ import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { useQuery } from "@tanstack/react-query";
-import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
+import { fetchStaffCustomerDetail, fetchLoyaltyTiers, fetchStaffShapeMethodConfigDetail } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const getStatusColor = (status) => {
@@ -49,6 +49,36 @@ const getStatusColor = (status) => {
       return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
     default:
       return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
+  }
+};
+
+const formatStatusDisplay = (status, language) => {
+  switch (status) {
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "InProgress":
+      return language === "vi" ? "Đang tiến hành" : "In Progress";
+    case "Pending":
+      return language === "vi" ? "Đang chờ" : "Pending";
+    case "Approved":
+      return language === "vi" ? "Đã xác nhận" : "Confirmed";
+    case "ServiceCompleted":
+      return language === "vi" ? "Đã hoàn thành DV" : "Service Completed";
+    case "Completed":
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
+    case "Rejected":
+      return language === "vi" ? "Đã từ chối" : "Rejected";
+    case "Cancelled":
+    case "Canceled":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
+    case "ReschedulePending":
+      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+    case "RescheduleSuggested":
+      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã bảo hành" : "Repaired";
+    default:
+      return status;
   }
 };
 
@@ -86,6 +116,7 @@ InfoCard.propTypes = {
 };
 
 function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
+  const { language } = useLanguage();
   const hasProcedureAction = typeof onOpenServiceProcedures === "function";
 
   return (
@@ -93,13 +124,14 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
 
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
-          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "grid-cols-[minmax(0,1.8fr)_80px_120px_130px_110px]"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
             {hasProcedureAction ? (
-              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thao tác" : "Action"}</p>
             ) : null}
           </div>
 
@@ -107,7 +139,7 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
             {services.map((service, index) => (
               <div
                 key={service.id || `${service.name}-${index}`}
-                className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}
+                className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "md:grid-cols-[minmax(0,1.8fr)_80px_120px_130px_110px]"}`}
               >
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
@@ -116,51 +148,55 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
                   <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
                   {service.nailServiceName ? (
                     <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                      Nail service: {service.nailServiceName}
+                      {language === "vi" ? "Dịch vụ làm móng: " : "Nail service: "}{service.nailServiceName}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "SL" : "Qty"}</p>
                   <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
                     {service.quantity || 1}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Giá" : "Price"}</p>
                   <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
                     {service.price}
                   </span>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
-                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-bold text-[#8c63ef]">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
+                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                    {service.totalPrice || service.price}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+                  <span className="inline-flex rounded-full bg-[#f4efff] px-3 py-1 text-[11px] font-bold text-[#8c63ef]">
                     {service.duration}
                   </span>
                 </div>
 
                 {hasProcedureAction ? (
                   <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thao tác" : "Action"}</p>
                     {service.canViewProcedures ? (
                       <ActionDropdown
-                        label="Actions"
                         items={[
                           {
                             key: `view-procedures-${service.id || index}`,
-                            label: "View Procedures",
+                            label: language === "vi" ? "Xem Quy trình" : "View Procedures",
                             icon: ClipboardList,
                             onSelect: () => onOpenServiceProcedures(service),
                           },
                         ]}
                       />
                     ) : (
-                      <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#bca0ae]">
-                        --
-                      </span>
+                      null
                     )}
                   </div>
                 ) : null}
@@ -203,19 +239,27 @@ function formatVariantCurrency(value) {
 }
 
 function formatVariantDuration(value) {
+  const { language } = useLanguage();
   const duration = Number(value || 0);
 
   if (!Number.isFinite(duration) || duration <= 0) {
     return "--";
   }
 
-  return `${duration} min`;
+  return `${duration} ${language === "vi" ? "phút" : "min"}`;
 }
 
 function VariantDetailModal({ open, variantDetail, onClose }) {
+  const { language } = useLanguage();
   if (!open || !variantDetail) {
     return null;
   }
+
+  const { data: shapeMethodConfig } = useQuery({
+    queryKey: ["shapeMethodConfig", variantDetail?.shapeMethodConfigId],
+    queryFn: () => fetchStaffShapeMethodConfigDetail(variantDetail.shapeMethodConfigId),
+    enabled: Boolean(variantDetail?.shapeMethodConfigId),
+  });
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
@@ -223,7 +267,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
             <p className="text-[15px] font-bold uppercase tracking-[0.16em] text-pink-500">
-              Nail Variant Detail
+              {language === "vi" ? "Chi tiết phiên bản" : "Nail Variant Detail"}
             </p>
             <h3 className="mt-2 text-2xl font-bold text-black">{variantDetail.name}</h3>
 
@@ -249,8 +293,16 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 compact={true}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
-                <InfoCard label="Duration" value={formatVariantDuration(variantDetail.duration)} note="" />
+                <InfoCard label={language === "vi" ? "Giá cơ bản" : "Base Price"} value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
+                {shapeMethodConfig && (
+                  <InfoCard
+                    label={shapeMethodConfig.name}
+                    value={formatVariantCurrency(shapeMethodConfig.price)}
+                    note=""
+                    tone="success"
+                  />
+                )}
+                <InfoCard label={language === "vi" ? "Thời lượng" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
               </div>
             </div>
 
@@ -258,7 +310,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Kiểu móng" : "Nail Shape"}</p>
                   <div className="mt-3 flex items-start gap-3">
                     <Image
                       style={{ height: "40px", width: "40px", borderRadius: "20%", objectFit: "cover" }}
@@ -278,7 +330,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 </article>
 
                 <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Bề mặt móng" : "Nail Surface"}</p>
                   <div className="mt-3">
                     <p className="text-base font-bold text-[#3f2b3f]">
                       {variantDetail.nailSurface?.name}
@@ -289,9 +341,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
 
               <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Components</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Phụ kiện móng" : "Nail Components"}</p>
                   <span className="rounded-full border border-[#d8cbff] bg-[#f6f2ff] px-3 py-1 text-[10px] font-bold text-[#8c63ef]">
-                    {variantDetail.nailComponents?.length || 0} item(s)
+                    {variantDetail.nailComponents?.length || 0} {language === "vi" ? "phụ kiện" : "item(s)"}
                   </span>
                 </div>
                 <div className="mt-4 space-y-3">
@@ -317,14 +369,14 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                                 {item.component?.name}
                               </p>
                               <p className="mt-1 text-xs text-[#a88a9d]">
-                                Type: {item.component?.componentType}
+                                {language === "vi" ? "Loại" : "Type"}: {item.component?.componentType}
                               </p>
                             </div>
                           </div>
 
                           {item.fingerIndex !== undefined && item.fingerIndex !== null && item.fingerIndex !== -1 && (
                             <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                              Finger #{item.fingerIndex}
+                              {language === "vi" ? "Ngón tay" : "Finger"} #{item.fingerIndex + 1}
                             </span>
                           )}
                         </div>
@@ -332,7 +384,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     ))
                   ) : (
                     <div className="rounded-[16px] border border-dashed border-[#f1cade] bg-white px-4 py-6 text-sm text-[#a88a9d]">
-                      This variant does not have any nail components.
+                      {language === "vi" ? "Phiên bản này không có phụ kiện móng." : "This variant does not have any nail components."}
                     </div>
                   )}
                 </div>
@@ -520,8 +572,7 @@ export function StaffBookingConsultationDetail({
   }, [customerData, loyaltyTiers]);
 
   return (
-    <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+    <section className="flex min-h-full flex-col gap-6">
       <div className="mt-2 space-y-6">
         <article className="rounded-lg border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
 
@@ -645,7 +696,7 @@ export function StaffBookingConsultationDetail({
               <div className="flex items-center gap-2">
                 <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
                   <Clock size={11} className="mr-1 inline-block fill-current" />
-                  {data.statusLabel}
+                  {formatStatusDisplay(data.statusLabel, language)}
                 </Tag>
                 <button
                   type="button"
@@ -713,7 +764,7 @@ export function StaffBookingConsultationDetail({
           </div>
         </article>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className={`grid gap-4 ${!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? 'xl:grid-cols-[minmax(0,1fr)_280px]' : ''}`}>
           <div className="space-y-4">
             {hasSelectedNailDesign ? (
               <article className="relative overflow-hidden rounded-lg border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
@@ -924,8 +975,8 @@ export function StaffBookingConsultationDetail({
             ) : null}
           </div>
 
-          <aside className="space-y-4 border-t border-[#f3d5e2] bg-transparent pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-            {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+          {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+            <aside className="space-y-4 border-t border-[#f3d5e2] bg-transparent pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
               <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4 ">
                 <SectionTitle
                   icon={CheckCheck}
@@ -966,8 +1017,8 @@ export function StaffBookingConsultationDetail({
                   </button>
                 </div>
               </article>
-            ) : null}
-          </aside>
+            </aside>
+          ) : null}
         </div>
       </div>
 

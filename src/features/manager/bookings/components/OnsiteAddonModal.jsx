@@ -154,7 +154,7 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
         bookingId,
         addonItems,
       });
-      toast.success(isVi ? "Xác nhận & Cập nhật Lịch thành công!" : "Confirm & Update Schedule Success!", { icon: "✨" });
+      toast.success(isVi ? "Xác nhận & Cập nhật Lịch thành công!" : "Confirm & Update Schedule Success!");
       if (onSuccess) onSuccess();
       handleClose();
     } catch (err) {

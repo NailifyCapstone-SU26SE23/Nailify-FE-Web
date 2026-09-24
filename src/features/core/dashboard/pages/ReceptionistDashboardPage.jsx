@@ -46,6 +46,7 @@ import {
   fetchReceptionistBookings,
   manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
+  fetchCustomersList,
 } from "../../../receptionist/bookings/services/receptionistBookingService";
 import { receptionistWalkInBookingService } from "../../../receptionist/walk-in-bookings/services/receptionistWalkInBookingService";
 import { dashboardService } from "../services/dashboardService";
@@ -236,6 +237,7 @@ function MobileAppointmentCard({ row, actions, formatDisplay }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-bold text-[#432744]">{row.customer}</p>
+          {row.phone && <p className="text-[10px] font-semibold text-[#aa8a99]">{row.phone}</p>}
           <p className="mt-1 text-xs font-semibold text-[#ea4f93]">{row.time}</p>
         </div>
         <span
@@ -577,9 +579,24 @@ export function ReceptionistDashboardPage() {
         setAppointmentsError("");
 
         try {
-          const bookings = await fetchReceptionistBookings(selectedDateStr);
+          const [bookings, customersResponse] = await Promise.all([
+            fetchReceptionistBookings(selectedDateStr),
+            fetchCustomersList(1, 1000).catch(() => ({ items: [] }))
+          ]);
+          
+          const customers = customersResponse?.items || [];
+          const customerMap = new Map();
+          customers.forEach(c => customerMap.set(c.userId, c));
+
           const normalizedRows = Array.isArray(bookings)
-            ? bookings.map(normalizeAppointmentRow)
+            ? bookings.map((b, index) => {
+                const customerInfo = customerMap.get(b.customerId || b.customer?.id || b.customer?.userId);
+                return {
+                  ...normalizeAppointmentRow(b, index),
+                  phone: customerInfo?.phone || "",
+                  email: customerInfo?.email || "",
+                };
+              })
             : [];
           setAppointmentRows(normalizedRows);
         } catch (loadError) {
@@ -603,7 +620,7 @@ export function ReceptionistDashboardPage() {
     }
 
     return appointmentRows.filter((row) =>
-      [row.bookingId, row.customer, row.service, row.staff, row.status]
+      [row.bookingId, row.customer, row.service, row.staff, row.status, row.phone, row.email]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
@@ -706,7 +723,10 @@ export function ReceptionistDashboardPage() {
           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}>
             {getInitials(row.customer)}
           </div>
-          <p className="text-xs font-bold text-[#432744] whitespace-nowrap">{row.customer}</p>
+          <div>
+            <p className="text-xs font-bold text-[#432744] whitespace-nowrap">{row.customer}</p>
+            {row.phone && <p className="mt-1 text-[10px] font-semibold text-[#aa8a99]">{row.phone}</p>}
+          </div>
         </div>
       ),
     },

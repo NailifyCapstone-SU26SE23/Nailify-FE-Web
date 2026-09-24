@@ -578,11 +578,11 @@ export function ManagerBookingDetailPage() {
     try {
       setIsRefreshing(true);
       await managerApproveReschedule(normalizedBookingId);
-      toast.success("Customer's reschedule request approved!", { icon: "✅" });
+      toast.success(language === "vi" ? "Yêu cầu đổi lịch của khách đã được chấp thuận" : "Customer's reschedule request approved!");
       await loadBooking({ silent: true });
     } catch (err) {
-      console.error("Failed to approve reschedule:", err);
-      toast.error(err.message || "Failed to approve reschedule.");
+      console.error(language === "vi" ? "Không thể chấp thuận yêu cầu đổi lịch" : "Failed to approve reschedule:", err);
+      toast.error(err.message || (language === "vi" ? "Không thể chấp thuận yêu cầu đổi lịch" : "Failed to approve reschedule."));
     } finally {
       setIsRefreshing(false);
     }
@@ -592,11 +592,11 @@ export function ManagerBookingDetailPage() {
     try {
       setIsRefreshing(true);
       await managerRejectReschedule(normalizedBookingId);
-      toast.success("Customer's reschedule request rejected.", { icon: "❌" });
+      toast.success(language === "vi" ? "Yêu cầu đổi lịch của khách đã bị từ chối." : "Customer's reschedule request rejected.");
       await loadBooking({ silent: true });
     } catch (err) {
-      console.error("Failed to reject reschedule:", err);
-      toast.error(err.message || "Failed to reject reschedule.");
+      console.error(language === "vi" ? "Không thể từ chối yêu cầu đổi lịch" : "Failed to reject reschedule:", err);
+      toast.error(err.message || (language === "vi" ? "Không thể từ chối yêu cầu đổi lịch" : "Failed to reject reschedule."));
     } finally {
       setIsRefreshing(false);
     }
@@ -1173,8 +1173,8 @@ export function ManagerBookingDetailPage() {
                                 String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                                   'bg-[#F3F4F6] text-[#6B7280]'
                                 }`}>
-                                {language === "vi" 
-                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "failed" ? "Thất bại" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : tx.status)
+                                {language === "vi"
+                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "overdue" ? "Quá hạn" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : String(tx.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : tx.status)
                                   : tx.status}
                               </span>
                             </div>
@@ -1486,8 +1486,8 @@ export function ManagerBookingDetailPage() {
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {language === "vi" 
-                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "failed" ? "Thất bại" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : selectedTransactionDetail.status)
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "overdue" ? "Quá hạn" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : String(selectedTransactionDetail.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : selectedTransactionDetail.status)
                       : selectedTransactionDetail.status}
                   </span>
                 </div>

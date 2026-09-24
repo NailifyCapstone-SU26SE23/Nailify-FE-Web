@@ -1,5 +1,6 @@
 import { FileText, Sparkles, UserRound, X } from "lucide-react";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 function normalizeBookingText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -12,27 +13,32 @@ function getUniqueBookingLabels(values) {
 function buildNotesSections(booking) {
   const bookingItems = Array.isArray(booking?.bookingItems) ? booking.bookingItems : [];
   const serviceNames = getUniqueBookingLabels(bookingItems.map((item) => item?.serviceName));
+  const { language } = useLanguage();
+  const isVi = language === 'vi';
+
   const customerRequest =
     bookingItems.find((item) => normalizeBookingText(item?.customerNailName))?.customerNailName
-    || booking?.customerNote
-    || "No customer note from API.";
+      || booking?.customerNote
+      || isVi ? "Không có ghi chú của khách hàng." : "No customer note.";
   const designAdjustment =
     bookingItems.find((item) => normalizeBookingText(item?.nailVariantName))?.nailVariantName
-    || booking?.designName
-    || "Capture final design adjustments during consultation.";
+      || booking?.designName
+      || isVi ? "Không có điều chỉnh thiết kế." : "No design adjustments.";
   const notesBeforeService =
     serviceNames.join(", ")
-    || booking?.uiService
-    || "Verify services, confirm timing, then start session.";
+      || booking?.uiService
+      || isVi ? "Xác nhận dịch vụ, thời gian và bắt đầu phiên." : "Verify services, confirm timing, then start session.";
 
   return [
-    { label: "Customer Requests", value: customerRequest },
-    { label: "Design Adjustments", value: designAdjustment },
-    { label: "Notes Before Service", value: notesBeforeService },
+    { label: "Customer Requests", labelVi: "Yêu cầu của khách hàng", value: customerRequest },
+    { label: "Design Adjustments", labelVi: "Điều chỉnh thiết kế", value: designAdjustment },
+    { label: "Notes Before Service", labelVi: "Ghi chú trước khi bắt đầu", value: notesBeforeService },
   ];
 }
 
 export function StaffBookingNotesModal({ booking, open, onClose }) {
+  const { language } = useLanguage();
+  const isVi = language === 'vi';
   if (!open || !booking) {
     return null;
   }
@@ -45,7 +51,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-              Staff Booking Notes
+              {isVi ? "Ghi chú của thợ" : "Staff Booking Notes"}
             </p>
             <h3 className="mt-2 text-2xl font-bold text-[#ea4f93]">
               {booking?.customerName || "Booking Notes"}
@@ -70,7 +76,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ffe8f2] text-[#ea4f93]">
                 <UserRound size={18} />
               </span>
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Customer</p>
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{isVi ? "Khách hàng" : "Customer"}</p>
               <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.customerName}</p>
             </article>
 
@@ -78,7 +84,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff4e8] text-[#d9871c]">
                 <FileText size={18} />
               </span>
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{isVi ? "Dịch vụ" : "Service"}</p>
               <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.uiService}</p>
             </article>
 
@@ -86,7 +92,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eefaf3] text-[#16a34a]">
                 <Sparkles size={18} />
               </span>
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Staff Artist</p>
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{isVi ? "Thợ làm móng" : "Staff Artist"}</p>
               <p className="mt-2 text-sm font-bold text-[#3f2b3f]">{booking?.staffName}</p>
             </article>
           </div>
@@ -98,7 +104,7 @@ export function StaffBookingNotesModal({ booking, open, onClose }) {
                 className="rounded-lg border border-[#f3d5e2] bg-[#fffafd] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)]"
               >
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                  {section.label}
+                  {isVi ? section.labelVi : section.label}
                 </p>
                 <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#5f4a5c]">
                   {section.value}

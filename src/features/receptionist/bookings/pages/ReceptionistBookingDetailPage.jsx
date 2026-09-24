@@ -47,7 +47,6 @@ import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAdd
 import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
 import { AssignChairModal } from "../components/AssignChairModal";
 import {
-
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
   fetchReceptionistBookingProcedures,
@@ -64,6 +63,7 @@ import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../man
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -92,6 +92,36 @@ const getStatusColor = (status) => {
   }
 };
 
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
+}
+
+function SectionTitle({ children, subtitle, icon: Icon, actionButton }) {
+  return (
+    <div className="mb-6 flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={18} />
+          </div>
+        )}
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-[#2B182B]">{children}</h2>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
+    </div>
+  );
+}
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
+};
+
 function formatCurrency(value) {
   const amount = Number(value);
 
@@ -104,32 +134,53 @@ function formatCurrency(value) {
   }).format(amount)} VND`;
 }
 
-function formatDate(value) {
-  if (!value) {
-    return "--";
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const str = String(dateString).trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
+  const datePart = str.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  if (!year || !month || !day) return "N/A";
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     year: "numeric",
-  }).format(new Date(value));
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function formatTime(value) {
-  if (!value) {
-    return "--";
+function formatTime(startTime, fallbackDateTime) {
+  const str = String(startTime || "").trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
-  if (typeof value === "string" && /^\d{2}:\d{2}/.test(value) && !value.includes("T")) {
-    return value.slice(0, 5);
-  }
+  const rawTime = str
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
 
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
+  if (!rawTime) return "N/A";
+  const [hours, minutes = 0, seconds = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+    return "N/A";
+  }
+  return new Date(2000, 0, 1, hours, minutes, seconds).toLocaleTimeString("en-US", {
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false
-  }).format(new Date(value));
+    hour12: true,
+  });
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
@@ -165,51 +216,6 @@ function getStatusTone(status) {
     default:
       return "bg-[#fff1f6] text-[#eb5b92]";
   }
-}
-
-function getActionTone(label) {
-  switch (label) {
-    case "View":
-      return "bg-[#fff1f6] text-[#eb5b92]";
-    case "Manage":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Edit":
-      return "bg-[#f2f2f2] text-[#656565]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureStatusTone(status) {
-  switch (String(status || "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "inprogress":
-    case "in progress":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "cancelled":
-      return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureArtistTone(isFree, isQualified) {
-  if (isFree && isQualified) {
-    return "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]";
-  }
-
-  if (isQualified) {
-    return "border-[#e3dbff] bg-[#f7f4ff] text-[#7c63d8]";
-  }
-
-  if (isFree) {
-    return "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]";
-  }
-
-  return "border-[#f3d7e2] bg-[#fff7fb] text-[#8f7b88]";
 }
 
 function getServiceStatus(index, bookingStatus) {
@@ -494,9 +500,6 @@ export function ReceptionistBookingDetailPage() {
   const [assigningProcedureArtistId, setAssigningProcedureArtistId] = useState("");
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
-  const [notes, setNotes] = useState(
-    "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
-  );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
 
@@ -518,7 +521,7 @@ export function ReceptionistBookingDetailPage() {
       currency: 'VND'
     }).format(amount);
   }
-  
+
   const isVi = language === "vi";
 
   const loadBookingHistories = useCallback(async () => {
@@ -1140,7 +1143,7 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#FFF9FC_0%,#FFF4F8_100%)] p-2">
+    <section className="flex min-h-full flex-col gap-5">
       {/* 1. TOP HEADER BAR */}
       <div className="rounded-[26px] border border-[#F3E2EC] bg-white/90 backdrop-blur-md px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1184,7 +1187,14 @@ export function ReceptionistBookingDetailPage() {
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
-            badge={booking.status || null}
+            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận'
+              : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                  : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                    : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
+                      : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
+              : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -1309,6 +1319,46 @@ export function ReceptionistBookingDetailPage() {
             </div>
           </DetailCard>
 
+          <DetailCard
+            title={language === "vi" ? "Thông tin lịch hẹn" : "Booking Info"}
+            icon={Sparkles}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {/* Booking Date */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Calendar size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDate(booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời gian" : "Time"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatTime(booking?.startTime, booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời lượng" : "Duration"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
+                </div>
+              </div>
+            </div>
+          </DetailCard>
+
           {/* 3. APPOINTMENT & SERVICE DETAILS (CENTER BLOCK) */}
           <DetailCard
             title={t("receptionist.bookings.title") || "Appointment & Service Details"}
@@ -1426,7 +1476,15 @@ export function ReceptionistBookingDetailPage() {
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
                 <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
-                  {booking.status || "Checked In"}
+                  {booking.status ?
+                    (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
+                      String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                          : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                            : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
+                              : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                                : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                  : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
                 </span>
               </div>
 
@@ -1477,7 +1535,13 @@ export function ReceptionistBookingDetailPage() {
                             String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                               'bg-[#F3F4F6] text-[#6B7280]'
                             }`}>
-                            {tx.status}
+                            {language === "vi"
+                              ? (String(tx.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                                : String(tx.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                                  : String(tx.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                                    : String(tx.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                      : String(tx.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : tx.status)
+                              : tx.status}
                           </span>
                         </div>
                       </div>
@@ -1563,7 +1627,7 @@ export function ReceptionistBookingDetailPage() {
           <DetailCard
             title={language === "vi" ? "Dòng thời gian hoạt động đặt lịch" : "Booking Operations Timeline"}
             subtitle={language === "vi" ? "Nhật ký kiểm tra theo thời gian thực" : "Real-time timestamped audit log"}
-            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+            badge={isBookingHistoriesLoading ? (language === "vi" ? "Đang tải..." : "Loading...") : `${bookingHistories.length} ${language === "vi" ? "Sự kiện" : "Events"}`}
           >
             {isBookingHistoriesLoading ? (
               <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
@@ -2101,7 +2165,7 @@ export function ReceptionistBookingDetailPage() {
 
                             {(hasPassive || procedure.canOverlap) ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
+                                {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
@@ -2386,7 +2450,13 @@ export function ReceptionistBookingDetailPage() {
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {selectedTransactionDetail.status}
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                        : String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                          : String(selectedTransactionDetail.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                            : String(selectedTransactionDetail.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                              : String(selectedTransactionDetail.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : selectedTransactionDetail.status)
+                      : selectedTransactionDetail.status}
                   </span>
                 </div>
 

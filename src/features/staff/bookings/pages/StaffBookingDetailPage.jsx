@@ -154,7 +154,7 @@ function buildDefaultStaffNotes(booking, language) {
   return [
     {
       label: "Customer Requests",
-      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note from API."),
+      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note."),
     },
     {
       label: "Design Adjustments",
@@ -165,6 +165,26 @@ function buildDefaultStaffNotes(booking, language) {
       value: serviceNames || (isVi ? "Xác nhận dịch vụ, thời gian rồi bắt đầu." : "Verify services, confirm timing, then start session."),
     },
   ];
+}
+
+function translateStatus(status, language) {
+  const s = String(status || "").trim().toLowerCase();
+  if (language === "vi") {
+    switch (s) {
+      case "active": return "Đang hoạt động";
+      case "inactive": return "Ngừng hoạt động";
+      case "blocked": return "Đã khóa";
+      case "pending": return "Chờ xử lý";
+      case "approved": return "Đã duyệt";
+      case "checkedin": return "Đã Check-in";
+      case "inprogress": return "Đang thực hiện";
+      case "servicecompleted": return "Đã xong dịch vụ";
+      case "completed": return "Hoàn thành";
+      case "cancelled": return "Đã hủy";
+      default: return status;
+    }
+  }
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : status;
 }
 
 function buildStaffExperienceFromBooking(
@@ -240,8 +260,9 @@ function buildStaffExperienceFromBooking(
         name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
-        price: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
-        duration: normalizeBookingItemDuration(resolvedService?.duration ?? item?.serviceDuration ?? item?.duration),
+        rawPrice: item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0,
+        price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0),
+        duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedService?.duration),
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
       });
     }
@@ -259,8 +280,9 @@ function buildStaffExperienceFromBooking(
         name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? (language === "vi" ? "Móng của khách hàng" : "Customer Nail") : (language === "vi" ? "Biến thể móng" : "Nail Variant"),
         quantity,
-        price: formatCurrency(resolvedNailDetail?.price ?? 0),
-        duration: normalizeBookingItemDuration(resolvedNailDetail?.duration),
+        rawPrice: item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0,
+        price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0),
+        duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedNailDetail?.duration),
         canViewProcedures: Boolean(bookingItemId),
       });
     }
@@ -274,13 +296,19 @@ function buildStaffExperienceFromBooking(
     const key = `${entry.detailLabel}_${entry.name}_${entry.price}_${entry.duration}`;
     if (!serviceEntriesMap.has(key)) {
       const copy = { ...entry };
+      copy.totalPrice = formatCurrency(copy.rawPrice * copy.quantity);
       serviceEntriesMap.set(key, copy);
       bookingServiceEntries.push(copy);
     } else {
-      serviceEntriesMap.get(key).quantity += entry.quantity;
+      const existing = serviceEntriesMap.get(key);
+      existing.quantity += entry.quantity;
+      existing.totalPrice = formatCurrency(existing.rawPrice * existing.quantity);
     }
   });
-  const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {
+  const designItemsBasePrice = normalizedItems.reduce((sum, item) => {
+    if (!(Number(item?.customerNailId || 0) > 0) && !(Number(item?.nailVariantId || 0) > 0)) {
+      return sum;
+    }
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
     const price = Number(item?.price || 0);
 
@@ -332,7 +360,7 @@ function buildStaffExperienceFromBooking(
       .map((item) => item?.component?.name)
       .filter(Boolean)
       .join(", ") || `${resolvedComponents.length} ${isVi ? "thành phần" : "component(s)"}`
-    : "--";
+    : (language === "vi" ? "Không có phụ kiện" : "No components");
   const customerDisplayName =
     customerDetail?.fullName ||
     booking?.customerName ||
@@ -363,7 +391,7 @@ function buildStaffExperienceFromBooking(
       facts: [
         { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName },
         { label: language === "vi" ? "Số lượng dịch vụ" : "Total Services", value: String(items.length || 0) },
-        { label: language === "vi" ? "Trạng thái" : "Status", value: customerStatus },
+        { label: language === "vi" ? "Trạng thái" : "Status", value: translateStatus(customerStatus, language) },
       ],
       allergyNote: customerDetail?.email,
       preferences: requestedDesign,
@@ -424,8 +452,8 @@ function buildStaffExperienceFromBooking(
         { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name },
         { label: "Customer Design", value: customerDesignNames[0] },
         { label: language === "vi" ? "Thời lượng" : "Duration", value: timeRange },
-        { label: language === "vi" ? "Giá" : "Price", value: bookingItemsBasePrice > 0 ? formatCurrency(bookingItemsBasePrice) : formatCurrency(booking?.price) },
-        { label: language === "vi" ? "Thành phần" : "Components", value: componentSummary },
+        { label: language === "vi" ? "Giá" : "Price", value: designItemsBasePrice > 0 ? formatCurrency(designItemsBasePrice) : formatCurrency(booking?.price) },
+        { label: language === "vi" ? "Phụ kiện" : "Components", value: componentSummary },
       ],
       tags: [
         { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
@@ -442,6 +470,7 @@ function buildStaffExperienceFromBooking(
             customerNailDetail?.basedOnNailVariantId ||
             customerNailDetail?.customerNailId ||
             0,
+          shapeMethodConfigId: primaryDesignItem?.shapeMethodConfigId || 0,
           nailDesignId:
             resolvedDesignDetail.nailDesignId ||
             customerNailDetail?.basedOnNailVariant?.nailDesignId ||
@@ -494,9 +523,6 @@ function buildStaffExperienceFromBooking(
       })),
     staffNotes: staffNotesDraft,
     checklist: [
-      { label: language === 'vi' ? "Chi tiết lịch hẹn đã tải từ API" : "Booking detail loaded from API", checked: true },
-      { label: language === 'vi' ? "Thiết kế móng hiện tại đã được xác nhận" : "Current nail design confirmed", checked: false },
-      ...(hasCustomerNailSelected ? [{ label: language === 'vi' ? "Mẫu móng của khách hàng đã được xác nhận" : "Customer nail confirmed", checked: false }] : []),
       { label: language === 'vi' ? "Nghệ sĩ được chỉ định cho lịch hẹn" : "Artist assigned to booking", checked: Boolean(booking?.artistName) },
       {
         label: language === 'vi' ? "Có hình ảnh tham khảo thiết kế móng của khách hàng" : "Customer design reference available",

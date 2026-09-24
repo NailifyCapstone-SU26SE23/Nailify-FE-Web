@@ -27,7 +27,7 @@ const HAND_SLOT_CONFIG = {
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
 const SMALL_FINGER_HEIGHTS = [62, 62, 62, 62, 62];
-const LARGE_FINGER_HEIGHTS = [168, 168, 168, 168, 168];
+const LARGE_FINGER_HEIGHTS = [280, 280, 280, 280, 280];
 const FABRIC_CROSS_ORIGIN_OPTIONS = { crossOrigin: "anonymous" };
 
 function clamp(value, min, max) {
@@ -69,9 +69,11 @@ function useShapeAspectRatio(shapeImageUrl) {
 }
 
 function getNailMetrics(index, aspectRatio, large = false) {
+  const normalizedRatio = 0.5;
   const fingerHeights = large ? LARGE_FINGER_HEIGHTS : SMALL_FINGER_HEIGHTS;
   const nailHeight = fingerHeights[index] ?? fingerHeights[2];
-  const nailWidth = Math.round(nailHeight * aspectRatio);
+  const nailWidth = Math.round(nailHeight * normalizedRatio);
+
   const frameWidth = clamp(nailWidth + (large ? 120 : 36), large ? 220 : 72, large ? 320 : 112);
   const frameHeight = clamp(nailHeight + (large ? 144 : 54), large ? 280 : 112, large ? 392 : 156);
 
@@ -287,7 +289,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLITTER - Sparkles
+  // GLITTER - Sparkles
   if (name.includes("glitter")) {
     return (
       <>
@@ -297,7 +299,7 @@ function renderSurfaceEffects(finish) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  // GLOSSY (Default) - Natural shine
   return (
     <>
       <div className="pointer-events-none absolute inset-0" style={{
@@ -344,7 +346,7 @@ function NailShell({
   colorStyle,
   shapeImageUrl,
   width,
-  height,
+  height, fingerLabels,
   children,
 }) {
   const { framePadding, innerInset } = getShapeInsets(width, shapeImageUrl);
@@ -352,8 +354,8 @@ function NailShell({
     ? {
       maskImage: `url(${shapeImageUrl})`,
       WebkitMaskImage: `url(${shapeImageUrl})`,
-      maskSize: "100% 100%",
-      WebkitMaskSize: "100% 100%",
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
       maskRepeat: "no-repeat",
       WebkitMaskRepeat: "no-repeat",
       maskPosition: "center",
@@ -419,7 +421,7 @@ function NailShell({
       </div>
 
       <span className="rounded-full border border-[#fce6f3] bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
-        {NAIL_LABELS[index]}
+        {fingerLabel ?? NAIL_LABELS[index]}
       </span>
     </div>
   );
@@ -435,6 +437,7 @@ NailShell.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   children: PropTypes.node,
+  fingerLabel: PropTypes.string
 };
 
 function FabricNailCanvas({
@@ -449,7 +452,7 @@ function FabricNailCanvas({
   onSelectNail,
   onSelectPlacement,
   onPlacementChange,
-  large = false,
+  large = false, fingerLabel
 }) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
@@ -499,18 +502,40 @@ function FabricNailCanvas({
       const halfHeight = objectHeight / 2;
       const horizontalInset = large ? 12 : 4;
       const verticalInset = large ? 12 : 4;
-      target.set({
-        left: clamp(
-          target.left || 0,
-          halfWidth - horizontalInset,
-          width - halfWidth + horizontalInset,
-        ),
-        top: clamp(
-          target.top || 0,
-          halfHeight - verticalInset,
-          height - halfHeight + verticalInset,
-        ),
-      });
+      const isArt = target.data?.isArt;
+
+      if (!isArt) {
+        // Gem/Charm must stay strictly inside the visible nail bounds
+        const marginX = contentMetrics.contentWidth * 0.05;
+        const marginY = contentMetrics.contentHeight * 0.05;
+
+        target.set({
+          left: clamp(
+            target.left || 0,
+            contentMetrics.contentLeft + marginX + halfWidth,
+            contentMetrics.contentLeft + contentMetrics.contentWidth - marginX - halfWidth,
+          ),
+          top: clamp(
+            target.top || 0,
+            contentMetrics.contentTop + marginY + halfHeight,
+            contentMetrics.contentTop + contentMetrics.contentHeight - marginY - halfHeight,
+          ),
+        });
+      } else {
+        // Art can move around within the canvas
+        target.set({
+          left: clamp(
+            target.left || 0,
+            halfWidth - horizontalInset,
+            width - halfWidth + horizontalInset,
+          ),
+          top: clamp(
+            target.top || 0,
+            halfHeight - verticalInset,
+            height - halfHeight + verticalInset,
+          ),
+        });
+      }
     };
 
     const syncObject = (target) => {
@@ -519,7 +544,7 @@ function FabricNailCanvas({
       onPlacementChange(target.data.placementKey, {
         posX: Number((((target.left || 0) - contentMetrics.contentLeft) / contentMetrics.contentWidth - 0.5).toFixed(4)),
         posY: Number((((target.top || 0) - contentMetrics.contentTop) / contentMetrics.contentHeight - 0.5).toFixed(4)),
-        scale: Number(((target.scaleX * (target.width || 500)) / metrics.nailWidth).toFixed(3)),
+        scale: Number(((target.scaleX * (target.width || 500)) / contentMetrics.contentWidth).toFixed(3)),
         rotation: Number((target.angle || 0).toFixed(2)),
       });
     };
@@ -577,14 +602,22 @@ function FabricNailCanvas({
         }
       });
 
-      const sortedComponents = [...components].sort(
-        (left, right) => Number(left.zIndex || 0) - Number(right.zIndex || 0),
-      );
-
       const isClippedType = (type) => {
         const t = String(type || "").toLowerCase().trim();
         return t === "sticker" || t === "art" || t === "1" || t === "3";
       };
+
+      const sortedComponents = [...components].sort((left, right) => {
+        const zLeft = Number(left.zIndex || 0);
+        const zRight = Number(right.zIndex || 0);
+        if (zLeft !== zRight) return zLeft - zRight;
+
+        const isLeftArt = isClippedType(left.componentType || left.type);
+        const isRightArt = isClippedType(right.componentType || right.type);
+        if (isLeftArt && !isRightArt) return -1;
+        if (!isLeftArt && isRightArt) return 1;
+        return 0;
+      });
 
       for (const component of sortedComponents) {
         if (!component.imageUrl) continue;
@@ -601,8 +634,8 @@ function FabricNailCanvas({
             originX: "center",
             originY: "center",
             angle: Number(component.rotation) || 0,
-            scaleX: getPlacementRenderScale(component.scale, metrics.nailWidth, image.width),
-            scaleY: getPlacementRenderScale(component.scale, metrics.nailWidth, image.width),
+            scaleX: getPlacementRenderScale(component.scale, contentMetrics.contentWidth, image.width),
+            scaleY: getPlacementRenderScale(component.scale, contentMetrics.contentWidth, image.width),
             selectable: large,
             evented: large,
             transparentCorners: false,
@@ -616,10 +649,11 @@ function FabricNailCanvas({
             padding: large ? 10 : 4,
             data: {
               placementKey: component.key,
+              isArt,
             },
           });
 
-          const widthLimit = isArt ? (metrics.nailWidth * 1.42) : (metrics.nailWidth * 3.0);
+          const widthLimit = isArt ? (contentMetrics.contentWidth * 1.42) : (contentMetrics.contentWidth * 3.0);
           if ((image.getScaledWidth() || 0) > widthLimit) {
             const ratio = widthLimit / image.getScaledWidth();
             image.scale((image.scaleX || 1) * ratio);
@@ -628,13 +662,22 @@ function FabricNailCanvas({
           if (isArt && shapeImageUrl) {
             try {
               const clipImage = await FabricImage.fromURL(shapeImageUrl, FABRIC_CROSS_ORIGIN_OPTIONS);
-              const scaleX = contentMetrics.contentWidth / clipImage.width;
-              const scaleY = contentMetrics.contentHeight / clipImage.height;
+              const scaleRatio = Math.max(
+                contentMetrics.contentWidth / clipImage.width,
+                contentMetrics.contentHeight / clipImage.height
+              );
+              const cropX = ((clipImage.width * scaleRatio) - contentMetrics.contentWidth) / 2 / scaleRatio;
+              const cropY = ((clipImage.height * scaleRatio) - contentMetrics.contentHeight) / 2 / scaleRatio;
+
               clipImage.set({
                 left: contentMetrics.contentLeft,
                 top: contentMetrics.contentTop,
-                scaleX: scaleX,
-                scaleY: scaleY,
+                scaleX: scaleRatio,
+                scaleY: scaleRatio,
+                cropX: Math.max(0, cropX),
+                cropY: Math.max(0, cropY),
+                width: contentMetrics.contentWidth / scaleRatio,
+                height: contentMetrics.contentHeight / scaleRatio,
                 originX: "left",
                 originY: "top",
                 absolutePositioned: true,
@@ -674,7 +717,7 @@ function FabricNailCanvas({
       colorStyle={colorStyle}
       shapeImageUrl={shapeImageUrl}
       width={width}
-      height={height}
+      height={height} fingerLabel={fingerLabel}
     >
       <canvas ref={canvasRef} className="h-full w-full" />
     </NailShell>
@@ -688,6 +731,7 @@ FabricNailCanvas.propTypes = {
   isActive: PropTypes.bool.isRequired,
   colorStyle: PropTypes.shape({}).isRequired,
   shapeImageUrl: PropTypes.string,
+  fingerLabel: PropTypes.string,
   components: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.string.isRequired,
     imageUrl: PropTypes.string,
@@ -704,7 +748,7 @@ FabricNailCanvas.propTypes = {
   large: PropTypes.bool,
 };
 
-function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact = true }) {
+function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact = true, fingerLabel }) {
   const label = NAIL_LABELS[index];
 
   const shapeMaskStyle = shapeImageUrl
@@ -838,7 +882,7 @@ function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact 
       </div>
       <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
         }`}>
-        {label}
+        {fingerLabel ?? label}
       </span>
     </div>
   );
@@ -870,8 +914,19 @@ export function InteractiveStudioPreview({
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "hand"
   const [handGender, setHandGender] = useState("woman"); // "woman" | "man"
   const aspectRatio = useShapeAspectRatio(shapeImageUrl);
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const isVi = language === "vi";
+
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
 
   const openNailEditor = (fingerIndex) => {
     onSelectNail(fingerIndex);
@@ -1049,10 +1104,9 @@ export function InteractiveStudioPreview({
                       }}
                     >
                       <FabricNailCanvas
-                        fingerIndex={slot.index}
+                        fingerIndex={slot.index} fingerLabel={fingerLabels[slot.index]}
                         finish={finish}
                         shape={shape}
-                        length={length}
                         isActive={activeNailIndex === -1 ? true : activeNailIndex === slot.index}
                         colorStyle={getColorStyle(fingerColorConfigs[slot.index])}
                         components={componentPlacements.filter((item) => item.fingerIndex === slot.index)}
@@ -1078,7 +1132,7 @@ export function InteractiveStudioPreview({
                 className="relative isolate flex justify-center overflow-visible bg-transparent p-0 transition-transform hover:scale-105"
               >
                 <StaticNailCard
-                  index={index}
+                  index={index} fingerLabel={fingerLabels[index]}
                   colorStyle={getColorStyle(fingerColorConfigs[index])}
                   components={componentPlacements.filter((item) => item.fingerIndex === index)}
                   shapeImageUrl={shapeImageUrl}
@@ -1107,12 +1161,12 @@ export function InteractiveStudioPreview({
                 key={item}
                 className="rounded-full border border-[#f2bfd4] bg-white px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]"
               >
-                {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: {item}
+                {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : fingerLabels[activeNailIndex]}: {item}
               </span>
             ))
           ) : (
             <span className="rounded-full border border-[#f0d7e3] bg-white px-2.5 py-1 text-[10px] font-bold text-[#b48aa0]">
-              {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: No decoration
+              {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : fingerLabels[activeNailIndex]}: No decoration
             </span>
           )}
         </div>
@@ -1150,7 +1204,7 @@ export function InteractiveStudioPreview({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-[#402542]">
-                {NAIL_LABELS[modalFingerIndex]} {isVi ? "Chỉnh sửa" : "Editor"}
+                {fingerLabels[modalFingerIndex]} {isVi ? "Chỉnh sửa" : "Editor"}
               </h3>
               <p className="mt-1 text-sm text-[#b06484]">
                 {isVi ? "Chọn một phụ kiện trên móng này, sau đó kéo nó hoặc chỉnh sửa giá trị chính xác bên dưới." : "Select a component on this nail, then drag it or edit exact values below."}
@@ -1171,10 +1225,9 @@ export function InteractiveStudioPreview({
               </p>
               <div className="mt-4 flex justify-center overflow-visible px-2 py-3">
                 <FabricNailCanvas
-                  fingerIndex={modalFingerIndex}
+                  fingerIndex={modalFingerIndex} fingerLabel={fingerLabels[modalFingerIndex]}
                   finish={finish}
                   shape={shape}
-                  length={length}
                   isActive
                   colorStyle={getColorStyle(fingerColorConfigs[modalFingerIndex])}
                   components={modalFingerPlacements}
@@ -1228,7 +1281,7 @@ export function InteractiveStudioPreview({
                         : "border-[#f5d2e1] bg-white hover:border-[#ea4f93]"
                         }`}
                     >
-                      <Checkbox 
+                      <Checkbox
                         checked={selectedItemsToRemove.includes(item.key)}
                         onChange={(e) => {
                           if (e.target.checked) {
@@ -1280,7 +1333,7 @@ export function InteractiveStudioPreview({
               <div className="flex items-center gap-2 text-[#ea4f93]">
                 <Move size={14} />
                 <p className="text-xs font-bold uppercase tracking-[0.12em]">
-                  {isVi ? "Thành phần đã chọn" : "Selected Component"}
+                  {isVi ? "Phụ kiện đã chọn" : "Selected Component"}
                 </p>
               </div>
               {renderPlacementInputs(modalPlacement)}

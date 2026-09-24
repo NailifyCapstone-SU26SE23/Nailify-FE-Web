@@ -302,7 +302,7 @@ export function WalletTransactionsManagementPage() {
     {
       title: t("walletTransactions.actions"),
       key: "actions",
-      fixed: "right",
+      fixed: "center",
       width: 90,
       render: (_, record) => (
         <div className="flex justify-center">
