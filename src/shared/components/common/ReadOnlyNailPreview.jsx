@@ -38,6 +38,21 @@ function normalizeGradientStops(gradientStops, primaryColor, secondaryColor) {
   ];
 }
 
+function normalizeColorFingerIndex(value) {
+  const normalized = Number(value);
+
+  if (!Number.isInteger(normalized)) {
+    return 0;
+  }
+
+  // Color data is 1-based: 1=Thumb, 2=Index, 3=Middle, 4=Ring, 5=Pinky
+  if (normalized >= 1 && normalized <= 5) {
+    return normalized - 1;
+  }
+
+  return clamp(normalized, 0, 4);
+}
+
 function normalizeFingerIndex(value) {
   const normalized = Number(value);
 
@@ -47,10 +62,6 @@ function normalizeFingerIndex(value) {
 
   if (!Number.isInteger(normalized)) {
     return 0;
-  }
-
-  if (normalized >= 1 && normalized <= 5) {
-    return normalized - 1;
   }
 
   return clamp(normalized, 0, 4);
@@ -137,20 +148,27 @@ function buildFingerColorConfigs(colorJson) {
     return defaults;
   }
 
-  const gradientStops = Array.isArray(parsed?.gradient?.stops)
+  const topGradientStops = Array.isArray(parsed?.gradient?.stops)
     ? parsed.gradient.stops.filter(Boolean)
     : [];
+  const sharedIsGradient =
+    (parsed?.mode === "gradient" || parsed?.gradient?.enabled === true)
+    && topGradientStops.length >= 2;
+
   const sharedColor = {
-    mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
-    primaryColor: normalizeColorValue(parsed?.primaryColor || parsed?.color || gradientStops[0], fallbackPrimary),
+    mode: sharedIsGradient ? "gradient" : "solid",
+    primaryColor: normalizeColorValue(
+      parsed?.primaryColor || parsed?.color || topGradientStops[0],
+      fallbackPrimary,
+    ),
     secondaryColor: normalizeColorValue(
-      parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
+      parsed?.secondaryColor || topGradientStops[1] || topGradientStops[0] || parsed?.primaryColor,
       fallbackSecondary,
     ),
     gradientStops: normalizeGradientStops(
-      gradientStops,
-      parsed?.primaryColor || parsed?.color || gradientStops[0],
-      parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
+      topGradientStops,
+      parsed?.primaryColor || parsed?.color || topGradientStops[0],
+      parsed?.secondaryColor || topGradientStops[1] || topGradientStops[0] || parsed?.primaryColor,
     ),
   };
 
@@ -161,7 +179,7 @@ function buildFingerColorConfigs(colorJson) {
   const nextConfigs = defaults.map(() => ({ ...sharedColor }));
 
   parsed.fingers.forEach((finger) => {
-    const fingerIndex = normalizeFingerIndex(finger?.fingerIndex);
+    const fingerIndex = normalizeColorFingerIndex(finger?.fingerIndex);
 
     if (fingerIndex < 0) {
       return;
@@ -170,8 +188,12 @@ function buildFingerColorConfigs(colorJson) {
     const fingerStops = Array.isArray(finger?.gradient?.stops)
       ? finger.gradient.stops.filter(Boolean)
       : [];
+    const fingerIsGradient =
+      (finger?.mode === "gradient" || finger?.gradient?.enabled === true)
+      && fingerStops.length >= 2;
+
     nextConfigs[fingerIndex] = {
-      mode: finger?.mode === "gradient" && fingerStops.length >= 2 ? "gradient" : "solid",
+      mode: fingerIsGradient ? "gradient" : "solid",
       primaryColor: normalizeColorValue(
         finger?.primaryColor || finger?.color || fingerStops[0],
         sharedColor.primaryColor,
