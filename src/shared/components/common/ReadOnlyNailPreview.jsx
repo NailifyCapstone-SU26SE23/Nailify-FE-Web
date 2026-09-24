@@ -181,7 +181,7 @@ function buildFingerColorConfigs(colorJson) {
   parsed.fingers.forEach((finger) => {
     const fingerIndex = normalizeColorFingerIndex(finger?.fingerIndex);
 
-    if (fingerIndex < 0) {
+    if (fingerIndex < 0 || fingerIndex > 4) {
       return;
     }
 

@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { DatePicker, Spin, Select, Table, ConfigProvider } from "antd";
+import viVN from "antd/locale/vi_VN";
+import enUS from "antd/locale/en_US";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import {
@@ -208,7 +210,7 @@ export function ReceptionistBreaksPage() {
     {
       title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thao tác" : "Action"}</span>,
       key: "action",
-      align: 'right',
+      align: 'center',
       render: (_, item) => (
         <div className="flex justify-end px-2">
           <ActionButtons
@@ -262,15 +264,17 @@ export function ReceptionistBreaksPage() {
           {/* Date Filter */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Ngày:" : "Date:"}</span>
-            <DatePicker
-              value={filterDate ? dayjs(filterDate) : null}
-              onChange={(date, dateString) => {
-                setFilterDate(dateString || "");
-                setCurrentPage(1);
-              }}
-              className="rounded-xl border-[#f4c1d8]"
-              format="YYYY-MM-DD"
-            />
+            <ConfigProvider locale={language === "vi" ? viVN : enUS}>
+              <DatePicker
+                value={filterDate ? dayjs(filterDate) : null}
+                onChange={(date, dateString) => {
+                  setFilterDate(dateString || "");
+                  setCurrentPage(1);
+                }}
+                className="rounded-xl border-[#f4c1d8]"
+                format="YYYY-MM-DD"
+              />
+            </ConfigProvider>
           </div>
 
           {/* Clear Filters */}

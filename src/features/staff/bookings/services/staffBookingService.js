@@ -266,6 +266,27 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
     : [];
 }
 
+export async function fetchStaffBuilderShapeMethodConfigs(nailShapeId) {
+  const response = await axiosClient.get(`/ShapeMethodConfigs/nail-shape/${nailShapeId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      status: "Active",
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load shape method configs.");
+  const items = Array.isArray(data) ? data : (data?.items || []);
+
+  return items.map((item) => ({
+      shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
+      nailShapeId: Number(item?.nailShapeId || 0),
+      name: String(item?.name || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+      status: String(item?.status || "").trim(),
+    }));
+}
+
 export async function fetchStaffBuilderNailSurfaces(filters = {}) {
   const {
     pageNumber = 1,
@@ -591,6 +612,20 @@ export async function fetchStaffCustomerComponentDetail(customerComponentId) {
     createdAt: String(data?.createdAt || "").trim(),
     isPublic: Boolean(data?.isPublic),
   };
+}
+
+export async function fetchStaffShapeMethodConfigDetail(configId) {
+  const normalizedConfigId = Number(configId || 0);
+
+  if (!Number.isInteger(normalizedConfigId) || normalizedConfigId <= 0) {
+    throw new Error("Shape method config ID is required.");
+  }
+
+  const response = await axiosClient.get(`/ShapeMethodConfigs/${normalizedConfigId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load shape method config detail.");
 }
 
 export async function fetchStaffNailVariantDetail(variantId) {

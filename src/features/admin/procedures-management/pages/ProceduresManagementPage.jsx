@@ -307,7 +307,7 @@ export function ProceduresManagementPage() {
       {
         title: t("adminProcedures.actions"),
         key: "actions",
-        align: "right",
+        align: "center",
         render: (_, procedure) => (
           <ActionButtons
             onView={() => navigate(getAdminProcedureDetailRoute(procedure.procedureId))}

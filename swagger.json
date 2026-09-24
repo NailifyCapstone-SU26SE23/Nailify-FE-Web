@@ -6906,7 +6906,7 @@
         "tags": [
           "CustomerComponents"
         ],
-        "summary": "Lấy danh sách thành phần móng khách hàng với phân trang.",
+        "summary": "Lấy danh sách phụ kiện móng khách hàng với phân trang.",
         "parameters": [
           {
             "name": "pageNumber",
@@ -7050,7 +7050,7 @@
         "tags": [
           "CustomerComponents"
         ],
-        "summary": "Lấy chi tiết thành phần móng khách hàng.",
+        "summary": "Lấy chi tiết phụ kiện móng khách hàng.",
         "parameters": [
           {
             "name": "id",
@@ -20500,7 +20500,7 @@
         "tags": [
           "WalkInQueues"
         ],
-        "summary": "Lễ tân phân ghế cho khách đang đợi trong hàng chờ Walk-in.\r\nChỉ được phân khi lượt chờ đang ở trạng thái Waiting hoặc Called.",
+        "summary": "Lễ tân phân ghế cho khách đang đợi trong hàng chờ khách vãng lai.\r\nChỉ được phân khi lượt chờ đang ở trạng thái Waiting hoặc Called.",
         "parameters": [
           {
             "name": "id",
@@ -26657,7 +26657,7 @@
             "nullable": true
           }
         },
-        "additionalProperties": { }
+        "additionalProperties": {}
       },
       "ProcedureQuoteItemDTO": {
         "type": "object",
@@ -29943,7 +29943,7 @@
   },
   "security": [
     {
-      "Bearer": [ ]
+      "Bearer": []
     }
   ]
 }

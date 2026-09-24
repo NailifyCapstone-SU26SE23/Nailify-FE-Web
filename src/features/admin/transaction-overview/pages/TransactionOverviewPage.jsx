@@ -507,7 +507,7 @@ export function TransactionOverviewPage() {
         title: language === "vi" ? "Hành động" : "Actions",
         key: "actions",
         width: "8%",
-        align: "right",
+        align: "center",
         render: (_, tx) => (
           <ActionButtons
             onView={(e) => {
