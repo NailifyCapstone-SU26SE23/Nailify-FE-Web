@@ -47,7 +47,6 @@ import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAdd
 import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
 import { AssignChairModal } from "../components/AssignChairModal";
 import {
-
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
   fetchReceptionistBookingProcedures,
@@ -64,6 +63,7 @@ import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../man
 import dayjs from "dayjs";
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { PropTypes } from "../../../../shared/utils/propTypes";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -92,6 +92,36 @@ const getStatusColor = (status) => {
   }
 };
 
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
+}
+
+function SectionTitle({ children, subtitle, icon: Icon, actionButton }) {
+  return (
+    <div className="mb-6 flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={18} />
+          </div>
+        )}
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-[#2B182B]">{children}</h2>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
+    </div>
+  );
+}
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
+};
+
 function formatCurrency(value) {
   const amount = Number(value);
 
@@ -104,32 +134,53 @@ function formatCurrency(value) {
   }).format(amount)} VND`;
 }
 
-function formatDate(value) {
-  if (!value) {
-    return "--";
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const str = String(dateString).trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
+  const datePart = str.split("T")[0];
+  const [year, month, day] = datePart.split("-").map(Number);
+  if (!year || !month || !day) return "N/A";
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     year: "numeric",
-  }).format(new Date(value));
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function formatTime(value) {
-  if (!value) {
-    return "--";
+function formatTime(startTime, fallbackDateTime) {
+  const str = String(startTime || "").trim();
+  if (str.includes("T")) {
+    return new Date(str).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
-  if (typeof value === "string" && /^\d{2}:\d{2}/.test(value) && !value.includes("T")) {
-    return value.slice(0, 5);
-  }
+  const rawTime = str
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
 
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
+  if (!rawTime) return "N/A";
+  const [hours, minutes = 0, seconds = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
+    return "N/A";
+  }
+  return new Date(2000, 0, 1, hours, minutes, seconds).toLocaleTimeString("en-US", {
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false
-  }).format(new Date(value));
+    hour12: true,
+  });
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
@@ -165,51 +216,6 @@ function getStatusTone(status) {
     default:
       return "bg-[#fff1f6] text-[#eb5b92]";
   }
-}
-
-function getActionTone(label) {
-  switch (label) {
-    case "View":
-      return "bg-[#fff1f6] text-[#eb5b92]";
-    case "Manage":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Edit":
-      return "bg-[#f2f2f2] text-[#656565]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureStatusTone(status) {
-  switch (String(status || "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "inprogress":
-    case "in progress":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "cancelled":
-      return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureArtistTone(isFree, isQualified) {
-  if (isFree && isQualified) {
-    return "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]";
-  }
-
-  if (isQualified) {
-    return "border-[#e3dbff] bg-[#f7f4ff] text-[#7c63d8]";
-  }
-
-  if (isFree) {
-    return "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]";
-  }
-
-  return "border-[#f3d7e2] bg-[#fff7fb] text-[#8f7b88]";
 }
 
 function getServiceStatus(index, bookingStatus) {
@@ -1311,6 +1317,46 @@ export function ReceptionistBookingDetailPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </DetailCard>
+
+          <DetailCard
+            title={language === "vi" ? "Thông tin lịch hẹn" : "Booking Info"}
+            icon={Sparkles}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {/* Booking Date */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Calendar size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDate(booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời gian" : "Time"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatTime(booking?.startTime, booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời lượng" : "Duration"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
                 </div>
               </div>
             </div>
