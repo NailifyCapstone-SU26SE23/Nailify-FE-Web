@@ -20,10 +20,6 @@ import { loadAuthSession } from "../../../../features/core/auth/model/authStorag
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  getMockBookingById,
-  getStaffDesignStudioExperienceById,
-} from "../../../../shared/bookings/services/mockBookings";
-import {
   createStaffCustomerNailComponent,
   createStaffCustomerNail,
   fetchStaffCustomerNailDetail,
@@ -44,7 +40,7 @@ import {
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const DEFAULT_DESIGN_IMAGE = "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80";
-
+const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 function getAuthHeaders() {
   const session = loadAuthSession();
   const token = session?.accessToken || session?.token;
@@ -661,8 +657,6 @@ const TEMPLATE_PRESETS = {
   },
 };
 
-const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
-
 function createNailDecorationLayout(decorations = []) {
   const layout = Array.from({ length: 5 }, () => []);
 
@@ -1246,11 +1240,22 @@ ChoiceGrid.propTypes = {
 };
 
 export function StaffNailDesignStudioPage() {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
+
   const isVi = language === 'vi';
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
   const studioState = location.state?.designStudio ?? null;
   const studio = useMemo(() => {
     if (!studioState) {
@@ -1721,6 +1726,7 @@ export function StaffNailDesignStudioPage() {
     },
     [activeNailIndex, nailDecorations],
   );
+
   const selectedDecorationEntries = useMemo(
     () => nailDecorations
       .flatMap((items, fingerIndex) => items.map((label) => ({ fingerIndex, label })))
@@ -1731,6 +1737,7 @@ export function StaffNailDesignStudioPage() {
       .filter((item) => item.option),
     [decorationOptionMap, nailDecorations],
   );
+
   const selectedExtraOptions = useMemo(
     () => Object.entries(selectedExtrasMap)
       .filter(([id, qty]) => qty > 0)
@@ -1814,12 +1821,29 @@ export function StaffNailDesignStudioPage() {
       });
     }
 
-    selectedDecorationEntries.forEach((item, index) => {
+    const groupedDecorations = new Map(); // optionId -> { option, fingerIndices: [] }
+
+    selectedDecorationEntries.forEach((item) => {
+      const key = String(item.option.id);
+      if (!groupedDecorations.has(key)) {
+        groupedDecorations.set(key, { option: item.option, fingerIndices: [] });
+      }
+      groupedDecorations.get(key).fingerIndices.push(item.fingerIndex);
+    });
+
+    groupedDecorations.forEach(({ option, fingerIndices }) => {
+      const count = fingerIndices.length;
+      const allFingers = count === NAIL_LABELS.length;
+      const fingersLabel = allFingers
+        ? (isVi ? "Tất cả các ngón" : "All fingers")
+        : fingerIndices.map((i) => fingerLabels[i]).join(", ");
+
       nailRows.push({
-        key: `${isVi ? "Trang trí móng" : "decoration"}-${item.option.id}-${item.fingerIndex}-${index}`,
-        label: `${NAIL_LABELS[item.fingerIndex]} • ${item.option.label}`,
-        price: item.option.price,
-        duration: item.option.duration,
+        key: `decoration-${option.id}`,
+        label: `${option.label} • ${fingersLabel}`,
+        price: option.price * count,
+        duration: option.duration * count,
+        quantity: count,
       });
     });
 
@@ -1835,17 +1859,17 @@ export function StaffNailDesignStudioPage() {
       0,
     );
 
-    rows.push({
-      key: "summary-nail-price",
-      label: (
-        <span className="font-bold text-[#38253a]">
-          {isVi ? "Tổng giá móng" : "Summary Nail Price"}
-        </span>
-      ),
-      price: nailPrice,
-      duration: nailDuration,
-      isSummary: true,
-    });
+    // rows.push({
+    //   key: "summary-nail-price",
+    //   label: (
+    //     <span className="font-bold text-[#38253a]">
+    //       {isVi ? "Tổng giá móng" : "Summary Nail Price"}
+    //     </span>
+    //   ),
+    //   price: nailPrice,
+    //   duration: nailDuration,
+    //   isSummary: true,
+    // });
 
     selectedExtraOptions.forEach((item) => {
       rows.push({
@@ -1865,6 +1889,8 @@ export function StaffNailDesignStudioPage() {
 
     return rows;
   }, [
+    fingerLabels,
+    isVi,
     selectedDecorationEntries,
     selectedExtraOptions,
     selectedShapeOption,
@@ -2990,7 +3016,7 @@ export function StaffNailDesignStudioPage() {
                           >
                             {isVi ? "Tất cả" : "All fingers"}
                           </Pill>
-                          {NAIL_LABELS.map((label, index) => (
+                          {fingerLabels.map((label, index) => (
                             <Pill
                               key={`color-finger-${label}`}
                               active={selectedColorFingerIndices.includes(index)}
@@ -3119,9 +3145,9 @@ export function StaffNailDesignStudioPage() {
                             <p className="mt-1 text-[10px] text-[#38253a]">{selectedColor}</p>
                             <p className="mt-1 text-[10px] text-[#a98c9f]">
                               {isVi ? "Áp dụng cho" : "Applying to"}
-                              {selectedColorFingerIndices.length === NAIL_LABELS.length
+                              {selectedColorFingerIndices.length === fingerLabels.length
                                 ? isVi ? "tất cả các ngón" : "all fingers"
-                                : selectedColorFingerIndices.map((index) => NAIL_LABELS[index]).join(", ")}
+                                : selectedColorFingerIndices.map((index) => fingerLabels[index]).join(", ")}
                             </p>
                           </div>
                         </div>
@@ -3154,9 +3180,9 @@ export function StaffNailDesignStudioPage() {
                       >
                         {isVi ? "Tất cả" : "All fingers"}
                       </Pill>
-                      {NAIL_LABELS.map((label, index) => (
+                      {fingerLabels.map((label, index) => (
                         <Pill
-                          key={label}
+                          key={`finger-${index}`}
                           active={activeNailIndex === index}
                           onClick={() => setActiveNailIndex(index)}
                         >
@@ -3165,7 +3191,7 @@ export function StaffNailDesignStudioPage() {
                       ))}
                     </div>
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
-                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : `${NAIL_LABELS[activeNailIndex]} nail`}
+                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : `${fingerLabels[activeNailIndex]} nail`}
                     </p>
                     {(() => {
                       const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
@@ -3263,15 +3289,21 @@ export function StaffNailDesignStudioPage() {
                   <SectionTitle icon={Star} title={isVi ? "Ước tính giá và thời lượng" : "Price & Duration Estimation"} />
                   <div className="mt-4 space-y-3 text-sm text-[#8a6f83]">
                     {isBuilderCatalogLoading ? (
-                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Đang tải danh sách dịch vụ..." : "Loading builder options from API..."}</p>
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Đang tải danh sách dịch vụ..." : "Loading builder options..."}</p>
                     ) : estimationRows.length > 0 ? (
                       estimationRows.map((item) => (
                         <div key={item.key} className="flex items-center justify-between gap-3 border-b border-[#f6d8e7] pb-2">
                           <div>
                             <p>{item.label}</p>
-                            <p className="mt-1 text-[10px] text-[#b48aa0]">{formatDurationLabel(item.duration, language)}</p>
+                            {Number(item.duration) > 0 ? (
+                              <p className="mt-1 text-[10px] text-[#b48aa0]">
+                                {formatDurationLabel(item.duration, language)}
+                              </p>
+                            ) : null}
                           </div>
-                          <span className="font-bold text-[#ea4f93]">{formatCurrencyValue(item.price)}</span>
+                          {Number(item.price) > 0 ? (
+                            <span className="font-bold text-[#ea4f93]">{formatCurrencyValue(item.price)}</span>
+                          ) : null}
                         </div>
                       ))
                     ) : (

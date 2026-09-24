@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { PropTypes } from "../../utils/propTypes";
-
+import {useLanguage} from "../../../shared/hooks/useLanguage";
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
 
@@ -276,7 +276,7 @@ function getColorStyle(colorConfig) {
 
 
 
-function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compact = false }) {
+function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compact = false, fingerLabel }) {
   const label = NAIL_LABELS[index];
 
   const shapeMaskStyle = shapeImageUrl
@@ -410,7 +410,7 @@ function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compac
       </div>
       <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
         }`}>
-        {label}
+        {fingerLabel ?? label}
       </span>
     </div>
   );
@@ -432,6 +432,8 @@ ReadOnlyNailCard.propTypes = {
   ).isRequired,
   index: PropTypes.number.isRequired,
   shapeImageUrl: PropTypes.string,
+  fingerLabel: PropTypes.string,
+
 };
 
 export function ReadOnlyNailPreview({
@@ -448,7 +450,17 @@ export function ReadOnlyNailPreview({
   const componentPlacements = buildComponentPlacements(variantDetail?.nailComponents);
   const shapeImageUrl = String(variantDetail?.nailShape?.imageUrl || "").trim();
   const finishLabel = String(variantDetail?.nailSurface?.name).trim();
-
+  const { t, language } = useLanguage();
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
   return (
     <article className={`flex w-full max-w-full flex-col rounded-lg border border-[#f6dbe8] bg-[#fff7fb] shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
       {showHeader ? (
@@ -478,7 +490,7 @@ export function ReadOnlyNailPreview({
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible">
               <ReadOnlyNailCard
-                index={index}
+                index={index} fingerLabel={fingerLabels[index]}
                 colorStyle={getColorStyle(fingerColorConfigs[index])}
                 components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}

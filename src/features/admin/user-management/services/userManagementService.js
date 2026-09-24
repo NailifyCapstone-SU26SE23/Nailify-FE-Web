@@ -79,27 +79,6 @@ function getAvatar(name) {
     .toUpperCase();
 }
 
-function getJoinedAtLabel() {
-  return "Loaded from API";
-}
-
-function getLastActiveLabel(status) {
-  const normalizedStatus = String(status || "").trim().toLowerCase();
-
-  switch (normalizedStatus) {
-    case "active":
-      return "Active";
-    case "pending":
-      return "Pending";
-    case "suspended":
-      return "Suspended";
-    case "inactive":
-      return "Inactive";
-    default:
-      return "Recently updated";
-  }
-}
-
 export function normalizeAdminUser(user) {
   const role = normalizeRole(user?.role);
   const firstName = String(user?.firstName || "").trim();

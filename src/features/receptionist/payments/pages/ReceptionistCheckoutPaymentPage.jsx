@@ -731,7 +731,7 @@ export function ReceptionistCheckoutPaymentPage() {
             <div className="rounded-[18px] border border-[#f3d7e2] bg-[#fffafb] px-4 py-4 text-xs leading-6 text-[#8f7b88]">
               <p>
                 <span className="font-bold text-[#d54186]">{language === "vi" ? "Thanh toán QR thất bại?" : "QR Payment Failed?"}</span>
-                {" "}{language === "vi" ? "Làm mới mã QR hoặc xác nhận thanh toán thủ công cho đến khi API thanh toán sẵn sàng." : "Refresh the QR code or use manual payment confirmation until payment API is available."}
+                {language === "vi" ? "Làm mới mã QR hoặc xác nhận thanh toán thủ công" : "Refresh the QR code or use manual payment confirmation"}
               </p>
               <p className="mt-3">
                 <span className="font-bold text-[#d54186]">{language === "vi" ? "Hóa đơn:" : "Receipt:"}</span>

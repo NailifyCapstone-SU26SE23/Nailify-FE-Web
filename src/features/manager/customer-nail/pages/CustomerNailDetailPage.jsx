@@ -449,21 +449,21 @@ function parseComponentConfig(configJson) {
   }
 }
 
-function getFingerName(fingerIndex) {
-  switch (Number(fingerIndex)) {
-    case 1:
-      return "Thumb";
-    case 2:
-      return "Index";
-    case 3:
-      return "Middle";
-    case 4:
-      return "Ring";
-    case 5:
-      return "Pinky";
-    default:
-      return `Finger ${fingerIndex}`;
+function getFingerName(fingerIndex, language = "en") {
+  const index = Number(fingerIndex);
+  const labels = language === "vi"
+    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"]
+    : ["Thumb", "Index", "Middle", "Ring", "Pinky"];
+
+  if (index >= 1 && index <= 5) {
+    return labels[index - 1];
   }
+
+  if (index >= 0 && index <= 4) {
+    return labels[index];
+  }
+
+  return language === "vi" ? `Ngón ${index}` : `Finger ${index}`;
 }
 
 function renderNailTip(style, shapeName, sizeClass = "w-12 h-20") {
@@ -1426,7 +1426,8 @@ export function CustomerNailDetailPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-[#3f2240] truncate ">{comp.name || "Custom Accessory"}</p>
                           <p className="mt-0.5 text-xs text-[#a18560]">
-                            Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                            {language === "vi" ? "Loại" : "Type"}: {comp.componentType || "Sticker/Gem"} •{" "}
+                            {language === "vi" ? "Ngón" : "Finger"}: {getFingerName(itemComponent.fingerIndex, language)}
                           </p>
                           {comp.price ? (
                             <p className="mt-1 text-xs text-[#d4af37] font-semibold">+{formatVND(comp.price)}</p>
@@ -1585,7 +1586,7 @@ export function CustomerNailDetailPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
                               {colorData.fingers.map((finger, index) => {
-                                const fingerName = getFingerName(finger.fingerIndex || index + 1);
+                                const fingerName = getFingerName(finger.fingerIndex || index + 1, language);
                                 let fingerStyle = { backgroundColor: '#f3f4f6' };
                                 let colorLabel = "N/A";
                                 const isGradient = finger.mode === 'gradient' || (finger.gradient && finger.gradient.enabled);

@@ -295,11 +295,11 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                 <InfoCard label={language === "vi" ? "Giá cơ bản" : "Base Price"} value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
                 {shapeMethodConfig && (
-                  <InfoCard 
-                    label={shapeMethodConfig.name} 
-                    value={formatVariantCurrency(shapeMethodConfig.price)} 
-                    note="" 
-                    tone="success" 
+                  <InfoCard
+                    label={shapeMethodConfig.name}
+                    value={formatVariantCurrency(shapeMethodConfig.price)}
+                    note=""
+                    tone="success"
                   />
                 )}
                 <InfoCard label={language === "vi" ? "Thời lượng" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
@@ -376,7 +376,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
 
                           {item.fingerIndex !== undefined && item.fingerIndex !== null && item.fingerIndex !== -1 && (
                             <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                              {language === "vi" ? "Ngón tay" : "Finger"} #{item.fingerIndex}
+                              {language === "vi" ? "Ngón tay" : "Finger"} #{item.fingerIndex + 1}
                             </span>
                           )}
                         </div>

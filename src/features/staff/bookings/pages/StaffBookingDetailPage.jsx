@@ -154,7 +154,7 @@ function buildDefaultStaffNotes(booking, language) {
   return [
     {
       label: "Customer Requests",
-      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note from API."),
+      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note."),
     },
     {
       label: "Design Adjustments",
@@ -523,9 +523,6 @@ function buildStaffExperienceFromBooking(
       })),
     staffNotes: staffNotesDraft,
     checklist: [
-      { label: language === 'vi' ? "Chi tiết lịch hẹn đã tải từ API" : "Booking detail loaded from API", checked: true },
-      { label: language === 'vi' ? "Thiết kế móng hiện tại đã được xác nhận" : "Current nail design confirmed", checked: false },
-      ...(hasCustomerNailSelected ? [{ label: language === 'vi' ? "Mẫu móng của khách hàng đã được xác nhận" : "Customer nail confirmed", checked: false }] : []),
       { label: language === 'vi' ? "Nghệ sĩ được chỉ định cho lịch hẹn" : "Artist assigned to booking", checked: Boolean(booking?.artistName) },
       {
         label: language === 'vi' ? "Có hình ảnh tham khảo thiết kế móng của khách hàng" : "Customer design reference available",

@@ -500,9 +500,6 @@ export function ReceptionistBookingDetailPage() {
   const [assigningProcedureArtistId, setAssigningProcedureArtistId] = useState("");
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
-  const [notes, setNotes] = useState(
-    "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
-  );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
 

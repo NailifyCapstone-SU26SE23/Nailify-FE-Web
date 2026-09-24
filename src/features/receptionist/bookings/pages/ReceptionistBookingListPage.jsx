@@ -641,7 +641,7 @@ export function ReceptionistBookingListPage() {
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", color: "#d98b1d", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", color: "#1f9d61", icon: CalendarDays },
-            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
+            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total revenue", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
           ]}
           className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         />
@@ -653,7 +653,7 @@ export function ReceptionistBookingListPage() {
                 {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
               </p>
               <p className="mt-1 text-sm text-[#b38a9f]">
-                {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
+                {salonMeta === "Bookings Management" ? t("receptionist.bookings.desc") : salonMeta}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

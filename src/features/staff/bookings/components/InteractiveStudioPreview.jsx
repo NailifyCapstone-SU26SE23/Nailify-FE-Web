@@ -346,7 +346,7 @@ function NailShell({
   colorStyle,
   shapeImageUrl,
   width,
-  height,
+  height, fingerLabels,
   children,
 }) {
   const { framePadding, innerInset } = getShapeInsets(width, shapeImageUrl);
@@ -421,7 +421,7 @@ function NailShell({
       </div>
 
       <span className="rounded-full border border-[#fce6f3] bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
-        {NAIL_LABELS[index]}
+        {fingerLabel ?? NAIL_LABELS[index]}
       </span>
     </div>
   );
@@ -437,6 +437,7 @@ NailShell.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   children: PropTypes.node,
+  fingerLabel: PropTypes.string
 };
 
 function FabricNailCanvas({
@@ -451,7 +452,7 @@ function FabricNailCanvas({
   onSelectNail,
   onSelectPlacement,
   onPlacementChange,
-  large = false,
+  large = false, fingerLabel
 }) {
   const canvasRef = useRef(null);
   const fabricCanvasRef = useRef(null);
@@ -716,7 +717,7 @@ function FabricNailCanvas({
       colorStyle={colorStyle}
       shapeImageUrl={shapeImageUrl}
       width={width}
-      height={height}
+      height={height} fingerLabel={fingerLabel}
     >
       <canvas ref={canvasRef} className="h-full w-full" />
     </NailShell>
@@ -730,6 +731,7 @@ FabricNailCanvas.propTypes = {
   isActive: PropTypes.bool.isRequired,
   colorStyle: PropTypes.shape({}).isRequired,
   shapeImageUrl: PropTypes.string,
+  fingerLabel: PropTypes.string,
   components: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.string.isRequired,
     imageUrl: PropTypes.string,
@@ -746,7 +748,7 @@ FabricNailCanvas.propTypes = {
   large: PropTypes.bool,
 };
 
-function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact = true }) {
+function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact = true, fingerLabel }) {
   const label = NAIL_LABELS[index];
 
   const shapeMaskStyle = shapeImageUrl
@@ -880,7 +882,7 @@ function StaticNailCard({ components, index, colorStyle, shapeImageUrl, compact 
       </div>
       <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
         }`}>
-        {label}
+        {fingerLabel ?? label}
       </span>
     </div>
   );
@@ -912,8 +914,19 @@ export function InteractiveStudioPreview({
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "hand"
   const [handGender, setHandGender] = useState("woman"); // "woman" | "man"
   const aspectRatio = useShapeAspectRatio(shapeImageUrl);
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const isVi = language === "vi";
+
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
 
   const openNailEditor = (fingerIndex) => {
     onSelectNail(fingerIndex);
@@ -1091,7 +1104,7 @@ export function InteractiveStudioPreview({
                       }}
                     >
                       <FabricNailCanvas
-                        fingerIndex={slot.index}
+                        fingerIndex={slot.index} fingerLabel={fingerLabels[slot.index]}
                         finish={finish}
                         shape={shape}
                         isActive={activeNailIndex === -1 ? true : activeNailIndex === slot.index}
@@ -1119,7 +1132,7 @@ export function InteractiveStudioPreview({
                 className="relative isolate flex justify-center overflow-visible bg-transparent p-0 transition-transform hover:scale-105"
               >
                 <StaticNailCard
-                  index={index}
+                  index={index} fingerLabel={fingerLabels[index]}
                   colorStyle={getColorStyle(fingerColorConfigs[index])}
                   components={componentPlacements.filter((item) => item.fingerIndex === index)}
                   shapeImageUrl={shapeImageUrl}
@@ -1148,12 +1161,12 @@ export function InteractiveStudioPreview({
                 key={item}
                 className="rounded-full border border-[#f2bfd4] bg-white px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]"
               >
-                {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: {item}
+                {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : fingerLabels[activeNailIndex]}: {item}
               </span>
             ))
           ) : (
             <span className="rounded-full border border-[#f0d7e3] bg-white px-2.5 py-1 text-[10px] font-bold text-[#b48aa0]">
-              {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : NAIL_LABELS[activeNailIndex]}: No decoration
+              {activeNailIndex === -1 ? (isVi ? "Tất cả các ngón" : "All fingers") : fingerLabels[activeNailIndex]}: No decoration
             </span>
           )}
         </div>
@@ -1191,7 +1204,7 @@ export function InteractiveStudioPreview({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-[#402542]">
-                {NAIL_LABELS[modalFingerIndex]} {isVi ? "Chỉnh sửa" : "Editor"}
+                {fingerLabels[modalFingerIndex]} {isVi ? "Chỉnh sửa" : "Editor"}
               </h3>
               <p className="mt-1 text-sm text-[#b06484]">
                 {isVi ? "Chọn một phụ kiện trên móng này, sau đó kéo nó hoặc chỉnh sửa giá trị chính xác bên dưới." : "Select a component on this nail, then drag it or edit exact values below."}
@@ -1212,7 +1225,7 @@ export function InteractiveStudioPreview({
               </p>
               <div className="mt-4 flex justify-center overflow-visible px-2 py-3">
                 <FabricNailCanvas
-                  fingerIndex={modalFingerIndex}
+                  fingerIndex={modalFingerIndex} fingerLabel={fingerLabels[modalFingerIndex]}
                   finish={finish}
                   shape={shape}
                   isActive

@@ -1,6 +1,9 @@
 import { useEffect } from "react";
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 
 export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     let zoomFactor = 1.0;
 
@@ -116,27 +119,27 @@ export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
         <button
           id="btn-back-to-step"
           className="hud-circle-btn hud-back-btn"
-          aria-label="Go back"
+          aria-label={t("handTryOn.tryOnView.goBack")}
         >
           <span className="material-icons">arrow_back</span>
         </button>
 
         <div className="hud-top-status status-none" id="hud-status-container">
           <span className="status-dot"></span>
-          <span id="status-message">Ready</span>
+          <span id="status-message">{t("handTryOn.tryOnView.ready")}</span>
         </div>
 
         <button
           className="hud-circle-btn hud-close-btn"
           onClick={onReturnToForm}
-          aria-label="Close studio"
+          aria-label={t("handTryOn.tryOnView.closeStudio")}
         >
           <span className="material-icons">close</span>
         </button>
 
         {/* Left Vertical Slider Column */}
         <div className="hud-vertical-slider-container">
-          <span className="hud-slider-label">Confidence</span>
+          <span className="hud-slider-label">{t("handTryOn.tryOnView.confidence")}</span>
           <div className="hud-slider-wrapper-vertical">
             <input
               type="range"
@@ -188,35 +191,35 @@ export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
           <button
             id="hud-btn-reset"
             className="hud-action-circle"
-            title="Reset scale"
+            title={t("handTryOn.tryOnView.resetScale")}
           >
             <span className="material-icons">replay</span>
           </button>
           <button
             id="hud-btn-zoom-in"
             className="hud-action-circle"
-            title="Zoom In"
+            title={t("handTryOn.tryOnView.zoomIn")}
           >
             <span className="material-icons">add</span>
           </button>
           <button
             id="hud-btn-zoom-out"
             className="hud-action-circle"
-            title="Zoom Out"
+            title={t("handTryOn.tryOnView.zoomOut")}
           >
             <span className="material-icons">remove</span>
           </button>
           <button
             id="hud-btn-toggle-mode"
             className="hud-action-circle"
-            title="Toggle camera/image"
+            title={t("handTryOn.tryOnView.toggleCamImg")}
           >
             <span className="material-icons">photo_camera</span>
           </button>
           <button
             id="hud-btn-download"
             className="hud-action-circle"
-            title="Download Screenshot"
+            title={t("handTryOn.tryOnView.download")}
           >
             <span className="material-icons">download</span>
           </button>
@@ -227,16 +230,16 @@ export function TryOnView({ handLandmarkerTask, onReturnToForm }) {
           <button
             id="hud-shutter"
             className="hud-shutter-btn"
-            aria-label="Capture snapshot"
+            aria-label={t("handTryOn.tryOnView.captureSnapshot")}
           >
             <span className="shutter-inner"></span>
           </button>
 
           <div className="hud-footer">
-            <span id="inference-time">Inference Time: - ms</span>
+            <span id="inference-time">{t("handTryOn.tryOnView.inferenceTime")}: - ms</span>
             <span className="hud-divider">|</span>
             <span>
-              Powered by <span className="text-accent font-bold">Nailify</span>
+              {t("handTryOn.tryOnView.poweredBy")} <span className="text-accent font-bold">Nailify</span>
             </span>
           </div>
         </div>

@@ -104,7 +104,7 @@ export const fetchReceptionistSalonDetailThunk = createAsyncThunk(
 const initialState = {
   bookings: [],
   salonName: "Receptionist Booking Management",
-  salonMeta: "Bookings are loaded from salon API.",
+  salonMeta: "Bookings are loaded.",
   isLoading: false,
   error: "",
   filters: {
@@ -161,7 +161,7 @@ const receptionistBookingsSlice = createSlice({
       .addCase(fetchReceptionistSalonDetailThunk.fulfilled, (state, action) => {
         const salon = action.payload;
         state.salonName = salon?.name || "Receptionist Booking Management";
-        state.salonMeta = [salon?.address, salon?.phone].filter(Boolean).join(" | ") || "Bookings are loaded from salon API.";
+        state.salonMeta = [salon?.address, salon?.phone].filter(Boolean).join(" | ") || "Bookings are loaded from salon.";
       })
       .addCase(fetchReceptionistSalonDetailThunk.rejected, (state, action) => {
         state.salonName = "Receptionist Booking Management";

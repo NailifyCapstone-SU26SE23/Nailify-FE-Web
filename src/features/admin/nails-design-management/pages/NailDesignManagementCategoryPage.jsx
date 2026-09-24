@@ -180,12 +180,6 @@ export function NailDesignManagementCategoryPage() {
       return;
     }
 
-    toast.success(
-      editingId
-        ? (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API cập nhật danh mục chưa được kết nối.` : `${normalizedName} is ready, but category update API is not connected yet.`)
-        : (language === "vi" ? `${normalizedName} đã sẵn sàng, nhưng API tạo danh mục chưa được kết nối.` : `${normalizedName} is ready, but category create API is not connected yet.`),
-    );
-
     resetDraft();
   };
 
@@ -205,14 +199,6 @@ export function NailDesignManagementCategoryPage() {
   const handleDelete = () => {
     setPendingDeleteId(null);
     toast.error(t("adminNailsDesignManagement.categoryDeleteApiIsNotConnecte"));
-  };
-
-  const handleToggleStatus = (category) => {
-    toast.error(
-      language === "vi"
-        ? `Thay đổi trạng thái cho ${category.name} chưa được kết nối với API.`
-        : `Status change for ${category.name} is not connected to API yet.`
-    );
   };
 
   const pendingDeleteCategory = categories.find((item) => item.id === pendingDeleteId) ?? null;
