@@ -36,13 +36,14 @@ import {
   fetchCustomerProfileById,
   fetchLoyaltyTiers,
 } from "../services/bookingsService";
-import { fetchTransactionsByBookingId, fetchTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
+import { fetchTransactionsByBookingId, fetchTransactionById, fetchWalletTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
 import { Spin, Alert, Modal, Input, Image, Select, Table } from "antd";
 import toast from "react-hot-toast";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
+import dayjs from "dayjs";
 import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
@@ -559,12 +560,21 @@ export function ManagerBookingDetailPage() {
     setIsEditNotesModalOpen(false);
   };
 
+  const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
+
   const handleTransactionClick = async (txId) => {
     setIsTransactionModalOpen(true);
     setIsFetchingTransaction(true);
     setSelectedTransactionDetail(null);
     try {
-      const details = await fetchTransactionById(txId);
+      let details;
+      if (isUUID(txId)) {
+        details = await fetchWalletTransactionById(txId);
+        details.isWallet = true;
+      } else {
+        details = await fetchTransactionById(txId);
+        details.isWallet = false;
+      }
       setSelectedTransactionDetail(details);
     } catch (err) {
       toast.error(language === "vi" ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
@@ -1155,27 +1165,24 @@ export function ManagerBookingDetailPage() {
 
                       return (
                         <div
-                          key={tx.transactionId}
-                          onClick={() => handleTransactionClick(tx.transactionId)}
+                          key={tx.id || tx.transactionId}
+                          onClick={() => handleTransactionClick(tx.id || tx.transactionId)}
                           className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
+                          <div className="flex items-center justify-between">
 
-                              </div>
-                              <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                            <div className="flex items-center">
+                              <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(Math.abs(tx.amount))}</p>
                             </div>
+
                             <div className="text-right">
-                              <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(tx.amount)}</p>
-                              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                                 String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                                   'bg-[#F3F4F6] text-[#6B7280]'
                                 }`}>
                                 {language === "vi"
-                                  ? (String(tx.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "overdue" ? "Quá hạn" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : String(tx.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : tx.status)
-                                  : tx.status}
+                                  ? (String(tx.status).toLowerCase() === "paid" || String(tx.status).toLowerCase() === "completed" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "overdue" ? "Quá hạn" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : String(tx.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : tx.status)
+                                  : (String(tx.status).toLowerCase() === "completed" ? "Paid" : tx.status)}
                               </span>
                             </div>
                           </div>
@@ -1201,11 +1208,9 @@ export function ManagerBookingDetailPage() {
                             )}
                             <div className="flex justify-between items-center text-[10px]">
                               <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
-                              <TransactionBadge
-                                walletId={tx.walletId}
-                                paymentLinkId={tx.paymentLinkId}
-                                language={language}
-                              />
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId) ? 'bg-[#F3E8FF] text-[#7E22CE]' : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                                {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1481,53 +1486,53 @@ export function ManagerBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatVND(selectedTransactionDetail.amount)}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatVND(Math.abs(selectedTransactionDetail.amount))}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
                     {language === "vi"
-                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "overdue" ? "Quá hạn" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : String(selectedTransactionDetail.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : selectedTransactionDetail.status)
-                      : selectedTransactionDetail.status}
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" || String(selectedTransactionDetail.status).toLowerCase() === "completed" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "overdue" ? "Quá hạn" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : String(selectedTransactionDetail.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : selectedTransactionDetail.status)
+                      : (String(selectedTransactionDetail.status).toLowerCase() === "completed" ? "Paid" : selectedTransactionDetail.status)}
                   </span>
                 </div>
 
                 <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
-                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.isWallet ? selectedTransactionDetail.referenceId : selectedTransactionDetail.orderCode}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
-                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                    <span className="font-medium text-[#2B182B]">{dayjs(selectedTransactionDetail.createdAt).format('MMM DD, YYYY h:mm A')}</span>
                   </div>
 
                   {selectedTransactionDetail.paidAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
-                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                      <span className="font-medium text-[#059669]">{dayjs(selectedTransactionDetail.paidAt).format('MMM DD, YYYY h:mm A')}</span>
                     </div>
                   )}
 
                   {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
-                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                      <span className="font-medium text-[#E11D48]">{dayjs(selectedTransactionDetail.expiresAt).format('MMM DD, YYYY h:mm A')}</span>
                     </div>
                   )}
 
-                  {selectedTransactionDetail.customerName && (
+                  {(selectedTransactionDetail.customerName || booking?.customerName) && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName || booking?.customerName}</span>
                     </div>
                   )}
 
-                  {selectedTransactionDetail.salonName && (
+                  {(selectedTransactionDetail.salonName || booking?.salonName) && (
                     <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
                       <span className="text-[#9E8497] font-medium">Salon</span>
-                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName || booking?.salonName || "Salon Long Thành Mỹ"}</span>
                     </div>
                   )}
                 </div>
