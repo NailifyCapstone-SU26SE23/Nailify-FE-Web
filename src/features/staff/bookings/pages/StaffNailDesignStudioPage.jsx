@@ -226,8 +226,11 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
         }
 
         const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
+        const rawMode = String(finger?.mode || "").trim();
+        // Use explicit mode from JSON if present, otherwise infer from gradient stops
+        const fingerMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
         defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
-          mode: gradientStops.length >= 2 ? "gradient" : "solid",
+          mode: fingerMode,
           primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
           secondaryColor: String(
             finger?.secondaryColor
@@ -244,8 +247,11 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
     }
 
     const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
+    const rawMode = String(parsed?.mode || "").trim();
+    // Respect explicit mode from JSON
+    const sharedMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
     const sharedColor = normalizeFingerColorConfig({
-      mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
+      mode: sharedMode,
       primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
       secondaryColor: String(
         parsed?.secondaryColor
@@ -2068,6 +2074,7 @@ export function StaffNailDesignStudioPage() {
     rawComponents.forEach((item, index) => {
       const sourceComponent = item?.customerComponent || item?.component;
       const label = String(sourceComponent?.name || "").trim();
+      // Backend stores fingerIndex as 0-based for customerNailComponents (same as how we save)
       const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
 
       if (!label || fingerIndex < 0) {
@@ -2253,6 +2260,7 @@ export function StaffNailDesignStudioPage() {
         return;
       }
 
+      // Backend stores fingerIndex as 0-based (same convention for both variant and customerNail)
       const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
 
       if (fingerIndex === -1) {
@@ -3191,7 +3199,7 @@ export function StaffNailDesignStudioPage() {
                       ))}
                     </div>
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
-                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : `${fingerLabels[activeNailIndex]} nail`}
+                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : (isVi ? fingerLabels[activeNailIndex] : `${fingerLabels[activeNailIndex]} nail`)}
                     </p>
                     {(() => {
                       const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
@@ -3389,7 +3397,7 @@ export function StaffNailDesignStudioPage() {
                   activeFingerPlacements={activeFingerPlacements}
                   activeTemplateName={resolvedActiveTemplate.name}
                   selectedShape={selectedShape}
-                  selectedLength={selectedLength}
+                  selectedNailShapeConfig={selectedShapeMethodConfig}
                   selectedColor={selectedColor}
                   selectedFinish={selectedFinish}
                   selectedDecorations={selectedDecorations}

@@ -851,6 +851,20 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
   };
 }
 
+export async function fetchAllCustomers(pageNumber = 1, pageSize = 1000, searchTerm = "") {
+  const params = { pageNumber, pageSize };
+  if (searchTerm) params.searchTerm = searchTerm;
+  const response = await axiosClient.get("/Users/customers", {
+    headers: getAuthHeaders(),
+    params
+  });
+  
+  if (response?.data?.isSucceeded) {
+    return response.data.data.items || [];
+  }
+  return [];
+}
+
 export async function fetchStaffCustomerDetail(userId) {
   const normalizedUserId = String(userId || "").trim();
 
@@ -1433,8 +1447,9 @@ export function normalizeStaffBooking(booking) {
     ...booking,
     id: booking?.bookingId,
     uiId: formatBookingCode(booking?.bookingId),
+    customerId: booking?.customerId || booking?.userId,
     customerName: booking?.customerName || "Unknown customer",
-    customerPhone: "--",
+    customerPhone: booking?.customerPhone || "--",
     branch: booking?.salonName,
     uiBranch: booking?.salonName,
     staffName: booking?.artistName,

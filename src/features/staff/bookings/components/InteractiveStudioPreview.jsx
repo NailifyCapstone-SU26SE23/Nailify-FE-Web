@@ -346,7 +346,7 @@ function NailShell({
   colorStyle,
   shapeImageUrl,
   width,
-  height, fingerLabels,
+  height, fingerLabel,
   children,
 }) {
   const { framePadding, innerInset } = getShapeInsets(width, shapeImageUrl);
@@ -899,7 +899,7 @@ export function InteractiveStudioPreview({
   selectedPlacementKey,
   activeTemplateName,
   selectedShape,
-  selectedLength,
+  selectedNailShapeConfig,
   selectedColor,
   selectedFinish,
   selectedDecorations,
@@ -1148,7 +1148,7 @@ export function InteractiveStudioPreview({
           <p className="mt-1 text-sm font-bold text-[#ea4f93]">{activeTemplateName}</p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#d2508a]">
             <span>{selectedShape}</span>
-            <span>{selectedLength}</span>
+            <span>{selectedNailShapeConfig?.name || "--"}</span>
             <span>{selectedColor}</span>
             <span>{selectedFinish}</span>
           </div>
@@ -1173,13 +1173,13 @@ export function InteractiveStudioPreview({
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           {[
-            ["Shape", selectedShape],
-            ["Finish", selectedFinish],
-            ["Length", selectedLength],
-            ["Color", selectedColor],
-          ].map(([label, value]) => (
+            ["Shape", "Hình dáng", selectedShape],
+            ["Surface", "Bề mặt", selectedFinish],
+            ["Nail Shape Config", "Cấu hình móng", selectedNailShapeConfig?.name || "--"],
+            ["Color", "Màu sắc", selectedColor],
+          ].map(([label, labelVi, value]) => (
             <div key={label} className="rounded-[12px] bg-white px-3 py-2 text-center">
-              <p className="text-[10px] text-[#a98c9f]">{label}</p>
+              <p className="text-[10px] text-[#a98c9f]">{isVi ? labelVi : label}</p>
               <p className="mt-1 text-xs font-bold text-[#ea4f93]">{value}</p>
             </div>
           ))}
@@ -1371,7 +1371,10 @@ InteractiveStudioPreview.propTypes = {
   selectedPlacementKey: PropTypes.string,
   activeTemplateName: PropTypes.string.isRequired,
   selectedShape: PropTypes.string.isRequired,
-  selectedLength: PropTypes.string.isRequired,
+  selectedNailShapeConfig: PropTypes.shape({
+    shapeMethodConfigId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    name: PropTypes.string,
+  }),
   selectedColor: PropTypes.string.isRequired,
   selectedFinish: PropTypes.string.isRequired,
   selectedDecorations: PropTypes.arrayOf(PropTypes.string).isRequired,
