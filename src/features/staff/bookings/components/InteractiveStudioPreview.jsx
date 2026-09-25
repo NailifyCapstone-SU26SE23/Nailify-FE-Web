@@ -346,7 +346,7 @@ function NailShell({
   colorStyle,
   shapeImageUrl,
   width,
-  height, fingerLabels,
+  height, fingerLabel,
   children,
 }) {
   const { framePadding, innerInset } = getShapeInsets(width, shapeImageUrl);
