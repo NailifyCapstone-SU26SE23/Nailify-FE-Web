@@ -1429,9 +1429,9 @@ export function StaffManagementPage() {
 
 
   function mapApiArtistToUiFormat(apiArtist) {
-    console.log("Mapping API artist:", apiArtist);
-    const fullName =
-      apiArtist.account?.fullName ||
+    console.log("Mapping artist:", apiArtist);
+    const fullName = API
+    apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
         ? `${apiArtist.firstName} ${apiArtist.lastName}`
         : apiArtist.fullName || apiArtist.name || "Staff Artist");

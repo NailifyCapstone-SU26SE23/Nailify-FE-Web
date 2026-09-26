@@ -45,11 +45,7 @@ function normalizeColorFingerIndex(value) {
     return 0;
   }
 
-  // Color data is 1-based: 1=Thumb, 2=Index, 3=Middle, 4=Ring, 5=Pinky
-  if (normalized >= 1 && normalized <= 5) {
-    return normalized - 1;
-  }
-
+  // Color data is 0-based: 0=Thumb, 1=Index, 2=Middle, 3=Ring, 4=Pinky
   return clamp(normalized, 0, 4);
 }
 

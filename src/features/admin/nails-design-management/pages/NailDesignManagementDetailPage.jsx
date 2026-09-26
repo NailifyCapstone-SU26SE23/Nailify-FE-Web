@@ -856,7 +856,7 @@ export function NailDesignManagementDetailPage() {
     });
 
     if (!designNameChanged && !designDescriptionChanged && !categoriesChanged && !imagesChanged && !variantsToUpdate.length) {
-      toast.error("No API-backed changes detected. Other edits on this screen remain local only.");
+      toast.error(language === "vi" ? "Không có thay đổi đáng kể nào được phát hiện" : "No changes detected. Other edits on this screen remain local only.");
       setIsEditing(false);
       return;
     }
