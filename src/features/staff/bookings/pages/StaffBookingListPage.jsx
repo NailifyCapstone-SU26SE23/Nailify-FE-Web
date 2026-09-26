@@ -41,6 +41,7 @@ import {
   getStaffArtistId,
   getTodayDateParam,
   normalizeStaffBooking,
+  fetchAllCustomers,
 } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
@@ -365,6 +366,27 @@ export function StaffBookingListPage() {
     }
   }, []);
 
+  const [customerDataMap, setCustomerDataMap] = useState({});
+
+  useEffect(() => {
+    fetchAllCustomers(1, 1000).then((customers) => {
+      const map = {};
+      customers.forEach(c => {
+        const customerInfo = {
+          avatarUrl: c.avatarUrl,
+          phone: c.phone,
+          email: c.email
+        };
+        if (c.userId) map[c.userId] = customerInfo;
+        const fullName = `${c.lastName} ${c.firstName}`.trim().toLowerCase();
+        const fullName2 = `${c.firstName} ${c.lastName}`.trim().toLowerCase();
+        if (fullName) map[fullName] = customerInfo;
+        if (fullName2) map[fullName2] = customerInfo;
+      });
+      setCustomerDataMap(map);
+    });
+  }, []);
+
   /* STREAMING_CHUNK: Effects */
   useEffect(() => {
     if (!location.state?.flashMessage) return;
@@ -394,9 +416,13 @@ export function StaffBookingListPage() {
     const normalizedQuery = query.trim().toLowerCase();
 
     return activeBookings.filter((booking) => {
+      const cMapInfo = customerDataMap[booking?.customerId] || customerDataMap[(booking?.customerName || "").toLowerCase()] || {};
+      const realPhone = cMapInfo.phone || booking.customerPhone || "";
+      const realEmail = cMapInfo.email || "";
+
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        [booking.id, booking.uiId, booking.customerName, booking.customerPhone, booking.uiBranch, booking.uiService, booking.staffName]
+        [booking.id, booking.uiId, booking.customerName, realPhone, realEmail, booking.uiBranch, booking.uiService, booking.staffName]
           .join(" ").toLowerCase().includes(normalizedQuery);
 
       const matchesStatus = statusFilter === "All" || booking.uiStatus === statusFilter;
@@ -408,7 +434,7 @@ export function StaffBookingListPage() {
 
       return matchesQuery && matchesStatus && matchesSalon && matchesStaff && matchesDate;
     });
-  }, [activeBookings, dateFrom, dateTo, query, salonFilter, staffFilter, statusFilter]);
+  }, [activeBookings, dateFrom, dateTo, query, salonFilter, staffFilter, statusFilter, customerDataMap]);
 
   const sortedBookings = useMemo(() => {
     const sortMultiplier = staffTimeSortDirection === "desc" ? -1 : 1;
@@ -537,16 +563,27 @@ export function StaffBookingListPage() {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Khách hàng" : "Customer"}</span>,
       key: "customer",
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
-      render: (_, booking) => (
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
-            {booking.avatar}
+      render: (_, booking) => {
+        const cMapInfo = customerDataMap[booking?.customerId] || customerDataMap[(booking?.customerName || "").toLowerCase()] || {};
+        const avatarToUse = cMapInfo.avatarUrl || booking.avatarUrl || booking.avatar;
+
+        return (
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
+              {avatarToUse && typeof avatarToUse === 'string' && avatarToUse.startsWith('http') ? (
+                <img src={avatarToUse} alt="avatar" className="h-full w-full object-cover" />
+              ) : (
+                avatarToUse
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-[#432744]">{booking.customerName}</p>
+              {cMapInfo.phone && <p className="text-[11px] text-[#8a7082]">{cMapInfo.phone}</p>}
+              {/* {cMapInfo.email && <p className="text-[11px] text-[#8a7082] truncate">{cMapInfo.email}</p>} */}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="font-bold text-[#432744]">{booking.customerName}</p>
-          </div>
-        </div>
-      )
+        );
+      }
     },
     {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Chi nhánh" : "Salon"}</span>,
@@ -645,12 +682,12 @@ export function StaffBookingListPage() {
                   </span>
                   <Search
                     size={15}
-                    className="pointer-events-none absolute left-3 top-[2.5rem] -translate-y-1/2 text-[#df7baa]"
+                    className="pointer-events-none absolute left-3 top-[2.7rem] -translate-y-1/2 text-[#df7baa]"
                   />
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder={language === "vi" ? "Nhập mã lịch hẹn, tên khách hàng..." : "Search booking ID, customer..."}
+                    placeholder={language === "vi" ? "Tìm lịch hẹn bằng tên hoặc số điện thoại của khách hàng..." : "Search booking by customer name or phone number..."}
                     className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
                   />
                 </label>
@@ -741,39 +778,50 @@ export function StaffBookingListPage() {
                     </div>
 
                     <div className="space-y-3 p-4 lg:hidden">
-                      {paginatedBookings.map((booking) => (
-                        <article
-                          key={booking.id}
-                          className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
-                              {booking.avatar}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                      {paginatedBookings.map((booking) => {
+                        const cMapInfo = customerDataMap[booking?.customerId] || customerDataMap[(booking?.customerName || "").toLowerCase()] || {};
+                        const avatarToUse = cMapInfo.avatarUrl || booking.avatarUrl || booking.avatar;
+
+                        return (
+                          <article
+                            key={booking.id}
+                            className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
+                                {avatarToUse && typeof avatarToUse === 'string' && avatarToUse.startsWith('http') ? (
+                                  <img src={avatarToUse} alt="avatar" className="h-full w-full object-cover" />
+                                ) : (
+                                  avatarToUse
+                                )}
                               </div>
-                              <p className="mt-1 text-[11px] text-[#c694ad]">
-                                {booking.uiBranch} • {booking.staffName}
-                              </p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-col gap-0.5">
+                                  <p className="font-bold text-[#432744]">{booking.customerName}</p>
+                                  {cMapInfo.phone && <p className="text-[11px] text-[#8a7082]">{cMapInfo.phone}</p>}
+                                  {cMapInfo.email && <p className="text-[11px] text-[#8a7082] truncate">{cMapInfo.email}</p>}
+                                </div>
+                                <p className="mt-1 text-[11px] text-[#c694ad]">
+                                  {booking.uiBranch} • {booking.staffName}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
-                            <SmallTag className={getStatusTone(booking.uiStatus)}>{formatDisplay(booking.uiStatus)}</SmallTag>
-                          </div>
-                          <div className="mt-4 flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-[#432744]">
-                                {formatDateLabel(booking.bookingDate)}
-                              </p>
-                              <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">{booking.uiService}</SmallTag>
+                              <SmallTag className={getStatusTone(booking.uiStatus)}>{formatDisplay(booking.uiStatus)}</SmallTag>
                             </div>
-                            <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
-                          </div>
-                        </article>
-                      ))}
+                            <div className="mt-4 flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-[#432744]">
+                                  {formatDateLabel(booking.bookingDate)}
+                                </p>
+                                <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+                              </div>
+                              <ActionDropdown label={language === "vi" ? "Thao tác" : "Actions"} items={getActionItems(booking)} />
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
                   </>
                 )}

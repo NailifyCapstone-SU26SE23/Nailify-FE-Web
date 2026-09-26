@@ -24,7 +24,7 @@ function formatVND(amount) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-  }).format(amount);
+  }).format(amount).replace("₫", "VND");
 }
 
 function formatDuration(duration, language = "en") {
@@ -344,6 +344,13 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
 
 function NailBlueprint({ nail, componentsList }) {
   const [selectedComponentId, setSelectedComponentId] = useState(null);
+  const { language } = useLanguage();
+
+  const getFingerLabel = (fingerIndex) => {
+    return language === "vi"
+      ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][fingerIndex - 1]
+      : ["Thumb", "Index", "Middle", "Ring", "Pinky"][fingerIndex - 1];
+  };
 
   const renderNailPreview = (fingerIndex, fingerName) => {
     const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
@@ -515,7 +522,7 @@ function NailBlueprint({ nail, componentsList }) {
             : "border-[#fce6f3] bg-white/95 text-[#c08aa4] shadow-[0_8px_20px_rgba(236,72,153,0.08)] group-hover:scale-105 group-hover:border-[#ea4f93] group-hover:bg-[#ea4f93] group-hover:text-white"
             }`}
         >
-          {fingerName}
+          {getFingerLabel(fingerIndex)}
         </span>
       </div>
     );

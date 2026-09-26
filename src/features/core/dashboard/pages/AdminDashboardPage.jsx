@@ -600,7 +600,7 @@ export function AdminDashboardPage() {
       </div>
 
       <div
-        className="mx-auto w-full space-y-6 p-8">
+        className="mx-auto w-full space-y-6 py-8">
         {/* Top Metrics Row */}
         <TopMetricsRow metrics={metricCards} />
 

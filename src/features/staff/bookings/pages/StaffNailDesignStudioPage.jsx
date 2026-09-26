@@ -226,8 +226,11 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
         }
 
         const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
+        const rawMode = String(finger?.mode || "").trim();
+        // Use explicit mode from JSON if present, otherwise infer from gradient stops
+        const fingerMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
         defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
-          mode: gradientStops.length >= 2 ? "gradient" : "solid",
+          mode: fingerMode,
           primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
           secondaryColor: String(
             finger?.secondaryColor
@@ -244,8 +247,11 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
     }
 
     const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
+    const rawMode = String(parsed?.mode || "").trim();
+    // Respect explicit mode from JSON
+    const sharedMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
     const sharedColor = normalizeFingerColorConfig({
-      mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
+      mode: sharedMode,
       primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
       secondaryColor: String(
         parsed?.secondaryColor
@@ -2068,6 +2074,7 @@ export function StaffNailDesignStudioPage() {
     rawComponents.forEach((item, index) => {
       const sourceComponent = item?.customerComponent || item?.component;
       const label = String(sourceComponent?.name || "").trim();
+      // Backend stores fingerIndex as 0-based for customerNailComponents (same as how we save)
       const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
 
       if (!label || fingerIndex < 0) {
@@ -2253,6 +2260,7 @@ export function StaffNailDesignStudioPage() {
         return;
       }
 
+      // Backend stores fingerIndex as 0-based (same convention for both variant and customerNail)
       const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
 
       if (fingerIndex === -1) {
@@ -2579,6 +2587,23 @@ export function StaffNailDesignStudioPage() {
 
   const detailRoute = getStaffBookingDetailRoute(bookingId);
   const handleConfirmDesign = async () => {
+    // eslint-disable-next-line no-console
+    console.log("=== CONFIRM DESIGN INFO ===", {
+      isVariantSelectionMode,
+      selectedVariantId,
+      selectedVariant,
+      procedureCustomerNailId,
+      confirmedCustomerNail,
+      selectedShapeOption,
+      selectedSurfaceOption,
+      customerNailName,
+      customerNailCustomColor,
+      componentPlacements,
+      selectedExtrasMap,
+      bookingId,
+      originalDesignContext: location.state?.designContext
+    });
+
     if (!selectedShapeOption || !selectedSurfaceOption || isConfirmingDesign) {
       return;
     }
@@ -2587,8 +2612,8 @@ export function StaffNailDesignStudioPage() {
       setConfirmedCustomerNail(null);
       setIsDesignConfirmed(true);
       setDesignActionError("");
-      setDesignActionSuccess(isVi ? "Variant đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
-      toast.success(isVi ? "Variant đã được xác nhận." : "Variant confirmed successfully.");
+      setDesignActionSuccess(isVi ? "Mẫu móng đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
+      toast.success(isVi ? "Mẫu móng đã được xác nhận." : "Variant confirmed successfully.");
       return;
     }
 
@@ -3191,7 +3216,7 @@ export function StaffNailDesignStudioPage() {
                       ))}
                     </div>
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
-                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : `${fingerLabels[activeNailIndex]} nail`}
+                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : (isVi ? fingerLabels[activeNailIndex] : `${fingerLabels[activeNailIndex]} nail`)}
                     </p>
                     {(() => {
                       const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
@@ -3264,7 +3289,7 @@ export function StaffNailDesignStudioPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedExtrasMap(prev => ({ ...prev, [item.label]: Math.max(0, quantity - 1) }))}
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff4f8] text-[#ea4f93] disabled:opacity-50"
+                                className="ring-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#fff4f8] text-[#ea4f93] disabled:opacity-50"
                                 disabled={quantity === 0}
                               >
                                 -
@@ -3389,7 +3414,7 @@ export function StaffNailDesignStudioPage() {
                   activeFingerPlacements={activeFingerPlacements}
                   activeTemplateName={resolvedActiveTemplate.name}
                   selectedShape={selectedShape}
-                  selectedLength={selectedLength}
+                  selectedNailShapeConfig={selectedShapeMethodConfig}
                   selectedColor={selectedColor}
                   selectedFinish={selectedFinish}
                   selectedDecorations={selectedDecorations}

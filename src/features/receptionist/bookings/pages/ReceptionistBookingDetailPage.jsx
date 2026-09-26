@@ -59,8 +59,18 @@ import {
 } from "../services/receptionistBookingService";
 import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
-import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../manager/transaction-management/services/transactionService";
+import { fetchTransactionsByBookingId, fetchTransactionById, fetchWalletTransactionById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const toVN = (date) => dayjs.utc(date).tz("Asia/Ho_Chi_Minh");
+const formatVNDate = (date) => {
+  const d = toVN(date);
+  if (!d.isValid()) return "N/A";
+  return d.format("DD/MM/YYYY HH:mm");
+};
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 import { PropTypes } from "../../../../shared/utils/propTypes";
@@ -136,51 +146,30 @@ function formatCurrency(value) {
 
 function formatDate(dateString) {
   if (!dateString) return "N/A";
-  const str = String(dateString).trim();
-  if (str.includes("T")) {
-    return new Date(str).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  }
-  const datePart = str.split("T")[0];
-  const [year, month, day] = datePart.split("-").map(Number);
-  if (!year || !month || !day) return "N/A";
-  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const d = toVN(dateString);
+  return d.isValid() ? d.format("DD/MM/YYYY") : "N/A";
 }
 
 function formatTime(startTime, fallbackDateTime) {
+  // Nếu startTime là ISO string đầy đủ (có chứa T và Z hoặc offset)
   const str = String(startTime || "").trim();
   if (str.includes("T")) {
-    return new Date(str).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    const d = toVN(str);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
   }
 
-  const rawTime = str
-    || String(fallbackDateTime || "")
-      .trim()
-      .split("T")[1]
-      ?.replace("Z", "")
-      ?.split(".")[0];
+  // Nếu startTime chỉ là chuỗi time HH:mm:ss, giả định là UTC rồi convert
+  if (fallbackDateTime) {
+    const d = toVN(fallbackDateTime);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
+  }
 
+  // Fallback: parse raw time string (không convert timezone)
+  const rawTime = str || "";
   if (!rawTime) return "N/A";
-  const [hours, minutes = 0, seconds = 0] = rawTime.split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
-    return "N/A";
-  }
-  return new Date(2000, 0, 1, hours, minutes, seconds).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const [hours, minutes = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours)) return "N/A";
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
@@ -944,12 +933,21 @@ export function ReceptionistBookingDetailPage() {
     },
   ]), [isVi, handleViewProcedures, handleViewService]);
 
+  const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
+
   const handleTransactionClick = async (txId) => {
     setIsTransactionModalOpen(true);
     setIsFetchingTransaction(true);
     setSelectedTransactionDetail(null);
     try {
-      const details = await fetchTransactionById(txId);
+      let details;
+      if (isUUID(txId)) {
+        details = await fetchWalletTransactionById(txId);
+        details.isWallet = true;
+      } else {
+        details = await fetchTransactionById(txId);
+        details.isWallet = false;
+      }
       setSelectedTransactionDetail(details);
     } catch (err) {
       toast.error(isVi ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
@@ -1521,27 +1519,27 @@ export function ReceptionistBookingDetailPage() {
                   const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
                   return (
                     <div
-                      key={tx.transactionId}
-                      onClick={() => handleTransactionClick(tx.transactionId)}
+                      key={tx.id || tx.transactionId}
+                      onClick={() => handleTransactionClick(tx.id || tx.transactionId)}
                       className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(Math.abs(tx.amount))}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(tx.amount)}</p>
-                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                             String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                               'bg-[#F3F4F6] text-[#6B7280]'
                             }`}>
                             {language === "vi"
-                              ? (String(tx.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                              ? (String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
                                 : String(tx.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
                                   : String(tx.status).toLowerCase() === 'overdue' ? 'Quá hạn'
                                     : String(tx.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
                                       : String(tx.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : tx.status)
-                              : tx.status}
+                              : (String(tx.status).toLowerCase() === 'completed' ? 'Paid' : tx.status)}
                           </span>
                         </div>
                       </div>
@@ -1550,28 +1548,26 @@ export function ReceptionistBookingDetailPage() {
                         {tx.createdAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
-                            <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                            <span className="font-medium text-[#2B182B]">{formatVNDate(tx.createdAt, language)}</span>
                           </div>
                         )}
                         {tx.paidAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
-                            <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                            <span className="font-medium text-[#059669]">{formatVNDate(tx.paidAt, language)}</span>
                           </div>
                         )}
                         {!tx.paidAt && tx.expiresAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
-                            <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                            <span className="font-medium text-[#E11D48]">{formatVNDate(tx.expiresAt, language)}</span>
                           </div>
                         )}
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
-                          <TransactionBadge
-                            walletId={tx.walletId}
-                            paymentLinkId={tx.paymentLinkId}
-                            language={language}
-                          />
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId) ? 'bg-[#F3E8FF] text-[#7E22CE]' : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                            {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1634,14 +1630,14 @@ export function ReceptionistBookingDetailPage() {
             ) : bookingHistories.length > 0 ? (
               <div className="mt-4 flex flex-col max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {[...bookingHistories].reverse().map((history, idx) => (
-                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
+                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={formatVNDate(history.createdAt, language)}>
                     <div className="w-[100px] shrink-0 pt-0.5 text-right">
                       <span className="text-[11px] font-bold text-[#F59E0B]">
-                        {dayjs(history.createdAt).format("DD/MM/YY")}
+                        {language === "vi" ? toVN(history.createdAt).format("DD/MM/YY") : toVN(history.createdAt).format("MMM D, YY")}
                       </span>
                       <span className="mx-1 text-[#C8B0BF]">|</span>
                       <span className="text-[11px] font-bold text-[#10B981]">
-                        {dayjs(history.createdAt).format("HH:mm")}
+                        {language === "vi" ? toVN(history.createdAt).format("HH:mm") : toVN(history.createdAt).format("h:mm A")}
                       </span>
                     </div>
 
@@ -2445,57 +2441,57 @@ export function ReceptionistBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(selectedTransactionDetail.amount)}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(Math.abs(selectedTransactionDetail.amount))}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
                     {language === "vi"
-                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'Đã thanh toán'
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
                         : String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
                           : String(selectedTransactionDetail.status).toLowerCase() === 'overdue' ? 'Quá hạn'
                             : String(selectedTransactionDetail.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
                               : String(selectedTransactionDetail.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : selectedTransactionDetail.status)
-                      : selectedTransactionDetail.status}
+                      : (String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Paid' : selectedTransactionDetail.status)}
                   </span>
                 </div>
 
                 <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
-                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.isWallet ? selectedTransactionDetail.referenceId : selectedTransactionDetail.orderCode}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
-                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                    <span className="font-medium text-[#2B182B]">{formatVNDate(selectedTransactionDetail.createdAt, language)}</span>
                   </div>
 
                   {selectedTransactionDetail.paidAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
-                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                      <span className="font-medium text-[#059669]">{formatVNDate(selectedTransactionDetail.paidAt, language)}</span>
                     </div>
                   )}
 
-                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                  {/* {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
-                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                      <span className="font-medium text-[#E11D48]">{toVN(selectedTransactionDetail.expiresAt).format('DD/MM/YYYY HH:mm')}</span>
                     </div>
-                  )}
+                  )} */}
 
-                  {selectedTransactionDetail.customerName && (
+                  {(selectedTransactionDetail.customerName || booking?.customerName) && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName || booking?.customerName}</span>
                     </div>
                   )}
 
-                  {selectedTransactionDetail.salonName && (
+                  {(selectedTransactionDetail.salonName || booking?.salonName) && (
                     <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
                       <span className="text-[#9E8497] font-medium">Salon</span>
-                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName || booking?.salonName || "Salon Long Thành Mỹ"}</span>
                     </div>
                   )}
                 </div>
