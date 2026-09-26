@@ -522,7 +522,8 @@ export function StaffBookingConsultationDetail({
     (
       String(data.design.name || "").trim() &&
       String(data.design.name || "").trim() !== "--" &&
-      String(data.design.name || "").trim() !== "Selected design not specified"
+      String(data.design.name || "").trim() !== "Selected design not specified" &&
+      String(data.design.name || "").trim() !== "Chưa chọn mẫu thiết kế"
     ),
   );
   const canViewVariantDetail = Boolean(
@@ -535,8 +536,8 @@ export function StaffBookingConsultationDetail({
   );
   const consultationQuestion = hasSelectedNailDesign
     ? (language === "vi" ? `Khách có muốn tiếp tục với thiết kế móng - ${data.design.name}?` : `Does the customer want to continue with the selected nail design - ${data.design.name}?`)
-    : (language === "vi" ? "Khách có muốn tiếp tục không có thiết kế móng?" : "Does the customer want to continue with no nail design ?");
-  const confirmButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Xác nhận thiết kế hiện tại" : "Confirm Current Design") : (language === "vi" ? "Xác nhận lịch hẹn" : "Confirm booking");
+    : (language === "vi" ? "Khách có muốn tiếp tục với dịch vụ không? - Chưa chọn mẫu thiết kế?" : "Does the customer want to continue with the service? - Selected design not specified?");
+  const confirmButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Xác nhận thiết kế hiện tại" : "Confirm Current Design") : (language === "vi" ? "Xác nhận" : "Confirm");
   const confirmCustomerNailButtonLabel = isCustomerNailConfirmed
     ? (language === "vi" ? "Đã xác nhận thiết kế khách" : "Customer Nail Confirmed")
     : (language === "vi" ? "Xác nhận thiết kế khách" : "Confirm Customer Nail");
@@ -544,8 +545,8 @@ export function StaffBookingConsultationDetail({
     ? (language === "vi" ? "Dịch vụ hoàn thành" : "Service Completed")
     : hasSelectedNailDesign
       ? (language === "vi" ? "Đã xác nhận thiết kế" : "Current Design Confirmed")
-      : (language === "vi" ? "Lịch hẹn đã xác nhận" : "Booking Confirmed");
-  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Chọn thiết kế khác" : "Choose Another Design") : (language === "vi" ? "Chọn thiết kế" : "Choose Design");
+      : (language === "vi" ? "Đã xác nhận" : "Confirmed");
+  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Chọn thiết kế khác" : "Choose Another Design") : (language === "vi" ? "Chọn thiết kế móng" : "Choose Nail Design");
 
   const [customerExpanded, setCustomerExpanded] = useState(true);
   const [bookingExpanded, setBookingExpanded] = useState(true);

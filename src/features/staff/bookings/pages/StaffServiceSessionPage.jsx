@@ -1948,7 +1948,16 @@ export function StaffServiceSessionPage() {
         ),
       );
       await reloadBookingProcedures(sessionBookingItemIds, { showToast: false });
-      toast.success(isVi ? `Quy trình được đổi thành ${normalizedNextStatus}.` : `Procedure marked as ${normalizedNextStatus}.`);
+      let statusText = normalizedNextStatus;
+      if (normalizedNextStatus === 'InProgress') {
+        statusText = isVi ? 'Đang tiến hành' : 'In Progress';
+      } else if (normalizedNextStatus === 'Completed') {
+        statusText = isVi ? 'Hoàn thành' : 'Completed';
+      } else if (normalizedNextStatus === 'Pending') {
+        statusText = isVi ? 'Đang chờ' : 'Pending';
+      }
+
+      toast.success(isVi ? `Quy trình được đổi thành ${statusText}.` : `Procedure marked as ${statusText}.`);
     } catch (error) {
       const message = getErrorMessage(error, isVi ? "Cập nhật trạng thái thất bại." : "Failed to update procedure status.");
       toast.error(message);

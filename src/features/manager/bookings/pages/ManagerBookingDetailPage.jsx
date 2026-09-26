@@ -44,6 +44,16 @@ import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const toVN = (date) => dayjs.utc(date).tz("Asia/Ho_Chi_Minh");
+const formatVNDate = (date) => {
+  const d = toVN(date);
+  if (!d.isValid()) return "N/A";
+  return d.format("DD/MM/YYYY HH:mm");
+};
 import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
@@ -278,10 +288,11 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
 
 function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount);
+  const num = Number(amount);
+  if (Number.isNaN(num)) return "--";
+  return `${new Intl.NumberFormat('vi-VN', {
+    maximumFractionDigits: 0,
+  }).format(num)} VND`;
 }
 
 function formatDuration(totalMinutes, language = "en") {
@@ -1191,19 +1202,19 @@ export function ManagerBookingDetailPage() {
                             {tx.createdAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
-                                <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                                <span className="font-medium text-[#2B182B]">{formatVNDate(tx.createdAt)}</span>
                               </div>
                             )}
                             {tx.paidAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
-                                <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                                <span className="font-medium text-[#059669]">{formatVNDate(tx.paidAt)}</span>
                               </div>
                             )}
                             {!tx.paidAt && tx.expiresAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
-                                <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                                <span className="font-medium text-[#E11D48]">{formatVNDate(tx.expiresAt)}</span>
                               </div>
                             )}
                             <div className="flex justify-between items-center text-[10px]">
@@ -1365,7 +1376,7 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-bold text-[#2B182B]">Customer Check-in QR Code</p>
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Mã QR Check-in Khách Hàng" : "Customer Check-In QR Code"}</p>
             <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
@@ -1505,22 +1516,22 @@ export function ManagerBookingDetailPage() {
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
-                    <span className="font-medium text-[#2B182B]">{dayjs(selectedTransactionDetail.createdAt).format('MMM DD, YYYY h:mm A')}</span>
+                    <span className="font-medium text-[#2B182B]">{formatVNDate(selectedTransactionDetail.createdAt, language)}</span>
                   </div>
 
                   {selectedTransactionDetail.paidAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
-                      <span className="font-medium text-[#059669]">{dayjs(selectedTransactionDetail.paidAt).format('MMM DD, YYYY h:mm A')}</span>
+                      <span className="font-medium text-[#059669]">{formatVNDate(selectedTransactionDetail.paidAt, language)}</span>
                     </div>
                   )}
 
-                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                  {/* {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
-                      <span className="font-medium text-[#E11D48]">{dayjs(selectedTransactionDetail.expiresAt).format('MMM DD, YYYY h:mm A')}</span>
+                      <span className="font-medium text-[#E11D48]">{toVN(selectedTransactionDetail.expiresAt).format('DD/MM/YYYY HH:mm')}</span>
                     </div>
-                  )}
+                  )} */}
 
                   {(selectedTransactionDetail.customerName || booking?.customerName) && (
                     <div className="flex justify-between items-center text-xs">

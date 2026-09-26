@@ -621,8 +621,8 @@ export function ManagerBookingListPage() {
   const { bookings: rawBookings, salonStaffList, isLoading, error, filters, hasLoadedOnce } = useSelector((state) => state.managerBookings);
   const { query, activeFilter, dateFrom: dateFromISO, dateTo: dateToISO, viewMode, currentPage } = filters;
 
-  const dateFrom = useMemo(() => dayjs(dateFromISO), [dateFromISO]);
-  const dateTo = useMemo(() => dayjs(dateToISO), [dateToISO]);
+  const dateFrom = useMemo(() => dateFromISO ? dayjs(dateFromISO) : null, [dateFromISO]);
+  const dateTo = useMemo(() => dateToISO ? dayjs(dateToISO) : null, [dateToISO]);
 
   // Compute UI bookings from raw Redux bookings
   const bookings = useMemo(() => {
@@ -1181,7 +1181,7 @@ export function ManagerBookingListPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans">
+    <section className="flex min-h-[100dvh] flex-col gap-6 font-sans">
       {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-4 lg:p-4 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
@@ -1669,7 +1669,11 @@ export function ManagerBookingListPage() {
                         </div>
 
                         <div className="grid grid-cols-7 gap-1.5">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+                          {language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((dayName) => (
+                            <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
+                              {dayName}
+                            </div>
+                          )) : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
                             <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
                               {dayName}
                             </div>

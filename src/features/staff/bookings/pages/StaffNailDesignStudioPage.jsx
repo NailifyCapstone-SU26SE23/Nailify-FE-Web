@@ -2587,6 +2587,23 @@ export function StaffNailDesignStudioPage() {
 
   const detailRoute = getStaffBookingDetailRoute(bookingId);
   const handleConfirmDesign = async () => {
+    // eslint-disable-next-line no-console
+    console.log("=== CONFIRM DESIGN INFO ===", {
+      isVariantSelectionMode,
+      selectedVariantId,
+      selectedVariant,
+      procedureCustomerNailId,
+      confirmedCustomerNail,
+      selectedShapeOption,
+      selectedSurfaceOption,
+      customerNailName,
+      customerNailCustomColor,
+      componentPlacements,
+      selectedExtrasMap,
+      bookingId,
+      originalDesignContext: location.state?.designContext
+    });
+
     if (!selectedShapeOption || !selectedSurfaceOption || isConfirmingDesign) {
       return;
     }
@@ -2595,8 +2612,8 @@ export function StaffNailDesignStudioPage() {
       setConfirmedCustomerNail(null);
       setIsDesignConfirmed(true);
       setDesignActionError("");
-      setDesignActionSuccess(isVi ? "Variant đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
-      toast.success(isVi ? "Variant đã được xác nhận." : "Variant confirmed successfully.");
+      setDesignActionSuccess(isVi ? "Mẫu móng đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
+      toast.success(isVi ? "Mẫu móng đã được xác nhận." : "Variant confirmed successfully.");
       return;
     }
 
@@ -3272,7 +3289,7 @@ export function StaffNailDesignStudioPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedExtrasMap(prev => ({ ...prev, [item.label]: Math.max(0, quantity - 1) }))}
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff4f8] text-[#ea4f93] disabled:opacity-50"
+                                className="ring-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#fff4f8] text-[#ea4f93] disabled:opacity-50"
                                 disabled={quantity === 0}
                               >
                                 -
