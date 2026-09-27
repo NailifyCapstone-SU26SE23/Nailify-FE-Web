@@ -1,4 +1,4 @@
-import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin, Checkbox } from "antd";
 import {
   AlarmClock,
   Armchair,
@@ -33,7 +33,7 @@ import {
   UserRound,
   X,
   XCircle,
-  Zap, Hourglass
+  Zap, Hourglass, Trash2, Edit2
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -41,6 +41,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
@@ -57,6 +58,7 @@ import {
   getBookingHistories,
   getUserById,
   fetchBookingRating,
+  updateReceptionistBooking,
 } from "../services/receptionistBookingService";
 import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
@@ -284,7 +286,7 @@ function getServiceAction(status, isVi) {
   return isVi ? "Xem" : "View";
 }
 
-function getServiceActionItems(row, handleViewService, handleViewProcedures, isVi) {
+function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi) {
   return [
     {
       key: `view-${row.id}`,
@@ -298,6 +300,19 @@ function getServiceActionItems(row, handleViewService, handleViewProcedures, isV
       icon: ClipboardList,
       className: "text-[#7c63d8]",
       onSelect: () => handleViewProcedures(row),
+    },
+    {
+      key: `edit-quantity-${row.id}`,
+      label: isVi ? "Cập nhật số lượng" : "Update Quantity",
+      icon: Edit2,
+      onSelect: () => handleEnableEditQuantity(row),
+    },
+    {
+      key: `delete-${row.id}`,
+      label: isVi ? "Xóa dịch vụ" : "Delete Service",
+      icon: Trash2,
+      className: "text-red-500",
+      onSelect: () => handleDeleteService(row),
     },
   ];
 }
@@ -435,7 +450,7 @@ function getReceptionistActionAvailability(status) {
   };
 }
 
-function DetailCard({ title, subtitle, badge, children, className = "" }) {
+function DetailCard({ title, subtitle, badge, children, className = "", headerAction }) {
   return (
     <section
       className={`rounded-[26px] border border-[#F3E2EC] bg-white/95 backdrop-blur-md p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.07)] transition-all ${className}`}
@@ -453,6 +468,11 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
             </Tag>
           </div>
         ) : null}
+        {headerAction && (
+          <div className="flex items-center">
+            {headerAction}
+          </div>
+        )}
       </div>
       <div className="mt-5">{children}</div>
     </section>
@@ -495,6 +515,11 @@ export function ReceptionistBookingDetailPage() {
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [isDeletingService, setIsDeletingService] = useState(false);
+  const [itemsToDelete, setItemsToDelete] = useState(null);
+  const [editingQuantityId, setEditingQuantityId] = useState(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
 
   const [transactions, setTransactions] = useState([]);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -663,17 +688,19 @@ export function ReceptionistBookingDetailPage() {
       const uDur = Number(item.duration) || 0;
       const key = `${sName}_${vName}_${uPrice}_${uDur}`;
 
+      const itemQty = item.quantity || 1;
+
       if (!itemMap.has(key)) {
         const groupObj = {
           id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
           key,
           serviceName: sName,
           nailVariantName: vName,
-          count: 1,
+          count: itemQty,
           unitDuration: uDur,
-          totalDuration: uDur,
+          totalDuration: uDur * itemQty,
           unitPrice: uPrice,
-          totalPrice: uPrice,
+          totalPrice: uPrice * itemQty,
           artist: booking?.artistName,
           sourceItem: item,
         };
@@ -681,9 +708,9 @@ export function ReceptionistBookingDetailPage() {
         grouped.push(groupObj);
       } else {
         const existing = itemMap.get(key);
-        existing.count += 1;
-        existing.totalDuration += uDur;
-        existing.totalPrice += uPrice;
+        existing.count += itemQty;
+        existing.totalDuration += (uDur * itemQty);
+        existing.totalPrice += (uPrice * itemQty);
       }
     });
 
@@ -702,6 +729,8 @@ export function ReceptionistBookingDetailPage() {
         serviceType: group.nailVariantName,
         artist: group.artist,
         duration: group.totalDuration ? formatDurationMinutes(group.totalDuration, language) : "--",
+        unitPrice: group.unitPrice ? formatCurrency(group.unitPrice) : "--",
+        totalPrice: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
         actionLabel: getServiceAction(status, language === "vi"),
@@ -729,12 +758,14 @@ export function ReceptionistBookingDetailPage() {
       ? isCheckoutSubmitting
       : !isManualCheckInAllowed || isManualCheckInSubmitting;
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (showToast = true) => {
     if (!bookingId) {
       return;
     }
 
-    setIsLoading(true);
+    if (!booking) {
+      setIsLoading(true);
+    }
     setError("");
 
     try {
@@ -764,7 +795,9 @@ export function ReceptionistBookingDetailPage() {
         console.warn("Failed to load transactions:", err);
       }
 
-      toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
+      if (showToast) {
+        toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
+      }
       await loadBookingHistories();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to refresh booking detail.";
@@ -871,6 +904,104 @@ export function ReceptionistBookingDetailPage() {
     }
   }, [loadBookingHistories]);
 
+  const doDeleteServices = async (itemsToDelete) => {
+    if (!booking) return;
+    
+    setIsDeletingService(true);
+    try {
+      const remainingItems = booking.bookingItems.filter(
+        item => !itemsToDelete.some(delItem => {
+          const s1 = String(delItem.sourceItem?.serviceId || "");
+          const s2 = String(item.serviceId || "");
+          const n1 = String(delItem.sourceItem?.nailVariantId || "");
+          const n2 = String(item.nailVariantId || "");
+          return s1 === s2 && n1 === n2;
+        })
+      ).map(item => ({
+        nailVariantId: item.nailVariantId,
+        serviceId: item.serviceId,
+        quantity: item.quantity || 1,
+      }));
+
+      // Assuming booking has selectedPromotionIds and other fields needed for PUT
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: remainingItems,
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã xóa dịch vụ thành công." : "Services deleted successfully.");
+      setSelectedServiceIds([]);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete services");
+    } finally {
+      setIsDeletingService(false);
+    }
+  };
+
+  const doUpdateServiceQuantity = async (row, newQuantity) => {
+    if (!booking || newQuantity < 1) return;
+    
+    setIsDeletingService(true);
+    try {
+      const groupedItems = new Map();
+      
+      booking.bookingItems.forEach(item => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+        
+        const isMatch = sId === String(row.sourceItem?.serviceId || "") && nId === String(row.sourceItem?.nailVariantId || "");
+        
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            quantity: isMatch ? newQuantity : (item.quantity || 1)
+          });
+        } else if (!isMatch) {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+      
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: Array.from(groupedItems.values()),
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã cập nhật số lượng thành công." : "Quantity updated successfully.");
+      setEditingQuantityId(null);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update quantity");
+    } finally {
+      setIsDeletingService(false);
+    }
+  };
+
+  const handleEnableEditQuantity = useCallback((row) => {
+    setEditingQuantityId(row.id);
+    setTempQuantity(row.count);
+  }, []);
+
+  const handleDeleteService = useCallback((row) => {
+    setItemsToDelete([row]);
+  }, []);
+
+  const handleMultiDeleteServices = () => {
+    if (selectedServiceIds.length === 0) return;
+    const items = serviceRows.filter(row => selectedServiceIds.includes(row.id));
+    setItemsToDelete(items);
+  };
+
   const serviceColumns = useMemo(() => ([
     {
       title: isVi ? "Thời gian" : "Time",
@@ -919,23 +1050,103 @@ export function ReceptionistBookingDetailPage() {
       render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
     },
     {
-      title: isVi ? "Giá tiền" : "Price",
-      dataIndex: "price",
-      key: "price",
+      title: isVi ? "Đơn giá" : "Unit Price",
+      dataIndex: "unitPrice",
+      key: "unitPrice",
+      render: (value) => <span className="text-xs font-semibold text-[#047857]">{value}</span>,
+    },
+    {
+      title: isVi ? "Số lượng" : "Quantity",
+      key: "quantity",
+      render: (_, row) => (
+        editingQuantityId === row.id ? (
+          <div className="flex items-center gap-1.5 bg-[#FFF0F6] border border-[#F3D7E4] px-1.5 py-1 rounded-full w-fit">
+            <button 
+              type="button"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+              disabled={tempQuantity <= 1 || isDeletingService}
+              onClick={() => setTempQuantity(prev => prev - 1)}
+            >
+              -
+            </button>
+            <span className="text-xs font-bold text-[#2B182B] w-4 text-center">{tempQuantity}</span>
+            <button 
+              type="button"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+              disabled={isDeletingService}
+              onClick={() => setTempQuantity(prev => prev + 1)}
+            >
+              +
+            </button>
+            <div className="flex items-center gap-1 ml-0.5 border-l border-pink-200 pl-1.5">
+              <button
+                type="button"
+                className="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                disabled={isDeletingService || tempQuantity === row.count}
+                onClick={() => doUpdateServiceQuantity(row, tempQuantity)}
+              >
+                <Check size={12} strokeWidth={3} />
+              </button>
+              <button
+                type="button"
+                className="w-5 h-5 flex items-center justify-center rounded-full bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                disabled={isDeletingService}
+                onClick={() => setEditingQuantityId(null)}
+              >
+                <X size={12} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs font-bold text-[#2B182B] pl-2">{row.count}</span>
+        )
+      ),
+    },
+    {
+      title: isVi ? "Thành tiền" : "Total Price",
+      dataIndex: "totalPrice",
+      key: "totalPrice",
       render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
     },
     {
-      title: isVi ? "Thao tác" : "Action",
+      title: (
+        <div className="flex items-center gap-2">
+          {isVi ? "Thao tác" : "Action"}
+          <Checkbox 
+            checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
+            indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(serviceRows.map(r => r.id));
+              } else {
+                setSelectedServiceIds([]);
+              }
+            }}
+          />
+        </div>
+      ),
       key: "action",
       render: (_, row) => (
-        <ActionDropdown
-          items={getServiceActionItems(row, handleViewService, handleViewProcedures, isVi)}
-          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
-          label={isVi ? "Thao tác" : "Actions"}
-        />
+        <div className="flex items-center gap-2">
+          <ActionDropdown
+            items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi)}
+            buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
+            label={isVi ? "Thao tác" : "Actions"}
+          />
+          <Checkbox 
+            checked={selectedServiceIds.includes(row.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(prev => [...prev, row.id]);
+              } else {
+                setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
+              }
+            }}
+          />
+        </div>
       ),
     },
-  ]), [isVi, handleViewProcedures, handleViewService]);
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows]);
 
   const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
 
@@ -1340,6 +1551,21 @@ export function ReceptionistBookingDetailPage() {
             title={t("receptionist.bookings.title") || "Appointment & Service Details"}
             subtitle={t("receptionist.bookings.desc") || "Scheduled treatments & selected nail designs"}
             badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
+            headerAction={
+              selectedServiceIds.length > 0 && (
+                <Button 
+                  danger 
+                  type="primary" 
+                  size="small" 
+                  icon={<Trash2 size={14} />} 
+                  onClick={handleMultiDeleteServices}
+                  loading={isDeletingService}
+                  className="rounded-full shadow-2xs font-bold"
+                >
+                  {isVi ? `Xóa (${selectedServiceIds.length})` : `Delete (${selectedServiceIds.length})`}
+                </Button>
+              )
+            }
           >
             <Table
               rowKey="id"
@@ -2509,6 +2735,24 @@ export function ReceptionistBookingDetailPage() {
           </div>
         </div>
       </Modal>
+
+      <ActionConfirmModal
+        open={itemsToDelete !== null}
+        intent="danger"
+        title={isVi ? (itemsToDelete?.length > 1 ? "Xác nhận xóa nhiều" : "Xác nhận xóa") : (itemsToDelete?.length > 1 ? "Confirm multi-delete" : "Confirm delete")}
+        description={isVi 
+          ? (itemsToDelete?.length > 1 ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn?` : `Bạn có chắc chắn muốn xóa dịch vụ "${itemsToDelete?.[0]?.service}" không?`)
+          : (itemsToDelete?.length > 1 ? `Are you sure you want to delete ${itemsToDelete.length} selected services?` : `Are you sure you want to delete "${itemsToDelete?.[0]?.service}"?`)
+        }
+        confirmText={isVi ? "Xóa" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        onConfirm={async () => {
+          await doDeleteServices(itemsToDelete);
+          setItemsToDelete(null);
+        }}
+        onCancel={() => setItemsToDelete(null)}
+        loading={isDeletingService}
+      />
 
     </section>
   );

@@ -131,6 +131,8 @@ export const notificationSignalRService = {
           else if (arg1 === "BookingRescheduleAccepted") title = "Yêu cầu đổi lịch được đồng ý";
           else if (arg1 === "DelayETA") title = "Cập nhật thời gian chờ";
           else if (arg1 === "NEW_CUSTOM_NAIL_REQUEST") title = "Yêu cầu mẫu móng custom mới";
+          else if (arg1 === "SecondaryArtistTaskAssignedNotification") title = "Phân công thợ phụ hỗ trợ";
+          else if (arg1 === "BookingUpdatedWithSecondaryArtistNotification") title = "Thông báo thay đổi dịch vụ lố giờ";
 
           onNotificationReceived && onNotificationReceived({
             title,
