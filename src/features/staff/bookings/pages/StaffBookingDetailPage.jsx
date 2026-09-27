@@ -9,7 +9,8 @@ import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import { StaffBookingConsultationDetail } from "../components/StaffBookingConsultationDetail";
-import { ExtraServiceModal } from "../components/ExtraServiceModal";
+import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { OnsiteAddonConflictModal } from "../../../receptionist/bookings/components/OnsiteAddonConflictModal";
 import { ServiceProceduresViewerModal } from "../../../../shared/components/common/ServiceProceduresViewerModal";
 import {
   BOOKING_ROLE_CONFIG,
@@ -563,8 +564,12 @@ export function StaffBookingDetailPage() {
   const [staffBookingCustomerNailDetailMap, setStaffBookingCustomerNailDetailMap] = useState({});
   const [isStaffLoading, setIsStaffLoading] = useState(true);
   const [staffLoadError, setStaffLoadError] = useState("");
+  const [reloadTrigger, setReloadTrigger] = useState(0);
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
   const [showUpdateBookingModal, setShowUpdateBookingModal] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
   const [serviceCatalog, setServiceCatalog] = useState([]);
   const [serviceCatalogMeta, setServiceCatalogMeta] = useState({
     currentPage: 1,
@@ -660,7 +665,7 @@ export function StaffBookingDetailPage() {
 
     void loadBooking();
     return () => { isMounted = false; };
-  }, [bookingId, language, isVi]);
+  }, [bookingId, language, isVi, reloadTrigger]);
 
   useEffect(() => {
     const customerId = String(staffBookingDetail?.customerId || "").trim();
@@ -937,57 +942,6 @@ export function StaffBookingDetailPage() {
     setShowUpdateBookingModal(false);
   };
 
-  const handleSearchExtraServices = (event) => {
-    event.preventDefault();
-    setServiceCatalogPage(1);
-    setSelectedExtraServiceQuantities({});
-    setServiceSearchKeyword(serviceSearchInput.trim());
-  };
-
-  const handleAddExtraService = async () => {
-    const normalizedBookingId = String(bookingId || "").trim();
-    const normalizedSelectedServices = Object.entries(selectedExtraServiceQuantities).filter(([, quantity]) => (
-      Number(quantity || 0) > 0
-    ));
-
-    if (!normalizedBookingId || normalizedSelectedServices.length === 0 || !staffBookingDetail || isSavingExtraService) return;
-
-    setIsSavingExtraService(true);
-    try {
-      const bookingItems = Array.isArray(staffBookingDetail.bookingItems) ? staffBookingDetail.bookingItems : [];
-      const payloadBookingItems = buildStaffBookingItemsForUpdate(bookingItems, selectedExtraServiceQuantities);
-
-      const updatedBooking = await updateStaffBooking(normalizedBookingId, {
-        bookingDate: staffBookingDetail.bookingDate,
-        startTime: staffBookingDetail.startTime,
-        nailArtistId: toNullableBookingUuid(staffBookingDetail.nailArtistId || staffBookingDetail.artistId),
-        bookingItems: payloadBookingItems,
-      });
-
-      setStaffBookingDetail(updatedBooking);
-      setShowUpdateBookingModal(false);
-      setSelectedExtraServiceQuantities({});
-
-      const selectedServiceNames = normalizedSelectedServices
-        .map(([serviceId, quantity]) => {
-          const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
-          if (!matchedService?.name) return "";
-          return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
-        }).filter(Boolean);
-
-      const message = selectedServiceNames.length
-        ? (isVi ? `Đã thêm ${selectedServiceNames.join(", ")} vào lịch hẹn.` : `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`)
-        : (isVi ? "Dịch vụ thêm đã được đưa vào lịch hẹn." : "Extra services have been added to this booking.");
-
-      setFlashMessage(message);
-      toast.success(message);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : (isVi ? "Cập nhật dịch vụ thất bại." : "Failed to update booking services.");
-      toast.error(message);
-    } finally {
-      setIsSavingExtraService(false);
-    }
-  };
 
   /* STREAMING_CHUNK: Rendering UI */
   if (isStaffLoading) {
@@ -1166,42 +1120,38 @@ export function StaffBookingDetailPage() {
         onStaffNoteChange={handleStaffNoteChange}
         onStartServiceSession={() => void handleOpenServiceSession()}
       />
-      <ExtraServiceModal
+      <OnsiteAddonModal
         open={showUpdateBookingModal}
-        services={serviceCatalog}
-        selectedServiceQuantities={selectedExtraServiceQuantities}
-        searchValue={serviceSearchInput}
-        isLoading={isLoadingServiceCatalog}
-        isSaving={isSavingExtraService}
-        meta={serviceCatalogMeta}
         onClose={handleCloseUpdateBooking}
-        onSearchChange={(event) => setServiceSearchInput(event.target.value)}
-        onSearchSubmit={handleSearchExtraServices}
-        onDecreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => {
-            const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
-            if (nextQuantity <= 0) {
-              const nextState = { ...current };
-              delete nextState[serviceId];
-              return nextState;
-            }
-            return { ...current, [serviceId]: nextQuantity };
-          })
-        }
-        onIncreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => ({
-            ...current,
-            [serviceId]: Number(current?.[serviceId] || 0) + 1,
-          }))
-        }
-        onPageChange={(page) => {
-          if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) return;
-          setSelectedExtraServiceQuantities({});
-          setServiceCatalogPage(page);
+        bookingId={bookingId}
+        booking={staffBookingDetail}
+        onSuccess={() => {
+          handleCloseUpdateBooking();
+          setReloadTrigger(prev => prev + 1);
         }}
-        onConfirm={handleAddExtraService}
-        title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Add Extra Services"}
-        description={isVi ? "Chọn các dịch vụ làm thêm vào lịch hẹn trước khi bắt đầu phiên dịch vụ." : "Select extra services to add into the current booking before starting the service session."}
+        onConflict={(data, items) => {
+          setConflictData(data);
+          setAddonItemsForConflict(items);
+          setIsOnsiteConflictModalOpen(true);
+        }}
+      />
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={bookingId}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          handleCloseUpdateBooking();
+          setReloadTrigger(prev => prev + 1);
+        }}
       />
       <ServiceProceduresViewerModal
         isOpen={Boolean(selectedProcedureService)}

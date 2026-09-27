@@ -4926,7 +4926,7 @@ export const translations = {
         scannerTitle: "Quét mã QR",
         scannerStarting: "Đang khởi động camera...",
         scannerError: "Không thể truy cập camera.",
-        checkoutBtn: "Check-out",
+        checkoutBtn: "Thanh toán",
         checkinBtn: "Nhận khách",
         assignArtistBtn: "Phân công thợ",
         bookingQueueNote: "Hàng chờ đặt lịch",
@@ -5038,7 +5038,7 @@ export const translations = {
         updateSuccess: "Đã cập nhật thông tin thành công!"
       },
       payments: {
-        checkoutTitle: "Check-out",
+        checkoutTitle: "Thanh toán",
         checkoutDesc: "Hoàn tất thanh toán và ghi nhận hóa đơn dịch vụ.",
         summaryTitle: "Tóm tắt dịch vụ",
         customerInfo: "Thông tin khách",

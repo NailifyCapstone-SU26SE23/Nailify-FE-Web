@@ -44,6 +44,7 @@ import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown"
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { OnsiteAddonConflictModal } from "../components/OnsiteAddonConflictModal";
 import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
 import { AssignChairModal } from "../components/AssignChairModal";
 import {
@@ -477,6 +478,9 @@ export function ReceptionistBookingDetailPage() {
   const [isMoveScheduleOpen, setIsMoveScheduleOpen] = useState(false);
   const [isAssignChairModalOpen, setIsAssignChairModalOpen] = useState(false);
   const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
   const [selectedServiceRow, setSelectedServiceRow] = useState(null);
   const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
   const [bookingProcedures, setBookingProcedures] = useState([]);
@@ -2379,6 +2383,28 @@ export function ReceptionistBookingDetailPage() {
         onSuccess={() => {
           handleRefresh();
           setIsOnsiteAddonModalOpen(false);
+        }}
+        onConflict={(data, items) => {
+          setConflictData(data);
+          setAddonItemsForConflict(items);
+          setIsOnsiteConflictModalOpen(true);
+        }}
+      />
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={booking?.bookingId || bookingId || ""}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          handleRefresh();
         }}
       />
       <ProposeRescheduleModal

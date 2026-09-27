@@ -33,6 +33,8 @@ import {
   updateStaffBooking,
 } from "../services/staffBookingService";
 import { InteractiveStudioPreview } from "../components/InteractiveStudioPreview";
+import { OnsiteAddonConflictModal } from "../../../receptionist/bookings/components/OnsiteAddonConflictModal";
+import { simulateOnsiteAddon, confirmOnsiteAddon } from "../../../manager/bookings/services/bookingProceduresService";
 import {
   getStaffBookingDetailRoute,
   ROUTES,
@@ -1359,6 +1361,9 @@ export function StaffNailDesignStudioPage() {
   const [confirmedCustomerNail, setConfirmedCustomerNail] = useState(null);
   const [isConfirmingDesign, setIsConfirmingDesign] = useState(false);
   const [isUpdatingBookingDesign, setIsUpdatingBookingDesign] = useState(false);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
   const [designActionError, setDesignActionError] = useState("");
   const [designActionSuccess, setDesignActionSuccess] = useState("");
   const [customerNailNameDraft, setCustomerNailNameDraft] = useState("");
@@ -2756,18 +2761,24 @@ export function StaffNailDesignStudioPage() {
         ...mergedServiceItemsMap.values(),
       ];
 
-      const updatedBooking = await updateStaffBooking(resolvedBookingApiId, {
-        bookingDate: nextBookingDetail.bookingDate,
-        startTime: nextBookingDetail.startTime,
-        nailArtistId: toNullableUuid(
-          nextBookingDetail.nailArtistId
-          || nextBookingDetail.artistId
-          || loadAuthSession()?.user?.staffId
-          || loadAuthSession()?.staffId,
-        ),
-        bookingItems: payloadBookingItems,
+      const simulationRes = await simulateOnsiteAddon({
+        bookingId: resolvedBookingApiId,
+        addonItems: payloadBookingItems,
       });
 
+      if (simulationRes?.hasConflict) {
+        setConflictData(simulationRes);
+        setAddonItemsForConflict(payloadBookingItems);
+        setIsOnsiteConflictModalOpen(true);
+        return; // wait for user to resolve conflict in modal
+      }
+
+      await confirmOnsiteAddon({
+        bookingId: resolvedBookingApiId,
+        addonItems: payloadBookingItems,
+      });
+
+      const updatedBooking = await fetchStaffBookingDetail(resolvedBookingApiId);
       setBookingDetail(updatedBooking);
       setDesignActionSuccess(
         isVariantSelectionMode
@@ -3623,6 +3634,30 @@ export function StaffNailDesignStudioPage() {
           </div>
         </div>
       </Modal>
+
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onCancel={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        conflictData={conflictData}
+        bookingId={resolvedBookingApiId}
+        addonItems={addonItemsForConflict}
+        onSuccess={async () => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          try {
+            const updatedBooking = await fetchStaffBookingDetail(resolvedBookingApiId);
+            setBookingDetail(updatedBooking);
+            toast.success(isVi ? "Cập nhật lịch thành công sau khi xử lý xung đột!" : "Booking updated successfully after resolving conflict!");
+          } catch (error) {
+            console.error("Failed to reload booking after conflict resolution", error);
+          }
+        }}
+      />
     </section>
   );
 }
