@@ -316,8 +316,6 @@ function getQrCodeSrc(qrCode) {
   return trimmed;
 }
 
-// Module-level set to track which booking IDs have already shown the warning.
-// Using module-level variable so it survives React StrictMode's double-mount in dev.
 const _shownRefundWarningForBookings = new Set();
 
 export function ManagerBookingDetailPage() {
@@ -1219,7 +1217,12 @@ export function ManagerBookingDetailPage() {
                             )}
                             <div className="flex justify-between items-center text-[10px]">
                               <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
-                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId) ? 'bg-[#F3E8FF] text-[#7E22CE]' : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold 
+                                ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId)
+                                  ? 'bg-[#F3E8FF] text-[#7E22CE]'
+                                  : tx.paymentMethod === 'Tiền mặt'
+                                    ? 'bg-[#FFF3F3] text-[#C2410C]'
+                                    : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
                                 {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
                               </span>
                             </div>

@@ -1068,33 +1068,7 @@ export function ReceptionistBookingDetailPage() {
         disabled: !actionAvailability.canAddService,
         onClick: () => setIsOnsiteAddonModalOpen(true),
       },
-      // {
-      //   label: t("receptionist.bookings.completeBooking") || "Complete Booking",
-      //   subtitle: t("receptionist.bookings.finalizeSession") || "Finalize session",
-      //   icon: CheckCircle2,
-      //   cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-      //   iconTone: "bg-[#ddd2ff] text-[#8260df]",
-      //   disabled: !actionAvailability.canCompleteBooking,
-      //   onClick: () => handleMockAction("Complete Booking"),
-      // },
-      // {
-      //   label: t("receptionist.bookings.cancelBooking") || "Cancel Booking",
-      //   subtitle: t("receptionist.bookings.voidAppointment") || "Void appointment",
-      //   icon: XCircle,
-      //   cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-      //   iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-      //   disabled: !actionAvailability.canCancelBooking,
-      //   onClick: () => handleMockAction("Cancel Booking"),
-      // },
-      // {
-      //   label: t("receptionist.bookings.sendInvoice") || "Send Invoice",
-      //   subtitle: t("receptionist.bookings.emailToClient") || "Email to client",
-      //   icon: ReceiptText,
-      //   cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-      //   iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-      //   disabled: !actionAvailability.canSendInvoice,
-      //   onClick: () => handleMockAction("Send Invoice"),
-      // },
+
     ],
     [
       actionAvailability,
@@ -1565,7 +1539,12 @@ export function ReceptionistBookingDetailPage() {
                         )}
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId) ? 'bg-[#F3E8FF] text-[#7E22CE]' : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold 
+                            ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId)
+                              ? 'bg-[#F3E8FF] text-[#7E22CE]'
+                              : tx.paymentMethod === 'Tiền mặt'
+                                ? 'bg-[#FFF3F3] text-[#C2410C]'
+                                : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
                             {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
                           </span>
                         </div>
