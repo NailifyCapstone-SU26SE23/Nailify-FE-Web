@@ -8,6 +8,7 @@ import {
   createAdminNailDesign,
   fetchAdminCategoryTypes,
 } from "../services/nailDesignManagementService";
+import toast from "react-hot-toast";
 
 function SectionCard({ title, subtitle, icon, children }) {
   return (
@@ -219,9 +220,7 @@ export function NailDesignManagementCreatePage() {
             <h2 className="text-[1.7rem] font-bold text-[#432744]">
               {t("adminNailsDesignManagement.createNewNailDesign")}
             </h2>
-            <p className="mt-1 text-sm text-[#c694ad]">
-              Payload: Name, Description, CategoryIds, image
-            </p>
+
           </div>
           <button
             type="button"
@@ -243,7 +242,7 @@ export function NailDesignManagementCreatePage() {
 
       <SectionCard
         title={t("adminNailsDesignManagement.designInformation")}
-        subtitle="Create the design first. Add variants from the design detail page after it exists."
+        subtitle={language === "vi" ? "Tạo thiết kế móng trước. Thêm các biến thể từ trang chi tiết thiết kế sau khi nó tồn tại." : "Create the design first. Add variants from the design detail page after it exists."}
         icon={<Sparkles size={18} />}
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">

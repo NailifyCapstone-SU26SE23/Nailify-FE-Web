@@ -523,7 +523,20 @@ export function ManagerBookingDetailPage() {
       // Fetch transactions for this booking
       try {
         const txs = await fetchTransactionsByBookingId(bookingId);
-        setTransactions(txs);
+        const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+          if (tx.paymentMethod === 'Ví' && tx.id) {
+            try {
+              const walletData = await fetchWalletTransactionById(tx.id);
+              if (walletData?.type) {
+                return { ...tx, walletType: walletData.type };
+              }
+            } catch (e) {
+              console.warn("Failed to fetch wallet transaction detail:", e);
+            }
+          }
+          return tx;
+        }));
+        setTransactions(enhancedTxs);
       } catch (err) {
         console.warn("Failed to load transactions:", err);
       }
@@ -801,10 +814,10 @@ export function ManagerBookingDetailPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
-                    <Calendar size={14} /> {t("manager.bookings.customerRequestedReschedule") || "Customer Requested Reschedule"}
+                    <Calendar size={14} /> {language === "vi" ? "Yêu cầu dời lịch" : "Customer Requested Reschedule"}
                   </span>
                   <p className="text-sm font-bold text-[#1E1B4B] mt-1">
-                    {t("manager.bookings.bookingDate") || "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {t("manager.bookings.time") || "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
+                    {language === "vi" ? "Ngày" : "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {language === "vi" ? "Thời gian" : "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
                   </p>
                   {booking.rescheduleReason && (
                     <p className="text-xs text-[#4338CA] italic mt-0.5">"{booking.rescheduleReason}"</p>
@@ -817,7 +830,7 @@ export function ManagerBookingDetailPage() {
                     disabled={isRefreshing}
                     className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
                   >
-                    <CheckCircle2 size={15} /> {t("manager.breaks.approve") || "Accept Request"}
+                    <CheckCircle2 size={15} /> {language === "vi" ? "Chấp nhận" : "Accept Request"}
                   </button>
                   <button
                     type="button"
@@ -915,7 +928,7 @@ export function ManagerBookingDetailPage() {
             </div>
 
             {/* Customer Notes & Special Requests */}
-            <div className="mt-5 pt-4 border-t border-[#F3E2EC]">
+            {/* <div className="mt-5 pt-4 border-t border-[#F3E2EC]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
                   <NotebookPen size={13} className="text-[#E84F93]" />
@@ -932,7 +945,7 @@ export function ManagerBookingDetailPage() {
               <div className="rounded-2xl border-l-4 border-l-[#E84F93] border-y border-r border-[#F3D6E5]/60 bg-gradient-to-r from-[#FFF5FA]/70 to-[#FFF0F5]/30 p-4 text-xs text-[#2B182B] leading-relaxed italic shadow-2xs">
                 "{booking?.notes || language === "vi" ? "Không có ghi chú" : "No notes"}"
               </div>
-            </div>
+            </div> */}
 
             {/* Check-in Photo */}
             {(booking?.checkInImageUrl || booking?.checkOutImagesUrl) && (
@@ -1185,13 +1198,51 @@ export function ManagerBookingDetailPage() {
                             </div>
 
                             <div className="text-right">
-                              <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
-                                String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
-                                  'bg-[#F3F4F6] text-[#6B7280]'
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${(() => {
+                                const statusStr = String(tx.status).toLowerCase();
+                                if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
+                                if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
+                                if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
+                                if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
+                                return 'bg-[#F3F4F6] text-[#6B7280]';
+                              })()
                                 }`}>
-                                {language === "vi"
-                                  ? (String(tx.status).toLowerCase() === "paid" || String(tx.status).toLowerCase() === "completed" ? "Đã thanh toán" : String(tx.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(tx.status).toLowerCase() === "overdue" ? "Quá hạn" : String(tx.status).toLowerCase() === "cancelled" || String(tx.status).toLowerCase() === "canceled" ? "Đã hủy" : String(tx.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : tx.status)
-                                  : (String(tx.status).toLowerCase() === "completed" ? "Paid" : tx.status)}
+                                {(() => {
+                                  const statusStr = String(tx.status).toLowerCase();
+                                  if (tx.walletType === 'BookingRefund') {
+                                    if (language === "vi") {
+                                      if (statusStr === 'completed') return 'Hoàn tiền thành công';
+                                      if (statusStr === 'failed') return 'Hoàn tiền thất bại';
+                                      return 'Đang hoàn tiền';
+                                    } else {
+                                      if (statusStr === 'completed') return 'Refund Completed';
+                                      if (statusStr === 'failed') return 'Refund Failed';
+                                      return 'Refunding';
+                                    }
+                                  } else if (tx.walletType === 'BookingPayment') {
+                                    if (language === "vi") {
+                                      if (statusStr === 'completed') return 'Thanh toán thành công';
+                                      if (statusStr === 'failed') return 'Thanh toán thất bại';
+                                      return 'Chờ thanh toán';
+                                    } else {
+                                      if (statusStr === 'completed') return 'Payment Completed';
+                                      if (statusStr === 'failed') return 'Payment Failed';
+                                      return 'Pending Payment';
+                                    }
+                                  } else {
+                                    if (language === "vi") {
+                                      if (statusStr === 'paid' || statusStr === 'completed') return 'Đã thanh toán';
+                                      if (statusStr === 'pending') return 'Chờ thanh toán';
+                                      if (statusStr === 'overdue') return 'Quá hạn';
+                                      if (statusStr === 'cancelled') return 'Đã hủy';
+                                      if (statusStr === 'refunded') return 'Đã hoàn tiền';
+                                      return tx.status;
+                                    } else {
+                                      if (statusStr === 'completed') return 'Paid';
+                                      return tx.status;
+                                    }
+                                  }
+                                })()}
                               </span>
                             </div>
                           </div>

@@ -11,19 +11,19 @@ import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
-const loginSchema = z.object({
+const loginSchema = ({ language }) => z.object({
   email: z
     .string()
-    .min(1, "Email is mandatory.")
+    .min(1, language === "vi" ? "Email không được để trống" : "Email is mandatory.")
     .regex(
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Must match standard email format."
+      language === "vi" ? "Email không hợp lệ" : "Must match standard email format."
     ),
   password: z
     .string()
-    .min(1, "Password is mandatory.")
-    .min(6, "Password must be at least 6 characters.")
-    .max(30, "Password must be at most 30 characters."),
+    .min(1, language === "vi" ? "Mật khẩu không được để trống" : "Password is mandatory.")
+    .min(6, language === "vi" ? "Mật khẩu phải có ít nhất 6 ký tự" : "Password must be at least 6 characters.")
+    .max(30, language === "vi" ? "Mật khẩu phải có tối đa 30 ký tự" : "Password must be at most 30 characters."),
 });
 
 const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 1}`);
@@ -33,18 +33,18 @@ export function LoginPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { login, loginGoogle, isAuthenticated, status, error, role } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const { language } = useLanguage();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema({ language })),
     defaultValues: {
       email: "",
       password: "",
     },
   });
-  const { language } = useLanguage();
   const isVi = language === "vi";
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export function LoginPage() {
                   <input
                     {...register("email")}
                     className="w-full bg-transparent py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
-                    placeholder="Enter your email"
+                    placeholder={isVi ? "Nhập email của bạn" : "Enter your email"}
                   />
                 </div>
                 {errors.email ? (
@@ -191,7 +191,7 @@ export function LoginPage() {
                     {...register("password")}
                     type={isPasswordVisible ? "text" : "password"}
                     className="w-full bg-transparent py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
-                    placeholder="Enter your password"
+                    placeholder={isVi ? "Nhập mật khẩu của bạn" : "Enter your password"}
                   />
                   <button
                     type="button"

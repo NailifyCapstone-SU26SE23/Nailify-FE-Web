@@ -875,8 +875,8 @@ export function NailDesignManagementDetailPage() {
         });
         toast.success(
           language === "vi"
-            ? `Lưu các thay đổi cơ bản thành công. Vẫn giữ lại #${designDetail.id}.`
-            : `Saved basic changes successfully. Kept #${designDetail.id}.`
+            ? `Lưu các thay đổi thành công.`
+            : `Saved changes successfully.`
         );
       }
 

@@ -212,8 +212,8 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
           <FormField label={language === "vi" ? "Giá cơ bản" : "Base Price"}>
             <input
               type="number"
-              min="0"
-              step="0.01"
+              min="1000"
+              step="1000"
               value={draft.price}
               onChange={(event) => onChange("price", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
@@ -222,8 +222,8 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
           <FormField label={language === "vi" ? "Thời lượng (phút)" : "Duration (Min)"}>
             <input
               type="number"
-              min="5"
-              step="5"
+              min="1"
+              step="1"
               value={draft.duration}
               onChange={(event) => onChange("duration", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
@@ -327,8 +327,8 @@ function ServiceDetailModal({ service, onClose }) {
               className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
                 }`}
             >
-              {language === "vi" 
-                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
+              {language === "vi"
+                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
                 : service.status}
             </span>
           </div>

@@ -554,9 +554,9 @@ export function NailShapeDetailPage() {
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || shape?.name || (t("adminNailShapesManagement.nailShape"))]}
-        details={[
-          { label: t("adminNailShapesManagement.duration"), value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
-        ]}
+      // details={[
+      //   { label: t("adminNailShapesManagement.duration"), value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
+      // ]}
       />
 
       <ActionConfirmModal
@@ -661,7 +661,7 @@ export function NailShapeDetailPage() {
               <InputNumber
                 className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
                 style={{ width: "100%" }}
-                min={0}
+                min={1000}
                 step={1000}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={value => value?.replace(/\$\s?|(,*)/g, '') || ''}
@@ -677,6 +677,7 @@ export function NailShapeDetailPage() {
                 className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
                 style={{ width: "100%" }}
                 min={1}
+                step={1}
               />
             </Form.Item>
           </div>

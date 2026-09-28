@@ -595,6 +595,11 @@ export function StaffBookingDetailPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingServiceQuantity, setEditingServiceQuantity] = useState(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
+  const [itemsToDelete, setItemsToDelete] = useState([]);
+  const [isUpdatingBookingItems, setIsUpdatingBookingItems] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
   const isCurrentDesignConfirmed = useSelector((state) => (
     Boolean(state.booking.designConfirmations?.[normalizedBookingId])
@@ -1068,6 +1073,24 @@ export function StaffBookingDetailPage() {
     handleOpenDesignStudio();
   };
 
+  // Normalize bookingDate to "YYYY-MM-DD" for PUT payload per API spec
+  const getBookingDateStr = () => {
+    const raw = staffBookingDetail?.bookingDate || staffBookingDetail?.createdAt || "";
+    if (!raw) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    return raw.split("T")[0] || raw;
+  };
+
+  // Silent re-fetch: update booking data without showing loading spinner (no flicker)
+  const silentRefresh = async () => {
+    try {
+      const freshData = await fetchStaffBookingDetail(bookingId);
+      setStaffBookingDetail(freshData);
+    } catch {
+      // ignore — stale data is acceptable here
+    }
+  };
+
   const handleOpenServiceSession = () => {
     if (!isBookingReadyForService && !hasServiceStarted) {
       toast.error(
@@ -1090,6 +1113,144 @@ export function StaffBookingDetailPage() {
         },
       },
     });
+  };
+
+  const handleEnableEditQuantity = (service) => {
+    setEditingServiceQuantity(service);
+    setTempQuantity(service.quantity || 1);
+  };
+
+  const handleSelectService = (checked, serviceId) => {
+    setSelectedServiceIds(prev => 
+      checked ? [...prev, serviceId] : prev.filter(id => id !== serviceId)
+    );
+  };
+
+  const handleSelectAllServices = (checked, allServiceIds) => {
+    setSelectedServiceIds(checked ? allServiceIds : []);
+  };
+
+  const handleDeleteService = (service) => {
+    setItemsToDelete([service]);
+  };
+
+  const handleMultiDeleteServices = () => {
+    if (selectedServiceIds.length === 0) return;
+    // selectedServiceIds are composite like "${bookingItemId}-service" / "${bookingItemId}-nail"
+    // extract the real bookingItemId by stripping known suffixes
+    const uniqueBookingItemIds = [
+      ...new Set(
+        selectedServiceIds.map(id =>
+          id.replace(/-service$/, "").replace(/-nail$/, "")
+        )
+      ),
+    ];
+    setItemsToDelete(
+      uniqueBookingItemIds.map(bookingItemId => ({
+        bookingItemId,
+        name: isVi ? "các dịch vụ đã chọn" : "selected services",
+      }))
+    );
+  };
+
+  const doUpdateServiceQuantity = async () => {
+    if (!staffBookingDetail || !editingServiceQuantity) return;
+    setIsUpdatingBookingItems(true);
+    try {
+      const groupedItems = new Map();
+      (staffBookingDetail.bookingItems || []).forEach((item) => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+        const isMatch = String(item.bookingItemId || item.id) === String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id);
+        
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            quantity: isMatch ? tempQuantity : (item.quantity || 1)
+          });
+        } else if (!isMatch) {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const payload = {
+        bookingDate: getBookingDateStr(),
+        startTime: staffBookingDetail.startTime,
+        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
+        bookingItems: Array.from(groupedItems.values()).filter(i => i.serviceId || i.nailVariantId),
+      };
+
+      await updateStaffBooking(bookingId, payload);
+      toast.success(isVi ? "Đã cập nhật số lượng thành công." : "Quantity updated successfully.");
+      setEditingServiceQuantity(null);
+      void silentRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update quantity");
+    } finally {
+      setIsUpdatingBookingItems(false);
+    }
+  };
+
+  const doDeleteService = async () => {
+    if (!staffBookingDetail || itemsToDelete.length === 0) return;
+    setIsUpdatingBookingItems(true);
+    try {
+      const groupedItems = new Map();
+      const idsToDelete = itemsToDelete.map(i => String(i.bookingItemId || i.id));
+      
+      // Debug: log to diagnose matching
+      console.log("[doDeleteService] itemsToDelete:", itemsToDelete);
+      console.log("[doDeleteService] idsToDelete:", idsToDelete);
+      console.log("[doDeleteService] staffBookingDetail.bookingItems:", staffBookingDetail.bookingItems);
+
+      (staffBookingDetail.bookingItems || []).forEach((item) => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+        const isMatch = idsToDelete.includes(String(item.bookingItemId || item.id)) || idsToDelete.includes(String(item.id));
+        
+        if (isMatch) return; // Skip deleted item
+
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            quantity: item.quantity || 1
+          });
+        } else {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const resultingItems = Array.from(groupedItems.values());
+      if (resultingItems.length === 0) {
+        toast.error(isVi ? "Không thể xóa tất cả dịch vụ. Vui lòng giữ lại ít nhất 1 dịch vụ." : "Cannot delete all services. Please keep at least 1 service.");
+        setIsUpdatingBookingItems(false);
+        setItemsToDelete([]);
+        return;
+      }
+
+      const payload = {
+        bookingDate: getBookingDateStr(),
+        startTime: staffBookingDetail.startTime,
+        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
+        bookingItems: resultingItems.filter(i => i.serviceId || i.nailVariantId),
+      };
+
+      await updateStaffBooking(bookingId, payload);
+      toast.success(isVi ? "Đã xóa dịch vụ thành công." : "Services deleted successfully.");
+      setItemsToDelete([]);
+      setSelectedServiceIds([]);
+      void silentRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete service");
+    } finally {
+      setIsUpdatingBookingItems(false);
+    }
   };
 
   return (
@@ -1116,6 +1277,12 @@ export function StaffBookingDetailPage() {
         onDelete={handleDelete}
         onOpenDesignStudio={handleOpenDesignStudio}
         onOpenServiceProcedures={handleOpenServiceProcedures}
+        onEditQuantity={handleEnableEditQuantity}
+        onDeleteService={handleDeleteService}
+        selectedServiceIds={selectedServiceIds}
+        onSelectService={handleSelectService}
+        onSelectAllServices={handleSelectAllServices}
+        onMultiDelete={handleMultiDeleteServices}
         onOpenUpdateBooking={handleOpenUpdateBooking}
         onStaffNoteChange={handleStaffNoteChange}
         onStartServiceSession={() => void handleOpenServiceSession()}
@@ -1167,6 +1334,68 @@ export function StaffBookingDetailPage() {
         onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
         claimingProcedureId={claimingProcedureId}
         showActions={staffBookingDetail?.status === "InProgress"}
+      />
+      <Modal
+        title={isVi ? "Sửa Số lượng" : "Edit Quantity"}
+        open={!!editingServiceQuantity}
+        onCancel={() => setEditingServiceQuantity(null)}
+        footer={null}
+        width={320}
+        centered
+      >
+        <div className="py-4 flex flex-col gap-4">
+          <p className="text-sm font-semibold text-[#2B182B]">{editingServiceQuantity?.name}</p>
+          <div className="flex items-center gap-4 border border-[#F3D6E5] rounded-full p-1 bg-[#FFF5FA]">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => Math.max(1, q - 1))}
+              disabled={tempQuantity <= 1 || isUpdatingBookingItems}
+            >
+              -
+            </button>
+            <span className="flex-1 text-center font-bold text-lg text-[#2B182B]">{tempQuantity}</span>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => q + 1)}
+              disabled={isUpdatingBookingItems}
+            >
+              +
+            </button>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-all disabled:opacity-50"
+              onClick={() => setEditingServiceQuantity(null)}
+              disabled={isUpdatingBookingItems}
+            >
+              {isVi ? "Hủy" : "Cancel"}
+            </button>
+            <button
+              className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#F43F5E] hover:from-[#D83A7E] hover:to-[#E11D48] rounded-full shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              onClick={doUpdateServiceQuantity}
+              disabled={isUpdatingBookingItems}
+            >
+              {isUpdatingBookingItems && <LoaderCircle size={16} className="animate-spin" />}
+              {isVi ? "Lưu" : "Save"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <ActionConfirmModal
+        show={itemsToDelete.length > 0}
+        title={isVi ? "Xác nhận xóa" : "Confirm Delete"}
+        message={
+          itemsToDelete.length > 1 
+            ? (isVi ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn? Hành động này không thể hoàn tác.` : `Are you sure you want to delete ${itemsToDelete.length} selected services? This action cannot be undone.`)
+            : (isVi ? `Bạn có chắc chắn muốn xóa "${itemsToDelete[0]?.name}"? Hành động này không thể hoàn tác.` : `Are you sure you want to delete "${itemsToDelete[0]?.name}"? This action cannot be undone.`)
+        }
+        onConfirm={doDeleteService}
+        onCancel={() => setItemsToDelete([])}
+        isConfirming={isUpdatingBookingItems}
+        confirmText={isVi ? "Xóa" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        variant="danger"
       />
     </>
   );
