@@ -936,7 +936,7 @@ export function StaffManagementPage() {
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       {/* Export */}
-                      <button
+                      {/* <button
                         type="button"
                         className="
             inline-flex
@@ -963,7 +963,7 @@ export function StaffManagementPage() {
                       >
                         <Download size={15} strokeWidth={2.2} />
                         <span>{t("adminStaffManagement.export")}</span>
-                      </button>
+                      </button> */}
 
                       {/* Add Staff */}
                       <Link

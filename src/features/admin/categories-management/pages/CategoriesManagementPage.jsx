@@ -355,10 +355,12 @@ export function CategoriesManagementPage() {
 
           <Link
             to={ROUTES.adminCategoriesCreate}
-            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminCategories.addCategory")}
+            <button
+              className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]">
+              <Plus size={13} className="mr-1.5 shrink-0" />
+              {t("adminCategories.addCategory")}
+            </button>
           </Link>
         </div>
 

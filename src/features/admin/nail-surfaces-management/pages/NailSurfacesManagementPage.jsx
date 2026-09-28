@@ -235,8 +235,8 @@ export function NailSurfacesManagementPage() {
         render: (status) => (
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status === "Active"
-                ? "bg-[#e7fbf4] text-[#23b68b]"
-                : "bg-[#fff0f5] text-[#eb5a99]"
+              ? "bg-[#e7fbf4] text-[#23b68b]"
+              : "bg-[#fff0f5] text-[#eb5a99]"
               }`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-[#23b68b]" : "bg-[#eb5a99]"}`}></span>
@@ -347,10 +347,11 @@ export function NailSurfacesManagementPage() {
 
           <Link
             to={ROUTES.adminNailSurfacesCreate}
-            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] w-45"
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailSurfacesManagement.addNailSurface")}
+          > <button
+            className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]">
+              <Plus size={13} className="mr-1.5 shrink-0" />
+              {t("adminNailSurfacesManagement.addNailSurface")}
+            </button>
           </Link>
         </div>
 

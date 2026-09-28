@@ -609,7 +609,20 @@ export function ReceptionistBookingDetailPage() {
           // Fetch transactions
           try {
             const txs = await fetchTransactionsByBookingId(bookingId);
-            setTransactions(txs);
+            const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+              if (tx.paymentMethod === 'Ví' && tx.id) {
+                try {
+                  const walletData = await fetchWalletTransactionById(tx.id);
+                  if (walletData?.type) {
+                    return { ...tx, walletType: walletData.type };
+                  }
+                } catch (e) {
+                  console.warn("Failed to fetch wallet transaction detail:", e);
+                }
+              }
+              return tx;
+            }));
+            setTransactions(enhancedTxs);
           } catch (err) {
             console.warn("Failed to load transactions:", err);
           }
@@ -790,7 +803,20 @@ export function ReceptionistBookingDetailPage() {
       // Fetch transactions
       try {
         const txs = await fetchTransactionsByBookingId(bookingId);
-        setTransactions(txs);
+        const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+          if (tx.paymentMethod === 'Ví' && tx.id) {
+            try {
+              const walletData = await fetchWalletTransactionById(tx.id);
+              if (walletData?.type) {
+                return { ...tx, walletType: walletData.type };
+              }
+            } catch (e) {
+              console.warn("Failed to fetch wallet transaction detail:", e);
+            }
+          }
+          return tx;
+        }));
+        setTransactions(enhancedTxs);
       } catch (err) {
         console.warn("Failed to load transactions:", err);
       }
@@ -1014,11 +1040,6 @@ export function ReceptionistBookingDetailPage() {
       key: "service",
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          {row.count > 1 && (
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-bold shrink-0 shadow-2xs">
-              x{row.count}
-            </span>
-          )}
           <p className="text-xs font-bold text-[#2B182B]">
             {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
           </p>
@@ -1529,7 +1550,7 @@ export function ReceptionistBookingDetailPage() {
                 </p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
-                  <span>{formatTime(booking?.startTime, booking?.bookingDate || booking?.createdAt)}</span>
+                  <span>{formatTime(booking?.startTime)}</span>
                 </div>
               </div>
 
@@ -1733,17 +1754,52 @@ export function ReceptionistBookingDetailPage() {
                         </div>
                         <div className="text-right">
 
-                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
-                            String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
-                              'bg-[#F3F4F6] text-[#6B7280]'
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            (() => {
+                              const statusStr = String(tx.status).toLowerCase();
+                              if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
+                              if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
+                              if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
+                              if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
+                              return 'bg-[#F3F4F6] text-[#6B7280]';
+                            })()
                             }`}>
-                            {language === "vi"
-                              ? (String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
-                                : String(tx.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
-                                  : String(tx.status).toLowerCase() === 'overdue' ? 'Quá hạn'
-                                    : String(tx.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
-                                      : String(tx.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : tx.status)
-                              : (String(tx.status).toLowerCase() === 'completed' ? 'Paid' : tx.status)}
+                            {(() => {
+                              const statusStr = String(tx.status).toLowerCase();
+                              if (tx.walletType === 'BookingRefund') {
+                                if (language === "vi") {
+                                  if (statusStr === 'completed') return 'Hoàn tiền thành công';
+                                  if (statusStr === 'failed') return 'Hoàn tiền thất bại';
+                                  return 'Đang hoàn tiền';
+                                } else {
+                                  if (statusStr === 'completed') return 'Refund Completed';
+                                  if (statusStr === 'failed') return 'Refund Failed';
+                                  return 'Refunding';
+                                }
+                              } else if (tx.walletType === 'BookingPayment') {
+                                if (language === "vi") {
+                                  if (statusStr === 'completed') return 'Thanh toán thành công';
+                                  if (statusStr === 'failed') return 'Thanh toán thất bại';
+                                  return 'Chờ thanh toán';
+                                } else {
+                                  if (statusStr === 'completed') return 'Payment Completed';
+                                  if (statusStr === 'failed') return 'Payment Failed';
+                                  return 'Pending Payment';
+                                }
+                              } else {
+                                if (language === "vi") {
+                                  if (statusStr === 'paid' || statusStr === 'completed') return 'Đã thanh toán';
+                                  if (statusStr === 'pending') return 'Chờ thanh toán';
+                                  if (statusStr === 'overdue') return 'Quá hạn';
+                                  if (statusStr === 'cancelled') return 'Đã hủy';
+                                  if (statusStr === 'refunded') return 'Đã hoàn tiền';
+                                  return tx.status;
+                                } else {
+                                  if (statusStr === 'completed') return 'Paid';
+                                  return tx.status;
+                                }
+                              }
+                            })()}
                           </span>
                         </div>
                       </div>

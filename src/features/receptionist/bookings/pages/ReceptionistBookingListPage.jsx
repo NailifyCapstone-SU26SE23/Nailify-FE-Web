@@ -66,6 +66,28 @@ function formatTime(value) {
   return value.slice(0, 5);
 }
 
+function calculateEndTime(startTime, durationMinutes) {
+  if (!startTime) return "--";
+  const parts = startTime.split(':');
+  if (parts.length < 2) return "--";
+  let hours = parseInt(parts[0], 10);
+  let minutes = parseInt(parts[1], 10);
+  
+  if (isNaN(hours) || isNaN(minutes)) return "--";
+  
+  const totalDur = durationMinutes ? parseInt(durationMinutes, 10) : 0;
+  if (isNaN(totalDur)) return formatTime(startTime);
+  
+  minutes += totalDur;
+  hours += Math.floor(minutes / 60);
+  minutes = minutes % 60;
+  hours = hours % 24;
+  
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 function toDateInputValue(value) {
   if (!value) {
     return "";
@@ -362,12 +384,18 @@ export function ReceptionistBookingListPage() {
         const timeB = new Date(`${b.bookingDate?.split('T')[0] || ''}T${b.startTime || '00:00:00'}`).getTime() || 0;
         return timeA - timeB;
       },
-      render: (_, booking) => (
-        <div>
-          <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-          <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
-        </div>
-      ),
+      render: (_, booking) => {
+        const start = formatTime(booking.startTime);
+        const end = calculateEndTime(booking.startTime, booking.totalDuration);
+        return (
+          <div>
+            <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
+            <p className="mt-1 text-[11px] text-[#b38a9f]">
+              {start} {start !== "--" && end !== "--" && `- ${end}`}
+            </p>
+          </div>
+        );
+      },
     },
     {
       title: t("receptionist.bookings.price") || "Price",
@@ -840,7 +868,9 @@ export function ReceptionistBookingListPage() {
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-                        <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
+                        <p className="mt-1 text-[11px] text-[#b38a9f]">
+                          {formatTime(booking.startTime)} {formatTime(booking.startTime) !== "--" && calculateEndTime(booking.startTime, booking.totalDuration) !== "--" && `- ${calculateEndTime(booking.startTime, booking.totalDuration)}`}
+                        </p>
                       </div>
                       <ActionDropdown
                         label={language === "vi" ? "Thao tác" : "Actions"}

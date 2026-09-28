@@ -14,10 +14,10 @@ import {
   UserRound,
   X,
   Clock,
-  Map, ChevronDown, ChevronUp
+  Map, ChevronDown, ChevronUp, Edit2, Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Table, List, Card, Image } from "antd";
+import { Table, List, Card, Image, Checkbox } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
@@ -115,93 +115,148 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
+function ServiceInfoCard({ 
+  services = [], 
+  onOpenServiceProcedures = null, 
+  onEditQuantity = null, 
+  onDeleteService = null,
+  selectedServiceIds = [],
+  onSelectService = null,
+  onSelectAllServices = null,
+  onMultiDelete = null
+}) {
   const { language } = useLanguage();
-  const hasProcedureAction = typeof onOpenServiceProcedures === "function";
+  const hasProcedureAction = typeof onOpenServiceProcedures === "function" || typeof onEditQuantity === "function" || typeof onDeleteService === "function";
 
   return (
     <article className="rounded-[16px] xl:col-span-3">
 
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
-          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "grid-cols-[minmax(0,1.8fr)_80px_120px_130px_110px]"}`}>
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "grid-cols-[70px_minmax(0,1.8fr)_80px_120px_130px_110px]"}`}>
+            <div className="flex items-center justify-center gap-2">
+              <Checkbox
+                checked={services.length > 0 && selectedServiceIds.length === services.length}
+                indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < services.length}
+                onChange={(e) => onSelectAllServices && onSelectAllServices(e.target.checked, services.map(s => s.id))}
+              />
+              {selectedServiceIds.length > 0 && (
+                <button
+                  onClick={onMultiDelete}
+                  className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
+                  title={language === "vi" ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
+            </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
             {hasProcedureAction ? (
-              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thao tác" : "Action"}</p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] m-0">{language === "vi" ? "Thao tác" : "Action"}</p>
+              </div>
             ) : null}
           </div>
 
           <div className="divide-y divide-[#f9dfeb]">
-            {services.map((service, index) => (
-              <div
-                key={service.id || `${service.name}-${index}`}
-                className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "md:grid-cols-[minmax(0,1.8fr)_80px_120px_130px_110px]"}`}
-              >
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                    {service.detailLabel || `Service ${index + 1}`}
-                  </p>
-                  <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
-                  {service.nailServiceName ? (
-                    <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                      {language === "vi" ? "Dịch vụ làm móng: " : "Nail service: "}{service.nailServiceName}
+            {services.map((service, index) => {
+              const actionItems = [];
+              if (service.canViewProcedures && typeof onOpenServiceProcedures === "function") {
+                actionItems.push({
+                  key: `view-procedures-${service.id || index}`,
+                  label: language === "vi" ? "Xem Quy trình" : "View Procedures",
+                  icon: ClipboardList,
+                  onSelect: () => onOpenServiceProcedures(service),
+                });
+              }
+              if (typeof onEditQuantity === "function") {
+                actionItems.push({
+                  key: `edit-quantity-${service.id || index}`,
+                  label: language === "vi" ? "Sửa số lượng" : "Edit Quantity",
+                  icon: Edit2,
+                  onSelect: () => onEditQuantity(service),
+                });
+              }
+              if (typeof onDeleteService === "function") {
+                actionItems.push({
+                  key: `delete-service-${service.id || index}`,
+                  label: language === "vi" ? "Xóa" : "Delete",
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => onDeleteService(service),
+                });
+              }
+
+              return (
+                <div
+                  key={service.id || `${service.name}-${index}`}
+                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "md:grid-cols-[70px_minmax(0,1.8fr)_80px_120px_130px_110px]"}`}
+                >
+                  <div className="hidden md:flex items-center justify-center">
+                    <Checkbox
+                      checked={selectedServiceIds.includes(service.id)}
+                      onChange={(e) => onSelectService && onSelectService(e.target.checked, service.id)}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                      {service.detailLabel || `Service ${index + 1}`}
                     </p>
+                    <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
+                    {service.nailServiceName ? (
+                      <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                        {language === "vi" ? "Dịch vụ làm móng: " : "Nail service: "}{service.nailServiceName}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "SL" : "Qty"}</p>
+                    <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                      {service.quantity || 1}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Giá" : "Price"}</p>
+                    <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                      {service.price}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
+                    <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                      {service.totalPrice || service.price}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+                    <span className="inline-flex rounded-full bg-[#f4efff] px-3 py-1 text-[11px] font-bold text-[#8c63ef]">
+                      {service.duration}
+                    </span>
+                  </div>
+
+                  {hasProcedureAction ? (
+                    <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thao tác" : "Action"}</p>
+                      {actionItems.length > 0 ? (
+                        <ActionDropdown
+                          items={actionItems}
+                        />
+                      ) : (
+                        null
+                      )}
+                    </div>
                   ) : null}
                 </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "SL" : "Qty"}</p>
-                  <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
-                    {service.quantity || 1}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Giá" : "Price"}</p>
-                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
-                    {service.price}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
-                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
-                    {service.totalPrice || service.price}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng" : "Duration"}</p>
-                  <span className="inline-flex rounded-full bg-[#f4efff] px-3 py-1 text-[11px] font-bold text-[#8c63ef]">
-                    {service.duration}
-                  </span>
-                </div>
-
-                {hasProcedureAction ? (
-                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thao tác" : "Action"}</p>
-                    {service.canViewProcedures ? (
-                      <ActionDropdown
-                        items={[
-                          {
-                            key: `view-procedures-${service.id || index}`,
-                            label: language === "vi" ? "Xem Quy trình" : "View Procedures",
-                            icon: ClipboardList,
-                            onSelect: () => onOpenServiceProcedures(service),
-                          },
-                        ]}
-                      />
-                    ) : (
-                      null
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -211,6 +266,8 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
 
 ServiceInfoCard.propTypes = {
   onOpenServiceProcedures: PropTypes.func,
+  onEditQuantity: PropTypes.func,
+  onDeleteService: PropTypes.func,
   services: PropTypes.arrayOf(
     PropTypes.shape({
       bookingItemId: PropTypes.string,
@@ -508,6 +565,12 @@ export function StaffBookingConsultationDetail({
   onOpenDesignStudio,
   onOpenUpdateBooking,
   onOpenServiceProcedures,
+  onEditQuantity,
+  onDeleteService,
+  selectedServiceIds,
+  onSelectService,
+  onSelectAllServices,
+  onMultiDelete,
   onStaffNoteChange,
   onStartServiceSession,
   onConfirmCustomerNail,
@@ -742,6 +805,12 @@ export function StaffBookingConsultationDetail({
                     <ServiceInfoCard
                       services={data.bookingInfo.find(item => item.label === "Service").services}
                       onOpenServiceProcedures={onOpenServiceProcedures}
+                      onEditQuantity={onEditQuantity}
+                      onDeleteService={onDeleteService}
+                      selectedServiceIds={selectedServiceIds}
+                      onSelectService={onSelectService}
+                      onSelectAllServices={onSelectAllServices}
+                      onMultiDelete={onMultiDelete}
                     />
                   </div>
                 )}

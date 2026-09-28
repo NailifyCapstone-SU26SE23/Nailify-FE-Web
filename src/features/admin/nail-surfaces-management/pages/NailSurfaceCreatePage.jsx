@@ -36,12 +36,12 @@ function validateForm(formValues, language) {
     return isVi ? "Tên bề mặt móng là bắt buộc." : "Nail surface name is required.";
   }
 
-  if (Number(formValues.price) < 0 || Number.isNaN(Number(formValues.price))) {
-    return isVi ? "Giá phải là một số hợp lệ." : "Price must be a valid number.";
+  if (Number(formValues.price) < 1000 || Number.isNaN(Number(formValues.price))) {
+    return isVi ? "Giá phải lớn hơn hoặc bằng 1000" : "Price must be greater than or equal to 1000.";
   }
 
-  if (Number(formValues.duration) <= 0 || Number.isNaN(Number(formValues.duration))) {
-    return isVi ? "Thời lượng phải lớn hơn 0." : "Duration must be greater than 0.";
+  if (Number(formValues.duration) < 1 || Number.isNaN(Number(formValues.duration))) {
+    return isVi ? "Thời lượng phải lớn hơn hoặc bằng 1" : "Duration must be greater than or equal to 1.";
   }
 
   return "";
@@ -185,7 +185,7 @@ export function NailSurfaceCreatePage() {
                   <Wallet size={14} className="shrink-0 text-rose-300" />
                   <input
                     type="number"
-                    min="0"
+                    min="1000"
                     step="1000"
                     value={formValues.price}
                     onChange={(event) => handleFieldChange("price", event.target.value)}
@@ -275,10 +275,10 @@ export function NailSurfaceCreatePage() {
         onConfirm={handleCreateSurface}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[formValues.name || (t("adminNailSurfacesManagement.newNailSurface"))]}
-        details={[
-          { label: t("adminNailSurfacesManagement.surfaceType"), value: formValues.surfacePreset },
-          { label: t("adminNailSurfacesManagement.price"), value: formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--" },
-        ]}
+      // details={[
+      //   { label: t("adminNailSurfacesManagement.surfaceType"), value: formValues.surfacePreset },
+      //   { label: t("adminNailSurfacesManagement.price"), value: formValues.price ? formatNailSurfaceCurrency(formValues.price) : "--" },
+      // ]}
       />
     </section>
   );

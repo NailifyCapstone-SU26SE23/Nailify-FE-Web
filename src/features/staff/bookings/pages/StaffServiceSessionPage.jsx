@@ -931,6 +931,7 @@ export function StaffServiceSessionPage() {
         serviceDetailMap,
         nailVariantDetailMap: bookingNailVariantDetailMap,
         customerNailDetailMap: bookingCustomerNailDetailMap,
+        customerDetail,
       });
     }
 
@@ -983,7 +984,8 @@ export function StaffServiceSessionPage() {
     const summaryAmountDue = fallbackData?.amountDue || payload?.amountDue;
     const summaryAmountPaid = fallbackData?.amountPaid || payload?.amountPaid;
     const summaryOriginalServicePrice = fallbackData?.originalServicePrice || payload?.originalServicePrice;
-
+    console.log("fallbackData", fallbackData);
+    console.log("payload", payload);
     return {
       ...fallbackData,
       ...payload,
@@ -1237,7 +1239,7 @@ export function StaffServiceSessionPage() {
           stepOrder: index + 1,
           checked: ["completed", "done"].includes(normalizedStatus),
           label: `${isVi ? "Bước" : "Step"} ${index + 1}: ${procedureName}`,
-          statusLabel: (function(status, lang) {
+          statusLabel: (function (status, lang) {
             const norm = String(status || "").trim();
             const lower = norm.toLowerCase();
             if (lang === "vi") {
@@ -1320,16 +1322,16 @@ export function StaffServiceSessionPage() {
         estimatedStartTime: estStart,
         estimatedEndTime: estEnd,
         stepOrder: index + 1,
-        statusLabel: (function(status, lang) {
-            const norm = String(status || "").trim();
-            const lower = norm.toLowerCase();
-            if (lang === "vi") {
-              if (lower === "pending" || lower === "waiting") return "Đang chờ";
-              if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
-              if (lower === "completed" || lower === "done") return "Hoàn thành";
-              if (lower === "skipped") return "Đã bỏ qua";
-            }
-            return norm;
+        statusLabel: (function (status, lang) {
+          const norm = String(status || "").trim();
+          const lower = norm.toLowerCase();
+          if (lang === "vi") {
+            if (lower === "pending" || lower === "waiting") return "Đang chờ";
+            if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
+            if (lower === "completed" || lower === "done") return "Hoàn thành";
+            if (lower === "skipped") return "Đã bỏ qua";
+          }
+          return norm;
         })(procedure.status, language),
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
         canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
@@ -2549,7 +2551,7 @@ export function StaffServiceSessionPage() {
 
   if (isSessionFinalized) {
     return (
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         <article className="rounded-[26px] border border-[#d8f0e2] bg-[linear-gradient(180deg,#ffffff_0%,#f5fff8_100%)] p-6 shadow-[0_18px_40px_rgba(22,163,74,0.10)]">
           <div className="flex flex-col items-center text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-full border border-[#b7e6c8] bg-[linear-gradient(180deg,#e9fff1_0%,#d8f8e5_100%)] text-[#16975f] shadow-[0_18px_35px_rgba(22,151,95,0.18)]">
