@@ -45,6 +45,8 @@ export function NotificationProvider({ children }) {
       message: rawNotification?.message || rawNotification?.Message || rawNotification?.content || (typeof rawNotification === "string" ? rawNotification : JSON.stringify(rawNotification)),
       createdAt: rawNotification?.createdAt || rawNotification?.timestamp || new Date().toISOString(),
       isRead: false,
+      messageType: rawNotification?.messageType || rawNotification?.MessageType || null,
+      payload: rawNotification?.payload || rawNotification?.Payload || rawNotification,
     };
 
     setNotifications((prev) => {

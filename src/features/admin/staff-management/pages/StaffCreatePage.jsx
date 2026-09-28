@@ -5,6 +5,9 @@ import {
   User,
   X,
   Upload,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -36,6 +39,7 @@ export function StaffCreatePage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const location = useLocation();
   const [formData, setFormData] = useState({
@@ -253,7 +257,7 @@ export function StaffCreatePage() {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5" autoComplete="off">
         <div className="space-y-4 lg:col-span-2 lg:space-y-5">
           <div className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50">
             <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
@@ -309,6 +313,7 @@ export function StaffCreatePage() {
                     placeholder="staff@nailify.com"
                     className={inputClassName}
                     required
+                    autoComplete="new-email"
                   />
                 </div>
               </div>
@@ -326,7 +331,33 @@ export function StaffCreatePage() {
                     placeholder="+1 (555) 123-4567"
                     className={inputClassName}
                     required
+                    autoComplete="none"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Mật khẩu" : "Password"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Lock size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(event) => handleInputChange("password", event.target.value)}
+                    placeholder="••••••••"
+                    className={inputClassName}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-100 hover:text-rose-500 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
                 </div>
               </div>
 

@@ -1012,7 +1012,7 @@ export function InteractiveStudioPreview({
               <Grid size={13} />
               {isVi ? "Lưới" : "Grid"}
             </button>
-            <button
+            {/* <button
               type="button"
               onClick={() => setViewMode("hand")}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${viewMode === "hand"
@@ -1022,7 +1022,7 @@ export function InteractiveStudioPreview({
             >
               <Hand size={13} />
               {isVi ? "Bàn tay" : "Hand"}
-            </button>
+            </button> */}
           </div>
 
           {viewMode === "hand" && (
