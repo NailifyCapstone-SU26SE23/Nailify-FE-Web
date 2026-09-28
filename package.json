@@ -36,7 +36,7 @@
     "html-to-image": "^1.11.13",
     "jsqr": "^1.4.0",
     "jwt-decode": "^4.0.0",
-    "lucide-react": "^1.38.0",
+    "lucide-react": "^1.48.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.87.0",
