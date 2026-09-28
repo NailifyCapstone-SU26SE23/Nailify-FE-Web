@@ -1,9 +1,7 @@
 import {
   ArrowLeft,
   BriefcaseBusiness,
-  CalendarDays,
   Mail,
-  MapPin,
   Phone,
   Save,
   ShieldCheck,
@@ -14,43 +12,39 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Select, Rate } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
-import { StaffSkillAssessmentSection } from "../components/StaffSkillAssessmentSection";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  STAFF_CREATE_STATUS_OPTIONS,
-  STAFF_DAYS_OF_WEEK,
-  STAFF_EMPLOYMENT_TYPES,
-  STAFF_UPDATE_CHECKLIST,
+  // STAFF_UPDATE_CHECKLIST,
   STAFF_ROLE_OPTIONS,
-  STAFF_SALON_OPTIONS,
   createEmptyStaffForm,
-  fetchMockStaffFormById,
-  getSpecialtiesFromSkillRatings,
-  getStaffCreateStatusOption,
   getStaffInitials,
   getStaffRoleOption,
-  submitMockStaffUpdate,
 } from "../services/mockStaff";
+import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { updateUser } from "../services/staffManagementService";
+import { fetchSkillTypes, fetchNailArtistSkills, assignNailArtistSkills } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3";
+  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-rose-200";
-const selectClassName =
-  "w-full rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none";
-
-const readOnlyInputClassName = `${inputClassName} cursor-not-allowed text-slate-500`;
+  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
 
 function StaffUpdateLoadingState() {
+  const { t, language } = useLanguage();
   return (
-    <div className="flex min-h-[320px] items-center justify-center rounded-[20px] bg-white/65 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+    <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/65 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
       <div className="text-center">
         <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-rose-500" />
-        <p className="mt-4 text-sm text-slate-600">Loading staff data...</p>
+        <p className="mt-4 text-sm text-slate-600">
+          {t("adminStaffManagement.loadingStaffData")}
+        </p>
       </div>
     </div>
   );
@@ -79,7 +73,14 @@ InfoChip.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
+// Define status options with only Active and Inactive
+const UPDATED_STATUS_OPTIONS = [
+  { value: "Active", label: "Active", color: "bg-emerald-100 text-emerald-600" },
+  { value: "Inactive", label: "Inactive", color: "bg-rose-100 text-rose-600" },
+];
+
 export function StaffUpdatePage() {
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { staffId } = useParams();
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -89,28 +90,129 @@ export function StaffUpdatePage() {
   const [isNotFound, setIsNotFound] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const [formData, setFormData] = useState(createEmptyStaffForm);
+  const [salons, setSalons] = useState([]);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [selectedSkills, setSelectedSkills] = useState({});
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
+    const mapApiRoleToForm = (apiRole) => {
+      switch (apiRole) {
+        case "Staff_Artist":
+        case "NAIL_ARTIST":
+          return "Staff_Artist";
+        case "Salon_Manager":
+        case "SALON_MANAGER":
+        case "Manager":
+          return "Manager";
+        case "Receptionist":
+        case "RECEPTIONIST":
+          return "Receptionist";
+        case "Admin":
+        case "ADMIN":
+          return "Admin";
+        default:
+          return apiRole || "--";
+      }
+    };
+
+    const mapApiStatusToForm = (apiStatus) => {
+      switch (apiStatus) {
+        case "ACTIVE":
+        case "Active":
+          return "Active";
+        case "INACTIVE":
+        case "Inactive":
+          return "Inactive";
+        default:
+          return "Active";
+      }
+    };
+
     const loadStaff = async () => {
+      console.log("=== StaffUpdatePage: Loading staff ===");
+      console.log("staffId from params:", staffId);
       setIsLoading(true);
       setIsNotFound(false);
 
-      const staffForm = await fetchMockStaffFormById(staffId);
+      try {
+        const [userData, salonsData, skillsData] = await Promise.all([
+          fetchUserById(staffId),
+          fetchAdminSalons({ pageSize: 100 }),
+          fetchSkillTypes({ pageSize: 100 }).catch(() => ({ items: [] }))
+        ]);
 
-      if (!isMounted) {
-        return;
-      }
+        if (!isMounted) {
+          return;
+        }
 
-      if (!staffForm) {
+        setSalons(salonsData.items || []);
+        setSkillTypes(skillsData?.items || []);
+
+        const matchingSalon = salonsData?.items?.find(
+          (salon) => salon.salonId === userData.salonId || salon.id === userData.salonId
+        );
+
+        const fullName = userData.firstName && userData.lastName
+          ? `${userData.firstName} ${userData.lastName}`
+          : userData.fullName || userData.name || "Unnamed Staff";
+
+        const baseForm = createEmptyStaffForm();
+
+        let nailArtistId = userData.staffId || userData.nailArtistId || userData.id;
+        console.log("StaffUpdatePage: Determined nailArtistId:", nailArtistId);
+
+        const staffForm = {
+          ...baseForm,
+          staffId: nailArtistId,
+          id: userData.userId || userData.id || "",
+          userId: userData.userId || userData.id || "",
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          fullName,
+          email: userData.email || "",
+          phone: userData.phone || "",
+          avatarUrl: userData.avatarUrl || null,
+          role: mapApiRoleToForm(userData.role),
+          status: mapApiStatusToForm(userData.status),
+          salonId: userData.salonId || "",
+          assignedSalon: matchingSalon?.name || "",
+        };
+
+        console.log("StaffUpdatePage mapped staffForm:", staffForm);
+
+        if (userData.avatarUrl) {
+          setImagePreview(userData.avatarUrl);
+        }
+
+        setFormData(staffForm);
+
+        if (staffForm.role === "Staff_Artist" && nailArtistId) {
+          try {
+            const existingSkills = await fetchNailArtistSkills(nailArtistId);
+            const skillsMap = {};
+            existingSkills.forEach(s => {
+              if (s.skillTypeId) {
+                skillsMap[s.skillTypeId] = s.level;
+              }
+            });
+            setSelectedSkills(skillsMap);
+          } catch (err) {
+            console.error("Failed to fetch artist skills:", err);
+          }
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error("StaffUpdatePage load error:", error);
+        if (!isMounted) {
+          return;
+        }
         setIsNotFound(true);
         setIsLoading(false);
-        return;
       }
-
-      setFormData(staffForm);
-      setIsLoading(false);
     };
 
     loadStaff();
@@ -125,43 +227,45 @@ export function StaffUpdatePage() {
     [formData.role],
   );
   const selectedStatus = useMemo(
-    () => getStaffCreateStatusOption(formData.status),
+    () => UPDATED_STATUS_OPTIONS.find((option) => option.value === formData.status),
     [formData.status],
   );
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+        handleInputChange("avatarUrl", e.target.result);
+        handleInputChange("imageFile", file);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    handleInputChange("avatarUrl", "");
+    handleInputChange("imageFile", null);
+  };
+
   const handleInputChange = (field, value) => {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  };
-
-  const handleSkillRatingChange = (skillKey, rating) => {
     setFormData((current) => {
-      const nextSkillRatings = {
-        ...current.skillRatings,
-        [skillKey]: rating,
-      };
+      const newFormData = { ...current, [field]: value };
 
-      return {
-        ...current,
-        skillRatings: nextSkillRatings,
-        specialties: getSpecialtiesFromSkillRatings(nextSkillRatings),
-      };
+      if (field === "fullName") {
+        const nameParts = value.split(' ');
+        newFormData.firstName = nameParts[0] || "";
+        newFormData.lastName = nameParts.slice(1).join(' ') || "";
+      }
+
+      if (field === "firstName" || field === "lastName") {
+        newFormData.fullName = `${newFormData.firstName || ""} ${newFormData.lastName || ""}`.trim();
+      }
+
+      return newFormData;
     });
-  };
-
-  const handleScheduleChange = (day, field, value) => {
-    setFormData((current) => ({
-      ...current,
-      schedule: {
-        ...current.schedule,
-        [day]: {
-          ...current.schedule[day],
-          [field]: value,
-        },
-      },
-    }));
   };
 
   const handleSubmit = (event) => {
@@ -172,11 +276,74 @@ export function StaffUpdatePage() {
   const handleConfirmSave = async () => {
     setIsSaving(true);
 
-    const result = await submitMockStaffUpdate(staffId, formData);
+    try {
+      const mapFormStatusToApi = (formStatus) => {
+        switch (formStatus) {
+          case "ACTIVE":
+            return "Active";
+          case "INACTIVE":
+            return "Inactive";
+          default:
+            return "Active";
+        }
+      };
 
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
+      let firstName = formData.firstName;
+      let lastName = formData.lastName;
+      if (!firstName && !lastName && formData.fullName) {
+        const nameParts = formData.fullName.split(' ');
+        firstName = nameParts[0] || "";
+        lastName = nameParts.slice(1).join(' ') || "";
+      }
+
+      const selectedSalon = salons.find(s => s.id === formData.salonId);
+
+      const userUpdateData = {
+        email: formData.email,
+        firstName,
+        lastName,
+        phone: formData.phone,
+        avatarUrl: formData.avatarUrl,
+        role: formData.role,
+        salonId: selectedSalon?.salonId || selectedSalon?.id || formData.salonId,
+        status: mapFormStatusToApi(formData.status),
+        imageFile: formData.imageFile,
+      };
+
+      console.log("Updating user with data:", userUpdateData);
+      await updateUser(formData.userId, userUpdateData);
+
+      if (formData.role === "Staff_Artist" && formData.staffId) {
+        const skillsPayload = Object.entries(selectedSkills)
+          .map(([skillTypeId, level]) => ({ skillTypeId, level: level || 0 }));
+        
+        if (skillsPayload.length > 0) {
+          try {
+            await assignNailArtistSkills(formData.staffId, skillsPayload);
+            console.log("Assigned/Updated skills successfully.");
+          } catch (err) {
+            console.error("Failed to assign/update skills:", err);
+          }
+        }
+      }
+
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: true,
+        message: language === "vi"
+          ? `${formData.fullName} đã được cập nhật thành công.`
+          : `${formData.fullName} has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error("Error updating staff:", error);
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: false,
+        message: error?.response?.data?.message || error?.message || (t("adminStaffManagement.updateStaffFailed")),
+      });
+    }
   };
 
   const handleCloseResultModal = () => {
@@ -187,6 +354,7 @@ export function StaffUpdatePage() {
     navigate(ROUTES.adminStaff, {
       state: {
         flashMessage: saveResult?.message,
+        selectedSalonId: formData.salonId || salons[0]?.id,
       },
     });
   }, [navigate, saveResult?.message]);
@@ -197,7 +365,11 @@ export function StaffUpdatePage() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(ROUTES.adminStaff);
+    navigate(ROUTES.adminStaff, {
+      state: {
+        selectedSalonId: formData.salonId,
+      },
+    });
   };
 
   if (isNotFound) {
@@ -215,10 +387,9 @@ export function StaffUpdatePage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-[28px] font-black tracking-tight text-[#cf3d74]">Update Staff</h1>
-            <p className="text-[12px] font-medium text-slate-400">
-              Update staff information for #{formData.staffId || staffId}
-            </p>
+            <h1 className="text-[28px] font-bold tracking-tight text-[#cf3d74]">
+              {t("adminStaffManagement.updateStaff")}
+            </h1>
           </div>
         </div>
 
@@ -230,7 +401,7 @@ export function StaffUpdatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:opacity-60"
           >
             <X size={14} />
-            Cancel
+            {t("adminStaffManagement.cancel")}
           </button>
           <button
             type="button"
@@ -239,7 +410,7 @@ export function StaffUpdatePage() {
             className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={14} />
-            Update Staff
+            {t("adminStaffManagement.updateStaff")}
           </button>
         </div>
       </header>
@@ -248,409 +419,347 @@ export function StaffUpdatePage() {
         <StaffUpdateLoadingState />
       ) : (
         <>
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoChip icon={Users} title="Current Team" value="84 Active Profiles" />
-        <InfoChip
-          icon={BriefcaseBusiness}
-          title="Assigned Salon"
-          value={formData.assignedSalon}
-          tone="text-sky-500"
-        />
-        <InfoChip
-          icon={ShieldCheck}
-          title="Role"
-          value={selectedRole?.label ?? "-"}
-          tone="text-violet-500"
-        />
-        <InfoChip
-          icon={Sparkles}
-          title="Status"
-          value={selectedStatus?.label ?? "-"}
-          tone="text-emerald-500"
-        />
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h2 className="mb-4 text-[18px] font-bold text-slate-800">Staff Details</h2>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Full Name <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <User size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(event) => handleInputChange("fullName", event.target.value)}
-                    placeholder="Enter full name"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Staff ID <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <span className="text-[12px] font-bold text-rose-300">#</span>
-                  <input
-                    type="text"
-                    value={formData.staffId}
-                    readOnly
-                    className={readOnlyInputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Email <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <Mail size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(event) => handleInputChange("email", event.target.value)}
-                    placeholder="staff@nailify.com"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">
-                  Phone Number <span className="text-rose-500">*</span>
-                </span>
-                <div className={inputWrapperClassName}>
-                  <Phone size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    className={inputClassName}
-                    required
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Role</span>
-                <select
-                  value={formData.role}
-                  onChange={(event) => handleInputChange("role", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Assigned Salon</span>
-                <select
-                  value={formData.assignedSalon}
-                  onChange={(event) => handleInputChange("assignedSalon", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_SALON_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Employment Type</span>
-                <select
-                  value={formData.employmentType}
-                  onChange={(event) => handleInputChange("employmentType", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_EMPLOYMENT_TYPES.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Status</span>
-                <select
-                  value={formData.status}
-                  onChange={(event) => handleInputChange("status", event.target.value)}
-                  className={selectClassName}
-                >
-                  {STAFF_CREATE_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Experience</span>
-                <div className={inputWrapperClassName}>
-                  <BriefcaseBusiness size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.experience}
-                    onChange={(event) => handleInputChange("experience", event.target.value)}
-                    placeholder="e.g. 4 years"
-                    className={inputClassName}
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-[12px] font-semibold text-slate-500">Emergency Contact</span>
-                <div className={inputWrapperClassName}>
-                  <Phone size={14} className="shrink-0 text-rose-300" />
-                  <input
-                    type="text"
-                    value={formData.emergencyContact}
-                    onChange={(event) => handleInputChange("emergencyContact", event.target.value)}
-                    placeholder="Name and number"
-                    className={inputClassName}
-                  />
-                </div>
-              </label>
-
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[12px] font-semibold text-slate-500">Address</span>
-                <div className={`${inputWrapperClassName} items-start`}>
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
-                  <textarea
-                    value={formData.address}
-                    onChange={(event) => handleInputChange("address", event.target.value)}
-                    placeholder="Current home address"
-                    className={`${inputClassName} resize-none`}
-                    rows={3}
-                  />
-                </div>
-              </label>
-            </div>
-          </section>
-
-          <section className="space-y-5">
-            <StaffSkillAssessmentSection
-              ratings={formData.skillRatings}
-              specialties={formData.specialties}
-              onRatingChange={handleSkillRatingChange}
+          <div className="mb-5">
+            <TopMetricsRow
+              metrics={[
+                {
+                  label: t("adminStaffManagement.currentTeam"),
+                  value: t("adminStaffManagement.activeProfiles", { count: 84 }),
+                  icon: Users,
+                  color: "#ea4f93"
+                },
+                {
+                  label: t("adminStaffManagement.assignedSalon"),
+                  value: formData.assignedSalon || t("adminStaffManagement.unknown"),
+                  icon: BriefcaseBusiness,
+                  color: "#0ea5e9"
+                },
+                {
+                  label: t("adminStaffManagement.role"),
+                  value: formData.role ? (language === "vi" ? { "Staff_Artist": "Nhân viên làm móng", "Manager": "Quản lý", "Receptionist": "Lễ tân" }[formData.role] || formData.role : formData.role.replace(/_/g, ' ')) : "-",
+                  icon: ShieldCheck,
+                  color: "#8b5cf6"
+                },
+                {
+                  label: t("adminStaffManagement.status"),
+                  value: formData.status ? (language === "vi" ? { "Active": "Hoạt động", "Inactive": "Ngừng hoạt động" }[formData.status] || formData.status : formData.status) : "-",
+                  icon: Sparkles,
+                  color: "#10b981"
+                }
+              ]}
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
             />
-            <label className="mt-5 block space-y-2">
-              <span className="text-[12px] font-semibold text-slate-500">Notes</span>
-              <textarea
-                value={formData.notes}
-                onChange={(event) => handleInputChange("notes", event.target.value)}
-                placeholder="Add performance notes, certifications, or internal remarks"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none placeholder:text-rose-200"
-                rows={4}
-              />
-            </label>
-          </section>
+          </div>
 
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="mb-4 flex items-center gap-2">
-              <CalendarDays size={16} className="text-rose-500" />
-              <h2 className="text-[18px] font-bold text-slate-800">Weekly Schedule</h2>
-            </div>
+          <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-3">
+            <div className="space-y-5 lg:col-span-2">
+              <section className="rounded-lg bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+                <h2 className="mb-6 text-[20px] font-bold text-slate-800">
+                  {t("adminStaffManagement.staffDetails")}
+                </h2>
 
-            <div className="space-y-3">
-              {STAFF_DAYS_OF_WEEK.map((day) => (
-                <div
-                  key={day.key}
-                  className="grid gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3 md:grid-cols-[1.1fr_120px_120px]"
-                >
-                  <label className="flex items-center gap-3 text-[12px] font-semibold text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={formData.schedule[day.key].enabled}
-                      onChange={(event) =>
-                        handleScheduleChange(day.key, "enabled", event.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-rose-200 accent-rose-500"
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.fullName")} <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <User size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(event) => handleInputChange("fullName", event.target.value)}
+                        placeholder={t("adminStaffManagement.enterFullName")}
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.email")} <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <Mail size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(event) => handleInputChange("email", event.target.value)}
+                        placeholder="staff@nailify.com"
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.phoneNumber")} <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <Phone size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(event) => handleInputChange("phone", event.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.role")}
+                    </span>
+                    <Select
+                      value={formData.role}
+                      onChange={(value) => handleInputChange("role", value)}
+                      options={[
+                        { value: "Manager", label: t("adminStaffManagement.manager") || (language === "vi" ? "Quản lý" : "Manager") },
+                        { value: "Receptionist", label: t("adminStaffManagement.receptionist") || (language === "vi" ? "Lễ tân" : "Receptionist") },
+                        { value: "Staff_Artist", label: t("adminStaffManagement.staffArtist") || (language === "vi" ? "Nhân viên làm móng" : "Staff Artist") },
+                      ]}
+                      className="w-full"
+                      size="large"
                     />
-                    <span>{day.label}</span>
-                  </label>
+                  </div>
 
-                  <TimePicker
-                    value={formData.schedule[day.key].start}
-                    onChange={(value) => handleScheduleChange(day.key, "start", value)}
-                    placeholder="Start"
-                    disabled={!formData.schedule[day.key].enabled}
-                  />
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.assignedSalon")}
+                    </span>
+                    <Select
+                      value={formData.salonId}
+                      onChange={(value) => {
+                        const selectedSalon = salons.find(s => s.id === value);
+                        handleInputChange("salonId", value);
+                        handleInputChange("assignedSalon", selectedSalon?.name || "");
+                      }}
+                      options={salons.map((salon) => ({
+                        value: salon.id,
+                        label: salon.name,
+                      }))}
+                      className="w-full"
+                      size="large"
+                    />
+                  </div>
 
-                  <TimePicker
-                    value={formData.schedule[day.key].end}
-                    onChange={(value) => handleScheduleChange(day.key, "end", value)}
-                    placeholder="End"
-                    disabled={!formData.schedule[day.key].enabled}
-                  />
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.status")}
+                    </span>
+                    <Select
+                      value={formData.status}
+                      onChange={(value) => handleInputChange("status", value)}
+                      options={[
+                        { value: "Active", label: language === "vi" ? "Hoạt động" : "Active" },
+                        { value: "Inactive", label: language === "vi" ? "Ngừng hoạt động" : "Inactive" },
+                      ]}
+                      className="w-full"
+                      size="large"
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {t("adminStaffManagement.avatar")}
+                    </span>
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                      {imagePreview ? (
+                        <div className="relative w-full flex items-center justify-center">
+                          <img crossOrigin="anonymous"
+                            src={imagePreview}
+                            alt="Preview"
+                            className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center gap-3 cursor-pointer">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                            <User size={28} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base font-semibold text-slate-700">{t("adminStaffManagement.clickUploadAvatar")}</p>
+                            <p className="text-xs text-slate-400 mt-1">{t("adminStaffManagement.uploadFormat")}</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
+              </section>
 
-        <aside className="space-y-5">
-          <section className="rounded-[28px] border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-5 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-xl bg-rose-100 p-2 text-rose-500">
-                <User size={14} />
-              </div>
-              <div>
-                <h3 className="text-[14px] font-black text-slate-800">Profile Preview</h3>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Updated summary for this team member
-                </p>
-              </div>
+              {formData.role === "Staff_Artist" && (
+                <section className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50 mt-5">
+                  <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
+                    <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
+                    {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
+                  </h2>
+                  
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {skillTypes.map((skill) => (
+                      <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[14px] font-bold text-slate-700">
+                            {skill.name}
+                          </span>
+                          {selectedSkills[skill.skillTypeId || skill.id] > 0 && (
+                            <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+                              Level {selectedSkills[skill.skillTypeId || skill.id]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center">
+                          <Rate
+                            value={selectedSkills[skill.skillTypeId || skill.id] || 0}
+                            onChange={(value) => {
+                              setSelectedSkills(prev => ({
+                                ...prev,
+                                [skill.skillTypeId || skill.id]: value
+                              }));
+                            }}
+                            className="text-rose-400"
+                            allowClear
+                          />
+                        </div>
+                        {skill.description && (
+                          <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 font-medium">
+                            {skill.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
-            <div className="rounded-[24px] border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-black text-white">
-                {getStaffInitials(formData.fullName || "NS")}
-              </div>
-              <h4 className="mt-3 text-[15px] font-black text-slate-800">
-                {formData.fullName || "Staff Member"}
-              </h4>
-              <p className="text-[10px] font-semibold text-slate-400">
-                {selectedRole?.label ?? "Role"} · #{formData.staffId}
-              </p>
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                {formData.specialties.slice(0, 3).map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-500"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-4 text-[11px] font-medium text-slate-400">
-                Assigned Salon:{" "}
-                <span className="font-bold text-rose-400">{formData.assignedSalon}</span>
-              </p>
-            </div>
-          </section>
-
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h3 className="mb-4 text-[14px] font-black text-slate-800">Update Checklist</h3>
-            <div className="space-y-3">
-              {STAFF_UPDATE_CHECKLIST.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3"
-                >
-                  <div className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                  <p className="text-[11px] font-semibold text-slate-600">{item}</p>
+            <aside className="space-y-5">
+              <section className="rounded-lg border border-rose-100 bg-gradient-to-br from-[#fff4f8] to-[#fffdfd] p-6 shadow-[0_20px_40px_rgba(226,93,143,0.08)]">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="rounded-xl bg-rose-100 p-2 text-rose-500">
+                    <User size={14} />
+                  </div>
+                  <div>
+                    <h3 className="text-[14px] font-bold text-slate-800">{t("adminStaffManagement.profilePreview")}</h3>
+                    <p className="text-[11px] font-medium text-slate-400">
+                      {t("adminStaffManagement.updateSummary")}
+                    </p>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
 
-          <section className="rounded-[28px] bg-white/65 p-5 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <h3 className="mb-4 text-[14px] font-black text-slate-800">Assigned Summary</h3>
-            <div className="space-y-3">
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Salon
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.assignedSalon}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Employment Type
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.employmentType}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Primary Contact
-                </p>
-                <p className="mt-1 text-[12px] font-bold text-slate-700">{formData.phone || "—"}</p>
-              </div>
-              <div className="rounded-2xl bg-[#fff6f9] px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                  Status
-                </p>
-                <span
-                  className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${selectedStatus?.color ?? ""}`}
-                >
-                  {selectedStatus?.label}
-                </span>
-              </div>
-            </div>
-          </section>
-        </aside>
-      </form>
+                <div className="rounded-lg border border-rose-100 bg-white p-4 text-center shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
+                  {imagePreview ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={imagePreview}
+                      alt="Avatar"
+                      className="mx-auto h-16 w-16 rounded-full object-cover shadow-sm border-2 border-rose-100"
+                    />
+                  ) : (
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[20px] font-bold text-white">
+                      {getStaffInitials(formData.fullName || "NS")}
+                    </div>
+                  )}
+                  <h4 className="mt-3 text-[15px] font-bold text-slate-800">
+                    {formData.fullName || (t("adminStaffManagement.staffMember"))}
+                  </h4>
+                  <p className="text-[10px] font-semibold text-slate-400">
+                    {formData.role ? (language === "vi" ? { "Staff_Artist": "Nhân viên làm móng", "Manager": "Quản lý", "Receptionist": "Lễ tân" }[formData.role] || formData.role : formData.role.replace(/_/g, ' ')) : (t("adminStaffManagement.role"))}
+                  </p>
+                  <p className="mt-4 text-[11px] font-medium text-slate-400">
+                    {t("adminStaffManagement.assignedSalon") + ":"}{" "}
+                    <span className="font-bold text-rose-400">{formData.assignedSalon || (t("adminStaffManagement.none"))}</span>
+                  </p>
+                </div>
+              </section>
+
+              {/* <section className="rounded-[28px] bg-white/65 p-6 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+                <h3 className="mb-4 text-[14px] font-bold text-slate-800">{t("adminStaffManagement.updateChecklist")}</h3>
+                <div className="space-y-3">
+                  {STAFF_UPDATE_CHECKLIST.map((item) => {
+                    return (
+                      <div
+                        key={item}
+                        className="flex items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-3"
+                      >
+                        <div className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                        <p className="text-[11px] font-semibold text-slate-600">{item}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section> */}
+            </aside>
+          </form>
         </>
       )}
 
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Staff Update"
-        subtitle="You are leaving this edit session without saving."
-        description="Recent changes to this staff profile will be discarded if you leave now."
-        confirmText="Leave Page"
-        cancelText="Keep Editing"
+        title={t("adminStaffManagement.cancelStaffUpdate")}
+        subtitle={t("adminStaffManagement.leaveWithoutSaving")}
+        description={t("adminStaffManagement.recentChangesDiscarded")}
+        confirmText={t("adminStaffManagement.leavePage")}
+        cancelText={t("adminStaffManagement.keepEditing")}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
         details={[
-          { label: "Editing Mode", value: "Update staff profile" },
-          { label: "Next Step", value: "Return to staff list" },
+          { label: t("adminStaffManagement.editingMode"), value: t("adminStaffManagement.updateStaffProfile") },
+          { label: t("adminStaffManagement.nextStep"), value: t("adminStaffManagement.returnToStaffList") },
         ]}
-        warnings={[
-          "Role, salon assignment, availability, and profile changes will not be saved.",
-          "The current staff record will remain unchanged until you confirm the update.",
-        ]}
+        warnings={
+          language === "vi"
+            ? ["Vai trò, salon và hồ sơ thay đổi sẽ không được lưu.", "Bản ghi nhân viên hiện tại sẽ giữ nguyên cho đến khi xác nhận cập nhật thành công."]
+            : ["Role, salon assignment, and profile changes will not be saved.", "The current staff record will remain unchanged until you confirm the update."]
+        }
       />
 
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save Staff Changes"
-        subtitle="This will update the profile in the current mock staff state."
-        description="Confirm to apply the latest changes to this staff member."
-        confirmText="Update Staff"
-        cancelText="Review Again"
+        title={t("adminStaffManagement.saveStaffChanges")}
+        subtitle={t("adminStaffManagement.updateProfileDatabase")}
+        description={t("adminStaffManagement.confirmApplyChanges")}
+        confirmText={t("adminStaffManagement.updateStaff")}
+        cancelText={t("adminStaffManagement.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.fullName || "Staff profile", formData.role || "Role pending", formData.status]}
+        highlights={[formData.fullName || (t("adminStaffManagement.staffProfile")), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role, t("adminStaffManagement." + (formData.status === "active" ? "workingToday" : "inactive"))]}
         details={[
-          { label: "Assigned Salon", value: formData.assignedSalon || "No salon selected" },
-          { label: "Employment Type", value: formData.employmentType || "Not selected" },
+          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}
-        warnings={["This mock update changes the current UI state only and does not persist to a backend."]}
       />
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Update Successful"
-        failureTitle="Update Failed"
-        successDescription="The staff member has been updated successfully."
-        failureDescription="Unable to update the staff member."
+        successTitle={language === "vi" ? "Cập Nhật Thành Công" : "Update Successful"}
+        failureTitle={language === "vi" ? "Cập Nhật Thất Bại" : "Update Failed"}
+        successDescription={language === "vi" ? "Hồ sơ nhân viên đã được cập nhật thành công." : "The staff member has been updated successfully."}
+        failureDescription={language === "vi" ? "Không thể cập nhật hồ sơ nhân viên." : "Unable to update the staff member."}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến danh sách nhân viên..." : "Redirecting to staff list..."}
       />
     </section>
   );

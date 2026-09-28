@@ -1,0 +1,709 @@
+import {
+  ArrowLeft,
+  Image as ImageIcon,
+  Pencil,
+  Save,
+  Shapes,
+  Trash2,
+  Upload,
+  X,
+  Plus, Clock3
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ROUTES } from "../../../../shared/constants/routes";
+import {
+  deleteAdminNailShape,
+  fetchAdminNailShapeDetail,
+  formatNailShapeDuration,
+  updateAdminNailShape,
+  fetchAdminShapeMethodConfigsByNailShape,
+  createAdminShapeMethodConfig,
+  updateAdminShapeMethodConfig,
+  deleteAdminShapeMethodConfig,
+} from "../services/nailShapesManagementService";
+import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button } from "antd";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+
+function validateForm(formValues, language) {
+  const isVi = language === "vi";
+  if (!String(formValues.name || "").trim()) {
+    return isVi ? "Tên dáng móng là bắt buộc." : "Nail shape name is required.";
+  }
+
+  return "";
+}
+
+export function NailShapeDetailPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const { shapeId } = useParams();
+  const [shape, setShape] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
+  const [configs, setConfigs] = useState([]);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(true);
+
+  const [isConfigModalVisible, setIsConfigModalVisible] = useState(false);
+  const [editingConfig, setEditingConfig] = useState(null);
+  const [configPendingDelete, setConfigPendingDelete] = useState(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isDeletingConfig, setIsDeletingConfig] = useState(false);
+  const [configForm] = Form.useForm();
+
+  const handleOpenConfigModal = (config = null) => {
+    setEditingConfig(config);
+    if (config) {
+      configForm.setFieldsValue({
+        name: config.name,
+        price: config.price,
+        duration: config.duration,
+      });
+    } else {
+      configForm.resetFields();
+    }
+    setIsConfigModalVisible(true);
+  };
+
+  const handleSaveConfig = async () => {
+    try {
+      const values = await configForm.validateFields();
+      setIsSavingConfig(true);
+      const toastId = toast.loading(language === "vi" ? (editingConfig ? "Đang cập nhật cấu hình..." : "Đang tạo cấu hình...") : (editingConfig ? "Updating config..." : "Creating config..."));
+
+      const basePayload = {
+        nailShapeId: Number(shapeId),
+        name: values.name.trim(),
+        price: Number(values.price),
+        duration: Number(values.duration),
+      };
+
+      if (editingConfig) {
+        const updatePayload = {
+          ...basePayload,
+        };
+        const updatedConfig = await updateAdminShapeMethodConfig(editingConfig.shapeMethodConfigId, updatePayload);
+        setConfigs((prev) => prev.map(c => c.shapeMethodConfigId === updatedConfig.shapeMethodConfigId ? updatedConfig : c));
+        toast.success(t("adminNailShapesManagement.configUpdatedSuccessfully"), { id: toastId });
+      } else {
+        const newConfig = await createAdminShapeMethodConfig(basePayload);
+        setConfigs((prev) => [...prev, newConfig]);
+        toast.success(t("adminNailShapesManagement.configCreatedSuccessfully"), { id: toastId });
+      }
+
+      setIsConfigModalVisible(false);
+    } catch (error) {
+      if (error.name === 'ValidationError') return;
+      toast.error(error instanceof Error ? error.message : (t("adminNailShapesManagement.failedToSaveConfig")));
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const handleDeleteConfig = async () => {
+    if (!configPendingDelete) {
+      return;
+    }
+
+    const toastId = toast.loading(t("adminNailShapesManagement.deletingConfig"));
+    setIsDeletingConfig(true);
+
+    try {
+      await deleteAdminShapeMethodConfig(configPendingDelete.shapeMethodConfigId);
+      setConfigs((prev) => prev.filter((c) => c.shapeMethodConfigId !== configPendingDelete.shapeMethodConfigId));
+      toast.success(t("adminNailShapesManagement.configDeletedSuccessfully"), { id: toastId });
+      setConfigPendingDelete(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : (t("adminNailShapesManagement.failedToDeleteConfig")), { id: toastId });
+    } finally {
+      setIsDeletingConfig(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!location.state?.flashMessage && !location.state?.startInEdit) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadShape = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminNailShapeDetail(shapeId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setShape(response);
+        setDraft({
+          name: response.name,
+          image: null,
+        });
+        setImagePreview(response.imageUrl || "");
+
+        // Fetch configs for this shape
+        try {
+          const configData = await fetchAdminShapeMethodConfigsByNailShape(shapeId);
+          if (isMounted) setConfigs(configData);
+        } catch (configError) {
+          console.error("Failed to load configs", configError);
+        }
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : (t("adminNailShapesManagement.failedToLoadNailShapeDetail")));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsLoadingConfigs(false);
+        }
+      }
+    };
+
+    void loadShape();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shapeId]);
+
+  const summaryItems = useMemo(() => {
+    if (!shape || !draft) {
+      return [];
+    }
+
+    return [
+      [t("adminNailShapesManagement.shapeId"), String(shape.nailShapeId)],
+      [t("adminNailShapesManagement.shapeName"), draft.name],
+    ];
+  }, [draft, shape, t]);
+
+  const handleFieldChange = (field, value) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      image: file,
+    }));
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleStartEdit = () => {
+    if (!shape) {
+      return;
+    }
+
+    setDraft({
+      name: shape.name,
+      image: null,
+    });
+    setImagePreview(shape.imageUrl || "");
+    setError("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (!shape) {
+      return;
+    }
+
+    setDraft({
+      name: shape.name,
+      image: null,
+    });
+    setImagePreview(shape.imageUrl || "");
+    setError("");
+    setIsEditing(false);
+  };
+
+  const handleRequestSave = () => {
+    const validationError = validateForm(draft, language);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!shape || !draft) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const updatedShape = await updateAdminNailShape(shape.nailShapeId, {
+        ...draft,
+      });
+
+      setShape(updatedShape);
+      setDraft({
+        name: updatedShape.name,
+        image: null,
+      });
+      setImagePreview(updatedShape.imageUrl || imagePreview);
+      setIsEditing(false);
+      toast.success(language === "vi" ? `Đã cập nhật dáng móng ${updatedShape.name} thành công.` : `${updatedShape.name} updated successfully.`);
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : (t("adminNailShapesManagement.failedToUpdateNailShape"));
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+      setShowSaveConfirm(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!shape) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteAdminNailShape(shape.nailShapeId);
+      toast.success(language === "vi" ? `Đã xóa dáng móng ${shape.name} thành công.` : `${shape.name} deleted successfully.`);
+      navigate(ROUTES.adminNailShapes, {
+        state: {
+          flashMessage: language === "vi" ? `Dáng móng ${shape.name} đã được xóa thành công.` : `${shape.name} has been deleted successfully.`,
+        },
+      });
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : (t("adminNailShapesManagement.failedToDeleteNailShape"));
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  if (!isLoading && !shape) {
+    return <Navigate to={ROUTES.adminNailShapes} replace />;
+  }
+
+  return (
+    <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <Link
+            to={ROUTES.adminNailShapes}
+            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminNailShapesManagement.nailShapeDetail")}</h1>
+            <p className="text-xs font-medium text-slate-400">
+              {t("adminNailShapesManagement.reviewEditAndDeleteThisNailSha")}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {shape?.status === "Active" && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {t("adminNailShapesManagement.deleteShape")}
+            </button>
+          )}
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                <X size={14} />
+                {t("adminNailShapesManagement.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestSave}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+              >
+                <Save size={14} />
+                {t("adminNailShapesManagement.saveChanges")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil size={14} />
+              {t("adminNailShapesManagement.editShape")}
+            </button>
+          )}
+        </div>
+      </header>
+
+
+
+
+
+      {isLoading ? (
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+          <div className="text-center text-sm text-slate-600">{t("adminNailShapesManagement.loadingNailShapeDetails")}</div>
+        </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {t("adminNailShapesManagement.nailShapeInformation")}
+            </h2>
+
+            <div className="grid gap-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.shapeName")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <Shapes size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={draft?.name || ""}
+                    onChange={(event) => handleFieldChange("name", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
+                <label
+                  className={`flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 p-3 ${isEditing
+                    ? "cursor-pointer bg-gradient-to-br from-[#fffafc] to-[#fff5f9] transition hover:border-rose-300 hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]"
+                    : "bg-gradient-to-br from-[#fffafc] to-[#fff5f9]"
+                    }`}
+                >
+                  {imagePreview ? (
+                    <Image
+                      crossOrigin="anonymous"
+                      src={imagePreview}
+                      alt="Nail shape preview"
+                      className="h-full w-full rounded-2xl object-cover shadow-lg"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <>
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg">
+                        <Upload size={28} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold text-slate-700">
+                          {isEditing ? (t("adminNailShapesManagement.clickToUploadShapeImage")) : (t("adminNailShapesManagement.noPreviewImage"))}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">PNG, JPG up to 5MB</p>
+                      </div>
+                    </>
+                  )}
+                  {isEditing ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  ) : null}
+                </label>
+              </label>
+            </div>
+          </section>
+
+          <section className="min-w-0 rounded-lg bg-white p-5 shadow-sm ring-1 ring-slate-100">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-800">{t("adminNailShapesManagement.shapeMethodConfigs")}</h2>
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
+                onClick={() => handleOpenConfigModal()}
+                className="!inline-flex !h-10 !items-center !rounded-full !border-none !bg-[#df4d82] !px-5 !font-bold !text-white !shadow-[0_12px_24px_rgba(226,93,143,0.28)] hover:!bg-[#cf3d74] hover:!text-white"
+                style={{
+                  background: "linear-gradient(135deg, #eb5b92 0%, #cf3d74 100%)",
+                  borderColor: "transparent",
+                }}
+              >
+                {t("adminNailShapesManagement.addConfig")}
+              </Button>
+            </div>
+            <Table
+              dataSource={configs}
+              rowKey="shapeMethodConfigId"
+              pagination={false}
+              loading={isLoadingConfigs}
+              columns={[
+                {
+                  title: t("adminNailShapesManagement.name"),
+                  dataIndex: 'name',
+                  key: 'name',
+                  sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+                  render: (text) => <span className="font-semibold text-slate-700">{text}</span>
+                },
+                {
+                  title: t("adminNailShapesManagement.price"),
+                  dataIndex: 'price',
+                  key: 'price',
+                  sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
+                  render: (val) => <span className="text-emerald-600 font-medium">{`${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(val || 0))} VND`}</span>
+                },
+                {
+                  title: t("adminNailShapesManagement.duration"),
+                  dataIndex: 'duration',
+                  key: 'duration',
+                  sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
+                  render: (val) => <span className="text-blue-600 font-medium">{formatNailShapeDuration(val)}</span>
+                },
+                {
+                  title: t("adminNailShapesManagement.status"),
+                  dataIndex: 'status',
+                  key: 'status',
+                  sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+                  render: (val) => (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
+                    </span>
+                  )
+                },
+                {
+                  title: t("adminNailShapesManagement.actions"),
+                  key: 'actions',
+                  align: 'right',
+                  render: (_, record) => (
+                    <ActionButtons
+                      onEdit={() => handleOpenConfigModal(record)}
+                      onDelete={() => setConfigPendingDelete(record)}
+                      showView={false}
+                      showApprove={false}
+                      showReject={false}
+                    />
+                  )
+                }
+              ]}
+              className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+            />
+          </section>
+
+        </div>
+      )}
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title={t("adminNailShapesManagement.saveNailShapeChanges")}
+        subtitle={t("adminNailShapesManagement.thisWillUpdateTheNailShapeInBa")}
+        description={t("adminNailShapesManagement.confirmToSaveTheLatestChangesT")}
+        confirmText={t("adminNailShapesManagement.saveChanges")}
+        cancelText={t("adminNailShapesManagement.reviewAgain")}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleSave}
+        onCancel={() => !isSaving && setShowSaveConfirm(false)}
+        highlights={[draft?.name || shape?.name || (t("adminNailShapesManagement.nailShape"))]}
+        details={[
+          { label: t("adminNailShapesManagement.duration"), value: draft?.duration ? formatNailShapeDuration(draft.duration) : "--" },
+        ]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={t("adminNailShapesManagement.deleteNailShape")}
+        subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
+        description={language === "vi" ? `Bạn chuẩn bị xóa ${shape?.name || "dáng móng này"}. Hành động này không thể hoàn tác.` : `You are about to delete ${shape?.name || "this nail shape"}. This action cannot be undone.`}
+        confirmText={t("adminNailShapesManagement.deleteShape")}
+        cancelText={t("adminNailShapesManagement.keepShape")}
+        confirmIcon={Trash2}
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => !isDeleting && setShowDeleteConfirm(false)}
+        item={
+          shape
+            ? {
+              image: shape.imageUrl || undefined,
+              title: shape.name,
+              meta: shape.durationLabel,
+              note: (t("adminNailShapesManagement.shapeId1")) + shape.nailShapeId,
+            }
+            : null
+        }
+        warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet")]}
+      />
+
+      <ActionConfirmModal
+        open={Boolean(configPendingDelete)}
+        intent="danger"
+        title={t("adminNailShapesManagement.deleteConfig")}
+        subtitle={t("adminNailShapesManagement.thisWillPermanentlyRemoveTheNa")}
+        description={t("adminNailShapesManagement.areYouSureYouWantToDeleteThisC")}
+        confirmText={t("adminNailShapesManagement.deleteConfig")}
+        cancelText={t("adminNailShapesManagement.no")}
+        confirmIcon={Trash2}
+        loading={isDeletingConfig}
+        onConfirm={handleDeleteConfig}
+        onCancel={() => !isDeletingConfig && setConfigPendingDelete(null)}
+        item={
+          configPendingDelete
+            ? {
+              title: configPendingDelete.name,
+              meta: `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(Number(configPendingDelete.price || 0))} VND`,
+              note: formatNailShapeDuration(configPendingDelete.duration),
+            }
+            : null
+        }
+        warnings={[t("adminNailShapesManagement.thisActionCallsTheBackendDelet")]}
+      />
+
+      <Modal
+        title={null}
+        open={isConfigModalVisible}
+        onCancel={() => !isSavingConfig && setIsConfigModalVisible(false)}
+        footer={null}
+        destroyOnClose
+        centered
+        width={560}
+        styles={{
+          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          body: { padding: 0 },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
+      >
+        <div className="bg-[linear-gradient(135deg,#fff1f7_0%,#fffafc_100%)] px-6 pb-8 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#ea4f93] text-white shadow-[0_10px_24px_rgba(234,79,147,0.25)]">
+              {editingConfig ? <Pencil size={18} /> : <Plus size={18} />}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[#432744]">
+                {editingConfig ? (t("adminNailShapesManagement.editShapeMethodConfig")) : (t("adminNailShapesManagement.addShapeMethodConfig"))}
+              </h3>
+              <p className="mt-1 text-xs font-medium text-[#b58a9f]">
+                {shape?.name || t("adminNailShapesManagement.nailShape")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Form
+          form={configForm}
+          layout="vertical"
+          onFinish={handleSaveConfig}
+          className="-mt-4 rounded-t-[24px] bg-white px-6 pb-6 pt-5 [&_.ant-form-item]:mb-4"
+        >
+          <Form.Item
+            name="name"
+            label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.name")}</span>}
+            rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterAName") }]}
+          >
+            <Input className="h-10 rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93]" />
+          </Form.Item>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Form.Item
+              name="price"
+              label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.priceVnd")}</span>}
+              rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterPrice") }]}
+            >
+              <InputNumber
+                className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
+                style={{ width: "100%" }}
+                min={0}
+                step={1000}
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value?.replace(/\$\s?|(,*)/g, '') || ''}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="duration"
+              label={<span className="text-xs font-bold text-[#73566a]">{t("adminNailShapesManagement.durationMins")}</span>}
+              rules={[{ required: true, message: t("adminNailShapesManagement.pleaseEnterDuration") }]}
+            >
+              <InputNumber
+                className="!w-full rounded-xl border-[#f5d7e4] bg-[#fff9fc] hover:border-[#ea4f93] [&_.ant-input-number-input]:!h-10"
+                style={{ width: "100%" }}
+                min={1}
+              />
+            </Form.Item>
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-rose-50">
+            <Button
+              onClick={() => setIsConfigModalVisible(false)}
+              disabled={isSavingConfig}
+              className="h-10 rounded-full border-rose-200 px-5 font-bold text-rose-500 hover:!border-rose-300 hover:!text-rose-600"
+            >
+              {t("adminNailShapesManagement.cancel")}
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isSavingConfig}
+              className="!h-10 !rounded-full !border-none !bg-[#df4d82] !px-5 !font-bold !text-white !shadow-[0_12px_24px_rgba(226,93,143,0.28)] hover:!bg-[#cf3d74] hover:!text-white"
+              style={{
+                background: "linear-gradient(135deg, #eb5b92 0%, #cf3d74 100%)",
+                borderColor: "transparent",
+              }}
+            >
+              {editingConfig ? t("adminNailShapesManagement.saveConfig") : t("adminNailShapesManagement.addConfig")}
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+    </section>
+  );
+}

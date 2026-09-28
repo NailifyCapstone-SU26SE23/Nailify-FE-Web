@@ -1,0 +1,510 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ArrowLeft, FolderTree, Pencil, Plus, Save, ShieldCheck, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ROUTES } from "../../../../shared/constants/routes";
+import { createAdminCategory } from "../../categories-management/services/categoriesManagementService";
+import {
+  CATEGORY_TYPE_STATUS_OPTIONS,
+  deleteAdminCategoryType,
+  fetchAdminCategoryTypeDetail,
+  updateAdminCategoryType,
+} from "../services/categoryTypesManagementService";
+
+function validateForm(formValues, t) {
+  if (!String(formValues.name || "").trim()) {
+    return t("adminCategoryTypes.nameRequired");
+  }
+
+  if (!String(formValues.status || "").trim()) {
+    return t("adminCategoryTypes.statusRequired");
+  }
+
+  return "";
+}
+
+export function CategoryTypeDetailPage() {
+  const { t } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { categoryTypeId } = useParams();
+  const [categoryType, setCategoryType] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [createCategoryError, setCreateCategoryError] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  const loadCategoryTypeDetail = async (targetCategoryTypeId) => {
+    const response = await fetchAdminCategoryTypeDetail(targetCategoryTypeId);
+    setCategoryType(response);
+    setDraft({
+      name: response.name,
+      status: response.status,
+    });
+  };
+
+  useEffect(() => {
+    if (!location.state?.flashMessage && !location.state?.startInEdit) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategoryType = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        if (!isMounted) {
+          return;
+        }
+        await loadCategoryTypeDetail(categoryTypeId);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : t("adminCategoryTypes.loadDetailFailed"));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadCategoryType();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryTypeId, t]);
+
+  const handleFieldChange = (field, value) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!categoryType) {
+      return;
+    }
+
+    setDraft({
+      name: categoryType.name,
+      status: categoryType.status,
+    });
+    setError("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (!categoryType) {
+      return;
+    }
+
+    setDraft({
+      name: categoryType.name,
+      status: categoryType.status,
+    });
+    setError("");
+    setIsEditing(false);
+  };
+
+  const handleRequestSave = () => {
+    const validationError = validateForm(draft, t);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!categoryType || !draft) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const updatedCategoryType = await updateAdminCategoryType(categoryType.categoryTypeId, draft);
+      setCategoryType(updatedCategoryType);
+      setDraft({
+        name: updatedCategoryType.name,
+        status: updatedCategoryType.status,
+      });
+      setIsEditing(false);
+      toast.success(t("adminCategoryTypes.updateSuccess", { name: updatedCategoryType.name }));
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : t("adminCategoryTypes.updateFailed");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+      setShowSaveConfirm(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!categoryType) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteAdminCategoryType(categoryType.categoryTypeId);
+      toast.success(t("adminCategoryTypes.deleteSuccess", { name: categoryType.name }));
+      navigate(ROUTES.adminCategoryTypes, {
+        state: {
+          flashMessage: t("adminCategoryTypes.deleteFlashSuccess", { name: categoryType.name }),
+        },
+      });
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : t("adminCategoryTypes.deleteFailed");
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleOpenCreateCategoryModal = () => {
+    setNewCategoryName("");
+    setCreateCategoryError("");
+    setShowCreateCategoryModal(true);
+  };
+
+  const handleCreateCategory = async () => {
+    if (!categoryType) {
+      return;
+    }
+
+    const normalizedName = String(newCategoryName || "").trim();
+
+    if (!normalizedName) {
+      setCreateCategoryError(t("adminCategoryTypes.categoryNameRequired"));
+      return;
+    }
+
+    setIsCreatingCategory(true);
+
+    try {
+      const createdCategory = await createAdminCategory({
+        name: normalizedName,
+        categoryTypeId: categoryType.categoryTypeId,
+      });
+
+      await loadCategoryTypeDetail(categoryType.categoryTypeId);
+      setShowCreateCategoryModal(false);
+      setNewCategoryName("");
+      setCreateCategoryError("");
+      toast.success(t("adminCategoryTypes.createCategorySuccess", { name: createdCategory.name }));
+    } catch (createError) {
+      const message = createError instanceof Error ? createError.message : t("adminCategoryTypes.createCategoryFailed");
+      setCreateCategoryError(message);
+      toast.error(message);
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  if (!isLoading && !categoryType) {
+    return <Navigate to={ROUTES.adminCategoryTypes} replace />;
+  }
+
+  return (
+    <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <Link
+            to={ROUTES.adminCategoryTypes}
+            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminCategoryTypes.categoryTypeDetail")}</h1>
+            <p className="text-xs font-medium text-slate-400">{t("adminCategoryTypes.categoryTypeDetailDesc")}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {categoryType?.status === "Active" && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {t("adminCategoryTypes.deleteCategoryType")}
+            </button>
+          )}
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                <X size={14} />
+                {t("adminCategoryTypes.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestSave}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+              >
+                <Save size={14} />
+                {t("adminCategoryTypes.saveChanges")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil size={14} />
+              {t("adminCategoryTypes.editCategoryType")}
+            </button>
+          )}
+        </div>
+      </header>
+
+
+
+
+
+      {isLoading ? (
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+          <div className="text-center text-sm text-slate-600">{t("adminCategoryTypes.loadingDetails")}</div>
+        </div>
+      ) : (
+        <div className="grid gap-4 ">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {t("adminCategoryTypes.categoryTypeInformation")}
+            </h2>
+
+            <div className="grid gap-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.categoryTypeName")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <FolderTree size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={draft?.name || ""}
+                    onChange={(event) => handleFieldChange("name", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.status")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
+                  <select
+                    value={draft?.status || CATEGORY_TYPE_STATUS_OPTIONS[0]}
+                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  >
+                    {CATEGORY_TYPE_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
+
+              <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[13px] font-semibold text-slate-600">{t("adminCategoryTypes.nestedCategories")}</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateCategoryModal}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.22)] transition hover:opacity-95"
+                  >
+                    <Plus size={13} />
+                    {t("adminCategoryTypes.addCategory")}
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {categoryType?.categories?.length ? (
+                    categoryType.categories.map((category) => (
+                      <span
+                        key={category.categoryId}
+                        className="inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#b15f84] shadow-sm"
+                      >
+                        {category.name} ({category.status})
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-400">{t("adminCategoryTypes.noCategoriesAssigned")}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      )}
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title={t("adminCategoryTypes.saveChangesTitle")}
+        subtitle={t("adminCategoryTypes.saveChangesSubtitle")}
+        description={t("adminCategoryTypes.saveChangesDesc")}
+        confirmText={t("adminCategoryTypes.saveChanges")}
+        cancelText={t("adminCategoryTypes.reviewAgain")}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleSave}
+        onCancel={() => !isSaving && setShowSaveConfirm(false)}
+        highlights={[draft?.name || categoryType?.name || "Category type"]}
+        details={[{ label: "Status", value: draft?.status }]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={t("adminCategoryTypes.deleteCategoryTypeTitle")}
+        subtitle={t("adminCategoryTypes.deleteConfirmSubtitle")}
+        description={t("adminCategoryTypes.deleteConfirmDesc", { name: categoryType?.name || "this category type" })}
+        confirmText={t("adminCategoryTypes.deleteCategoryType")}
+        cancelText={t("adminCategoryTypes.keepCategoryType")}
+        confirmIcon={Trash2}
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => !isDeleting && setShowDeleteConfirm(false)}
+        item={
+          categoryType
+            ? {
+              title: categoryType.name,
+              meta: `${categoryType.categoriesCount} categories | ${categoryType.status}`,
+              note: `Category Type ID: ${categoryType.categoryTypeId}`,
+            }
+            : null
+        }
+        warnings={[t("adminCategoryTypes.deleteWarning")]}
+      />
+
+      {showCreateCategoryModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#311422]/35 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-lg rounded-lg border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
+            <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-bold text-[#432744]">{t("adminCategoryTypes.addNestedCategoryTitle")}</h3>
+                <p className="mt-1 text-sm text-[#b1859d]">
+                  {t("adminCategoryTypes.addNestedCategoryDesc", { name: categoryType?.name || "this category type" })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCreatingCategory) {
+                    return;
+                  }
+
+                  setShowCreateCategoryModal(false);
+                  setCreateCategoryError("");
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f4d5e3] text-[#a17a91]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">Category Name</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <FolderTree size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(event) => {
+                      setNewCategoryName(event.target.value);
+                      if (createCategoryError) {
+                        setCreateCategoryError("");
+                      }
+                    }}
+                    placeholder={t("adminCategoryTypes.categoryNamePlaceholder")}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
+                  />
+                </div>
+              </label>
+
+              {createCategoryError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
+                  {createCategoryError}
+                </div>
+              ) : null}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isCreatingCategory) {
+                      return;
+                    }
+
+                    setShowCreateCategoryModal(false);
+                    setCreateCategoryError("");
+                  }}
+                  className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
+                >
+                  {t("adminProcedures.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={isCreatingCategory}
+                  className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-sm font-bold text-white disabled:opacity-70"
+                >
+                  {isCreatingCategory ? t("adminCategoryTypes.creating") : t("adminCategoryTypes.createCategory")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}

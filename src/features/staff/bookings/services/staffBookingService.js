@@ -23,6 +23,47 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
+function normalizeBookingStatusValue(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+export function isRejectedStaffBooking(booking) {
+  return normalizeBookingStatusValue(booking?.status) === "rejected";
+}
+
+function filterVisibleStaffBookings(bookings) {
+  return (Array.isArray(bookings) ? bookings : []).filter((booking) => !isRejectedStaffBooking(booking));
+}
+
+function extractPaginationMeta(data, fallbackPageSize) {
+  const metaData = data?.metaData ?? data?.pagination ?? data ?? {};
+  const totalItems =
+    Number(metaData?.totalItems ?? metaData?.totalCount ?? metaData?.count ?? metaData?.total ?? 0) || 0;
+  const currentPage =
+    Number(metaData?.currentPage ?? metaData?.pageNumber ?? metaData?.pageIndex ?? 1) || 1;
+  const pageSize =
+    Number(metaData?.pageSize ?? metaData?.limit ?? fallbackPageSize ?? 10) || fallbackPageSize || 10;
+  const inferredTotalPages =
+    pageSize > 0 ? Math.max(1, Math.ceil(totalItems / pageSize)) : 1;
+  const totalPages =
+    Number(metaData?.totalPages ?? metaData?.pageCount ?? inferredTotalPages) || inferredTotalPages;
+  const firstRowOnPage =
+    Number(metaData?.firstRowOnPage || (totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0)) || 0;
+  const lastRowOnPage =
+    Number(metaData?.lastRowOnPage || Math.min(totalItems, currentPage * pageSize)) || 0;
+
+  return {
+    currentPage,
+    totalPages: Math.max(1, totalPages),
+    pageSize,
+    totalItems,
+    hasPrevious: currentPage > 1,
+    hasNext: currentPage < Math.max(1, totalPages),
+    firstRowOnPage,
+    lastRowOnPage,
+  };
+}
+
 export function getStaffArtistId() {
   const session = loadAuthSession();
   const artistId = session?.user?.staffId || session?.staffId || session?.user?.id || session?.userId;
@@ -34,6 +75,17 @@ export function getStaffArtistId() {
   return artistId;
 }
 
+export function getStaffSalonId() {
+  const session = loadAuthSession();
+  const salonId = session?.user?.salonId || session?.salonId;
+
+  if (!salonId) {
+    throw new Error("Salon ID is not available in the current session.");
+  }
+
+  return salonId;
+}
+
 export function getStaffSessionUser() {
   return loadAuthSession()?.user ?? null;
 }
@@ -42,6 +94,7 @@ export async function fetchStaffBookings(filters = {}) {
   const artistId = getStaffArtistId();
   const {
     endDate,
+    includePagination = false,
     pageNumber,
     pageSize,
     search,
@@ -61,16 +114,62 @@ export async function fetchStaffBookings(filters = {}) {
   });
 
   const data = unwrapResponse(response, "Failed to load assigned bookings.");
+  const items = filterVisibleStaffBookings(Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+      ? data.items
+      : []);
 
-  if (Array.isArray(data)) {
-    return data;
+  if (includePagination) {
+    return {
+      items,
+      pagination: extractPaginationMeta(data, pageSize),
+    };
   }
 
-  if (Array.isArray(data?.items)) {
-    return data.items;
+  return items;
+}
+
+export async function fetchStaffSalonBookings(filters = {}) {
+  const salonId = getStaffSalonId();
+  const {
+    endDate,
+    includePagination = false,
+    pageNumber = 1,
+    pageSize = 100,
+    search,
+    startDate,
+    status,
+  } = filters ?? {};
+  const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
+      ...(status ? { status } : {}),
+      ...(search ? { search } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load salon bookings.");
+  const items = filterVisibleStaffBookings(
+    Array.isArray(data)
+      ? data
+      : Array.isArray(data?.items)
+        ? data.items
+        : [],
+  );
+
+  if (includePagination) {
+    return {
+      items,
+      pagination: extractPaginationMeta(data, pageSize),
+    };
   }
 
-  return [];
+  return items;
 }
 
 export async function fetchServiceCatalog(filters = {}) {
@@ -94,11 +193,11 @@ export async function fetchServiceCatalog(filters = {}) {
   return {
     items: Array.isArray(data?.items) ? data.items.map((item) => ({
       serviceId: String(item?.serviceId || "").trim(),
-      name: String(item?.name || "").trim() || "--",
+      name: String(item?.name || "").trim(),
       description: String(item?.description || "").trim(),
       price: Number(item?.price || 0),
       duration: Number(item?.duration || 0),
-      status: String(item?.status || "").trim() || "--",
+      status: String(item?.status || "").trim(),
       createAt: String(item?.createAt || "").trim(),
     })) : [],
     metaData: data?.metaData ?? {
@@ -114,6 +213,153 @@ export async function fetchServiceCatalog(filters = {}) {
   };
 }
 
+export async function fetchStaffServiceDetail(serviceId) {
+  const normalizedServiceId = String(serviceId || "").trim();
+
+  if (!normalizedServiceId) {
+    throw new Error("Service ID is required.");
+  }
+
+  const response = await axiosClient.get(`/Services/${normalizedServiceId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load service detail.");
+
+  return {
+    serviceId: String(data?.serviceId || "").trim(),
+    name: String(data?.name || "").trim(),
+    description: String(data?.description || "").trim(),
+    price: Number(data?.price || 0),
+    duration: Number(data?.duration || 0),
+    status: String(data?.status || "").trim(),
+    createAt: String(data?.createAt || "").trim(),
+  };
+}
+
+export async function fetchStaffBuilderNailShapes(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailShapes", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail shapes.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailShapeId: Number(item?.nailShapeId || 0),
+      name: String(item?.name || "").trim(),
+      imageUrl: String(item?.imageUrl || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderShapeMethodConfigs(nailShapeId) {
+  const response = await axiosClient.get(`/ShapeMethodConfigs/nail-shape/${nailShapeId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      status: "Active",
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load shape method configs.");
+  const items = Array.isArray(data) ? data : (data?.items || []);
+
+  return items.map((item) => ({
+      shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
+      nailShapeId: Number(item?.nailShapeId || 0),
+      name: String(item?.name || "").trim(),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+      status: String(item?.status || "").trim(),
+    }));
+}
+
+export async function fetchStaffBuilderNailSurfaces(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailSurfaces", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail surfaces.");
+
+  return Array.isArray(data?.items)
+    ? data.items.map((item) => ({
+      nailSurfaceId: Number(item?.nailSurfaceId || 0),
+      name: String(item?.name || "").trim(),
+      shaderParam: String(item?.shaderParam || "").trim(),
+      lightnessOffset: Number(item?.lightnessOffset || 0),
+      saturationOffset: Number(item?.saturationOffset || 0),
+      hueOffset: Number(item?.hueOffset || 0),
+      price: Number(item?.price || 0),
+      duration: Number(item?.duration || 0),
+    }))
+    : [];
+}
+
+export async function fetchStaffBuilderNailComponents(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 100,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/Components", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      status: "Active"
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail components.");
+  const uniqueComponents = new Map();
+
+  if (Array.isArray(data?.items)) {
+    data.items.forEach((item) => {
+      const component = item?.component || item;
+      const componentId = Number(component?.componentId || item?.componentId || 0);
+
+      if (!componentId || uniqueComponents.has(componentId)) {
+        return;
+      }
+
+      uniqueComponents.set(componentId, {
+        componentId,
+        name: String(component?.name || item?.name || "").trim(),
+        imageUrl: String(component?.imageUrl || item?.imageUrl || "").trim(),
+        componentType: String(component?.componentType || item?.componentType || "").trim(),
+        price: Number(component?.price || item?.price || 0),
+        duration: Number(component?.duration || item?.duration || 0),
+      });
+    });
+  }
+
+  return [...uniqueComponents.values()];
+}
+
 export async function fetchStaffBookingDetail(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
 
@@ -125,7 +371,128 @@ export async function fetchStaffBookingDetail(bookingId) {
     headers: getAuthHeaders(),
   });
 
-  return unwrapResponse(response, "Failed to load booking detail.");
+  const data = unwrapResponse(response, "Failed to load booking detail.");
+
+  if (isRejectedStaffBooking(data)) {
+    throw new Error("Rejected bookings are not available in the staff workspace.");
+  }
+
+  return data;
+}
+
+export function toNullableBookingNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const normalizedValue = Number(value);
+
+  return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+}
+
+export function isBookingUuidLike(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(String(value || "").trim());
+}
+
+export function toNullableBookingUuid(value) {
+  const normalizedValue = String(value || "").trim();
+
+  return isBookingUuidLike(normalizedValue) ? normalizedValue : null;
+}
+
+export function normalizeBookingItemQuantity(value, fallback = 1) {
+  const normalizedValue = Number(value);
+
+  return Number.isFinite(normalizedValue) && normalizedValue > 0
+    ? Math.floor(normalizedValue)
+    : fallback;
+}
+
+export function isNailLinkedBookingItem(item) {
+  return Boolean(
+    toNullableBookingNumber(item?.nailVariantId)
+    || toNullableBookingUuid(item?.customerNailRequestId)
+    || toNullableBookingNumber(item?.customerNailId)
+    || toNullableBookingNumber(item?.shapeMethodConfigId)
+    || String(item?.nailVariantName || "").trim()
+    || String(item?.customerNailName || "").trim(),
+  );
+}
+
+export function buildBookingUpdateItemPayload(item, fallbackQuantity = 1) {
+  return {
+    nailVariantId: toNullableBookingNumber(item?.nailVariantId),
+    serviceId: toNullableBookingUuid(item?.serviceId),
+    shapeMethodConfigId: toNullableBookingNumber(item?.shapeMethodConfigId),
+    customerNailId: toNullableBookingNumber(item?.customerNailId),
+    customerNailRequestId: toNullableBookingUuid(item?.customerNailRequestId),
+    quantity: normalizeBookingItemQuantity(item?.quantity, fallbackQuantity),
+  };
+}
+
+export function buildStaffBookingItemsForUpdate(existingBookingItems = [], selectedServiceQuantities = {}) {
+  const normalizedExistingItems = Array.isArray(existingBookingItems) ? existingBookingItems : [];
+  const payloadItems = normalizedExistingItems.map((item) => buildBookingUpdateItemPayload(item));
+  const serviceOnlyIndexById = new Map();
+
+  normalizedExistingItems.forEach((item, index) => {
+    const serviceId = toNullableBookingUuid(item?.serviceId);
+
+    if (!serviceId || isNailLinkedBookingItem(item) || serviceOnlyIndexById.has(serviceId)) {
+      return;
+    }
+
+    serviceOnlyIndexById.set(serviceId, index);
+  });
+
+  Object.entries(selectedServiceQuantities || {}).forEach(([rawServiceId, rawQuantity]) => {
+    const serviceId = toNullableBookingUuid(rawServiceId);
+    const quantity = normalizeBookingItemQuantity(rawQuantity, 0);
+
+    if (!serviceId || quantity <= 0) {
+      return;
+    }
+
+    if (serviceOnlyIndexById.has(serviceId)) {
+      const itemIndex = serviceOnlyIndexById.get(serviceId);
+      const existingItem = payloadItems[itemIndex];
+
+      payloadItems[itemIndex] = {
+        ...existingItem,
+        quantity: normalizeBookingItemQuantity(existingItem?.quantity, 1) + quantity,
+      };
+      return;
+    }
+
+    serviceOnlyIndexById.set(serviceId, payloadItems.length);
+    payloadItems.push({
+      nailVariantId: null,
+      serviceId,
+      shapeMethodConfigId: null,
+      customerNailId: null,
+      customerNailRequestId: null,
+      quantity,
+    });
+  });
+
+  return payloadItems;
+}
+
+export async function fetchLoyaltyTiers() {
+  try {
+    const response = await axiosClient.get('/LoyaltyTiers', {
+      headers: getAuthHeaders()
+    });
+    const payload = response.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to fetch loyalty tiers.");
+    }
+    return payload.data;
+  } catch (error) {
+    console.error("Error fetching loyalty tiers:", error);
+    throw error;
+  }
 }
 
 export async function updateStaffBooking(bookingId, payload) {
@@ -140,6 +507,125 @@ export async function updateStaffBooking(bookingId, payload) {
   });
 
   return unwrapResponse(response, "Failed to update booking.");
+}
+
+export async function createStaffCustomerNail(payload) {
+  const formData = new FormData();
+  const normalizedName = String(payload?.name || "").trim();
+  const nailShapeId = Number(payload?.nailShapeId || 0);
+  const nailSurfaceId = Number(payload?.nailSurfaceId || 0);
+  const customColor = String(payload?.customColor || "").trim();
+  const isPublic = Boolean(payload?.isPublic);
+
+  if (!normalizedName) {
+    throw new Error("Customer nail name is required.");
+  }
+
+  if (!Number.isInteger(nailShapeId) || nailShapeId <= 0) {
+    throw new Error("A valid nail shape is required.");
+  }
+
+  if (!Number.isInteger(nailSurfaceId) || nailSurfaceId <= 0) {
+    throw new Error("A valid nail surface is required.");
+  }
+
+  formData.append("Name", normalizedName);
+  formData.append("NailShapeId", String(nailShapeId));
+  formData.append("NailSurfaceId", String(nailSurfaceId));
+  formData.append("CustomColor", customColor);
+  formData.append("IsPublic", String(isPublic));
+
+  if (payload?.image instanceof File) {
+    formData.append("image", payload.image);
+  }
+
+  const response = await axiosClient.post("/CustomerNails", formData, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  return unwrapResponse(response, "Failed to create customer nail.");
+}
+
+export async function createStaffCustomerNailComponent(payload) {
+  const customerNailId = Number(payload?.customerNailId || 0);
+  const componentId = payload?.componentId == null ? null : Number(payload.componentId || 0);
+  const customerComponentId = payload?.customerComponentId == null
+    ? null
+    : Number(payload.customerComponentId || 0);
+  const posX = Number(payload?.posX ?? 0);
+  const posY = Number(payload?.posY ?? 0);
+  const fingerIndex = Number(payload?.fingerIndex ?? 0);
+  const configJson = String(payload?.configJson || "").trim();
+
+  if (!Number.isInteger(customerNailId) || customerNailId <= 0) {
+    throw new Error("A valid customer nail ID is required.");
+  }
+
+  if (componentId !== null && (!Number.isInteger(componentId) || componentId <= 0)) {
+    throw new Error("Component ID must be null or a positive integer.");
+  }
+
+  if (customerComponentId !== null && (!Number.isInteger(customerComponentId) || customerComponentId <= 0)) {
+    throw new Error("Customer component ID must be null or a positive integer.");
+  }
+
+  if (componentId === null && customerComponentId === null) {
+    throw new Error("A component ID or customer component ID is required.");
+  }
+
+  const response = await axiosClient.post("/CustomerNailComponents", {
+    customerNailId,
+    componentId,
+    customerComponentId,
+    posX: Number.isFinite(posX) ? posX : 0,
+    posY: Number.isFinite(posY) ? posY : 0,
+    fingerIndex: Number.isFinite(fingerIndex) ? fingerIndex : 0,
+    configJson,
+  }, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to create customer nail component.");
+}
+
+export async function fetchStaffCustomerComponentDetail(customerComponentId) {
+  const normalizedCustomerComponentId = Number(customerComponentId || 0);
+
+  if (!Number.isInteger(normalizedCustomerComponentId) || normalizedCustomerComponentId <= 0) {
+    throw new Error("Customer component ID is required.");
+  }
+
+  const response = await axiosClient.get(`/CustomerComponents/${normalizedCustomerComponentId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load customer component detail.");
+
+  return {
+    customerComponentId: Number(data?.customerComponentId || 0),
+    userId: String(data?.userId || "").trim(),
+    name: String(data?.name || "").trim(),
+    imageUrl: String(data?.imageUrl || "").trim(),
+    componentType: String(data?.componentType || "").trim(),
+    createdAt: String(data?.createdAt || "").trim(),
+    isPublic: Boolean(data?.isPublic),
+  };
+}
+
+export async function fetchStaffShapeMethodConfigDetail(configId) {
+  const normalizedConfigId = Number(configId || 0);
+
+  if (!Number.isInteger(normalizedConfigId) || normalizedConfigId <= 0) {
+    throw new Error("Shape method config ID is required.");
+  }
+
+  const response = await axiosClient.get(`/ShapeMethodConfigs/${normalizedConfigId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load shape method config detail.");
 }
 
 export async function fetchStaffNailVariantDetail(variantId) {
@@ -157,7 +643,10 @@ export async function fetchStaffNailVariantDetail(variantId) {
 
   return {
     nailVariantId: Number(data?.nailVariantId || 0),
-    name: String(data?.name || "").trim() || "--",
+    name: String(data?.name || "").trim(),
+    nailShapeId: Number(data?.nailShapeId || 0),
+    nailSurfaceId: Number(data?.nailSurfaceId || 0),
+    nailDesignId: Number(data?.nailDesignId || 0),
     price: Number(data?.price || 0),
     priceLabel: formatCurrency(data?.price || 0),
     duration: Number(data?.duration || 0),
@@ -167,7 +656,7 @@ export async function fetchStaffNailVariantDetail(variantId) {
     nailShape: data?.nailShape
       ? {
         nailShapeId: Number(data.nailShape.nailShapeId || 0),
-        name: String(data.nailShape.name || "").trim() || "--",
+        name: String(data.nailShape.name || "").trim(),
         imageUrl: String(data.nailShape.imageUrl || "").trim(),
         price: Number(data.nailShape.price || 0),
         duration: Number(data.nailShape.duration || 0),
@@ -176,7 +665,7 @@ export async function fetchStaffNailVariantDetail(variantId) {
     nailSurface: data?.nailSurface
       ? {
         nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
-        name: String(data.nailSurface.name || "").trim() || "--",
+        name: String(data.nailSurface.name || "").trim(),
         shaderParam: String(data.nailSurface.shaderParam || "").trim(),
         price: Number(data.nailSurface.price || 0),
         duration: Number(data.nailSurface.duration || 0),
@@ -193,9 +682,9 @@ export async function fetchStaffNailVariantDetail(variantId) {
         component: item?.component
           ? {
             componentId: Number(item.component.componentId || 0),
-            name: String(item.component.name || "").trim() || "--",
+            name: String(item.component.name || "").trim(),
             imageUrl: String(item.component.imageUrl || "").trim(),
-            componentType: String(item.component.componentType || "").trim() || "--",
+            componentType: String(item.component.componentType || "").trim(),
             price: Number(item.component.price || 0),
             duration: Number(item.component.duration || 0),
           }
@@ -205,6 +694,177 @@ export async function fetchStaffNailVariantDetail(variantId) {
   };
 }
 
+export async function fetchStaffCustomerNailDetail(customerNailId) {
+  const normalizedCustomerNailId = Number(customerNailId || 0);
+
+  if (!Number.isInteger(normalizedCustomerNailId) || normalizedCustomerNailId <= 0) {
+    throw new Error("Customer nail ID is required.");
+  }
+
+  const response = await axiosClient.get(`/CustomerNails/${normalizedCustomerNailId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = unwrapResponse(response, "Failed to load customer nail detail.");
+  const normalizedCustomerNailComponents = Array.isArray(data?.customerNailComponents)
+    ? await Promise.all(data.customerNailComponents.map(async (item) => {
+      const customerComponentId = Number(item?.customerComponentId || 0);
+      const resolvedCustomerComponent = item?.customerComponent
+        ? {
+          customerComponentId: Number(item.customerComponent.customerComponentId || 0),
+          userId: String(item.customerComponent.userId || "").trim(),
+          name: String(item.customerComponent.name || "").trim(),
+          imageUrl: String(item.customerComponent.imageUrl || "").trim(),
+          componentType: String(item.customerComponent.componentType || "").trim(),
+          createdAt: String(item.customerComponent.createdAt || "").trim(),
+          isPublic: Boolean(item.customerComponent.isPublic),
+        }
+        : customerComponentId > 0
+          ? await fetchStaffCustomerComponentDetail(customerComponentId)
+          : null;
+
+      return {
+        nailComponentId: Number(item?.customerNailComponentId || 0),
+        customerNailComponentId: Number(item?.customerNailComponentId || 0),
+        customerNailId: Number(item?.customerNailId || 0),
+        componentId: Number(item?.componentId || 0),
+        customerComponentId,
+        fingerIndex: Number(item?.fingerIndex || 0),
+        posX: Number(item?.posX || 0),
+        posY: Number(item?.posY || 0),
+        configJson: String(item?.configJson || "").trim(),
+        component: item?.component
+          ? {
+            componentId: Number(item.component.componentId || 0),
+            name: String(item.component.name || "").trim(),
+            imageUrl: String(item.component.imageUrl || "").trim(),
+            componentType: String(item.component.componentType || "").trim(),
+            price: Number(item.component.price || 0),
+            duration: Number(item.component.duration || 0),
+          }
+          : resolvedCustomerComponent
+            ? {
+              componentId: 0,
+              name: resolvedCustomerComponent.name,
+              imageUrl: resolvedCustomerComponent.imageUrl,
+              componentType: resolvedCustomerComponent.componentType,
+              price: 0,
+              duration: 0,
+            }
+            : null,
+        customerComponent: resolvedCustomerComponent,
+      };
+    }))
+    : [];
+
+  return {
+    detailType: "customerNail",
+    customerNailId: Number(data?.customerNailId || 0),
+    nailVariantId: Number(data?.basedOnNailVariant?.nailVariantId || data?.basedOnNailVariantId || data?.customerNailId || 0),
+    nailDesignId: Number(data?.basedOnNailVariant?.nailDesignId || 0),
+    userId: String(data?.userId || "").trim(),
+    name: String(data?.name || "").trim(),
+    imageUrl: String(data?.imageUrl || "").trim(),
+    nailShapeId: Number(data?.nailShapeId || 0),
+    nailSurfaceId: Number(data?.nailSurfaceId || 0),
+    price: Number(data?.price || 0),
+    priceLabel: formatCurrency(data?.price || 0),
+    customColor: String(data?.customColor || "").trim(),
+    colorJson: String(data?.basedOnNailVariant?.colorJson || data?.customColor || "").trim(),
+    duration: Number(data?.duration || 0),
+    durationLabel: formatDurationMinutes(Number(data?.duration || 0)),
+    createdAt: String(data?.createdAt || "").trim(),
+    isPublic: Boolean(data?.isPublic),
+    basedOnNailVariantId: Number(data?.basedOnNailVariantId || 0),
+    status: String(data?.status || "").trim(),
+    nailShape: data?.nailShape
+      ? {
+        nailShapeId: Number(data.nailShape.nailShapeId || 0),
+        name: String(data.nailShape.name || "").trim(),
+        imageUrl: String(data.nailShape.imageUrl || "").trim(),
+        price: Number(data.nailShape.price || 0),
+        duration: Number(data.nailShape.duration || 0),
+      }
+      : null,
+    nailSurface: data?.nailSurface
+      ? {
+        nailSurfaceId: Number(data.nailSurface.nailSurfaceId || 0),
+        name: String(data.nailSurface.name || "").trim(),
+        shaderParam: String(data.nailSurface.shaderParam || "").trim(),
+        price: Number(data.nailSurface.price || 0),
+        duration: Number(data.nailSurface.duration || 0),
+      }
+      : null,
+    basedOnNailVariant: data?.basedOnNailVariant
+      ? {
+        nailVariantId: Number(data.basedOnNailVariant.nailVariantId || 0),
+        name: String(data.basedOnNailVariant.name || "").trim(),
+        nailShapeId: Number(data.basedOnNailVariant.nailShapeId || 0),
+        nailSurfaceId: Number(data.basedOnNailVariant.nailSurfaceId || 0),
+        nailDesignId: Number(data.basedOnNailVariant.nailDesignId || 0),
+        price: Number(data.basedOnNailVariant.price || 0),
+        duration: Number(data.basedOnNailVariant.duration || 0),
+        imageUrl: String(data.basedOnNailVariant.imageUrl || "").trim(),
+        colorJson: String(data.basedOnNailVariant.colorJson || "").trim(),
+        nailShape: data.basedOnNailVariant.nailShape
+          ? {
+            nailShapeId: Number(data.basedOnNailVariant.nailShape.nailShapeId || 0),
+            name: String(data.basedOnNailVariant.nailShape.name || "").trim(),
+            imageUrl: String(data.basedOnNailVariant.nailShape.imageUrl || "").trim(),
+            price: Number(data.basedOnNailVariant.nailShape.price || 0),
+            duration: Number(data.basedOnNailVariant.nailShape.duration || 0),
+          }
+          : null,
+        nailSurface: data.basedOnNailVariant.nailSurface
+          ? {
+            nailSurfaceId: Number(data.basedOnNailVariant.nailSurface.nailSurfaceId || 0),
+            name: String(data.basedOnNailVariant.nailSurface.name || "").trim(),
+            shaderParam: String(data.basedOnNailVariant.nailSurface.shaderParam || "").trim(),
+            price: Number(data.basedOnNailVariant.nailSurface.price || 0),
+            duration: Number(data.basedOnNailVariant.nailSurface.duration || 0),
+          }
+          : null,
+        nailComponents: Array.isArray(data?.basedOnNailVariant?.nailComponents)
+          ? data.basedOnNailVariant.nailComponents.map((item) => ({
+            nailComponentId: Number(item?.nailComponentId || 0),
+            componentId: Number(item?.componentId || 0),
+            fingerIndex: Number(item?.fingerIndex || 0),
+            posX: Number(item?.posX || 0),
+            posY: Number(item?.posY || 0),
+            configJson: String(item?.configJson || "").trim(),
+            component: item?.component
+              ? {
+                componentId: Number(item.component.componentId || 0),
+                name: String(item.component.name || "").trim(),
+                imageUrl: String(item.component.imageUrl || "").trim(),
+                componentType: String(item.component.componentType || "").trim(),
+                price: Number(item.component.price || 0),
+                duration: Number(item.component.duration || 0),
+              }
+              : null,
+          }))
+          : [],
+      }
+      : null,
+    nailComponents: normalizedCustomerNailComponents,
+    customerNailComponents: normalizedCustomerNailComponents,
+  };
+}
+
+export async function fetchAllCustomers(pageNumber = 1, pageSize = 1000, searchTerm = "") {
+  const params = { pageNumber, pageSize };
+  if (searchTerm) params.searchTerm = searchTerm;
+  const response = await axiosClient.get("/Users/customers", {
+    headers: getAuthHeaders(),
+    params
+  });
+  
+  if (response?.data?.isSucceeded) {
+    return response.data.data.items || [];
+  }
+  return [];
+}
+
 export async function fetchStaffCustomerDetail(userId) {
   const normalizedUserId = String(userId || "").trim();
 
@@ -212,7 +872,7 @@ export async function fetchStaffCustomerDetail(userId) {
     throw new Error("Customer user ID is required.");
   }
 
-  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+  const response = await axiosClient.get(`/Users/customers/${normalizedUserId}`, {
     headers: getAuthHeaders(),
   });
 
@@ -233,6 +893,7 @@ export async function fetchStaffCustomerDetail(userId) {
     role: String(data?.role || "").trim(),
     salonId: String(data?.salonId || "").trim(),
     staffId: String(data?.staffId || "").trim(),
+    loyaltyPoint: Number(data?.loyaltyPoint || 0),
   };
 }
 
@@ -250,6 +911,24 @@ export async function fetchBookingProceduresByBookingItem(bookingItemId) {
   const data = unwrapResponse(response, "Failed to load booking procedures.");
 
   return Array.isArray(data) ? data : [];
+}
+
+export async function claimBookingProcedure(procedureId) {
+  const normalizedProcedureId = String(procedureId || "").trim();
+
+  if (!normalizedProcedureId) {
+    throw new Error("Procedure ID is required.");
+  }
+
+  const response = await axiosClient.post(
+    `/BookingProcedures/procedures/${normalizedProcedureId}/claim`,
+    null,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return unwrapResponse(response, "Failed to claim booking procedure.");
 }
 
 export async function updateBookingProcedureStatus(bookingProcedureId, status, artistId = getStaffArtistId()) {
@@ -422,7 +1101,7 @@ export function formatCurrency(value) {
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
 export function formatBookingCode(bookingId) {
@@ -435,27 +1114,265 @@ export function formatBookingCode(bookingId) {
   return `BK-${normalized.slice(0, 8).toUpperCase()}`;
 }
 
+function buildServiceSessionBreakdown(items = [], options = {}) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const serviceDetailMap = options?.serviceDetailMap ?? {};
+  const nailVariantDetailMap = options?.nailVariantDetailMap ?? {};
+  const customerNailDetailMap = options?.customerNailDetailMap ?? {};
+
+  const rawRows = normalizedItems.flatMap((item, index) => {
+    const bookingItemId = String(item?.bookingItemId || item?.id || "").trim();
+    const serviceId = String(item?.serviceId || "").trim();
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const resolvedService = serviceId ? serviceDetailMap[serviceId] : null;
+    const customerNailId = Number(item?.customerNailId || 0);
+    const nailVariantId = Number(item?.nailVariantId || 0);
+    const resolvedCustomerNail = customerNailId > 0 ? customerNailDetailMap[customerNailId] : null;
+    const resolvedNailVariant = nailVariantId > 0 ? nailVariantDetailMap[nailVariantId] : null;
+    const resolvedNailDetail = resolvedCustomerNail || resolvedNailVariant;
+    const resolvedNailName = String(
+      resolvedCustomerNail?.name ||
+      resolvedNailVariant?.name ||
+      item?.customerNailName ||
+      item?.nailVariantName ||
+      "",
+    ).trim();
+    const hasNailDetail = Boolean(resolvedNailName || customerNailId > 0 || nailVariantId > 0);
+    const rows = [];
+
+    const resolvedServiceName = String(resolvedService?.name || item?.serviceName || "").trim();
+    if (resolvedServiceName || serviceId) {
+      const duration = parseDurationMinutes(
+        resolvedService?.duration ?? item?.serviceDuration ?? item?.duration ?? item?.estimatedDuration ?? 0,
+      );
+
+      const price = resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0;
+
+      rows.push({
+        id: `${bookingItemId || `service-${index}`}-service`,
+        bookingItemId,
+        name: resolvedServiceName,
+        detailLabel: "Service",
+        quantity,
+        duration,
+        durationLabel: formatDurationMinutes(duration),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
+        canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
+      });
+    }
+
+    if (resolvedNailName || customerNailId > 0 || nailVariantId > 0) {
+      const duration = parseDurationMinutes(resolvedNailDetail?.duration);
+      const price = item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0;
+
+      rows.push({
+        id: `${bookingItemId || `service-${index}`}-nail`,
+        bookingItemId,
+        name: resolvedNailName,
+        detailLabel: resolvedCustomerNail ? "Customer Nail" : "Nail Variant",
+        quantity,
+        duration,
+        durationLabel: formatDurationMinutes(duration),
+        priceLabel: formatCurrency(price),
+        rawPrice: price,
+        canViewProcedures: Boolean(bookingItemId),
+      });
+    }
+
+    return rows;
+  });
+
+  const groupedRows = [];
+  const map = new Map();
+
+  rawRows.forEach((row) => {
+    const key = `${row.detailLabel}_${row.name}_${row.priceLabel}_${row.durationLabel}`;
+    if (!map.has(key)) {
+      const copy = { ...row };
+      copy.subtotalLabel = formatCurrency((copy.rawPrice || 0) * copy.quantity);
+      map.set(key, copy);
+      groupedRows.push(copy);
+    } else {
+      const existing = map.get(key);
+      existing.quantity += row.quantity;
+      existing.subtotalLabel = formatCurrency((existing.rawPrice || 0) * existing.quantity);
+    }
+  });
+
+  return groupedRows;
+}
+
+function buildNailServiceSessionBreakdown(items = []) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+
+  const rawItems = normalizedItems
+    .map((item, index) => {
+      const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+
+      if (!name) {
+        return null;
+      }
+
+      const duration = parseDurationMinutes(
+        item?.duration || item?.serviceDuration || item?.estimatedDuration || 0,
+      );
+      const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+      const price = Number(item?.price || item?.finalPrice || 0);
+
+      return {
+        id: String(item?.bookingItemId || item?.id || `${name}-${index}`).trim(),
+        name,
+        duration,
+        durationLabel: formatDurationMinutes(duration),
+        quantity,
+        priceLabel: formatCurrency(price),
+      };
+    })
+    .filter(Boolean);
+
+  const grouped = [];
+  const map = new Map();
+  rawItems.forEach((row) => {
+    const key = `${row.name}_${row.priceLabel}_${row.durationLabel}`;
+    if (!map.has(key)) {
+      const copy = { ...row };
+      map.set(key, copy);
+      grouped.push(copy);
+    } else {
+      map.get(key).quantity += row.quantity;
+    }
+  });
+
+  return grouped;
+}
+
+function buildPriceSummaryRows(items = [], discounts = []) {
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const normalizedDiscounts = Array.isArray(discounts) ? discounts : [];
+
+  const serviceMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.serviceName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (serviceMap.has(key)) {
+      serviceMap.get(key).quantity += quantity;
+    } else {
+      serviceMap.set(key, {
+        id: `service-${item?.bookingItemId || item?.id || index}`,
+        category: "Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const serviceRows = Array.from(serviceMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
+  const nailMap = new Map();
+  normalizedItems.forEach((item, index) => {
+    const name = String(item?.nailVariantName || item?.customerNailName || "").trim();
+    if (!name) return;
+
+    const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
+    const unitPrice = item?.price || item?.finalPrice || 0;
+    const key = `${name}_${unitPrice}`;
+
+    if (nailMap.has(key)) {
+      nailMap.get(key).quantity += quantity;
+    } else {
+      nailMap.set(key, {
+        id: `nail-${item?.bookingItemId || item?.id || index}`,
+        category: "Nail Service",
+        label: name,
+        quantity,
+        unitPrice,
+      });
+    }
+  });
+
+  const nailRows = Array.from(nailMap.values()).map((row) => ({
+    id: row.id,
+    category: row.category,
+    label: row.label,
+    meta: `Qty: ${row.quantity}`,
+    unitPriceLabel: formatCurrency(row.unitPrice),
+    subtotalLabel: formatCurrency(row.unitPrice * row.quantity),
+    amount: formatCurrency(row.unitPrice),
+  }));
+
+  return {
+    serviceRows,
+    nailRows,
+    discountRows: normalizedDiscounts
+      .map((item, index) => ({
+        id: `discount-${index}`,
+        category: "Discount",
+        label: String(item?.name || item?.type || `Discount ${index + 1}`).trim(),
+        meta: String(item?.type || "").trim() || null,
+        amount: `-${formatCurrency(Math.abs(Number(item?.amount || 0)))}`,
+      }))
+      .filter(Boolean),
+  };
+}
+
 export function buildStaffServiceSessionPayload(booking, options = {}) {
   const customerDetail = options.customerDetail ?? null;
   const items = booking?.bookingItems ?? [];
-  const serviceNames = items.map((item) => item.serviceName).filter(Boolean);
+  const bookingItemIds = [
+    ...new Set(
+      items
+        .map((item) => String(item?.bookingItemId || item?.id || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const serviceNames = [...new Set(items.map((item) => String(item?.serviceName || "").trim()).filter(Boolean))];
+  const variantNames = [...new Set(items.map((item) => String(item?.nailVariantName || "").trim()).filter(Boolean))];
   const firstNamedItem = items.find((item) => item.serviceName || item.customerNailName || item.nailVariantName);
   const serviceLabel =
-    serviceNames[0] ||
-    booking?.service ||
-    booking?.uiService ||
-    firstNamedItem?.customerNailName ||
-    firstNamedItem?.nailVariantName ||
-    "--";
+    serviceNames.length ? serviceNames.join("\n") :
+      booking?.service ||
+      booking?.uiService ||
+      firstNamedItem?.customerNailName ||
+      firstNamedItem?.nailVariantName ||
+      "--";
+  const currentProcessLabel = [
+    serviceNames.length ? serviceNames.join(" | ") : "",
+    variantNames[0] || "",
+  ].filter(Boolean).join(" | ");
   const estimatedDuration =
     booking?.duration ||
     (booking?.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--");
+  const serviceBreakdown = buildServiceSessionBreakdown(items, options);
+  const nailServiceBreakdown = buildNailServiceSessionBreakdown(items);
+  const priceSummary = buildPriceSummaryRows(items, booking?.discounts);
   const appointmentStartTime = booking?.bookingTime || formatTimeValue(booking?.startTime);
   const estimatedFinishTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
   const totalPriceLabel =
     booking?.totalPriceLabel ||
     booking?.total ||
     formatCurrency(booking?.totalPrice);
+    
+  const originalServicePriceVal = Number(booking?.price || booking?.totalPrice || 0);
+  const discountAmountVal = Math.abs(Number(booking?.discount || 0));
+  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0 
+    ? booking.discounts.map(d => d.name || d.type).join(", ") 
+    : "Discount";
+  const discountValue = discountAmountVal > 0 ? `-${formatCurrency(discountAmountVal)}` : "0 VND";
 
   return {
     bookingCode: formatBookingCode(booking?.bookingId),
@@ -465,6 +1382,7 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       items[0]?.bookingItemId ||
       items[0]?.id ||
       "",
+    bookingItemIds,
     customerName:
       customerDetail?.fullName ||
       booking?.customerName ||
@@ -479,25 +1397,27 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
       booking?.avatarUrl ||
       "",
     serviceLabel,
-    staffArtist: booking?.artistName || booking?.staffName || "--",
+    serviceBreakdown,
+    nailServiceBreakdown,
+    priceSummary,
+    staffArtist: booking?.artistName || booking?.staffName,
     chair: "--",
     appointmentTime: appointmentStartTime,
     estimatedDuration: estimatedFinishTime,
     estimatedFinishTime,
     completedAt: "--",
-    designName:
-      firstNamedItem?.customerNailName ||
-      firstNamedItem?.nailVariantName ||
-      "Confirmed service design",
+    designName: variantNames[0],
     totalPrice: totalPriceLabel,
+    amountDue: booking?.amountDue != null ? formatCurrency(booking.amountDue) : null,
+    amountPaid: booking?.amountPaid != null ? formatCurrency(booking.amountPaid) : null,
     totalAmount: totalPriceLabel,
-    originalServicePrice: totalPriceLabel,
-    extraServiceFee: "0 VNĐ",
-    discountLabel: "Discount",
-    discountValue: "0 VNĐ",
+    originalServicePrice: formatCurrency(originalServicePriceVal),
+    extraServiceFee: "0 VND",
+    discountLabel: discountLabel,
+    discountValue: discountValue,
     remainingBalance: totalPriceLabel,
     beforePhotoTimestamp: "--",
-    currentProcess: serviceLabel,
+    currentProcess: currentProcessLabel,
     remainingTime: estimatedDuration,
     materialsUsed: serviceNames.length ? serviceNames : ["--"],
     stepNote: "",
@@ -527,13 +1447,14 @@ export function normalizeStaffBooking(booking) {
     ...booking,
     id: booking?.bookingId,
     uiId: formatBookingCode(booking?.bookingId),
+    customerId: booking?.customerId || booking?.userId,
     customerName: booking?.customerName || "Unknown customer",
-    customerPhone: "--",
-    branch: booking?.salonName || "--",
-    uiBranch: booking?.salonName || "--",
-    staffName: booking?.artistName || "--",
-    service: services[0] || "--",
-    uiService: services[0] || "--",
+    customerPhone: booking?.customerPhone || "--",
+    branch: booking?.salonName,
+    uiBranch: booking?.salonName,
+    staffName: booking?.artistName,
+    service: services[0],
+    uiService: services[0],
     services,
     bookingDate: toDateInputValue(booking?.bookingDate),
     bookingDateValue: toDateInputValue(booking?.bookingDate),

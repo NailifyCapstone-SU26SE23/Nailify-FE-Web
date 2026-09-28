@@ -1,31 +1,37 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, ShieldQuestionMark } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import { z } from "zod";
 import { useAuth } from "../hooks/useAuth";
 import { AUTH_STATUS } from "../constants/authConstants";
 import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
+import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const loginSchema = z.object({
-  email: z.email("Invalid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
+  email: z
+    .string()
+    .min(1, "Email is mandatory.")
+    .regex(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Must match standard email format."
+    ),
+  password: z
+    .string()
+    .min(1, "Password is mandatory.")
+    .min(6, "Password must be at least 6 characters.")
+    .max(30, "Password must be at most 30 characters."),
 });
-
-const demoAccounts = [
-  "admin@nailify.com / 123456",
-  "manager1@gmail.com / 123456",
-  "artist@gmail.com / 123456",
-  "admin1@gmail.com / 123456",
-  "recep@gmail.com / 123456",
-];
 
 const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 1}`);
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, status, error, role } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { login, loginGoogle, isAuthenticated, status, error, role } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
     register,
@@ -34,16 +40,62 @@ export function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@nailify.com",
-      password: "123456",
+      email: "",
+      password: "",
     },
   });
+  const { language } = useLanguage();
+  const isVi = language === "vi";
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate(getDashboardRouteByRole(role), { replace: true });
     }
   }, [isAuthenticated, navigate, role]);
+
+  useEffect(() => {
+    if (searchParams.get("reason") === "session_expired") {
+      toast.error(isVi ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." : "Session expired. Please login again.", { duration: 4000, id: "session_expired" });
+      // Remove the reason param from URL so it doesn't show again on refresh
+      setSearchParams(new URLSearchParams());
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "1025550275815-53gqspk618fbeevsk5c6spk5e44c4c4c.apps.googleusercontent.com",
+          callback: async (response) => {
+            try {
+              const result = await loginGoogle(response.credential);
+              if (result.meta.requestStatus === "fulfilled") {
+                navigate(getDashboardRouteByRole(result.payload.user.role), {
+                  replace: true,
+                });
+              }
+            } catch (err) {
+              console.error("Google sign-in error:", err);
+            }
+          },
+        });
+        window.google.accounts.id.renderButton(
+          document.getElementById("google-signin-btn"),
+          { theme: "outline", size: "large", width: "380", shape: "pill" }
+        );
+      }
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [loginGoogle, navigate]);
 
   const onSubmit = async (values) => {
     const result = await login(values);
@@ -78,39 +130,19 @@ export function LoginPage() {
           <div className="relative z-10 flex h-full flex-col justify-between gap-8">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur">
               <ShieldCheck size={16} />
-              Internal Access
+              {isVi ? "Truy cập nội bộ" : "Internal Access"}
             </div>
 
             <div className="max-w-md space-y-4 py-4 md:py-10">
               <h1 className="text-4xl font-semibold leading-tight md:text-5xl xl:text-6xl">
-                Welcome back!
+                {isVi ? "Chào mừng trở lại!" : "Welcome back!"}
               </h1>
               <p className="text-base leading-7 text-white/90 md:text-lg md:leading-8">
-                Sign in with your internal role account to access the Nailify
-                operations workspace.
+                {isVi ? "Đăng nhập với tài khoản vai trò nội bộ của bạn để truy cập không gian làm việc vận hành Nailify" :
+                  "Sign in with your internal role account to access the Nailify operations workspace."}
               </p>
             </div>
-
-            <div className="rounded-[28px] border border-white/25 bg-white/14 p-5 backdrop-blur">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/95">
-                  Internal Demo Roles
-                </p>
-                <span className="rounded-full bg-white/18 px-3 py-1 text-xs font-semibold text-white">
-                  API Login
-                </span>
-              </div>
-              <ul className="space-y-3 text-sm">
-                {demoAccounts.map((account) => (
-                  <li
-                    key={account}
-                    className="rounded-2xl border border-white/15 bg-white/12 px-4 py-3 text-white/95"
-                  >
-                    {account}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <div className="rounded-[28px] h-full p-5" />
           </div>
         </section>
 
@@ -118,21 +150,21 @@ export function LoginPage() {
           <div className="mx-auto flex h-full max-w-md flex-col justify-center">
             <div className="mb-6 space-y-2.5">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#d85a9b]">
-                Sign In
+                {isVi ? "Đăng nhập" : "Sign In"}
               </p>
               <h2 className="text-3xl font-semibold text-[var(--color-ink)] md:text-4xl">
-                Internal Login
+                {isVi ? "Đăng nhập tài khoản nội bộ" : "Internal Login"}
               </h2>
               <p className="text-sm leading-6 text-[var(--color-muted)]">
-                This screen is for existing internal role accounts only. New
-                account creation is not available here.
+                {isVi ? "Đây là màn hình dành cho tài khoản có vai trò nội bộ đã có. Không thể tạo tài khoản mới tại đây." :
+                  "This screen is for existing internal role accounts only. New account creation is not available here."}
               </p>
             </div>
 
             <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                  Username or email
+                  Email
                 </span>
                 <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ef6bb4]">
                   <Mail size={18} className="mr-3 text-[#d38f6b]" />
@@ -151,7 +183,7 @@ export function LoginPage() {
 
               <label className="block space-y-2">
                 <span className="text-sm font-medium text-[var(--color-ink)]">
-                  Password
+                  {isVi ? "Mật khẩu" : "Password"}
                 </span>
                 <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ffbf69]">
                   <LockKeyhole size={18} className="mr-3 text-[#d38f6b]" />
@@ -165,7 +197,7 @@ export function LoginPage() {
                     type="button"
                     onClick={() => setIsPasswordVisible((current) => !current)}
                     className="ml-3 text-[#d38f6b] transition hover:text-[#c76f46]"
-                    aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                    aria-label={isPasswordVisible ? (isVi ? "Ẩn mật khẩu" : "Hide password") : (isVi ? "Hiện mật khẩu" : "Show password")}
                   >
                     {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -184,11 +216,11 @@ export function LoginPage() {
                     defaultChecked
                     className="h-4 w-4 rounded border-[#efc9d8] accent-[#ef5db4]"
                   />
-                  <span>Remember me</span>
+                  {isVi ? "Nhớ tôi" : "Remember me"}
                 </label>
-                <span className="font-medium text-[#d85a9b]">
-                  Contact admin for password reset
-                </span>
+                <Link to={ROUTES.forgotPassword} className="font-semibold text-[#d85a9b] hover:underline">
+                  {isVi ? "Quên mật khẩu?" : "Forgot password?"}
+                </Link>
               </div>
 
               {error ? (
@@ -202,15 +234,16 @@ export function LoginPage() {
                 disabled={status === AUTH_STATUS.loading}
                 className="w-full rounded-full bg-[linear-gradient(90deg,#ef5db4_0%,#f59b6c_58%,#ffd95a_100%)] px-4 py-3 font-semibold text-white shadow-[0_18px_34px_rgba(239,93,180,0.32)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {status === AUTH_STATUS.loading ? "Signing in..." : "Sign In"}
+                {status === AUTH_STATUS.loading ? (isVi ? "Đang đăng nhập..." : "Signing in...") : (isVi ? "Đăng nhập" : "Sign In")}
               </button>
 
-              <div className="rounded-[24px] bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-[var(--color-muted)]">
-                <span className="font-semibold text-[var(--color-ink)]">
-                  Access policy:
+              <div className="rounded-lg border border-gray-200 bg-[#fff7ef] px-5 py-3.5 text-sm leading-6 text-gray-600">
+                <span className="inline-flex items-center align-middle font-semibold text-black">
+                  <ShieldQuestionMark size={20} />
+                  {isVi ? "Chính sách truy cập: " : "Access policy: "}
                 </span>{" "}
-                only existing Staff, Manager, and Admin accounts can sign in on
-                this page.
+                {isVi ? "chỉ tài khoản Nhân viên, Quản lý và Quản trị viên hiện có mới có thể đăng nhập trên trang này." :
+                  "only existing Staff, Manager, and Admin accounts can sign in on this page."}
               </div>
             </form>
           </div>

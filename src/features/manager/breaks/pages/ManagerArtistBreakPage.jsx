@@ -1,0 +1,918 @@
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { Spin, Select, Modal, Input, Tooltip, Table } from "antd";
+import dayjs from "dayjs";
+import toast from "react-hot-toast";
+import {
+  CalendarDays,
+  Clock3,
+  Trash2,
+  RefreshCw,
+  UserRound,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Check,
+  X,
+  Sparkles,
+  ShieldCheck,
+  Search,
+  Filter,
+  ArrowUpRight,
+  Coffee,
+  MessageSquareText,
+  UserCheck,
+  ClipboardList,
+  ClipboardClock,
+  CircleCheck,
+  CircleX, Eye
+} from "lucide-react";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { Pagination } from "../../../../shared/components/common/Pagination";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { EmptyState } from "../../../../shared/components/common/EmptyState";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import {
+  fetchBreaks,
+  deleteBreakRequest,
+  approveRejectBreakRequest,
+  fetchNailArtists,
+} from "../../../core/breaks/services/breakService";
+
+export function ManagerArtistBreakPage() {
+  const { t, language } = useLanguage();
+  const [breaks, setBreaks] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isArtistsLoading, setIsArtistsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [metaData, setMetaData] = useState(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterArtistId, setFilterArtistId] = useState(undefined);
+  const [filterDateRange, setFilterDateRange] = useState(null);
+  const [selectedSort, setSelectedSort] = useState("date-desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Modals state
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedBreak, setSelectedBreak] = useState(null);
+  const [rejectReasonInput, setRejectReasonInput] = useState("");
+
+  const loadArtists = async () => {
+    try {
+      setIsArtistsLoading(true);
+      const artistsList = await fetchNailArtists();
+      setArtists(artistsList || []);
+    } catch (error) {
+      console.error("Failed to load artists:", error);
+    } finally {
+      setIsArtistsLoading(false);
+    }
+  };
+
+  const loadBreaks = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      const response = await fetchBreaks({
+        pageNumber: currentPage,
+        pageSize,
+        artistId: filterArtistId,
+      });
+
+      if (response) {
+        setBreaks(response.items || []);
+        setMetaData(response.metaData || null);
+      }
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error.message ||
+        (language === "vi"
+          ? "Không tải được danh sách yêu cầu nghỉ."
+          : "Failed to load break request list.")
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, filterArtistId, language]);
+
+  useEffect(() => {
+    loadArtists();
+  }, []);
+
+  useEffect(() => {
+    loadBreaks();
+  }, [loadBreaks]);
+
+  const getArtistName = useCallback(
+    (artistId) => {
+      const artist = artists.find((a) => String(a.id) === String(artistId));
+      return artist ? artist.name : language === 'vi' ? 'Staff Artist' : 'Staff Artist';
+    },
+    [artists, language]
+  );
+
+  // Client-side filtering by status, date and search query
+  const filteredBreaks = useMemo(() => {
+    return breaks.filter((b) => {
+      const st = String(b.status || "").toLowerCase();
+
+      // Status filter
+      let matchesStatus = true;
+      if (filterStatus === "pending") matchesStatus = st === "pending" || st === "chờ duyệt";
+      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "đã duyệt";
+      else if (filterStatus === "rejected") matchesStatus = st === "rejected" || st === "từ chối";
+
+      if (!matchesStatus) return false;
+
+      // Date filter
+      if (filterDateRange && Array.isArray(filterDateRange) && filterDateRange.length === 2) {
+        const [start, end] = filterDateRange;
+        if (start && end) {
+          const d = dayjs(b.breakDate?.endsWith('Z') ? b.breakDate : b.breakDate + 'Z');
+          if (d.isBefore(start.startOf('day')) || d.isAfter(end.endOf('day'))) {
+            return false;
+          }
+        }
+      }
+
+      // Search query filter (artist name, reason)
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const artistName = getArtistName(b.nailArtistId).toLowerCase();
+        const reason = String(b.reason || "").toLowerCase();
+        const rejectReason = String(b.rejectReason || "").toLowerCase();
+        return artistName.includes(q) || reason.includes(q) || rejectReason.includes(q);
+      }
+
+      return true;
+    });
+  }, [breaks, filterStatus, filterDateRange, searchQuery, getArtistName]);
+
+  const sortedBreaks = useMemo(() => {
+    const [sortKey, sortOrder] = selectedSort.split("-");
+    const multiplier = sortOrder === "desc" ? -1 : 1;
+    return [...filteredBreaks].sort((a, b) => {
+      let valA, valB;
+      switch (sortKey) {
+        case "artist":
+          valA = getArtistName(a.nailArtistId).toLowerCase();
+          valB = getArtistName(b.nailArtistId).toLowerCase();
+          break;
+        case "date":
+          valA = new Date(a.breakDate?.endsWith('Z') ? a.breakDate : a.breakDate + 'Z').getTime();
+          valB = new Date(b.breakDate?.endsWith('Z') ? b.breakDate : b.breakDate + 'Z').getTime();
+          break;
+        case "time":
+          valA = new Date(`1970-01-01T${a.startTime || "00:00:00"}`).getTime();
+          valB = new Date(`1970-01-01T${b.startTime || "00:00:00"}`).getTime();
+          break;
+        case "status":
+          valA = String(a.status || "").toLowerCase();
+          valB = String(b.status || "").toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      if (valA < valB) return -1 * multiplier;
+      if (valA > valB) return 1 * multiplier;
+      return 0;
+    });
+  }, [filteredBreaks, selectedSort, getArtistName]);
+
+  // Reset page when filters change to prevent out of bounds
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, searchQuery, filterArtistId, filterDateRange]);
+
+  // Determine if server is returning paginated data or a flat array of all records
+  const isServerPaginated = useMemo(() => {
+    return metaData && metaData.totalPages > 1 && breaks.length < (metaData.totalItems || metaData.totalCount || 0);
+  }, [metaData, breaks.length]);
+
+  // Calculate actual total pages for client-side or server-side pagination
+  const totalPages = useMemo(() => {
+    if (isServerPaginated) {
+      return metaData.totalPages;
+    }
+    return Math.max(1, Math.ceil(filteredBreaks.length / pageSize));
+  }, [isServerPaginated, metaData, filteredBreaks.length, pageSize]);
+
+  // Paginated/Sliced break requests for display
+  const displayedBreaks = useMemo(() => {
+    if (isServerPaginated) {
+      return sortedBreaks;
+    }
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedBreaks.slice(startIndex, startIndex + pageSize);
+  }, [isServerPaginated, sortedBreaks, currentPage, pageSize]);
+
+  // Stats counters
+  const stats = useMemo(() => {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    breaks.forEach((b) => {
+      const st = String(b.status || "").toLowerCase();
+      if (st === "pending" || st === "chờ duyệt") pending++;
+      else if (st === "approved" || st === "đã duyệt") approved++;
+      else if (st === "rejected" || st === "từ chối") rejected++;
+    });
+    return { pending, approved, rejected, total: breaks.length };
+  }, [breaks]);
+
+  const summaryStats = useMemo(() => [
+    {
+      label: language === "vi" ? "Tổng yêu cầu" : "Total Requests",
+      value: stats.total,
+      note: language === "vi" ? "Tất cả yêu cầu đã gửi" : "All submitted requests",
+      icon: ClipboardList,
+      color: "#C97A9E",
+    },
+    {
+      label: t("manager.breaks.statusPending") || "Pending Approval",
+      value: stats.pending,
+      note: t("manager.common.actions") || "Action required",
+      icon: ClipboardClock,
+      color: "#f59e0b",
+    },
+    {
+      label: t("manager.breaks.statusApproved") || "Approved Breaks",
+      value: stats.approved,
+      note: t("manager.breaks.statusApproved") || "Approved shift breaks",
+      icon: CircleCheck,
+      color: "#10b981",
+    },
+    {
+      label: t("manager.breaks.statusRejected") || "Rejected Requests",
+      value: stats.rejected,
+      note: t("manager.breaks.statusRejected") || "Declined requests",
+      icon: CircleX,
+      color: "#f43f5e",
+    },
+  ], [stats, language, t]);
+
+  // Handle Approve Break
+  const handleApprove = async () => {
+    if (!selectedBreak) return;
+    try {
+      setIsActionLoading(true);
+      await approveRejectBreakRequest(selectedBreak.nailArtistBreakId, {
+        status: "Approved",
+      });
+      toast.success(language === 'vi' ? 'Duyệt yêu cầu nghỉ thành công!' : 'Staff Artist break request approved successfully!');
+      setIsApproveModalOpen(false);
+      setSelectedBreak(null);
+      loadBreaks();
+    } catch (error) {
+      toast.error(error.message || (language === 'vi' ? 'Không duyệt được yêu cầu nghỉ.' : 'Failed to approve break request.'));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Handle Reject Break
+  const handleRejectConfirm = async () => {
+    if (!selectedBreak) return;
+    try {
+      setIsActionLoading(true);
+      await approveRejectBreakRequest(selectedBreak.nailArtistBreakId, {
+        status: "Rejected",
+        rejectReason: rejectReasonInput.trim() || (language === 'vi' ? 'Không duyệt được yêu cầu nghỉ.' : 'Request declined due to shift coverage requirements.'),
+      });
+      toast.success(language === 'vi' ? 'Từ chối yêu cầu nghỉ thành công!' : 'Break request declined successfully!');
+      setIsRejectModalOpen(false);
+      setSelectedBreak(null);
+      setRejectReasonInput("");
+      loadBreaks();
+    } catch (error) {
+      toast.error(error.message || (language === 'vi' ? 'Không từ chối được yêu cầu nghỉ.' : 'Failed to decline break request.'));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // Handle Delete Confirm
+  const handleDeleteConfirm = async () => {
+    if (!selectedBreak) return;
+    try {
+      setIsActionLoading(true);
+      await deleteBreakRequest(selectedBreak.nailArtistBreakId);
+      toast.success(language === 'vi' ? 'Xóa yêu cầu nghỉ thành công!' : 'Break request deleted successfully!');
+      setIsDeleteOpen(false);
+      setSelectedBreak(null);
+      loadBreaks();
+    } catch (error) {
+      toast.error(error.message || (language === 'vi' ? 'Không xóa được yêu cầu nghỉ.' : 'Failed to delete break request.'));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const s = String(status || "Pending").trim().toLowerCase();
+    switch (s) {
+      case "approved":
+      case "đã duyệt":
+      case "đồng ý":
+      case "active":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+          </span>
+        );
+      case "rejected":
+      case "từ chối":
+      case "không đồng ý":
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 border border-rose-200/90 shadow-2xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
+            {language === 'vi' ? 'Từ chối' : 'Rejected'}
+          </span>
+        );
+      case "pending":
+      case "chờ duyệt":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/90 shadow-2xs">
+            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
+            {language === 'vi' ? 'Chờ duyệt' : 'Pending'}
+          </span>
+        );
+    }
+  };
+
+  // Calculate break duration from the slot boundaries.
+  const getSlotDuration = (startTime, endTime) => {
+    if (!startTime || !endTime) return "";
+    const start = dayjs(`2000-01-01 ${startTime}`);
+    const end = dayjs(`2000-01-01 ${endTime}`);
+    const diffMins = end.diff(start, "minute");
+    if (isNaN(diffMins) || diffMins <= 0) return "";
+    return language === "vi"
+      ? `${formatDurationMinutes(diffMins, language)} nghỉ`
+      : `${formatDurationMinutes(diffMins, language)} break`;
+  };
+
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Premium Hero Header Banner */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-[#fff3f8] via-[#fffafb] to-[#fff5fb] p-6 text-white shadow-xl border border-white/10">
+        <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-[#C97A9E]/20 blur-3xl pointer-events-none"></div>
+        <div className="absolute -left-10 -bottom-10 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                      px-3.5 py-1 text-xs font-bold text-gray-600 backdrop-blur-md border-2 border-pink-200">
+              <Sparkles size={14} className="text-[#C97A9E]" /> {language === "vi" ? "Cổng Quản Lý • Quản Lý Ca Làm Việc" : "Manager Portal • Shift Management"}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-black flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#E84F93] to-[#F43F5E] text-white shadow-md">
+                <Coffee size={28} />
+              </div>
+              {language === "vi" ? "Yêu Cầu Nghỉ Của Thợ Nail" : "Artist Break Requests"}
+            </h1>
+            <p className="text-xs sm:text-sm font-medium text-gray-600 leading-relaxed">
+              {language === "vi" ? "Xem, duyệt hoặc từ chối yêu cầu nghỉ giải lao do thợ nail salon gửi trong thời gian thực." : "Review, approve, or decline shift break requests submitted by salon Staff Artists in real time."}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setFilterStatus("pending");
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#C97A9E] to-[#B86B8E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#C97A9E]/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              <AlertCircle size={15} />
+              <span>{language === "vi" ? "Xem Xét Yêu Cầu Nghỉ" : "Review Pending"} ({stats.pending})</span>
+            </button>
+
+            <button
+              onClick={loadBreaks}
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#fff9fb]
+                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]
+                      px-4 py-2.5 text-xs font-bold text-[#403F45] transition-all cursor-pointer hover:scale-105 active:scale-95 border border-2 border-lightgray"
+              title="Refresh List"
+            >
+              <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+              <span className="hidden sm:inline">{language === "vi" ? "Làm Mới" : "Refresh"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <TopMetricsRow metrics={summaryStats} className={"grid gap-5 md:grid-cols-2 xl:grid-cols-4"} />
+
+      {/* Modern Filter Toolbar & Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200/90 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
+
+          {/* Search Query Input */}
+          <div className="flex flex-col items-start gap-2 min-w-[200px] flex-1">
+            <span className="text-xs font-bold text-gray-500">{t("manager.common.search")}:</span>
+            <Input
+              prefix={<Search size={14} className="text-gray-400 mr-1" />}
+              placeholder={t("manager.bookings.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              allowClear
+              className="!rounded-full border-gray-200 text-xs py-1.5 px-3 !h-[38px]"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Artist Filter Dropdown */}
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-xs font-bold text-gray-500">{t("manager.bookings.artist")}:</div>
+            <Select
+              allowClear
+              placeholder={language === "vi" ? "Tất cả nhân viên" : "All Staff Artists"}
+              loading={isArtistsLoading}
+              value={filterArtistId}
+              onChange={(value) => {
+                setFilterArtistId(value);
+                setCurrentPage(1);
+              }}
+              style={{ width: 170 }}
+              className="rounded-xl text-xs font-medium !h-[38px]"
+            >
+              {artists.map((artist) => (
+                <Select.Option key={artist.id} value={artist.id}>
+                  {artist.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Date Filter */}
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-xs font-bold text-gray-500">{language === "vi" ? "Khoảng thời gian" : "Date Range"}:</div>
+            <DateRangePicker
+              value={filterDateRange}
+              onChange={(dates) => {
+                setFilterDateRange(dates);
+                setCurrentPage(1);
+              }}
+              className="h-10"
+            />
+          </div>
+
+          {/* Clear Filters */}
+          {(filterArtistId || filterDateRange || filterStatus !== "all" || searchQuery) && (
+            <button
+              onClick={() => {
+                setFilterArtistId(undefined);
+                setFilterDateRange(null);
+                setFilterStatus("all");
+                setSearchQuery("");
+                setCurrentPage(1);
+              }}
+              className="rounded-2xl bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-bold text-gray-700 transition cursor-pointer"
+            >
+              {language === "vi" ? "Đặt lại bộ lọc" : "Reset Filters"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content List / Table */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-lg border border-gray-100 shadow-sm space-y-3">
+          <Spin size="large" />
+          <span className="text-xs font-bold text-gray-400">{language === "vi" ? "Đang tải yêu cầu nghỉ từ máy chủ..." : "Loading break requests from server..."}</span>
+        </div>
+      ) : filteredBreaks.length === 0 ? (
+        <EmptyState
+          title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ" : "No break requests found"}
+          description={
+            searchQuery || filterArtistId || filterDateRange || filterStatus !== "all"
+              ? language === "vi" ? "Không tìm thấy yêu cầu nghỉ phù hợp với tiêu chí tìm kiếm và lọc hiện tại." : "No break requests match your current search and filter criteria."
+              : language === "vi" ? "Chưa có yêu cầu nghỉ giải lao nào được gửi." : "There are no Staff Artist break requests submitted yet."
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <Table
+                rowKey="nailArtistBreakId"
+                dataSource={displayedBreaks}
+                pagination={false}
+                onChange={(pagination, filters, sorter) => {
+                  if (sorter && sorter.field) {
+                    if (sorter.order) {
+                      setSelectedSort(`${sorter.field}-${sorter.order === "ascend" ? "asc" : "desc"}`);
+                    } else {
+                      setSelectedSort("date-desc");
+                    }
+                  }
+                }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                columns={[
+                  {
+                    title: t("manager.bookings.artist"),
+                    dataIndex: "artist",
+                    key: "artist",
+                    sorter: true,
+                    sortOrder: selectedSort === "artist-asc" ? "ascend" : selectedSort === "artist-desc" ? "descend" : null,
+                    render: (_, item) => {
+                      const artistName = getArtistName(item.nailArtistId);
+                      return (
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white font-bold text-sm shadow-md shadow-[#C97A9E]/20 shrink-0">
+                            {artistName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-[#221F26] text-xs truncate">
+                              {artistName}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    title: language === "vi" ? "Ngày yêu cầu" : "Request Date",
+                    dataIndex: "date",
+                    key: "date",
+                    sorter: true,
+                    sortOrder: selectedSort === "date-asc" ? "ascend" : selectedSort === "date-desc" ? "descend" : null,
+                    render: (_, item) => (
+                      <div className="flex justify-between items-center bg-gray-50/50 p-2 rounded-lg">
+                        <span className="text-gray-500 font-medium flex items-center gap-2"><CalendarDays size={13} /> {language === "vi" ? "Ngày nghỉ" : "Break Date"}:</span>
+                        <span className="font-bold text-gray-800">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
+                      </div>
+                    )
+                  },
+                  {
+                    title: t("manager.bookings.time"),
+                    dataIndex: "time",
+                    key: "time",
+                    sorter: true,
+                    sortOrder: selectedSort === "time-asc" ? "ascend" : selectedSort === "time-desc" ? "descend" : null,
+                    render: (_, item) => {
+                      const slotDuration = getSlotDuration(item.startTime, item.endTime);
+                      return (
+                        <div className="flex flex-col gap-1 items-start">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-900 bg-purple-50/70 px-3 py-1 rounded-xl border border-purple-100 inline-flex">
+                            <Clock3 size={13} className="text-[#C97A9E]" />
+                            <span>
+                              {item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}
+                            </span>
+                          </div>
+                          {slotDuration && (
+                            <span className="text-[10px] font-bold text-purple-700 bg-purple-100/60 px-2 py-0.5 rounded-md">
+                              {slotDuration}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    title: t("manager.breaks.reason") || "Reason",
+                    dataIndex: "reason",
+                    key: "reason",
+                    render: (_, item) => (
+                      <div className="flex items-start gap-1.5 text-gray-700 font-medium max-w-xs">
+                        <MessageSquareText size={13} className="text-gray-400 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2" title={item.reason}>
+                          {item.reason || "Shift break / Personal matter"}
+                        </span>
+                      </div>
+                    )
+                  },
+                  {
+                    title: language === "vi" ? "Trạng thái" : "Status",
+                    dataIndex: "status",
+                    key: "status",
+                    sorter: true,
+                    sortOrder: selectedSort === "status-asc" ? "ascend" : selectedSort === "status-desc" ? "descend" : null,
+                    render: (_, item) => getStatusBadge(item.status)
+                  },
+                  {
+                    title: language === "vi" ? "Ghi chú từ chối" : "Rejection Note",
+                    dataIndex: "rejectReason",
+                    key: "rejectReason",
+                    render: (_, item) => (
+                      <div className="max-w-xs">
+                        {item.rejectReason ? (
+                          <span className="text-xs text-rose-600 font-bold italic line-clamp-2" title={item.rejectReason}>
+                            💬 &quot;{item.rejectReason}&quot;
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 font-mono text-xs">-</span>
+                        )}
+                      </div>
+                    )
+                  },
+                  {
+                    title: language === "vi" ? "Thao tác" : "Actions",
+                    key: "actions",
+                    align: "center",
+                    render: (_, item) => {
+                      const st = String(item.status || "").toLowerCase();
+                      const isPending = st === "pending" || st === "chờ duyệt";
+                      return (
+                        <div className="flex items-center justify-center gap-2">
+                          <ActionButtons
+                            onView={() => {
+                              setSelectedBreak(item);
+                              setIsViewModalOpen(true);
+                            }}
+                            onApprove={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsApproveModalOpen(true);
+                            } : undefined}
+                            onReject={isPending ? () => {
+                              setSelectedBreak(item);
+                              setRejectReasonInput("");
+                              setIsRejectModalOpen(true);
+                            } : undefined}
+                            onDelete={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsDeleteOpen(true);
+                            } : undefined}
+                            showApprove={isPending}
+                            showReject={isPending}
+                            showDelete={isPending}
+                          />
+                        </div>
+                      );
+                    }
+                  }
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {filteredBreaks.length > 0 && (
+            <div className="flex justify-end pt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal Confirm Approve */}
+      <ActionConfirmModal
+        open={isApproveModalOpen}
+        intent="success"
+        title={language === "vi" ? "Phê duyệt yêu cầu nghỉ?" : "Approve Break Request?"}
+        description={language === "vi" ? "Xác nhận phê duyệt yêu cầu nghỉ của nghệ sĩ làm móng trong khung giờ này." : "Confirm approval for the Staff Artist break request during this time slot."}
+        confirmText={language === "vi" ? "Phê duyệt" : "Approve"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        onConfirm={handleApprove}
+        onCancel={() => {
+          setIsApproveModalOpen(false);
+          setSelectedBreak(null);
+        }}
+        loading={isActionLoading}
+        details={[
+          {
+            label: language === "vi" ? "Nhân viên " : "Staff Artist",
+            value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
+          },
+          {
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : "",
+            icon: CalendarDays,
+          },
+          {
+            label: "Time Slot",
+            value: selectedBreak
+              ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}`
+              : "",
+          },
+        ]}
+      />
+
+      {/* Modal Reject Request with Reason Input */}
+      <Modal
+        open={isRejectModalOpen}
+        onCancel={() => {
+          setIsRejectModalOpen(false);
+          setSelectedBreak(null);
+          setRejectReasonInput("");
+        }}
+        footer={null}
+        centered
+        width={460}
+        className="rounded-lg overflow-hidden"
+      >
+        <div className="p-2 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <XCircle size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#221F26]">{language === "vi" ? "Từ chối yêu cầu nghỉ" : "Reject Break Request"}</h3>
+              <p className="text-xs text-gray-500 font-medium">
+                {language === "vi" ? "Vui lòng cung cấp lý do từ chối yêu cầu nghỉ." : "Please provide a reason for declining this request."}
+              </p>
+            </div>
+          </div>
+
+          {selectedBreak && (
+            <div className="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-200/70 text-xs space-y-1.5">
+              <p className="font-bold text-rose-950">
+                {language === "vi" ? "Nhân viên" : "Staff Artist"}: {getArtistName(selectedBreak.nailArtistId)}
+              </p>
+              <div className="text-[11px] text-gray-500 font-medium uppercase tracking-wider flex items-center gap-1">
+                <Clock3 size={12} className="text-rose-400" />
+                {language === "vi" ? "Ca" : "Slot"}: {dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
+              </div>
+              <p className="text-gray-600 italic">{language === "vi" ? "Lý do" : "Reason"}: &quot;{selectedBreak.reason || "Shift break"}&quot;</p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-[#221F26]">
+              {language === "vi" ? "Lý do từ chối (Gửi cho nhân viên)" : "Rejection Reason (Sent to artist)"}
+            </label>
+            <Input.TextArea
+              rows={3}
+              placeholder={language === "vi" ? "Nhập lý do từ chối (Ví dụ: Số lượng khách hàng cao trong ca làm việc...)" : "Enter rejection reason (e.g., High customer volume during shift...)"}
+              value={rejectReasonInput}
+              onChange={(e) => setRejectReasonInput(e.target.value)}
+              className="rounded-2xl border-gray-200 text-xs font-medium py-2 px-3"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setSelectedBreak(null);
+                setRejectReasonInput("");
+              }}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRejectConfirm}
+              disabled={isActionLoading}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 transition cursor-pointer shadow-md shadow-rose-600/20 inline-flex items-center gap-1.5"
+            >
+              {isActionLoading && <Spin size="small" />}
+              <span>{language === "vi" ? "Xác nhận từ chối" : "Confirm Rejection"}</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={isViewModalOpen}
+        footer={null}
+        centered
+        width={640}
+        onCancel={() => {
+          setIsViewModalOpen(false);
+          setSelectedBreak(null);
+        }}
+      >
+        {selectedBreak && (
+          <div className="space-y-5">
+
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#C97A9E] to-[#9E4D76] text-white flex items-center justify-center text-lg font-bold">
+                {getArtistName(selectedBreak.nailArtistId)
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold">
+                  {getArtistName(selectedBreak.nailArtistId)}
+                </h2>
+
+                <div className="mt-1">
+                  {getStatusBadge(selectedBreak.status)}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs text-gray-400 mb-1">
+                  <span className="text-gray-500">{language === "vi" ? "Ngày nghỉ:" : "Date:"}</span>
+                </p>
+                <span className="font-bold text-gray-900 bg-gray-100/80 px-2 py-0.5 rounded text-sm">
+                  {dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")}
+                </span>
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs text-gray-400">
+                  {language === "vi" ? "Khung giờ" : "Time Slot"}
+                </p>
+
+                <p className="mt-1 font-bold">
+                  {selectedBreak.startTime?.substring(0, 5)} -{" "}
+                  {selectedBreak.endTime?.substring(0, 5)}
+                </p>
+
+                <p className="text-xs text-purple-600 mt-1">
+                  {getSlotDuration(
+                    selectedBreak.startTime,
+                    selectedBreak.endTime
+                  )}
+                </p>
+              </div>
+
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-400 mb-2">
+                {language === "vi" ? "Lý do nghỉ" : "Break Reason"}
+              </p>
+
+              <p className="text-sm font-medium whitespace-pre-wrap">
+                {selectedBreak.reason || "-"}
+              </p>
+            </div>
+
+            {selectedBreak.rejectReason && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                <p className="text-xs font-bold text-rose-500 mb-2">
+                  {language === "vi"
+                    ? "Lý do từ chối"
+                    : "Rejection Reason"}
+                </p>
+
+                <p className="text-sm text-rose-700 whitespace-pre-wrap">
+                  {selectedBreak.rejectReason}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="rounded-xl bg-gray-100 px-5 py-2 text-sm font-bold hover:bg-gray-200 transition cursor-pointer"
+              >
+                {language === "vi" ? "Đóng" : "Close"}
+              </button>
+            </div>
+
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <ActionConfirmModal
+        open={isDeleteOpen}
+        intent="danger"
+        title={language === "vi" ? "Xóa yêu cầu nghỉ?" : "Delete Break Request?"}
+        description={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn bản ghi yêu cầu nghỉ này." : "This action will permanently delete this break request record."}
+        confirmText={language === "vi" ? "Xóa yêu cầu" : "Delete Request"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setIsDeleteOpen(false);
+          setSelectedBreak(null);
+        }}
+        loading={isActionLoading}
+        details={[
+          {
+            label: "Staff Artist",
+            value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
+          },
+          {
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : "",
+            icon: CalendarDays,
+          },
+        ]}
+      />
+    </div>
+  );
+}

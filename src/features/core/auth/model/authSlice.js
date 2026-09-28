@@ -29,10 +29,42 @@ export const login = createAsyncThunk(
   },
 );
 
+export const loginGoogle = createAsyncThunk(
+  "auth/loginGoogle",
+  async (idToken, { rejectWithValue }) => {
+    try {
+      return await authService.loginGoogle(idToken);
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+const getIsVi = () => {
+  try {
+    const lang = localStorage.getItem("nailify_language");
+    if (lang) return lang === "vi";
+    return navigator.language?.toLowerCase().startsWith("vi");
+  } catch {
+    return true; // Default to Vietnamese if localStorage is unavailable
+  }
+};
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    setSession(state, action) {
+      state.user = action.payload?.user ?? state.user;
+      state.accessToken = action.payload?.accessToken ?? state.accessToken;
+      state.isAuthenticated = Boolean(state.accessToken);
+      state.status = AUTH_STATUS.succeeded;
+      state.error = null;
+      saveAuthSession({
+        accessToken: state.accessToken,
+        user: state.user,
+      });
+    },
     logout(state) {
       state.user = null;
       state.accessToken = null;
@@ -40,7 +72,7 @@ const authSlice = createSlice({
       state.status = AUTH_STATUS.idle;
       state.error = null;
       clearAuthSession();
-      toast.success("Signed out successfully.");
+      toast.success(getIsVi() ? "Đăng xuất thành công." : "Signed out successfully.");
     },
   },
   extraReducers: (builder) => {
@@ -55,16 +87,34 @@ const authSlice = createSlice({
         state.accessToken = action.payload.accessToken;
         state.isAuthenticated = true;
         saveAuthSession(action.payload);
-        toast.success("Signed in successfully.");
+        toast.success(getIsVi() ? "Đăng nhập thành công." : "Signed in successfully.");
       })
       .addCase(login.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
-        state.error = action.payload ?? "Sign-in failed.";
+        state.error = action.payload ?? (getIsVi() ? "Đăng nhập thất bại." : "Sign-in failed.");
+        state.isAuthenticated = false;
+        toast.error(state.error);
+      })
+      .addCase(loginGoogle.pending, (state) => {
+        state.status = AUTH_STATUS.loading;
+        state.error = null;
+      })
+      .addCase(loginGoogle.fulfilled, (state, action) => {
+        state.status = AUTH_STATUS.succeeded;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.isAuthenticated = true;
+        saveAuthSession(action.payload);
+        toast.success(getIsVi() ? "Đăng nhập với Google thành công." : "Signed in with Google successfully.");
+      })
+      .addCase(loginGoogle.rejected, (state, action) => {
+        state.status = AUTH_STATUS.failed;
+        state.error = action.payload ?? (getIsVi() ? "Đăng nhập với Google thất bại." : "Google Sign-in failed.");
         state.isAuthenticated = false;
         toast.error(state.error);
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setSession } = authSlice.actions;
 export const authReducer = authSlice.reducer;

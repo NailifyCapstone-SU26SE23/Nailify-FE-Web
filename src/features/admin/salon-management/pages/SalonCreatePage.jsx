@@ -1,44 +1,78 @@
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
   MapPin,
   Phone,
-  Plus,
   Save,
-  User,
-  Users,
   X,
   Upload,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { TimePicker } from "../../../../shared/components/ui/TimePicker";
 import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  SALON_DAYS_OF_WEEK,
-  SALON_STATUS_OPTIONS,
-  createEmptySalonForm,
-  getSalonStatusStyle,
-  validateSalonForm,
-} from "../services/mockSalon";
-import { createSalon, uploadSalonImage } from "../services/salonsService";
+  createSalon,
+} from "../services/salonsService";
 
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+  "flex items-center gap-2 rounded-[16px] border border-[#f5cbdc] bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-[#eba2c6] hover:bg-[#fff5f9] focus-within:border-[#ea4f93] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.2)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
+  "w-full min-w-0 bg-transparent text-[14px] text-[#3f2034] outline-none placeholder:text-[#c8b0bf] font-medium";
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+function PremiumCard({ className = "", children, noHover = false, padded = true }) {
+  return (
+    <motion.article
+      initial="hidden"
+      animate="visible"
+      variants={fadeInUp}
+      className={`relative overflow-hidden rounded-lg border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${padded ? "p-6" : ""} ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)]" : ""} ${className}`}
+    >
+      {children}
+    </motion.article>
+  );
+}
+
+function SectionHeading({ title, subtitle }) {
+  return (
+    <div>
+      <h2 className="text-[16px] font-bold text-[#2d1b35]">{title}</h2>
+      {subtitle ? <p className="mt-1.5 text-[11px] text-[#a88a9f] leading-relaxed">{subtitle}</p> : null}
+    </div>
+  );
+}
 
 export function SalonCreatePage() {
+  const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-  const [formData, setFormData] = useState(createEmptySalonForm);
+  const [formData, setFormData] = useState({
+    salonName: "",
+    address: "",
+    phone: "",
+    depositConfig: "",
+  });
   const [formError, setFormError] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -47,20 +81,6 @@ export function SalonCreatePage() {
     setFormData((current) => ({
       ...current,
       [field]: value,
-    }));
-    if (formError) setFormError("");
-  };
-
-  const handleHoursChange = (day, field, value) => {
-    setFormData((current) => ({
-      ...current,
-      operatingHours: {
-        ...current.operatingHours,
-        [day]: {
-          ...current.operatingHours[day],
-          [field]: value,
-        },
-      },
     }));
     if (formError) setFormError("");
   };
@@ -83,9 +103,16 @@ export function SalonCreatePage() {
   const handleSubmit = (event) => {
     event.preventDefault();
     setFormError("");
-    const validationError = validateSalonForm(formData, { requireSalonId: false });
-    if (validationError) {
-      setFormError(validationError);
+    if (!formData.salonName.trim()) {
+      setFormError(t("adminSalonManagement.salonNameIsRequired"));
+      return;
+    }
+    if (!formData.address.trim()) {
+      setFormError(t("adminSalonManagement.addressIsRequired"));
+      return;
+    }
+    if (!formData.phone.trim()) {
+      setFormError(t("adminSalonManagement.phoneNumberIsRequired"));
       return;
     }
     setShowSaveModal(true);
@@ -94,26 +121,34 @@ export function SalonCreatePage() {
   const handleConfirmSave = async () => {
     setIsSaving(true);
     try {
-      const validationError = validateSalonForm(formData, { requireSalonId: false });
-      if (validationError) {
+      if (!formData.salonName.trim()) {
         setSaveResult({
           success: false,
-          message: validationError,
+          message: t("adminSalonManagement.salonNameIsRequired"),
         });
         setShowSaveModal(false);
         return;
       }
 
-      const createdSalon = await createSalon(formData, selectedImage);
+      await createSalon({
+        salonName: formData.salonName,
+        address: formData.address,
+        phone: formData.phone,
+        staffAmount: "",
+        status: "Open",
+        operatingHours: {},
+        salonId: "",
+        depositConfig: formData.depositConfig,
+      }, selectedImage);
 
       setSaveResult({
         success: true,
-        message: `${formData.salonName.trim()} has been created successfully.`,
+        message: `${formData.salonName.trim()} ${language === "vi" ? "đã tạo thành công." : "has been created successfully."}`,
       });
     } catch (error) {
       setSaveResult({
         success: false,
-        message: error.message || "Failed to create salon. Please try again.",
+        message: error.message || language === "vi" ? "Tạo salon không thành công. Vui lòng thử lại." : "Failed to create salon. Please try again.",
       });
     } finally {
       setIsSaving(false);
@@ -139,142 +174,182 @@ export function SalonCreatePage() {
 
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
-    navigate(ROUTES.adminSalons);
+    navigate(ROUTES.adminSalons, { replace: true });
   };
 
   return (
-    <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-      <header className="mb-4 flex flex-col gap-4 rounded-[20px] bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5 sm:rounded-[24px] sm:px-5 lg:rounded-[28px] lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <Link
-            to={ROUTES.adminSalons}
-            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-xl font-black tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
-              Add New Salon
-            </h1>
-            <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
-              Create a new salon branch in the system
-            </p>
-          </div>
+    <motion.section
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+      className="mx-auto w-full min-w-0 max-w-[1300px]"
+    >
+
+      <motion.header
+        variants={fadeInUp}
+        className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div className="min-w-0">
+          <h1 className=" text-[32px] font-semibold text-[#3f2034]">
+            {t("adminSalonManagement.addNewSalon")}
+          </h1>
+          <p className="mt-1 text-sm text-[#a6869a]">
+            {t("adminSalonManagement.createANewSalonBranchInTheSyst")}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-center">
-          <button
+        <div className="flex gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={handleCancel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f1e7ed] bg-white px-5 py-2.5 text-[12px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff8fb]"
           >
-            <X size={14} />
-            Cancel
-          </button>
-          <button
+            <X size={16} />
+            {t("adminSalonManagement.cancel")}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={handleSubmit}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-2.5 text-[12px] font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.32)] transition-all duration-300 hover:opacity-95"
           >
-            <Save size={14} />
-            Save Salon
-          </button>
+            <Save size={16} />
+            {t("adminSalonManagement.createSalon")}
+          </motion.button>
         </div>
-      </header>
+      </motion.header>
 
-      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
         {formError && (
-          <div className="lg:col-span-3 mb-2 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-600 text-[13px] font-semibold">
+          <motion.div
+            variants={fadeInUp}
+            className="lg:col-span-3 mb-2 rounded-[16px] bg-[#fff0f0] border border-[#fecdd3] px-4 py-3 text-[#d14c84] text-[13px] font-semibold"
+          >
             {formError}
-          </div>
+          </motion.div>
         )}
-        <div className="space-y-4 lg:col-span-2 lg:space-y-5">
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              Salon Details
-            </h2>
+        <div className="space-y-6 lg:col-span-2">
+          <PremiumCard>
+            <div className="mb-6">
+              <SectionHeading
+                title={t("adminSalonManagement.salonDetails")}
+                subtitle={t("adminSalonManagement.fillInTheBasicSalonInformation")}
+              />
+            </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">
-                  Salon Name <span className="text-rose-500">*</span>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-5 md:grid-cols-2"
+            >
+              <motion.label variants={fadeInUp} className="space-y-2.5 md:col-span-2">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {t("adminSalonManagement.salonName")} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
-                  <User size={14} className="shrink-0 text-rose-300" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                  </div>
                   <input
                     type="text"
                     value={formData.salonName}
                     onChange={(event) => handleInputChange("salonName", event.target.value)}
-                    placeholder="Enter salon name"
+                    placeholder={t("adminSalonManagement.enterSalonName")}
                     className={inputClassName}
                     required
                   />
                 </div>
-              </label>
+              </motion.label>
 
-              <label className="space-y-2.5">
-                <span className="text-[13px] font-semibold text-slate-600">
-                  Phone Number <span className="text-rose-500">*</span>
+              <motion.label variants={fadeInUp} className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {t("adminSalonManagement.phoneNumber")} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={inputWrapperClassName}>
-                  <Phone size={14} className="shrink-0 text-rose-300" />
+                  <Phone size={14} className="shrink-0 text-[#ea4f93]" />
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (XXX) XXX-XXXX"
+                    placeholder={t("adminSalonManagement.enterPhoneNumber")}
                     className={inputClassName}
                     required
                   />
                 </div>
-              </label>
+              </motion.label>
 
-              <label className="space-y-2.5 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">
-                  Address <span className="text-rose-500">*</span>
+              <motion.label variants={fadeInUp} className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {language === "vi" ? "Phần trăm cọc" : "Deposit Config"} <span className="text-[#ea4f93]">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fecdd3] text-[10px] font-bold text-[#ea4f93]">%</div>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.depositConfig}
+                    onChange={(event) => handleInputChange("depositConfig", event.target.value)}
+                    placeholder="e.g. 20"
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </motion.label>
+
+              <motion.label variants={fadeInUp} className="space-y-2.5 md:col-span-2">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {t("adminSalonManagement.address")} <span className="text-[#ea4f93]">*</span>
                 </span>
                 <div className={`${inputWrapperClassName} items-start`}>
-                  <MapPin size={14} className="mt-0.5 shrink-0 text-rose-300" />
+                  <MapPin size={14} className="mt-0.5 shrink-0 text-[#ea4f93]" />
                   <textarea
                     value={formData.address}
                     onChange={(event) => handleInputChange("address", event.target.value)}
-                    placeholder="Full address including city and zip code"
+                    placeholder={t("adminSalonManagement.fullAddressIncludingCityAndZip")}
                     className={`${inputClassName} resize-none`}
                     rows={3}
                     required
                   />
                 </div>
-              </label>
+              </motion.label>
 
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">
-                  Salon Image
+              <motion.label variants={fadeInUp} className="space-y-2 md:col-span-2">
+                <span className="text-[13px] font-semibold text-[#2d1b35]">
+                  {t("adminSalonManagement.salonImage")}
                 </span>
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                <div className="flex flex-col items-center justify-center gap-3 rounded-[16px] border border-dashed border-[#f0b7cf] bg-[#fff8fb] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#fff5f9] hover:shadow-[0_8px_24px_rgba(234,79,147,0.12)]">
                   {imagePreview ? (
                     <div className="relative w-full">
                       <img
+                        crossOrigin="anonymous"
                         src={imagePreview}
                         alt="Preview"
-                        className="h-40 w-full object-cover rounded-2xl shadow-lg"
+                        className="h-40 w-full object-cover rounded-[16px] shadow-lg"
+                        referrerPolicy="no-referrer"
                       />
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
                         type="button"
                         onClick={handleRemoveImage}
-                        className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                        className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white shadow-lg"
                       >
                         <X size={16} />
-                      </button>
+                      </motion.button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center gap-3 cursor-pointer">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] text-white shadow-lg">
                         <Upload size={28} />
                       </div>
                       <div className="text-center">
-                        <p className="text-base font-semibold text-slate-700">Click to upload salon image</p>
-                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                        <p className="text-base font-semibold text-[#2d1b35]">{t("adminSalonManagement.clickToUploadSalonImage")}</p>
+                        <p className="text-xs text-[#a88a9f] mt-1">{t("adminSalonManagement.pngJpgUpTo5mb")}</p>
                       </div>
                       <input
                         type="file"
@@ -285,221 +360,115 @@ export function SalonCreatePage() {
                     </label>
                   )}
                 </div>
-              </label>
-
-              <div className="space-y-2 md:col-span-2">
-                <span className="text-[13px] font-semibold text-slate-600">
-                  Status <span className="text-rose-500">*</span>
-                </span>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {SALON_STATUS_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleInputChange("status", option.value)}
-                      className={`rounded-2xl px-4 py-3.5 text-center text-sm font-bold transition-all duration-300 transform hover:scale-[1.02] ${
-                        formData.status === option.value
-                          ? `${option.color} shadow-lg`
-                          : "bg-[#fff5f9] text-slate-400 hover:text-slate-600 hover:bg-[#fff0f5] border border-rose-100"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              Operating Hours
-            </h2>
-
-            <div className="space-y-3.5">
-              {SALON_DAYS_OF_WEEK.map((day) => (
-                <div
-                  key={day.key}
-                  className="flex flex-col gap-3 rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-rose-200 hover:shadow-[0_4px_16px_rgba(226,93,143,0.08)]"
-                >
-                  <div className="w-full sm:w-28">
-                    <span className="text-[13px] font-bold text-slate-700">{day.label}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Clock size={14} className="shrink-0 text-rose-400" />
-                    <TimePicker
-                      value={formData.operatingHours[day.key].open}
-                      onChange={(value) => handleHoursChange(day.key, "open", value)}
-                      placeholder="Open time"
-                      className="w-full min-w-[7rem] sm:w-28"
-                    />
-                    <span className="text-sm text-slate-400 font-semibold">to</span>
-                    <TimePicker
-                      value={formData.operatingHours[day.key].close}
-                      onChange={(value) => handleHoursChange(day.key, "close", value)}
-                      placeholder="Close time"
-                      className="w-full min-w-[7rem] sm:w-28"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              </motion.label>
+            </motion.div>
+          </PremiumCard>
         </div>
 
-        <aside className="space-y-4 lg:space-y-5">
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              Actions
-            </h2>
-
-            <div className="space-y-3.5">
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-3.5 text-[13px] font-bold text-emerald-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-100 hover:to-emerald-200 hover:shadow-[0_4px_16px_rgba(16,185,129,0.15)] hover:scale-[1.02]"
-              >
-                <Plus size={16} />
-                Add Another Salon
-              </button>
-
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 px-4 py-3.5 text-[13px] font-bold text-amber-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-100 hover:to-amber-200 hover:shadow-[0_4px_16px_rgba(245,158,11,0.15)] hover:scale-[1.02]"
-              >
-                <Calendar size={16} />
-                Set Holiday Schedule
-              </button>
-
-              <button
-                type="button"
-                className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-3.5 text-[13px] font-bold text-blue-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 hover:shadow-[0_4px_16px_rgba(59,130,246,0.15)] hover:scale-[1.02]"
-              >
-                <Users size={16} />
-                Assign Staff Members
-              </button>
-
-              <button
+        <aside className="space-y-6">
+          <PremiumCard>
+            <div className="mb-6">
+              <SectionHeading
+                title={t("adminSalonManagement.quickActions")}
+                subtitle={t("adminSalonManagement.fastAccessToFrequentlyUsedFunc")}
+              />
+            </div>
+            <div className="space-y-3">
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={handleCancel}
-                className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-rose-100 px-4 py-3.5 text-[13px] font-bold text-rose-700 transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-100 hover:to-rose-200 hover:shadow-[0_4px_16px_rgba(244,63,94,0.15)] hover:scale-[1.02]"
+                className="flex w-full items-center justify-center gap-2.5 rounded-[16px] border border-[#fecdd3] bg-[#fff0f0] px-4 py-3.5 text-[13px] font-bold text-[#d14c84] transition-all duration-300 hover:shadow-[0_4px_16px_rgba(209,76,132,0.15)]"
               >
                 <X size={16} />
-                Discard Changes
-              </button>
+                {t("adminSalonManagement.discardChanges")}
+              </motion.button>
             </div>
-          </div>
+          </PremiumCard>
 
-          <div className="rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
-            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-              Preview
-            </h2>
-
+          <PremiumCard>
+            <div className="mb-6">
+              <SectionHeading
+                title={t("adminSalonManagement.preview")}
+                subtitle={t("adminSalonManagement.summaryOfSalonDetails")}
+              />
+            </div>
             <div className="space-y-4">
-              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+              <div className="rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] p-5">
                 <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="text-[15px] font-bold text-slate-700">Salon Summary</h3>
-                  <span
-                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11px] font-bold ${getSalonStatusStyle(formData.status)}`}
-                  >
-                    {formData.status}
-                  </span>
+                  <h3 className="text-[15px] font-bold text-[#2d1b35]">{t("adminSalonManagement.salonSummary")}</h3>
                 </div>
-
-                <div className="space-y-3 text-[13px] text-slate-600">
+                <div className="space-y-3 text-[13px] text-[#5b4256]">
                   <div className="flex justify-between gap-3">
-                    <span className="font-semibold text-slate-700">Name:</span>
-                    <span className="text-right font-medium text-slate-800">{formData.salonName || "Not set"}</span>
+                    <span className="font-semibold text-[#2d1b35]">{t("adminSalonManagement.name")}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.salonName || (t("adminSalonManagement.notSet"))}</span>
                   </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
-                <h3 className="mb-3 text-[15px] font-bold text-slate-700">Quick Stats</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white p-4 text-center shadow-sm">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Capacity</div>
-                    <div className="text-[18px] font-bold text-slate-800 mt-1">85%</div>
+                  <div className="flex justify-between gap-3">
+                    <span className="font-semibold text-[#2d1b35]">{t("adminSalonManagement.phone")}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.phone || (t("adminSalonManagement.notSet"))}</span>
                   </div>
-                  <div className="rounded-xl bg-white p-4 text-center shadow-sm">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Revenue</div>
-                    <div className="text-[18px] font-bold text-slate-800 mt-1">$12.5K</div>
+                  <div className="flex justify-between gap-3">
+                    <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Phần trăm cọc" : "Deposit Config"}</span>
+                    <span className="text-right font-medium text-[#2d1b35]">{formData.depositConfig ? `${formData.depositConfig}%` : (t("adminSalonManagement.notSet"))}</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </PremiumCard>
         </aside>
       </form>
-
-      <div className="mt-4 rounded-[24px] bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:mt-5 sm:p-6 lg:p-7 border border-rose-50">
-        <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
-          <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
-          Additional Information
-        </h2>
-
-        <label className="block space-y-2.5">
-          <span className="text-[13px] font-semibold text-slate-600">Description</span>
-          <textarea
-            value={formData.description}
-            onChange={(event) => handleInputChange("description", event.target.value)}
-            placeholder="Add any additional notes or description about this salon..."
-            className="w-full rounded-2xl border border-rose-100 bg-gradient-to-r from-[#fffafc] to-[#fff8fb] px-4 py-3.5 text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium transition-all duration-300 focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]"
-            rows={4}
-          />
-        </label>
-      </div>
 
       <ActionConfirmModal
         open={showCancelModal}
         intent="warning"
-        title="Cancel Salon Creation"
-        subtitle="You are leaving this form without saving."
-        description="All unsaved salon details will be discarded if you cancel now."
-        confirmText="Yes, Cancel"
-        cancelText="Keep Editing"
+        title={t("adminSalonManagement.cancelSalonCreation")}
+        subtitle={t("adminSalonManagement.youAreLeavingThisFormWithoutSa")}
+        description={t("adminSalonManagement.allUnsavedSalonDetailsWillBeDi")}
+        confirmText={t("adminSalonManagement.yesCancel")}
+        cancelText={t("adminSalonManagement.keepEditing")}
         confirmIcon={X}
         onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
         details={[
-          { label: "Draft Status", value: "Not saved yet" },
-          { label: "Next Step", value: "Return to salon list" },
+          { label: t("adminSalonManagement.draftStatus"), value: t("adminSalonManagement.notSavedYet") },
+          { label: t("adminSalonManagement.nextStep"), value: t("adminSalonManagement.returnToSalonList") },
         ]}
-        warnings={[
-          "Branch profile, manager contact, and operating hours in this draft will be lost.",
-          "You will need to re-enter the information if you start again later.",
-        ]}
+        warnings={
+          language === "vi"
+            ? ["Tên chi nhánh, địa chỉ và số điện thoại bản nháp sẽ bị mất.", "Bạn sẽ cần nhập lại thông tin nếu tạo mới sau này."]
+            : ["Salon name, address, and phone number in this draft will be lost.", "You will need to re-enter the information if you start again later."]
+        }
       />
 
       <ActionConfirmModal
         open={showSaveModal}
         intent="success"
-        title="Save New Salon"
-        subtitle="This will create the salon in the system."
-        description="Confirm to add this branch and make it available in salon management."
-        confirmText="Save Salon"
-        cancelText="Review Again"
+        title={t("adminSalonManagement.saveNewSalon")}
+        subtitle={t("adminSalonManagement.thisWillCreateTheSalonInTheSys")}
+        description={t("adminSalonManagement.confirmToAddThisBranchAndMakeI")}
+        confirmText={t("adminSalonManagement.saveSalon")}
+        cancelText={t("adminSalonManagement.reviewAgain")}
         confirmIcon={Save}
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.salonName || "New salon", formData.status]}
+        highlights={[formData.salonName || (t("adminSalonManagement.newSalon"))]}
         details={[
-          { label: "Address", value: formData.address || "No address entered" },
+          { label: t("adminSalonManagement.address"), value: formData.address || (t("adminSalonManagement.noAddressEntered")) },
         ]}
       />
 
       <SalonSaveResultModal
         result={saveResult}
-        successTitle="Create Successful"
-        failureTitle="Create Failed"
-        successDescription="The salon has been created successfully."
-        failureDescription="Unable to create the salon."
+        successTitle={t("adminSalonManagement.createSuccessful")}
+        failureTitle={t("adminSalonManagement.createFailed")}
+        successDescription={t("adminSalonManagement.theSalonHasBeenCreatedSuccessf")}
+        failureDescription={t("adminSalonManagement.unableToCreateTheSalon")}
         onFailureClose={handleCloseResultModal}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={isVi ? "Đang chuyển hướng đến danh sách chi nhánh..." : "Redirecting to salon list..."}
       />
-    </section>
+    </motion.section>
   );
 }

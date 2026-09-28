@@ -1,5 +1,6 @@
 import { axiosClient } from "../../../../lib/axiosClient";
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import { buildAvatarDataUrl } from "../../../../shared/utils/avatar";
 
 function getAuthHeaders() {
   const session = loadAuthSession();
@@ -7,8 +8,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -46,7 +47,7 @@ function formatOperatingHours(operatingHours) {
   const firstDay = sortedDays[0];
   const lastDay = sortedDays[sortedDays.length - 1];
 
-  return `${firstDay?.dayName?.slice(0, 3) || "--"}-${lastDay?.dayName?.slice(0, 3) || "--"} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
+  return `${firstDay?.dayName?.slice(0, 3)}-${lastDay?.dayName?.slice(0, 3)} ${formatTimeValue(firstDay?.openTime)}-${formatTimeValue(firstDay?.closeTime)}`;
 }
 
 export function mapSalonOperatingHours(operatingHours) {
@@ -93,21 +94,21 @@ function normalizeSalonStatus(status) {
   switch (normalizedStatus) {
     case "active":
     case "open":
-      return "Active";
+      return "Open";
     case "busy":
       return "Busy";
-    case "closed":
     case "inactive":
+    case "closed":
       return "Closed";
     default:
-      return status ? `${status}` : "Active";
+      return status ? `${status}` : "Open";
   }
 }
 
 function getSalonStatusColor(status) {
   switch (status) {
-    case "Active":
-      return "bg-emerald-100 text-emerald-600";
+    case "Open":
+      return "bg-[#eaf9ee] text-[#238a55]";
     case "Busy":
       return "bg-amber-100 text-amber-600";
     case "Closed":
@@ -122,29 +123,45 @@ function getSalonImage(imageUrl, salonId) {
     return imageUrl;
   }
 
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(salonId || "Salon")}&background=fde7ef&color=8f365c&bold=true`;
+  return buildAvatarDataUrl(salonId || "Salon");
 }
 
 export function normalizeAdminSalon(salon) {
   const status = normalizeSalonStatus(salon?.status);
 
+  // Try all common image field names from API
+  const imageUrl =
+    salon?.imageUrl ||
+    salon?.image ||
+    salon?.avatarUrl ||
+    salon?.avatar ||
+    salon?.logoUrl ||
+    "";
+
+  const realId = salon?.id || salon?.salonId || "";
+
+  const uniqueOperatingHours = Array.isArray(salon?.operatingHours)
+    ? Array.from(new Map(salon.operatingHours.map(h => [h.dayOfWeek, h])).values())
+    : [];
+
   return {
-    id: salon?.salonId || "",
-    salonId: salon?.salonId || "",
-    name: String(salon?.name || "").trim() || "--",
-    address: String(salon?.address || "").trim() || "--",
-    manager: "Unassigned",
-    staff: "--",
-    hours: formatOperatingHours(salon?.operatingHours),
+    id: realId,
+    salonId: realId,
+    name: String(salon?.name || "").trim(),
+    address: String(salon?.address || "").trim(),
+    manager: salon?.manager || "Unassigned",
+    staffCount: salon?.staffCount || 0,
+    hours: formatOperatingHours(uniqueOperatingHours),
     status,
     statusColor: getSalonStatusColor(status),
-    image: getSalonImage(salon?.imageUrl, salon?.name || salon?.salonId),
-    phone: String(salon?.phone || "").trim() || "--",
-    rating: "—",
-    reviews: "0",
+    image: getSalonImage(imageUrl, salon?.name || realId),
+    phone: String(salon?.phone || "").trim(),
+    rating: salon?.rating || "—",
+    reviews: salon?.reviewCount || "0",
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
-    operatingHours: Array.isArray(salon?.operatingHours) ? salon.operatingHours : [],
+    operatingHours: uniqueOperatingHours,
+    depositConfig: salon?.depositConfig != null ? Math.round(Number(salon.depositConfig) * 100) : "",
   };
 }
 
@@ -159,16 +176,45 @@ export async function fetchAdminSalons({
   const response = await axiosClient.get("/Salons", {
     headers: getAuthHeaders(),
     params: {
-      PageIndex: pageIndex,
-      PageSize: pageSize,
-      Name: normalizedSearch || undefined,
-      Address: normalizedSearch || undefined,
-      OrderBy: orderBy || undefined,
+      pageNumber: pageIndex,
+      pageSize: pageSize,
+      name: normalizedSearch || undefined,
+      address: normalizedSearch || undefined,
+      orderBy: orderBy || undefined,
     },
   });
 
   const data = unwrapResponse(response, "Failed to load salons.");
-  const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminSalon) : [];
+  // const items = Array.isArray(data?.items) ? data.items.map(normalizeAdminSalon) : [];
+  const items = Array.isArray(data?.items)
+    ? await Promise.all(
+      data.items.map(async (salon) => {
+        const normalizedSalon = normalizeAdminSalon(salon);
+
+        const [allStaff, managers] = await Promise.all([
+          fetchSalonStaffSummary(normalizedSalon.salonId),
+          fetchSalonStaffSummary(normalizedSalon.salonId, "Manager")
+        ]);
+
+        const totalCount = allStaff.count;
+        const managerCount = managers.count;
+        const staffCount = totalCount - managerCount; // Receptionist + Nail Artist
+        
+        let managerName = "Unassigned";
+        if (managerCount > 0 && managers.firstItem) {
+          const m = managers.firstItem;
+          managerName = `${m.lastName || ''} ${m.firstName || ''}`.trim() || "Manager";
+        }
+
+        return {
+          ...normalizedSalon,
+          manager: managerName,
+          staffCount: staffCount,
+          managerCount: managerCount
+        };
+      })
+    )
+    : [];
   const metaData = data?.metaData ?? {};
 
   return {
@@ -184,6 +230,53 @@ export async function fetchAdminSalons({
       lastRowOnPage: Number(metaData.lastRowOnPage || items.length),
     },
   };
+}
+
+export async function fetchSalonStaffCount(salonId, role) {
+  try {
+    const response = await axiosClient.get(
+      `/Users/salon/${salonId}/staff`,
+      {
+        headers: getAuthHeaders(),
+        params: {
+          role,
+          pageNumber: 1,
+          pageSize: 10,
+        },
+      }
+    );
+
+    return response?.data?.data?.metaData?.totalItems || 0;
+  } catch (error) {
+    console.warn(`Failed to fetch staff count for salon ${salonId} role ${role}:`, error?.message);
+    return 0;
+  }
+}
+
+export async function fetchSalonStaffSummary(salonId, role) {
+  try {
+    const params = {
+      pageNumber: 1,
+      pageSize: 1,
+    };
+    if (role) params.role = role;
+
+    const response = await axiosClient.get(
+      `/Users/salon/${salonId}/staff`,
+      {
+        headers: getAuthHeaders(),
+        params,
+      }
+    );
+
+    return {
+      count: response?.data?.data?.metaData?.totalItems || 0,
+      firstItem: response?.data?.data?.items?.[0] || null
+    };
+  } catch (error) {
+    console.warn(`Failed to fetch staff summary for salon ${salonId} role ${role}:`, error?.message);
+    return { count: 0, firstItem: null };
+  }
 }
 
 export async function fetchAdminSalonDetail(salonId) {
@@ -208,5 +301,23 @@ export async function fetchAdminSalonDetail(salonId) {
     }
 
     throw error;
+  }
+}
+
+export async function deleteAdminSalon(salonId) {
+  const normalizedSalonId = String(salonId || "").trim();
+
+  if (!normalizedSalonId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.delete(`/Salons/${normalizedSalonId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to delete salon.");
+  } catch (error) {
+    throw error?.response?.data || error;
   }
 }

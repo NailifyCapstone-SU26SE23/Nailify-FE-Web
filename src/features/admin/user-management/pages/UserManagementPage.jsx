@@ -1,9 +1,11 @@
 import {
   AlertTriangle,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
   LoaderCircle,
+  MapPin,
   PencilLine,
   Search,
   Shield,
@@ -12,10 +14,12 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Select, Table, Tooltip } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getAdminUserDetailRoute,
@@ -23,8 +27,14 @@ import {
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
   USER_STATUS_STYLES,
+  USER_ROLE_OPTIONS,
 } from "../services/mockUsers";
-import { fetchAdminUsers } from "../services/userManagementService";
+import { fetchAdminUsers, deleteAdminUser } from "../services/userManagementService";
+import { toast } from "react-hot-toast";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+
+const ALL_FILTER_VALUE = "__all__";
 
 function getRoleTone(role) {
   switch (role) {
@@ -41,34 +51,41 @@ function getRoleTone(role) {
   }
 }
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
-
-  return (
-    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
-        {item.label}
-      </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
-        {item.value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-[#86c18d]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
+const getRoleLabel = (role, t) => {
+  switch (String(role).trim().toLowerCase()) {
+    case "admin":
+      return t("superAdmin");
+    case "manager":
+      return t("salonManager");
+    case "receptionist":
+      return t("roleReceptionist");
+    case "staff":
+    case "staff_artist":
+      return t("nailArtist");
+    case "customer":
+      return t("customer");
+    default:
+      return role;
+  }
 };
+
+const getStatusLabel = (status, t) => {
+  switch (status) {
+    case "Active":
+      return t("userManagement.detail.statusActive");
+    case "Inactive":
+      return t("userManagement.detail.statusInactive");
+    case "Pending":
+      return t("userManagement.detail.statusPending");
+    case "Suspended":
+      return t("userManagement.detail.statusSuspended");
+    default:
+      return status;
+  }
+};
+
+
+
 
 function SmallTag({ children, className = "" }) {
   return (
@@ -83,12 +100,65 @@ SmallTag.propTypes = {
   className: PropTypes.string,
 };
 
+function ChevronDownIcon() {
+  return <ChevronRight size={14} className="rotate-90 text-current" />;
+}
+
+
+function FilterSelect({
+  icon: Icon,
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+  className = "",
+}) {
+  return (
+    <div className={`group flex h-11 items-center gap-2 rounded-[16px] border border-[#f1d8e5] bg-[linear-gradient(180deg,#fffefe_0%,#fff8fc_100%)] px-3 shadow-[0_10px_18px_rgba(236,72,153,0.05)] transition hover:border-[#efbad3] ${className}`}>
+      <div className="pointer-events-none flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff0f6] text-[#ea4f93]">
+        <Icon size={13} />
+      </div>
+      <Select
+        value={value}
+        onChange={onChange}
+        options={options}
+        placeholder={placeholder}
+        disabled={disabled}
+        variant="borderless"
+        suffixIcon={<ChevronDownIcon />}
+        popupMatchSelectWidth
+        className="h-full min-w-0 flex-1 [&_.ant-select-arrow]:!right-0 [&_.ant-select-arrow]:!text-[#d3a0b8] [&_.ant-select-selection-item]:!leading-[42px] [&_.ant-select-selection-item]:!text-[15px] [&_.ant-select-selection-item]:!font-semibold [&_.ant-select-selection-item]:!text-[#4b3148] [&_.ant-select-selection-placeholder]:!leading-[42px] [&_.ant-select-selection-placeholder]:!text-[#cf9ab3] [&_.ant-select-selector]:!h-full [&_.ant-select-selector]:!rounded-[16px] [&_.ant-select-selector]:!bg-transparent [&_.ant-select-selector]:!px-0 [&_.ant-select-selector]:!shadow-none"
+      />
+    </div>
+  );
+}
+
+FilterSelect.propTypes = {
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  icon: PropTypes.elementType.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.oneOfType([PropTypes.string, PropTypes.node]).isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    }),
+  ).isRequired,
+  placeholder: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
 export function UserManagementPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [users, setUsers] = useState([]);
+  const [salons, setSalons] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(ALL_FILTER_VALUE);
+  const [selectedSalonId, setSelectedSalonId] = useState(ALL_FILTER_VALUE);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -100,16 +170,82 @@ export function UserManagementPage() {
     lastRowOnPage: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [globalMetrics, setGlobalMetrics] = useState({
+    customers: 0,
+    staffArtists: 0,
+    managers: 0,
+    suspendedUsers: 0,
+  });
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteAdminUser(userToDelete.id);
+      toast.success(language === "vi" ? "Đã xóa người dùng thành công" : "User deleted successfully");
+
+      // Reload users list
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+      setDebouncedQuery(query.trim() + " "); // force trigger reload by changing debouncedQuery slightly
+      setTimeout(() => setDebouncedQuery(query.trim()), 0); // reset it back
+    } catch (err) {
+      toast.error(err.message || (language === "vi" ? "Không thể xóa người dùng" : "Failed to delete user"));
+    } finally {
+      setIsDeleting(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleRoleChange = useCallback((value) => {
+    setSelectedRole(value);
+    setMetaData((current) => ({ ...current, currentPage: 1 }));
+  }, []);
+
+  const handleSalonChange = useCallback((value) => {
+    setSelectedSalonId(value);
+    setMetaData((current) => ({ ...current, currentPage: 1 }));
+  }, []);
 
   useEffect(() => {
     if (!location.state?.flashMessage) {
       return;
     }
 
-    navigate(location.pathname, { replace: true, state: null });
+    toast.success(location.state.flashMessage, { id: "user-mgmt-flash" });
+    navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSalons = async () => {
+      try {
+        const response = await fetchAdminSalons({ pageSize: 100 });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons(response.items ?? []);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSalons([]);
+        console.error("Failed to load salons for user filters:", loadError);
+      }
+    };
+
+    void loadSalons();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -125,13 +261,14 @@ export function UserManagementPage() {
 
     const loadUsers = async () => {
       setIsLoading(true);
-      setError("");
 
       try {
         const response = await fetchAdminUsers({
           pageNumber: metaData.currentPage,
           pageSize: metaData.pageSize,
           searchTerm: debouncedQuery,
+          role: selectedRole === ALL_FILTER_VALUE ? "" : selectedRole,
+          salonId: selectedSalonId === ALL_FILTER_VALUE ? "" : selectedSalonId,
         });
 
         if (!isMounted) {
@@ -146,7 +283,7 @@ export function UserManagementPage() {
         }
 
         setUsers([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load users.");
+        toast.error(loadError instanceof Error ? loadError.message : "Failed to load users.");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -159,52 +296,113 @@ export function UserManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedRole, selectedSalonId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchGlobalMetrics = async () => {
+      try {
+        const response = await fetchAdminUsers({
+          pageNumber: 1,
+          pageSize: 10000,
+          searchTerm: debouncedQuery,
+          salonId: selectedSalonId === ALL_FILTER_VALUE ? "" : selectedSalonId,
+          // We don't filter by role here because we want to count all roles
+        });
+
+        if (!isMounted) return;
+
+        const allUsers = response.items || [];
+        const customers = allUsers.filter((user) => user.role === "Customer").length;
+        const staffArtists = allUsers.filter((user) => user.role === "Staff" || user.role === "Staff_Artist").length;
+        const managers = allUsers.filter((user) => user.role === "Manager").length;
+        const suspendedUsers = allUsers.filter((user) => user.statusLabel === "Suspended").length;
+
+        setGlobalMetrics({
+          customers,
+          staffArtists,
+          managers,
+          suspendedUsers,
+        });
+      } catch (error) {
+        console.error("Failed to fetch global metrics", error);
+      }
+    };
+
+    void fetchGlobalMetrics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedQuery, selectedSalonId]);
+
+  const salonNameById = useMemo(
+    () =>
+      salons.reduce((result, salon) => {
+        result[salon.id] = salon.name;
+        return result;
+      }, {}),
+    [salons],
+  );
+
+  const displayedUsers = useMemo(() => {
+    return users.map((user) => ({
+      ...user,
+      salon: user.salonId ? salonNameById[user.salonId] || (language === "vi" ? "Chưa có chi nhánh" : "No salon") : (language === "vi" ? "Chưa có chi nhánh" : "No salon assigned"),
+    }));
+  }, [salonNameById, users]);
+
+  const roleFilterOptions = useMemo(() => [
+    { value: ALL_FILTER_VALUE, label: t("userManagement.filter.allRoles") },
+    { value: "Admin", label: t("superAdmin") },
+    { value: "Manager", label: t("salonManager") },
+    { value: "Receptionist", label: t("roleReceptionist") },
+    { value: "Staff_Artist", label: t("nailArtist") },
+    { value: "Customer", label: t("userManagement.metric.clientAccounts") },
+  ], [t]);
 
   const summaryCards = useMemo(() => {
-    const customers = users.filter((user) => user.role === "Customer").length;
-    const staffArtists = users.filter((user) => user.role === "Staff").length;
-    const managers = users.filter((user) => user.role === "Manager").length;
-    const suspendedUsers = users.filter((user) => user.statusLabel === "Suspended").length;
+    const isVi = t("adminDashboard.year") === "Năm";
 
     return [
       {
-        label: "Total Users",
+        label: t("userManagement.metric.totalUsers"),
         value: String(metaData.totalItems),
-        note: `${metaData.totalPages} pages`,
+        note: `${metaData.totalPages} ${isVi ? "trang" : "pages"}`,
         icon: Users,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        label: "Customers",
-        value: String(customers),
-        note: "On current page",
+        label: t("userManagement.metric.clientAccounts"),
+        value: String(globalMetrics.customers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: Users,
-        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        label: "Staff Artists",
-        value: String(staffArtists),
-        note: "On current page",
+        label: t("userManagement.metric.nailArtists"),
+        value: String(globalMetrics.staffArtists),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: UserCog,
-        iconClassName: "bg-[#fff0f7] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        label: "Salon Managers",
-        value: String(managers),
-        note: "On current page",
+        label: t("userManagement.metric.branchManagers"),
+        value: String(globalMetrics.managers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: Shield,
-        iconClassName: "bg-[#eef4ff] text-[#7c5cff]",
+        color: "#7c5cff",
       },
       {
-        label: "Suspended Users",
-        value: String(suspendedUsers),
-        note: "On current page",
+        label: t("userManagement.table.status") + " (Suspended)",
+        value: String(globalMetrics.suspendedUsers),
+        note: isVi ? "Tất cả các trang" : "All pages",
         icon: AlertTriangle,
-        iconClassName: "bg-[#fff4ef] text-[#ff7a59]",
+        color: "#ff7a59",
       },
     ];
-  }, [metaData.totalItems, metaData.totalPages, users]);
+  }, [globalMetrics, metaData.totalItems, metaData.totalPages, t]);
 
   const paginationItems = useMemo(() => {
     const currentPage = metaData.currentPage;
@@ -233,34 +431,15 @@ export function UserManagementPage() {
     return result;
   }, [metaData.currentPage, metaData.totalPages]);
 
-  const getActionItems = (user) => {
-    const detailRoute = getAdminUserDetailRoute(user.id);
-
-    return [
-      { key: "view", label: "View User", icon: Eye, onSelect: () => navigate(detailRoute) },
-      {
-        key: "edit",
-        label: "Edit User",
-        icon: PencilLine,
-        onSelect: () => navigate(detailRoute, { state: { requestEdit: true } }),
-      },
-      {
-        key: "delete",
-        label: "Delete User",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () => navigate(detailRoute, { state: { requestDelete: true } }),
-      },
-    ];
-  };
 
   const userColumns = useMemo(() => ([
     {
-      title: "User",
+      title: t("userManagement.table.user"),
       key: "user",
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, user) => (
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
             {user.avatar}
           </div>
           <p className="font-bold text-[#432744]">{user.name}</p>
@@ -268,126 +447,179 @@ export function UserManagementPage() {
       ),
     },
     {
-      title: "Role",
+      title: t("userManagement.table.assignedRole"),
       dataIndex: "displayRole",
       key: "displayRole",
-      render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{value}</SmallTag>,
+      sorter: (a, b) => (a.displayRole || "").localeCompare(b.displayRole || ""),
+      render: (value, user) => <SmallTag className={getRoleTone(user.role)}>{getRoleLabel(user.role || value, t)}</SmallTag>,
     },
     {
-      title: "Email / Phone",
-      key: "contact",
+      title: t("userManagement.detail.email"),
+      key: "contact1",
+      sorter: (a, b) => (a.email || "").localeCompare(b.email || ""),
       render: (_, user) => (
         <div>
           <p className="text-sm text-[#6b5668]">{user.email}</p>
-          <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
         </div>
       ),
     },
     {
-      title: "Salon",
-      dataIndex: "salon",
-      key: "salon",
-      render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
-    },
-    {
-      title: "Status",
-      dataIndex: "statusLabel",
-      key: "statusLabel",
-      render: (value) => (
-        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
-          {value}
-        </span>
+      title: t("userManagement.detail.phoneLabel"),
+      key: "contact2",
+      sorter: (a, b) => (a.phone || "").localeCompare(b.phone || ""),
+      render: (_, user) => (
+        <div>
+          <p className="text-sm text-[#6b5668]">{user.phone}</p>
+        </div>
       ),
     },
     {
-      title: "Last Active",
-      dataIndex: "lastActive",
-      key: "lastActive",
+      title: t("userManagement.table.salonBranch"),
+      dataIndex: "salon",
+      key: "salon",
+      sorter: (a, b) => (a.salon || "").localeCompare(b.salon || ""),
       render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
     },
     {
-      title: "Action",
-      key: "action",
-      render: (_, user) => <ActionDropdown items={getActionItems(user)} />,
+      title: t("userManagement.table.status"),
+      dataIndex: "statusLabel",
+      key: "statusLabel",
+      sorter: (a, b) => (a.statusLabel || "").localeCompare(b.statusLabel || ""),
+      render: (value, user) => (
+        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
+          {getStatusLabel(user.status || value, t)}
+        </span>
+      ),
     },
-  ]), [getActionItems]);
+    // {
+    //   title: t("userManagement.table.lastActive"),
+    //   dataIndex: "lastActive",
+    //   key: "lastActive",
+    //   sorter: (a, b) => (a.lastActive || "").localeCompare(b.lastActive || ""),
+    //   render: (value) => <span className="text-sm text-[#8a7082]">{value}</span>,
+    // },
+    {
+      title: t("userManagement.table.actions"),
+      key: "action",
+      render: (_, user) => {
+        const detailRoute = getAdminUserDetailRoute(user.id);
+        const viewLabel = language === "vi" ? "Xem" : "View";
+        const editLabel = language === "vi" ? "Chỉnh sửa" : "Edit";
+        const deleteLabel = language === "vi" ? "Xóa" : "Delete";
+
+        return (
+          <ActionButtons
+            onView={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute);
+            }}
+            onEdit={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute, { state: { requestEdit: true } });
+            }}
+            onDelete={(e) => {
+              e.stopPropagation();
+              setUserToDelete(user);
+            }}
+          />
+        );
+      },
+    },
+  ]), [language, navigate, t]);
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
-      </div>
+    <section className="flex min-h-full flex-col gap-4 flex min-h-full flex-col gap-4">
+      <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-3 xl:grid-cols-5" />
 
       {/* <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_290px]"> */}
       <div>
-        <article className="rounded-[20px] border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <label className="relative block w-full sm:max-w-[420px]">
-              <Search
-                size={16}
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#df7baa]"
-              />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by email, first name, last name..."
-                className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-              />
-            </label>
+        <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:max-w-[520px] xl:max-w-[560px]">
+                <label className="relative block min-w-0 flex-1">
+                  <Search
+                    size={16}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#df7baa]"
+                  />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={t("userManagement.filter.searchPlaceholder")}
+                    className="h-11 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-11 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDebouncedQuery(query.trim());
+                    setMetaData((current) => ({ ...current, currentPage: 1 }));
+                  }}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                >
+                  <Search size={15} className="mr-2" />
+                  {t("userManagement.filter.searchButton")}
+                </button>
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDebouncedQuery(query.trim());
-                  setMetaData((current) => ({ ...current, currentPage: 1 }));
-                }}
-                className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-              >
-                <Search size={14} className="mr-1.5" />
-                Search User
-              </button>
+              <div className="flex flex-wrap gap-2.5 xl:flex-nowrap">
+                <FilterSelect
+                  icon={Users}
+                  value={selectedRole}
+                  onChange={handleRoleChange}
+                  options={[
+                    { label: t("userManagement.filter.allRoles"), value: ALL_FILTER_VALUE },
+                    ...USER_ROLE_OPTIONS.map((role) => ({
+                      label: getRoleLabel(role, t),
+                      value: role,
+                    })),
+                  ]}
+                  className="min-w-[155px] w-[200px]"
+                  placeholder={t("userManagement.filter.allRoles")}
+                  disabled={isLoading}
+                />
+                <FilterSelect
+                  icon={MapPin}
+                  value={selectedSalonId}
+                  onChange={handleSalonChange}
+                  options={[
+                    { label: t("userManagement.filter.allSalons"), value: ALL_FILTER_VALUE },
+                    ...salons.map((salon) => ({
+                      value: salon.id,
+                      label: salon.name,
+                    })),
+                  ]}
+                  className="min-w-[250px]"
+                  placeholder={t("userManagement.filter.allSalons")}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 xl:justify-end">
               <Link
                 to={ROUTES.adminUsersCreate}
-                className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
-                <UserPlus size={14} className="mr-1.5" />
-                Add User
+                <UserPlus size={15} className="mr-2" />
+                {t("userManagement.table.addUser")}
               </Link>
             </div>
           </div>
 
-          {flashMessage ? (
-            <div className="mt-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="mt-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="mt-4 overflow-hidden rounded-[18px] border border-[#f6dbe7]">
-            <div className="flex items-center justify-between gap-3 border-b border-[#f7dce8] bg-[#fffafd] px-4 py-3">
-              <p className="text-sm font-extrabold text-[#462a45]">All Users</p>
-              <p className="text-[11px] font-medium text-[#d197b0]">
-                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
-              </p>
-            </div>
+          <div className="mt-4 overflow-hidden rounded-lg border border-[#f6dbe7]">
 
             <div className="hidden lg:block">
               <Table
                 rowKey="id"
                 columns={userColumns}
-                dataSource={users}
+                dataSource={displayedUsers}
                 loading={isLoading}
                 pagination={false}
                 scroll={{ x: 1100 }}
-                locale={{ emptyText: "No users found." }}
+                locale={{ emptyText: t("userManagement.table.emptyText") }}
+                rowClassName="group"
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
             </div>
 
@@ -395,59 +627,94 @@ export function UserManagementPage() {
               {isLoading ? (
                 <div className="flex items-center justify-center gap-3 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  Loading users...
+                  {t("userManagement.table.loadingText")}
                 </div>
-              ) : users.length ? (
-                users.map((user) => (
-                <article
-                  key={user.id}
-                  className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
-                      {user.avatar}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-bold text-[#432744]">{user.name}</p>
-                        <SmallTag className={getRoleTone(user.role)}>
-                          {user.displayRole}
-                        </SmallTag>
+              ) : displayedUsers.length ? (
+                displayedUsers.map((user) => (
+                  <article
+                    key={user.id}
+                    className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
+                        {user.avatar}
                       </div>
-                      <p className="mt-1 text-sm text-[#6b5668]">{user.email}</p>
-                      <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[#c694ad]">
-                        {user.salon}
-                      </p>
-                      <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
-                      >
-                        {user.statusLabel}
-                      </span>
-                      <div className="mt-2 flex justify-end">
-                        <ActionDropdown items={getActionItems(user)} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-bold text-[#432744]">{user.name}</p>
+                          <SmallTag className={getRoleTone(user.role)}>
+                            {getRoleLabel(user.role || user.displayRole, t)}
+                          </SmallTag>
+                        </div>
+                        <p className="mt-1 text-sm text-[#6b5668]">{user.email}</p>
+                        <p className="mt-1 text-[11px] text-[#d197b0]">{user.phone}</p>
                       </div>
                     </div>
-                  </div>
-                </article>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[#c694ad]">
+                          {user.salon}
+                        </p>
+                        <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
+                        >
+                          {getStatusLabel(user.status || user.statusLabel, t)}
+                        </span>
+                        <div className="mt-4 flex items-center justify-end gap-2">
+                          <Tooltip title={language === "vi" ? "Xem" : "View"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(getAdminUserDetailRoute(user.id));
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#ea4f93]"
+                            >
+                              <Eye size={15} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip title={language === "vi" ? "Chỉnh sửa" : "Edit"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(getAdminUserDetailRoute(user.id), { state: { requestEdit: true } });
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#ea4f93]"
+                            >
+                              <PencilLine size={15} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="top">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserToDelete(user);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] border border-[#f5e2ec] shadow-sm transition-colors hover:bg-[#fff0f7] hover:text-[#e53e3e]"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
                 ))
               ) : (
                 <div className="rounded-[16px] border border-[#f8dce8] bg-[#fffafb] p-4 text-center text-sm text-[#8a7082]">
-                  No users found.
+                  {t("userManagement.table.emptyText")}
                 </div>
               )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[11px] text-[#c694ad]">
-                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} users
+                {t("userManagement.table.showingRows", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
               </p>
               <div className="flex items-center gap-1">
                 <button
@@ -501,8 +768,8 @@ export function UserManagementPage() {
           </div>
         </article>
 
-        {/* <aside className="rounded-[20px] border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-          <h3 className="text-sm font-extrabold text-[#412643]">Quick Info Panel</h3>
+        {/* <aside className="rounded-lg border border-[#f7d8e6] bg-[linear-gradient(180deg,#fffdfd_0%,#fff7fb_100%)] p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+          <h3 className="text-sm font-bold text-[#412643]">Quick Info Panel</h3>
 
           <div className="mt-5 space-y-6">
             <div>
@@ -516,7 +783,7 @@ export function UserManagementPage() {
                 {QUICK_REGISTRATIONS.map(([name, time, role]) => (
                   <div key={name} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-extrabold text-white">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-[10px] font-bold text-white">
                         {getAvatar(name)}
                       </div>
                       <div>
@@ -589,6 +856,26 @@ export function UserManagementPage() {
           </div>
         </aside> */}
       </div>
+
+      <ActionConfirmModal
+        open={Boolean(userToDelete)}
+        intent="danger"
+        title={t("userManagement.detail.deleteUserConfirmTitle")}
+        subtitle={t("userManagement.detail.deleteUserConfirmSubtitle")}
+        description={t("userManagement.detail.deleteUserConfirmDesc", { name: userToDelete?.name || "this user" })}
+        confirmText={t("userManagement.detail.deleteUser")}
+        cancelText={t("userManagement.detail.keepUser")}
+        confirmIcon={Trash2}
+        onConfirm={handleDeleteUser}
+        onCancel={() => setUserToDelete(null)}
+        loading={isDeleting}
+        item={userToDelete ? {
+          title: userToDelete.name || t("userManagement.detail.userProfile"),
+          meta: `${userToDelete.role || t("userManagement.detail.rolePending")} | ${userToDelete.salon || t("userManagement.detail.branchPending")}`,
+          note: userToDelete.email || t("userManagement.detail.noEmailEntered"),
+        } : null}
+        warnings={[t("userManagement.detail.softDeleteWarning")]}
+      />
     </section>
   );
 }

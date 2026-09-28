@@ -1,0 +1,331 @@
+import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Award,
+  Percent,
+  Layers,
+  Users,
+  AlertCircle,
+  Lock,
+  ChevronRight,
+  CheckCircle2,
+  Clock
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { fetchLoyaltyTierDetail } from "../services/loyaltyTiersManagementService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+
+export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, customers = [] }) {
+  const { t, language } = useLanguage();
+  const [tier, setTier] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+
+  useEffect(() => {
+    if (isOpen && tierId) {
+      const getDetail = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const detail = await fetchLoyaltyTierDetail(tierId);
+          setTier(detail);
+        } catch (err) {
+          console.error("Failed to load loyalty tier detail:", err);
+          setError(err instanceof Error ? err.message : (t("adminLoyaltyTiersManagement.failedToLoadLoyaltyTierDetails")));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      void getDetail();
+    }
+  }, [isOpen, tierId, t]);
+
+  const memberCount = React.useMemo(() => {
+    if (!tier || !customers.length) return 0;
+    return customers.filter(c => c.lifetimePoints >= tier.minLifetimePoints && c.lifetimePoints <= tier.maxLifetimePoints).length;
+  }, [tier, customers]);
+
+  if (!isOpen) return null;
+
+  // Derive gradient colors
+  let startColor = tier?.backgroundColor || "#D48138";
+  let endColor = tier?.backgroundColor || "#A86F3C";
+  if (tier?.colorJson) {
+    try {
+      const colors = typeof tier.colorJson === "string" ? JSON.parse(tier.colorJson) : tier.colorJson;
+      startColor = colors.gradientStart || colors.primary || tier.backgroundColor;
+      endColor = colors.gradientEnd || colors.primary || tier.backgroundColor;
+    } catch {
+      startColor = tier.backgroundColor || startColor;
+      endColor = tier.backgroundColor || endColor;
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 bg-[#291723]/60 backdrop-blur-[4px]"
+        />
+
+        {/* Modal Container */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 15 }}
+          transition={{ type: "spring", damping: 26, stiffness: 240 }}
+          className="relative z-10 w-full max-w-[500px] overflow-hidden rounded-[2.5rem] border border-[#fcecf4] bg-white p-7 shadow-[0_24px_50px_rgba(47,20,38,0.18)]"
+        >
+          {/* Header Close button */}
+          <button
+            onClick={onClose}
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0f6] text-[#ea4f93] hover:bg-[#ffe3f0] hover:scale-105 active:scale-95 transition-all"
+            title="Close modal"
+          >
+            <X size={16} />
+          </button>
+
+          {/* Modal Header */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0f6] text-[#ea4f93]">
+              <Award size={18} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[#3f2034] leading-tight">
+                {t("adminLoyaltyTiersManagement.loyaltyTierDetails")}
+              </h3>
+              <p className="text-[11px] font-semibold text-[#a08998]">
+                {t("adminLoyaltyTiersManagement.systemConfigurationMemberPerks")}
+              </p>
+            </div>
+          </div>
+
+          {isLoading ? (
+            /* Skeletal Loading State */
+            <div className="space-y-6 py-4 animate-pulse">
+              <div className="h-32 rounded-2xl bg-slate-100" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-14 rounded-2xl bg-slate-100" />
+                <div className="h-14 rounded-2xl bg-slate-100" />
+              </div>
+              <div className="h-16 rounded-2xl bg-slate-100" />
+            </div>
+          ) : error ? (
+            /* Error State */
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <AlertCircle size={32} className="text-red-500 mb-3" />
+              <h4 className="text-sm font-bold text-[#3f2034]">{error}</h4>
+              <button
+                onClick={onClose}
+                className="mt-4 rounded-full bg-[#ea4f93] px-6 py-2 text-xs font-bold text-white shadow-sm"
+              >
+                {t("adminLoyaltyTiersManagement.close")}
+              </button>
+            </div>
+          ) : tier ? (
+            /* Content State */
+            <div className="space-y-5">
+
+              {/* Membership Card Presentation */}
+              <div
+                style={{
+                  background: `linear-gradient(135deg, ${startColor}, ${endColor})`,
+                  color: tier.textColor
+                }}
+                className="relative rounded-lg p-6 shadow-md overflow-hidden"
+              >
+                {/* Glassmorphism overlays */}
+                <div className="absolute inset-0 border border-white/10 rounded-lg pointer-events-none shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]" />
+                <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+
+                <div className="relative z-10 flex justify-between items-start">
+                  <div>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.25em] opacity-85">
+                      {t("adminLoyaltyTiersManagement.nailifyVipProgram")}
+                    </span>
+                    <h4 className="mt-3 text-2xl font-bold tracking-tight">{tier.name}</h4>
+                    <p className="mt-1 text-[11px] opacity-90 max-w-[240px] truncate">
+                      {tier.description || (t("adminLoyaltyTiersManagement.activeClubMember"))}
+                    </p>
+                  </div>
+
+                  {/* Badge image thumbnail */}
+                  <div className="h-16 w-16 shrink-0 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center overflow-hidden">
+                    {tier.imageUrl ? (
+                      <img
+                        src={tier.imageUrl}
+                        alt={`${tier.name} badge`}
+                        className="h-13 w-13 object-contain"
+                      />
+                    ) : (
+                      <Award size={28} style={{ color: tier.textColor }} />
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative z-10 mt-6 flex justify-between items-end">
+                  <div>
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">
+                      {t("adminLoyaltyTiersManagement.pointsThreshold")}
+                    </span>
+                    <span className="text-sm font-bold font-mono mt-0.5 block">
+                      {tier.minLifetimePoints.toLocaleString()} - {tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[8px] font-bold uppercase tracking-widest opacity-80 block">
+                      {t("adminLoyaltyTiersManagement.discountBenefit")}
+                    </span>
+                    <span className="text-xl font-bold mt-0.5 block">
+                      {tier.discountRate > 0 ? (language === "vi" ? `Giảm ${parseFloat((tier.discountRate * 100).toFixed(2))}%` : `${parseFloat((tier.discountRate * 100).toFixed(2))}% OFF`) : (t("adminLoyaltyTiersManagement.standardRates"))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Grid Details */}
+              <div className="grid grid-cols-2 gap-3.5">
+
+                {/* Min points threshold */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <Lock size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.requiredMin")}
+                    </span>
+                    <span className="text-xs font-bold font-mono text-[#3f2034]">
+                      {tier.minLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Max points threshold */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <ChevronRight size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.requiredMax")}
+                    </span>
+                    <span className="text-xs font-bold font-mono text-[#3f2034]">
+                      {tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Discount Rate */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                    <Percent size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.discountRate")}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {language === "vi" ? `Giảm ${parseFloat((tier.discountRate * 100).toFixed(2))}%` : `${parseFloat((tier.discountRate * 100).toFixed(2))}% Markdown`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sort Order */}
+                {/* <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                    <Layers size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.sortPriority")}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {language === "vi" ? `Hạng Cấp độ #${tier.sortOrder}` : `Level Rank #${tier.sortOrder}`}
+                    </span>
+                  </div>
+                </div> */}
+                {/* Registered members count */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Users size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.totalMembers")}
+                    </span>
+                    <span className="text-xs font-bold text-[#3f2034]">
+                      {memberCount} {t("adminLoyaltyTiersManagement.active")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status & Member Count Row */}
+              <div className="grid grid-cols-2 gap-3.5">
+                {/* Active Status */}
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
+                  <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${tier.status === "Active" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                    }`}>
+                    <CheckCircle2 size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold uppercase text-[#a08998] block">
+                      {t("adminLoyaltyTiersManagement.status")}
+                    </span>
+                    <span className={`text-xs font-bold ${tier.status === "Active" ? "text-green-600" : "text-red-500"
+                      }`}>
+                      {language === "vi"
+                        ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                        : tier.status
+                      }
+                    </span>
+                  </div>
+                </div>
+
+
+              </div>
+
+              {/* Description box */}
+              {tier.description && (
+                <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-4">
+                  <div className="flex items-center gap-2 mb-2 text-[#7e6074]">
+                    <Clock size={13} className="text-[#a08998]" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#a08998]">
+                      {t("adminLoyaltyTiersManagement.tierDescriptionRuleNote")}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-[#7c6374]">
+                    {tier.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Close Action footer */}
+              <div className="flex gap-2 border-t border-[#fcecf4] pt-4 mt-5">
+                <button
+                  onClick={onClose}
+                  className="w-full inline-flex h-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white font-bold text-xs shadow-[0_8px_18px_rgba(235,90,153,0.18)] active:scale-[0.98] transition-transform cursor-pointer"
+                >
+                  {t("adminLoyaltyTiersManagement.dismissDetails")}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}

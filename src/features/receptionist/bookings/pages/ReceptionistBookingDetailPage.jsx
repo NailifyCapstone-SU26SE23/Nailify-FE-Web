@@ -1,30 +1,139 @@
-import { Button, Modal, Table } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin, Checkbox } from "antd";
 import {
+  AlarmClock,
+  Armchair,
+  Bell,
+  Calendar,
   CalendarClock,
+  Check,
   CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock,
+  Clock3,
   CreditCard,
+  Eye,
+  ImageIcon,
+  Lightbulb,
   LoaderCircle,
+  LockKeyhole,
   MessageCircleMore,
   Phone,
   Printer,
   QrCode,
   ReceiptText,
   RefreshCcw,
+  Search,
+  ShieldCheck,
   Sparkles,
   SquareCheckBig,
+  Star,
+  UserCheck,
+  UserPlus,
   UserRound,
+  X,
   XCircle,
+  Zap, Hourglass, Trash2, Edit2
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Link, useParams } from "react-router-dom";
-import { ROUTES } from "../../../../shared/constants/routes";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
+import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
+import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { OnsiteAddonConflictModal } from "../components/OnsiteAddonConflictModal";
+import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
+import { AssignChairModal } from "../components/AssignChairModal";
 import {
+  checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
-  fetchReceptionistCustomerDetail,
+  fetchReceptionistBookingProcedures,
+  fetchReceptionistProcedureAvailableArtists,
   manualCheckInReceptionistBooking,
+  updateReceptionistProcedureArtist,
+  getBookingHistories,
+  getUserById,
+  fetchBookingRating,
+  updateReceptionistBooking,
 } from "../services/receptionistBookingService";
+import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
+import { createPayment } from "../../payments/services/receptionistPaymentService";
+import { fetchTransactionsByBookingId, fetchTransactionById, fetchWalletTransactionById } from "../../../manager/transaction-management/services/transactionService";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const toVN = (date) => dayjs.utc(date).tz("Asia/Ho_Chi_Minh");
+const formatVNDate = (date) => {
+  const d = toVN(date);
+  if (!d.isValid()) return "N/A";
+  return d.format("DD/MM/YYYY HH:mm");
+};
+import { useQuery } from "@tanstack/react-query";
+import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { PropTypes } from "../../../../shared/utils/propTypes";
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'Pending':
+      return '!border-slate-200 !bg-slate-50 !text-slate-600';
+    case 'Approved':
+      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
+    case 'Rejected':
+    case 'Cancelled':
+      return '!border-red-200 !bg-red-50 !text-red-600';
+    case 'CheckedIn':
+      return '!border-purple-200 !bg-purple-50 !text-purple-600';
+    case 'InProgress':
+      return '!border-blue-200 !bg-blue-50 !text-blue-600';
+    case 'ServiceCompleted':
+      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
+    case 'Completed':
+      return '!border-green-200 !bg-green-50 !text-green-700';
+    case 'Repaired':
+      return '!border-orange-200 !bg-orange-50 !text-orange-600';
+    case 'ReschedulePending':
+    case 'RescheduleSuggested':
+      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
+    default:
+      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
+  }
+};
+
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
+}
+
+function SectionTitle({ children, subtitle, icon: Icon, actionButton }) {
+  return (
+    <div className="mb-6 flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={18} />
+          </div>
+        )}
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-[#2B182B]">{children}</h2>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
+    </div>
+  );
+}
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
+};
 
 function formatCurrency(value) {
   const amount = Number(value);
@@ -35,36 +144,46 @@ function formatCurrency(value) {
 
   return `${new Intl.NumberFormat("vi-VN", {
     maximumFractionDigits: 0,
-  }).format(amount)} VNĐ`;
+  }).format(amount)} VND`;
 }
 
-function formatDate(value) {
-  if (!value) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const d = toVN(dateString);
+  return d.isValid() ? d.format("DD/MM/YYYY") : "N/A";
 }
 
-function formatTime(value) {
-  if (!value) {
-    return "--";
+function formatTime(startTime, fallbackDateTime) {
+  // Nếu startTime là ISO string đầy đủ (có chứa T và Z hoặc offset)
+  const str = String(startTime || "").trim();
+  if (str.includes("T")) {
+    const d = toVN(str);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
   }
 
-  return value.slice(0, 5);
+  // Nếu startTime chỉ là chuỗi time HH:mm:ss, giả định là UTC rồi convert
+  if (fallbackDateTime) {
+    const d = toVN(fallbackDateTime);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
+  }
+
+  // Fallback: parse raw time string (không convert timezone)
+  const rawTime = str || "";
+  if (!rawTime) return "N/A";
+  const [hours, minutes = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours)) return "N/A";
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
   const fullName = [customerProfile?.firstName, customerProfile?.lastName].filter(Boolean).join(" ").trim();
-  return fullName || booking?.customerName || "--";
+  return fullName || booking?.customerName || "";
 }
 
 function getCustomerInitials(customerProfile, booking) {
-  return getCustomerDisplayName(customerProfile, booking)
+  const displayName = getCustomerDisplayName(customerProfile, booking);
+  if (!displayName) return "NA";
+  return displayName
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -82,24 +201,10 @@ function getStatusTone(status) {
       return "bg-[#efeafd] text-[#7c63d8]";
     case "Confirmed":
       return "bg-[#e9f2ff] text-[#4772da]";
-    case "Waiting":
     case "Pending":
       return "bg-[#fff4e3] text-[#e09a27]";
     case "Cancelled":
       return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getActionTone(label) {
-  switch (label) {
-    case "View":
-      return "bg-[#fff1f6] text-[#eb5b92]";
-    case "Manage":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Edit":
-      return "bg-[#f2f2f2] text-[#656565]";
     default:
       return "bg-[#fff1f6] text-[#eb5b92]";
   }
@@ -118,133 +223,353 @@ function getServiceStatus(index, bookingStatus) {
     return "Confirmed";
   }
 
-  return "Waiting";
+  return "Pending";
 }
 
-function getServiceAction(status) {
+function CircularProgressRing({ percent = 65, remainingTime = "45 min" }) {
+  const radius = 42;
+  const strokeWidth = 8;
+  const normalizedRadius = radius - strokeWidth * 0.5;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const { language } = useLanguage();
+  const isVi = language === "vi";
+
+  return (
+    <div className="relative flex items-center justify-center my-2">
+      <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
+        <defs>
+          <linearGradient id="gradientRingSaaS" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#E84F93" />
+            <stop offset="50%" stopColor="#D93B7D" />
+            <stop offset="100%" stopColor="#8B5CF6" />
+          </linearGradient>
+        </defs>
+        <circle
+          stroke="#F3D6E5"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+        />
+        <circle
+          stroke="url(#gradientRingSaaS)"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{ strokeDashoffset }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius}
+          cy={radius}
+          className="transition-all duration-700 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1">
+        <span className="text-sm font-bold text-[#2B182B] leading-none">{remainingTime}</span>
+        <span className="text-[9px] font-bold text-[#E84F93] mt-1">{percent}% {isVi ? "Hoàn thành" : "Done"}</span>
+      </div>
+    </div>
+  );
+}
+
+function getServiceAction(status, isVi) {
   if (status === "In Progress") {
-    return "Manage";
+    return isVi ? "Quản lý" : "Manage";
   }
 
   if (status === "Completed") {
-    return "Edit";
+    return isVi ? "Chỉnh sửa" : "Edit";
   }
 
-  return "View";
+  return isVi ? "Xem" : "View";
+}
+
+function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi) {
+  return [
+    {
+      key: `view-${row.id}`,
+      label: isVi ? "Xem" : "View",
+      icon: Eye,
+      onSelect: () => handleViewService(row),
+    },
+    {
+      key: `view-procedures-${row.id}`,
+      label: isVi ? "Xem quy trình" : "View Procedures",
+      icon: ClipboardList,
+      className: "text-[#7c63d8]",
+      onSelect: () => handleViewProcedures(row),
+    },
+    {
+      key: `edit-quantity-${row.id}`,
+      label: isVi ? "Cập nhật số lượng" : "Update Quantity",
+      icon: Edit2,
+      onSelect: () => handleEnableEditQuantity(row),
+    },
+    {
+      key: `delete-${row.id}`,
+      label: isVi ? "Xóa dịch vụ" : "Delete Service",
+      icon: Trash2,
+      className: "text-red-500",
+      onSelect: () => handleDeleteService(row),
+    },
+  ];
 }
 
 function getProgressPercent(booking) {
-  const items = booking?.bookingItems ?? [];
+  if (!booking) return 0;
 
-  if (!items.length) {
-    return 25;
+  const status = String(booking.status || "").trim();
+
+  if (status === "Completed") {
+    return 100;
   }
 
-  const completedCount =
-    booking?.status === "Completed"
-      ? items.length
-      : booking?.status === "CheckedIn" || booking?.status === "In Progress"
-        ? 1
-        : 0;
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return 0;
+  }
 
-  return Math.max(20, Math.round((completedCount / items.length) * 100));
+  const startTimeStr = booking.startTime;
+  const totalDuration = Number(booking.totalDuration) || 45;
+
+  if (!startTimeStr) {
+    return 20;
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return 0;
+    }
+
+    const percent = Math.round((diffMins / totalDuration) * 100);
+    return Math.min(95, Math.max(10, percent));
+  } catch (e) {
+    return 50;
+  }
+}
+
+function getRemainingTime(booking, language) {
+  if (!booking) return "0 min";
+
+  const status = String(booking.status || "").trim();
+  const totalDuration = Number(booking.totalDuration) || 0;
+  const isVi = language === "vi";
+
+  const formatMinutes = (mins) => {
+    return formatDurationMinutes(mins, language);
+  };
+
+  if (status === "Completed") {
+    return isVi ? "Đã xong" : "Completed";
+  }
+
+  if (["Pending", "Confirmed", "CheckedIn", "Cancelled"].includes(status)) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  const startTimeStr = booking.startTime;
+  if (!startTimeStr) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+
+  try {
+    const [hours, minutes] = startTimeStr.split(":").map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    const diffMs = now - startDate;
+    const diffMins = Math.floor(diffMs / 1000 / 60);
+
+    if (diffMins < 0) {
+      return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+    }
+
+    const remaining = Math.max(1, totalDuration - diffMins);
+    return formatMinutes(remaining);
+  } catch (e) {
+    return totalDuration ? formatMinutes(totalDuration) : (isVi ? "Chưa rõ" : "Unknown");
+  }
+}
+
+function sanitizeImageUrl(value) {
+  const normalizedValue = String(value || "").trim();
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  return normalizedValue.replace(/`/g, "");
+}
+
+function isNailBookingItem(item) {
+  return Boolean(
+    item?.nailVariantId ||
+    item?.customerNailId ||
+    String(item?.nailVariantName || "").trim() ||
+    String(item?.customerNailName || "").trim() ||
+    sanitizeImageUrl(item?.nailVariantImageUrl) ||
+    sanitizeImageUrl(item?.customerNailImageUrl),
+  );
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+
+  return normalizedStatus === "approved";
 }
 
-function DetailCard({ title, subtitle, badge, children, className = "" }) {
+function normalizeBookingStatus(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+function getReceptionistActionAvailability(status) {
+  const normalizedStatus = normalizeBookingStatus(status);
+
+  return {
+    canCheckIn: normalizedStatus === "approved",
+    canStartService: normalizedStatus === "checkedin",
+    canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
+    canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    canAddService: ["checkedin", "in progress", "inprogress"].includes(normalizedStatus),
+    canCompleteBooking: ["in progress", "inprogress"].includes(normalizedStatus),
+    canCancelBooking: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    canSendInvoice: ["servicecompleted", "completed"].includes(normalizedStatus),
+    canCheckout: normalizedStatus === "servicecompleted",
+    canAddPayment: normalizedStatus === "servicecompleted",
+    canPrintReceipt: ["servicecompleted", "completed"].includes(normalizedStatus),
+  };
+}
+
+function DetailCard({ title, subtitle, badge, children, className = "", headerAction }) {
   return (
     <section
-      className={`rounded-[24px] border border-[#f4d6e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}
+      className={`rounded-[26px] border border-[#F3E2EC] bg-white/95 backdrop-blur-md p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.07)] transition-all ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-extrabold text-[#4a3741]">{title}</h3>
-          {subtitle ? <p className="mt-1 text-xs text-[#a48796]">{subtitle}</p> : null}
+          <h3 className="text-md font-bold text-pink-600 tracking-tight">{title}</h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium">{subtitle}</p> : null}
         </div>
         {badge ? (
-          <span className="rounded-full border border-[#f4d6e2] bg-[#fff1f6] px-3 py-1 text-[10px] font-extrabold text-[#eb5b92]">
-            {badge}
-          </span>
+          <div className="flex items-center gap-2">
+            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "4px 12px", borderRadius: "20px", fontWeight: "700", fontSize: "11px" }}>
+              <Clock size={11} className="mr-1 inline-block" />
+              {badge}
+            </Tag>
+          </div>
         ) : null}
+        {headerAction && (
+          <div className="flex items-center">
+            {headerAction}
+          </div>
+        )}
       </div>
-      <div className="mt-4">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
 
-const ACTION_CENTER = [
-  {
-    label: "Check In",
-    subtitle: "Manual arrival check-in",
-    icon: SquareCheckBig,
-    cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
-    iconTone: "bg-[#ffdcea] text-[#eb5b92]",
-  },
-  {
-    label: "Start Service",
-    subtitle: "Begin session",
-    icon: Sparkles,
-    cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
-    iconTone: "bg-[#dfd1ff] text-[#8160df]",
-  },
-  {
-    label: "Reassign Artist",
-    subtitle: "Change staff",
-    icon: UserRound,
-    cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
-    iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
-  },
-  {
-    label: "Move Schedule",
-    subtitle: "Reschedule time",
-    icon: CalendarClock,
-    cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
-    iconTone: "bg-[#cfe8fb] text-[#4391c9]",
-  },
-  {
-    label: "Add Service",
-    subtitle: "Extra treatment",
-    icon: Sparkles,
-    cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
-    iconTone: "bg-[#cdeedb] text-[#2da466]",
-  },
-  {
-    label: "Complete Booking",
-    subtitle: "Finalize session",
-    icon: CheckCircle2,
-    cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-    iconTone: "bg-[#ddd2ff] text-[#8260df]",
-  },
-  {
-    label: "Cancel Booking",
-    subtitle: "Void appointment",
-    icon: XCircle,
-    cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-    iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-  },
-  {
-    label: "Send Invoice",
-    subtitle: "Email to client",
-    icon: ReceiptText,
-    cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-    iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-  },
-];
-
 export function ReceptionistBookingDetailPage() {
+  const { t, language } = useLanguage();
   const { bookingId } = useParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
   const [booking, setBooking] = useState(null);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [isAssignArtistOpen, setIsAssignArtistOpen] = useState(false);
+  const [isMoveScheduleOpen, setIsMoveScheduleOpen] = useState(false);
+  const [isAssignChairModalOpen, setIsAssignChairModalOpen] = useState(false);
+  const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
+  const [selectedServiceRow, setSelectedServiceRow] = useState(null);
+  const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
+  const [bookingProcedures, setBookingProcedures] = useState([]);
+  const [isProceduresLoading, setIsProceduresLoading] = useState(false);
+  const [proceduresError, setProceduresError] = useState("");
+  const [artistPickerProcedure, setArtistPickerProcedure] = useState(null);
+  const [procedureArtists, setProcedureArtists] = useState([]);
+  const [isProcedureArtistsLoading, setIsProcedureArtistsLoading] = useState(false);
+  const [procedureArtistsError, setProcedureArtistsError] = useState("");
+  const [assigningProcedureArtistId, setAssigningProcedureArtistId] = useState("");
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
-  const [notes, setNotes] = useState(
-    "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
-  );
+  const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
+  const [bookingHistories, setBookingHistories] = useState([]);
+  const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [isDeletingService, setIsDeletingService] = useState(false);
+  const [itemsToDelete, setItemsToDelete] = useState(null);
+  const [editingQuantityId, setEditingQuantityId] = useState(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
+
+  const [transactions, setTransactions] = useState([]);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [selectedTransactionDetail, setSelectedTransactionDetail] = useState(null);
+  const [isFetchingTransaction, setIsFetchingTransaction] = useState(false);
+
+  const { data: bookingRating } = useQuery({
+    queryKey: ["bookingRating", bookingId],
+    queryFn: () => fetchBookingRating(bookingId),
+    enabled: !!bookingId,
+  });
+
+  function formatVND(amount) {
+    if (amount === null || amount === undefined) return "N/A";
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  }
+
+  const isVi = language === "vi";
+
+  const loadBookingHistories = useCallback(async () => {
+    if (!bookingId) return;
+    try {
+      setIsBookingHistoriesLoading(true);
+      const historyData = await getBookingHistories(bookingId);
+      const histories = historyData?.items || [];
+      const actorIds = [...new Set(histories.map(h => h.actorId).filter(Boolean))];
+      const userInfos = await Promise.all(
+        actorIds.map(async (id) => {
+          try { return await getUserById(id); } catch (e) { return null; }
+        })
+      );
+      const roleMap = {};
+      actorIds.forEach((id, index) => {
+        if (userInfos[index]) roleMap[id] = userInfos[index].role;
+      });
+      const enrichedHistories = histories.map(h => ({
+        ...h,
+        actorRole: roleMap[h.actorId] || (h.actorName?.includes("Khách") ? "Customer" : (h.actorId ? "Unknown" : "System"))
+      }));
+      setBookingHistories(enrichedHistories);
+    } catch (error) {
+      console.error("Failed to fetch booking histories", error);
+      setBookingHistories([]);
+    } finally {
+      setIsBookingHistoriesLoading(false);
+    }
+  }, [bookingId]);
 
   useEffect(() => {
     if (!bookingId) {
@@ -259,9 +584,15 @@ export function ReceptionistBookingDetailPage() {
         try {
           const data = await fetchReceptionistBookingDetail(bookingId);
           setBooking(data);
-          if (data?.customerId) {
+
+          console.log("Booking Detail Fetched:", data);
+
+          const custId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customerUserId;
+          console.log("Extracted Customer ID:", custId);
+
+          if (custId) {
             try {
-              const customerData = await fetchReceptionistCustomerDetail(data.customerId);
+              const customerData = await fetchReceptionistCustomerDetail(custId);
               setCustomerProfile(customerData);
             } catch (customerError) {
               setCustomerProfile(null);
@@ -274,6 +605,14 @@ export function ReceptionistBookingDetailPage() {
           } else {
             setCustomerProfile(null);
           }
+
+          // Fetch transactions
+          try {
+            const txs = await fetchTransactionsByBookingId(bookingId);
+            setTransactions(txs);
+          } catch (err) {
+            console.warn("Failed to load transactions:", err);
+          }
         } catch (loadError) {
           const message = loadError instanceof Error ? loadError.message : "Failed to load booking detail.";
           setError(message);
@@ -281,122 +620,152 @@ export function ReceptionistBookingDetailPage() {
         } finally {
           setIsLoading(false);
         }
+
+        await loadBookingHistories();
       })();
     }, 0);
 
     return () => window.clearTimeout(timerId);
   }, [bookingId]);
 
+  function addMinutes(time, minutes) {
+    if (!time) return "--:--";
+    const [h, m, s] = String(time).split(":").map(Number);
+
+    const date = new Date();
+    date.setHours(h, m, s || 0, 0);
+
+    date.setMinutes(date.getMinutes() + minutes);
+
+    return date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
+
   const qrImageSrc = useMemo(() => (
     booking?.qrCode ? `data:image/png;base64,${booking.qrCode}` : ""
   ), [booking]);
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
-  const customerInitials = getCustomerInitials(customerProfile, booking);
 
-  const serviceRows = useMemo(() => (
-    (booking?.bookingItems ?? []).map((item, index) => {
+  const { data: loyaltyTiers } = useQuery({
+    queryKey: ['loyaltyTiers'],
+    queryFn: async () => {
+      return await fetchLoyaltyTiers();
+    }
+  });
+
+  const { customerTier, customerPoints } = useMemo(() => {
+    if (!customerProfile) return { customerTier: null, customerPoints: 0 };
+    const points = customerProfile.loyaltyPoint || 0;
+    if (!loyaltyTiers?.length) return { customerTier: null, customerPoints: points };
+
+    const tier = loyaltyTiers.find(t =>
+      points >= t.minLifetimePoints &&
+      (t.maxLifetimePoints === null || points <= t.maxLifetimePoints)
+    );
+    return { customerTier: tier, customerPoints: points };
+  }, [customerProfile, loyaltyTiers]);
+
+  console.log("customer", customerTier);
+  console.log("point", customerPoints);
+
+  const customerInitials = getCustomerInitials(customerProfile, booking);
+  const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
+
+  const serviceRows = useMemo(() => {
+    const rawItems = booking?.bookingItems ?? [];
+    if (rawItems.length === 0) return [];
+
+    const grouped = [];
+    const itemMap = new Map();
+
+    rawItems.forEach((item, index) => {
+      const sName = item.serviceName || (item.nailVariantName ? (language === "vi" ? "Dịch vụ làm móng: " : "Nail service: ") + item.nailVariantName : language === "vi" ? "Dịch vụ làm móng" : "Nail Service");
+      const vName = item.nailVariantName || item.customerNailName || "";
+      const uPrice = Number(item.price) || 0;
+      const uDur = Number(item.duration) || 0;
+      const key = `${sName}_${vName}_${uPrice}_${uDur}`;
+
+      const itemQty = item.quantity || 1;
+
+      if (!itemMap.has(key)) {
+        const groupObj = {
+          id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
+          key,
+          serviceName: sName,
+          nailVariantName: vName,
+          count: itemQty,
+          unitDuration: uDur,
+          totalDuration: uDur * itemQty,
+          unitPrice: uPrice,
+          totalPrice: uPrice * itemQty,
+          artist: booking?.artistName,
+          sourceItem: item,
+        };
+        itemMap.set(key, groupObj);
+        grouped.push(groupObj);
+      } else {
+        const existing = itemMap.get(key);
+        existing.count += itemQty;
+        existing.totalDuration += (uDur * itemQty);
+        existing.totalPrice += (uPrice * itemQty);
+      }
+    });
+
+    let cursor = booking?.startTime || "00:00:00";
+    return grouped.map((group, index) => {
       const status = getServiceStatus(index, booking?.status);
+      const displayName = group.count > 1 ? `x${group.count} ${group.serviceName}` : group.serviceName;
+      const slotStart = cursor;
+      const slotEnd = addMinutes(cursor, group.totalDuration);
+      cursor = slotEnd; // advance cursor for next row
 
       return {
-        id: item.bookingItemId,
-        time: `${formatTime(booking?.startTime)} - --`,
-        service: item.serviceName || "--",
-        serviceType: item.nailVariantName || item.customerNailName || "--",
-        artist: booking?.artistName || "--",
-        duration: item.duration ? formatDurationMinutes(item.duration) : "--",
+        id: group.id,
+        time: `${formatTime(slotStart)} - ${slotEnd}`,
+        service: displayName,
+        serviceType: group.nailVariantName,
+        artist: group.artist,
+        duration: group.totalDuration ? formatDurationMinutes(group.totalDuration, language) : "--",
+        unitPrice: group.unitPrice ? formatCurrency(group.unitPrice) : "--",
+        totalPrice: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
+        price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
-        action: getServiceAction(status),
+        actionLabel: getServiceAction(status, language === "vi"),
+        sourceItem: group.sourceItem,
+        count: group.count,
       };
-    })
-  ), [booking]);
+    });
 
-  const totalAmount = formatCurrency(booking?.totalPrice);
-  const depositPaid = "--";
-  const remainingBalance = totalAmount;
+  }, [language, booking]);
+
+  const price = formatCurrency(booking?.price);
+  const discount = formatCurrency(booking?.discount);
+  const depositPaid = formatCurrency(booking?.amountPaid);
+  const remainingBalance = formatCurrency(booking?.amountDue);
+  const amountDue = booking?.amountDue ?? 0;
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
+  const actionAvailability = useMemo(
+    () => getReceptionistActionAvailability(booking?.status),
+    [booking?.status],
+  );
+  const primaryHeaderAction = actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In");
+  const isPrimaryHeaderActionDisabled =
+    actionAvailability.canCheckout
+      ? isCheckoutSubmitting
+      : !isManualCheckInAllowed || isManualCheckInSubmitting;
 
-  const serviceColumns = useMemo(() => ([
-    {
-      title: "Time",
-      dataIndex: "time",
-      key: "time",
-      render: (value) => <span className="text-xs font-bold text-[#eb5b92]">{value}</span>,
-    },
-    {
-      title: "Service",
-      key: "service",
-      render: (_, row) => (
-        <div>
-          <p className="text-xs font-bold text-[#4a3741]">{row.service}</p>
-          <p className="mt-1 text-[10px] text-[#a48796]">{row.serviceType}</p>
-        </div>
-      ),
-    },
-    {
-      title: "Nail Artist",
-      key: "artist",
-      render: (_, row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef5b94] text-[10px] font-extrabold text-white">
-            {(row.artist || "--")
-              .split(" ")
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join("")
-              .toUpperCase() || "--"}
-          </div>
-          <span className="text-xs font-medium text-[#4a3741]">{row.artist}</span>
-        </div>
-      ),
-    },
-    {
-      title: "Duration",
-      dataIndex: "duration",
-      key: "duration",
-      render: (value) => <span className="text-xs text-[#4a3741]">{value}</span>,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(status)}`}>
-          {status}
-        </span>
-      ),
-    },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, row) => (
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleMockAction(`View ${row.service}`)}
-            className="rounded-xl bg-[#fff1f6] px-3 py-1.5 text-[10px] font-bold text-[#eb5b92]"
-          >
-            View
-          </button>
-          <button
-            type="button"
-            onClick={() => handleMockAction(`${row.action} ${row.service}`)}
-            className={`rounded-xl px-3 py-1.5 text-[10px] font-bold ${getActionTone(row.action)}`}
-          >
-            {row.action}
-          </button>
-        </div>
-      ),
-    },
-  ]), []);
-
-  const handleRefresh = async () => {
+  const handleRefresh = async (showToast = true) => {
     if (!bookingId) {
       return;
     }
 
-    setIsLoading(true);
+    if (!booking) {
+      setIsLoading(true);
+    }
     setError("");
 
     try {
@@ -417,7 +786,19 @@ export function ReceptionistBookingDetailPage() {
       } else {
         setCustomerProfile(null);
       }
-      toast.success("Booking detail refreshed.");
+
+      // Fetch transactions
+      try {
+        const txs = await fetchTransactionsByBookingId(bookingId);
+        setTransactions(txs);
+      } catch (err) {
+        console.warn("Failed to load transactions:", err);
+      }
+
+      if (showToast) {
+        toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
+      }
+      await loadBookingHistories();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to refresh booking detail.";
       setError(message);
@@ -427,11 +808,371 @@ export function ReceptionistBookingDetailPage() {
     }
   };
 
-  const handleMockAction = (label) => {
-    toast.success(`${label} is ready for receptionist flow.`);
+  const handleMockAction = useCallback((label) => {
+    toast.success(`${label} ${isVi ? `đã sẵn sàng cho quy trình tiếp nhận.` : `is ready for receptionist flow.`}`);
+  }, []);
+
+  const handleViewService = useCallback((row) => {
+    setSelectedServiceRow(row);
+  }, []);
+
+  const handleViewProcedures = useCallback(async (row) => {
+    const bookingItemId = String(row?.sourceItem?.bookingItemId || "").trim();
+
+    if (!bookingItemId) {
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Booking item ID is not available for this service.");
+      return;
+    }
+
+    setSelectedProcedureRow(row);
+    setBookingProcedures([]);
+    setProceduresError("");
+    setIsProceduresLoading(true);
+
+    try {
+      const procedures = await fetchReceptionistBookingProcedures(bookingItemId);
+      setBookingProcedures(Array.isArray(procedures) ? procedures : []);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error ? loadError.message : "Failed to load booking procedures.";
+      setProceduresError(message);
+      toast.error(message);
+    } finally {
+      setIsProceduresLoading(false);
+    }
+  }, []);
+
+  const handleOpenProcedureArtistPicker = useCallback(async (procedure) => {
+    const bookingProcedureId = String(procedure?.bookingProcedureId || "").trim();
+
+    if (!bookingProcedureId) {
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Booking procedure ID is not available.");
+      return;
+    }
+
+    setArtistPickerProcedure(procedure);
+    setProcedureArtists([]);
+    setProcedureArtistsError("");
+    setIsProcedureArtistsLoading(true);
+
+    try {
+      const artists = await fetchReceptionistProcedureAvailableArtists(bookingProcedureId);
+      setProcedureArtists(Array.isArray(artists) ? artists : []);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error ? loadError.message : "Failed to load available artists.";
+      setProcedureArtistsError(message);
+      toast.error(message);
+    } finally {
+      setIsProcedureArtistsLoading(false);
+    }
+  }, []);
+
+  const handleAssignProcedureArtist = useCallback(async (procedure, artist) => {
+    const bookingProcedureId = String(procedure?.bookingProcedureId || "").trim();
+    const artistId = String(artist?.nailArtistId || "").trim();
+
+    if (!bookingProcedureId || !artistId) {
+      toast.error(isVi ? "Không tìm thấy ID đơn hàng" : "Artist assignment data is incomplete.");
+      return;
+    }
+
+    setAssigningProcedureArtistId(artistId);
+
+    try {
+      const updatedProcedure = await updateReceptionistProcedureArtist(bookingProcedureId, artistId);
+
+      setBookingProcedures((currentProcedures) => currentProcedures.map((item) => (
+        item?.bookingProcedureId === updatedProcedure?.bookingProcedureId ? updatedProcedure : item
+      )));
+
+      setArtistPickerProcedure(null);
+      setProcedureArtists([]);
+      setProcedureArtistsError("");
+      toast.success(
+        procedure?.assignedArtistName
+          ? isVi ? "Thợ làm móng đã được gán lại thành công." : "Procedure artist reassigned successfully."
+          : isVi ? "Thợ làm móng đã được gán thành công." : "Procedure artist assigned successfully.",
+      );
+      await loadBookingHistories();
+    } catch (assignError) {
+      const message =
+        assignError instanceof Error ? assignError.message : "Failed to assign artist to procedure.";
+      toast.error(message);
+    } finally {
+      setAssigningProcedureArtistId("");
+    }
+  }, [loadBookingHistories]);
+
+  const doDeleteServices = async (itemsToDelete) => {
+    if (!booking) return;
+
+    setIsDeletingService(true);
+    try {
+      const remainingItems = booking.bookingItems.filter(
+        item => !itemsToDelete.some(delItem => {
+          const s1 = String(delItem.sourceItem?.serviceId || "");
+          const s2 = String(item.serviceId || "");
+          const n1 = String(delItem.sourceItem?.nailVariantId || "");
+          const n2 = String(item.nailVariantId || "");
+          return s1 === s2 && n1 === n2;
+        })
+      ).map(item => ({
+        nailVariantId: item.nailVariantId,
+        serviceId: item.serviceId,
+        quantity: item.quantity || 1,
+      }));
+
+      // Assuming booking has selectedPromotionIds and other fields needed for PUT
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: remainingItems,
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã xóa dịch vụ thành công." : "Services deleted successfully.");
+      setSelectedServiceIds([]);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete services");
+    } finally {
+      setIsDeletingService(false);
+    }
   };
 
-  const handleManualCheckIn = async () => {
+  const doUpdateServiceQuantity = async (row, newQuantity) => {
+    if (!booking || newQuantity < 1) return;
+
+    setIsDeletingService(true);
+    try {
+      const groupedItems = new Map();
+
+      booking.bookingItems.forEach(item => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+
+        const isMatch = sId === String(row.sourceItem?.serviceId || "") && nId === String(row.sourceItem?.nailVariantId || "");
+
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            quantity: isMatch ? newQuantity : (item.quantity || 1)
+          });
+        } else if (!isMatch) {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: Array.from(groupedItems.values()),
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã cập nhật số lượng thành công." : "Quantity updated successfully.");
+      setEditingQuantityId(null);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update quantity");
+    } finally {
+      setIsDeletingService(false);
+    }
+  };
+
+  const handleEnableEditQuantity = useCallback((row) => {
+    setEditingQuantityId(row.id);
+    setTempQuantity(row.count);
+  }, []);
+
+  const handleDeleteService = useCallback((row) => {
+    setItemsToDelete([row]);
+  }, []);
+
+  const handleMultiDeleteServices = () => {
+    if (selectedServiceIds.length === 0) return;
+    const items = serviceRows.filter(row => selectedServiceIds.includes(row.id));
+    setItemsToDelete(items);
+  };
+
+  const serviceColumns = useMemo(() => ([
+    {
+      title: isVi ? "Thời gian" : "Time",
+      dataIndex: "time",
+      key: "time",
+      render: (value) => <span className="text-xs font-bold text-[#E84F93]">{value}</span>,
+    },
+    {
+      title: isVi ? "Tên dịch vụ" : "Service Name & Design",
+      key: "service",
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          {row.count > 1 && (
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-bold shrink-0 shadow-2xs">
+              x{row.count}
+            </span>
+          )}
+          <p className="text-xs font-bold text-[#2B182B]">
+            {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
+          </p>
+        </div>
+      ),
+    },
+    {
+      title: isVi ? "Thợ làm móng" : "Assigned Artist",
+      key: "artist",
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
+            {(row.artist)
+              .split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase()}
+          </div>
+          <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
+        </div>
+      ),
+    },
+    {
+      title: isVi ? "Thời gian" : "Duration",
+      dataIndex: "duration",
+      key: "duration",
+      render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
+    },
+    {
+      title: isVi ? "Đơn giá" : "Unit Price",
+      dataIndex: "unitPrice",
+      key: "unitPrice",
+      render: (value) => <span className="text-xs font-semibold text-[#047857]">{value}</span>,
+    },
+    {
+      title: isVi ? "Số lượng" : "Quantity",
+      key: "quantity",
+      render: (_, row) => (
+        editingQuantityId === row.id ? (
+          <div className="flex items-center gap-1.5 bg-[#FFF0F6] border border-[#F3D7E4] px-1.5 py-1 rounded-full w-fit">
+            <button
+              type="button"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+              disabled={tempQuantity <= 1 || isDeletingService}
+              onClick={() => setTempQuantity(prev => prev - 1)}
+            >
+              -
+            </button>
+            <span className="text-xs font-bold text-[#2B182B] w-4 text-center">{tempQuantity}</span>
+            <button
+              type="button"
+              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+              disabled={isDeletingService}
+              onClick={() => setTempQuantity(prev => prev + 1)}
+            >
+              +
+            </button>
+            <div className="flex items-center gap-1 ml-0.5 border-l border-pink-200 pl-1.5">
+              <button
+                type="button"
+                className="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                disabled={isDeletingService || tempQuantity === row.count}
+                onClick={() => doUpdateServiceQuantity(row, tempQuantity)}
+              >
+                <Check size={12} strokeWidth={3} />
+              </button>
+              <button
+                type="button"
+                className="w-5 h-5 flex items-center justify-center rounded-full bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
+                disabled={isDeletingService}
+                onClick={() => setEditingQuantityId(null)}
+              >
+                <X size={12} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs font-bold text-[#2B182B] pl-2">{row.count}</span>
+        )
+      ),
+    },
+    {
+      title: isVi ? "Thành tiền" : "Total Price",
+      dataIndex: "totalPrice",
+      key: "totalPrice",
+      render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
+    },
+    {
+      title: (
+        <div className="flex items-center gap-2 ">
+          {isVi ? "Thao tác" : "Action"}
+          <Checkbox
+            checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
+            indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(serviceRows.map(r => r.id));
+              } else {
+                setSelectedServiceIds([]);
+              }
+            }}
+          />
+        </div>
+      ),
+      key: "action",
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          <ActionDropdown
+            items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi)}
+            buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
+            label={isVi ? "Thao tác" : "Actions"}
+          />
+          <Checkbox
+            checked={selectedServiceIds.includes(row.id)}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(prev => [...prev, row.id]);
+              } else {
+                setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
+              }
+            }}
+          />
+        </div>
+      ),
+    },
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows]);
+
+  const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
+
+  const handleTransactionClick = async (txId) => {
+    setIsTransactionModalOpen(true);
+    setIsFetchingTransaction(true);
+    setSelectedTransactionDetail(null);
+    try {
+      let details;
+      if (isUUID(txId)) {
+        details = await fetchWalletTransactionById(txId);
+        details.isWallet = true;
+      } else {
+        details = await fetchTransactionById(txId);
+        details.isWallet = false;
+      }
+      setSelectedTransactionDetail(details);
+    } catch (err) {
+      toast.error(isVi ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
+      setIsTransactionModalOpen(false);
+    } finally {
+      setIsFetchingTransaction(false);
+    }
+  };
+
+  const handleManualCheckIn = useCallback(async () => {
     if (!bookingId || !isManualCheckInAllowed || isManualCheckInSubmitting) {
       return;
     }
@@ -441,7 +1182,8 @@ export function ReceptionistBookingDetailPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       setBooking(updatedBooking);
-      toast.success("Customer checked in successfully.");
+      toast.success(isVi ? "Khách hàng đã được check in thành công." : "Customer checked in successfully.");
+      await loadBookingHistories();
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
@@ -449,14 +1191,114 @@ export function ReceptionistBookingDetailPage() {
     } finally {
       setIsManualCheckInSubmitting(false);
     }
-  };
+  }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
+
+  const handleCheckout = useCallback(async () => {
+    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
+      return;
+    }
+
+    const amountDue = booking?.amountDue ?? 0;
+
+    if (amountDue > 0) {
+      navigate(getReceptionistBookingCheckoutRoute(bookingId));
+      return;
+    }
+
+    setIsCheckoutSubmitting(true);
+    try {
+      await checkoutReceptionistBooking(bookingId);
+      toast.success(isVi ? "Đã checkout thành công." : "Checked out successfully.");
+      await handleRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (isVi ? "Thanh toán thất bại." : "Checkout failed."));
+    } finally {
+      setIsCheckoutSubmitting(false);
+    }
+  }, [
+    actionAvailability.canCheckout,
+    bookingId,
+    booking?.amountDue,
+    navigate,
+    isCheckoutSubmitting,
+    isVi,
+    handleRefresh,
+  ]);
+
+  const handlePrimaryHeaderAction = useCallback(async () => {
+    if (actionAvailability.canCheckout) {
+      await handleCheckout();
+      return;
+    }
+
+    await handleManualCheckIn();
+  }, [actionAvailability.canCheckout, handleCheckout, handleManualCheckIn]);
+
+  const receptionistActionCenterItems = useMemo(
+    () => [
+      {
+        label: actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In"),
+        subtitle: actionAvailability.canCheckout ? (t("receptionist.payments.checkoutDesc") || "Collect payment and finalize") : (t("receptionist.bookings.manualCheckInBtn") || "Manual arrival check-in"),
+        icon: actionAvailability.canCheckout ? CreditCard : SquareCheckBig,
+        cardTone: "bg-[linear-gradient(180deg,#fff1f6_0%,#ffe6f0_100%)]",
+        iconTone: "bg-[#ffdcea] text-[#eb5b92]",
+        disabled: !(actionAvailability.canCheckIn || actionAvailability.canCheckout),
+        loading:
+          actionAvailability.canCheckout ? isCheckoutSubmitting : isManualCheckInSubmitting,
+        onClick: () => void handlePrimaryHeaderAction(),
+      },
+      ...(actionAvailability.canStartService ? [{
+        label: t("receptionist.bookings.assignChairTitle") || "Assign Chair",
+        subtitle: t("receptionist.bookings.assignToSeat") || "Assign to seat",
+        icon: Armchair,
+        cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#e9e1ff_100%)]",
+        iconTone: "bg-[#dfd1ff] text-[#8160df]",
+        disabled: false,
+        onClick: () => setIsAssignChairModalOpen(true),
+      }] : []),
+      {
+        label: t("receptionist.bookings.reassignArtist") || "Reassign Artist",
+        subtitle: t("receptionist.bookings.changeStaff") || "Change staff",
+        icon: UserRound,
+        cardTone: "bg-[linear-gradient(180deg,#fff8df_0%,#fff0bf_100%)]",
+        iconTone: "bg-[#ffe6a1] text-[#d8a01c]",
+        disabled: !actionAvailability.canReassignArtist,
+        onClick: () => setIsAssignArtistOpen(true),
+      },
+      {
+        label: t("receptionist.bookings.moveSchedule") || "Move Schedule",
+        subtitle: t("receptionist.bookings.rescheduleTime") || "Reschedule time",
+        icon: CalendarClock,
+        cardTone: "bg-[linear-gradient(180deg,#ebf7ff_0%,#dff1ff_100%)]",
+        iconTone: "bg-[#cfe8fb] text-[#4391c9]",
+        disabled: !actionAvailability.canMoveSchedule,
+        onClick: () => setIsMoveScheduleOpen(true),
+      },
+      {
+        label: t("receptionist.bookings.addService") || "Add Service",
+        subtitle: t("receptionist.bookings.extraTreatment") || "Extra treatment",
+        icon: Sparkles,
+        cardTone: "bg-[linear-gradient(180deg,#e6f8ef_0%,#d8f2e5_100%)]",
+        iconTone: "bg-[#cdeedb] text-[#2da466]",
+        disabled: !actionAvailability.canAddService,
+        onClick: () => setIsOnsiteAddonModalOpen(true),
+      },
+
+    ],
+    [
+      actionAvailability,
+      handlePrimaryHeaderAction,
+      isCheckoutSubmitting,
+      isManualCheckInSubmitting,
+    ],
+  );
 
   if (isLoading) {
     return (
-      <section className="flex min-h-[50vh] items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
+      <section className="flex min-h-[50vh] items-center justify-center rounded-lg bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
         <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
           <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-          Loading booking detail...
+          {isVi ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."}
         </div>
       </section>
     );
@@ -464,8 +1306,8 @@ export function ReceptionistBookingDetailPage() {
 
   if (error || !booking) {
     return (
-      <section className="rounded-[24px] border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <p className="text-lg font-extrabold text-[#412643]">Booking detail unavailable</p>
+      <section className="rounded-lg border border-[#f6d8e5] bg-white p-6 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+        <p className="text-lg font-bold text-[#412643]">{isVi ? "Không thể tải thông tin chi tiết đơn hàng" : "Booking detail unavailable"}</p>
         <p className="mt-2 text-sm text-[#b38a9f]">{error || "This booking could not be loaded."}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
@@ -474,13 +1316,13 @@ export function ReceptionistBookingDetailPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
           >
             <RefreshCcw size={14} />
-            Retry
+            {isVi ? "Thử lại" : "Retry"}
           </button>
           <Link
             to={ROUTES.receptionistBookings}
             className="inline-flex items-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white"
           >
-            Back to bookings
+            {t("receptionist.payments.backToBookings") || "Back to bookings"}
           </Link>
         </div>
       </section>
@@ -488,151 +1330,242 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f8_100%)]">
-      <div className="rounded-[24px] border border-[#f6d8e5] bg-white px-5 py-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <section className="flex min-h-full flex-col gap-5">
+      {/* 1. TOP HEADER BAR */}
+      <div className="rounded-[26px] border border-[#F3E2EC] bg-white/90 backdrop-blur-md px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-lg font-black text-[#412643]">Booking Details</p>
-            <p className="mt-1 text-xs text-[#b38a9f]">Manage customer appointment and salon operations</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold tracking-tight text-[#2B182B]">{t("receptionist.bookings.title") || "Booking Details"}</h1>
+            </div>
+            <p className="mt-0.5 text-xs font-medium text-[#9E8497]">{t("receptionist.bookings.desc") || "Real-time salon operations & customer check-in"}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-[#f3cade] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
             >
               <QrCode size={14} />
-              View QR
+              {t("receptionist.dashboard.scanQr") || "QR Code"}
             </button>
+
+            {/* Primary Gradient Quick Check-In Button */}
             <button
               type="button"
-              onClick={() => void handleManualCheckIn()}
-              disabled={!isManualCheckInAllowed || isManualCheckInSubmitting}
-              className="inline-flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => void handlePrimaryHeaderAction()}
+              disabled={isPrimaryHeaderActionDisabled}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isManualCheckInSubmitting ? (
+              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
                 <LoaderCircle size={14} className="animate-spin" />
               ) : (
                 <SquareCheckBig size={14} />
               )}
-              Check In
+              {primaryHeaderAction}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_300px]">
-        <div className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_320px]">
+        <div className="space-y-5">
+          {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
-            title="Customer Overview"
-            subtitle={booking.status || "Appointment details"}
-            badge="Active Booking"
+            title={t("receptionist.payments.customerInfo") || "Customer Overview"}
+            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận'
+              : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                  : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                    : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
+                      : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
+              : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
-                <div className="relative">
+                {/* High-contrast VIP avatar badge */}
+                <div className="relative shrink-0">
                   {customerProfile?.avatarUrl ? (
                     <img
+                      crossOrigin="anonymous"
                       src={customerProfile.avatarUrl}
                       alt={customerDisplayName}
-                      className="h-20 w-20 rounded-[20px] border-2 border-[#f4d6e2] object-cover"
+                      className="h-20 w-20 rounded-full border-2 border-[#E84F93] object-cover shadow-md"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[20px] border-2 border-[#f4d6e2] bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-lg font-black text-white">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-[#E84F93] bg-gradient-to-br from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-xl font-bold text-white shadow-md">
                       {customerInitials}
                     </div>
                   )}
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,#ef5b92_0%,#f58b77_100%)] px-2 py-0.5 text-[9px] font-extrabold text-white">
-                    VIP
-                  </span>
                 </div>
 
-                <div className="flex-1">
-                  <p className="text-xl font-black text-[#4a3741]">{customerDisplayName}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {["VIP Member", "Sensitive Nails", "Frequent Customer"].map((tag, index) => (
-                      <span
-                        key={tag}
-                        className={[
-                          "rounded-full px-3 py-1 text-[10px] font-bold",
-                          index === 0
-                            ? "border border-[#f3d3df] bg-[#fff1f6] text-[#eb5b92]"
-                            : index === 1
-                              ? "border border-[#f6e1a7] bg-[#fff4cf] text-[#c89516]"
-                              : "border border-[#e4dcff] bg-[#f2edff] text-[#7b68c8]",
-                        ].join(" ")}
+                <div className="flex-1 min-w-0">
+
+                  <div className="flex flex-row justify-between">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <p className="text-xl font-bold text-[#2B182B] truncate">{customerDisplayName}</p>
+                      {customerTier ? (
+                        <span
+                          className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1"
+                          style={{
+                            backgroundColor: customerTier.backgroundColor + '15',
+                            borderColor: customerTier.backgroundColor + '40',
+                            color: customerTier.backgroundColor
+                          }}
+                        >
+                          <Star size={10} className="fill-current" />
+                          {customerTier.name} ({customerPoints} pts)
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                          <Star size={10} className="fill-current" />
+                          {customerPoints} pts
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quick Actions rounded icon buttons */}
+                    <div className="flex items-center gap-2 lg:items-end shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Call Customer")}
+                        title="Call Customer"
+                        className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
                       >
-                        {tag}
-                      </span>
-                    ))}
+                        <Phone size={16} />
+                        <span className="hidden sm:inline lg:hidden">Call</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("Send SMS / Chat")}
+                        title="Send SMS / Chat"
+                        className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
+                      >
+                        <MessageCircleMore size={16} />
+                        <span className="hidden sm:inline lg:hidden">SMS</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMockAction("View VTO History")}
+                        title="View VTO Try-On History"
+                        className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
+                      >
+                        <Sparkles size={16} />
+                        <span className="hidden sm:inline lg:hidden">VTO</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-3">
+                  {/* Clean 2-column key-value grid */}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC]">
+                    <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Phone</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{customerProfile?.phone || "--"}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("profile.phone") || "Phone Number"}</p>
+                        <p className="mt-0.5 font-bold text-[#2B182B]">{customerProfile?.phone || booking.customerPhone || "0987 654 321"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Last Visit</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">--</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Membership</p>
-                        <p className="mt-1 text-sm font-extrabold text-[#eb5b92]">Gold Tier</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.customers.tier") || "Membership Tier"}</p>
+                        <div className="mt-0.5 font-bold text-[#E84F93]"><div className="flex items-center gap-2.5 flex-wrap">
+                          {customerTier ? (
+                            <span
+                              className="rounded-full border px-2.5 py-0.5 text-[10px] font-bold flex items-center gap-1"
+                              style={{
+                                backgroundColor: customerTier.backgroundColor + '15',
+                                borderColor: customerTier.backgroundColor + '40',
+                                color: customerTier.backgroundColor
+                              }}
+                            >
+                              <Star size={10} className="fill-current" />
+                              {customerTier.name} ({customerPoints} pts)
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-gray-50 border border-gray-200 px-2.5 py-0.5 text-[10px] font-bold text-gray-500 flex items-center gap-1">
+                              <Star size={10} className="fill-current" />
+                              {customerPoints} pts
+                            </span>
+                          )}
+                        </div></div>
                       </div>
                     </div>
-                    <div className="space-y-3">
+
+                    <div className="space-y-2.5 text-xs">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Email</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{customerProfile?.email || "--"}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("profile.email") || "Email Address"}</p>
+                        <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Preferred Artist</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">{booking.artistName || "--"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a68b98]">Total Visits</p>
-                        <p className="mt-1 text-sm font-medium text-[#4a3741]">--</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist")}</p>
+                        <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist}</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="grid gap-2 sm:w-[160px]">
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Call Customer")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff1f6] px-4 py-2.5 text-xs font-bold text-[#eb5b92]"
-                >
-                  <Phone size={14} />
-                  Call Customer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Send Message")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f2edff] px-4 py-2.5 text-xs font-bold text-[#7b68c8]"
-                >
-                  <MessageCircleMore size={14} />
-                  Send Message
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("View History")}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#fff4cf] px-4 py-2.5 text-xs font-bold text-[#c89516]"
-                >
-                  <Sparkles size={14} />
-                  View History
-                </button>
               </div>
             </div>
           </DetailCard>
 
           <DetailCard
-            title="Appointment Details"
-            subtitle="Today's scheduled services"
-            badge={`${serviceRows.length || 0} Services`}
+            title={language === "vi" ? "Thông tin lịch hẹn" : "Booking Info"}
+            icon={Sparkles}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {/* Booking Date */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Calendar size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDate(booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời gian" : "Time"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatTime(booking?.startTime, booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời lượng" : "Duration"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
+                </div>
+              </div>
+            </div>
+          </DetailCard>
+
+          {/* 3. APPOINTMENT & SERVICE DETAILS (CENTER BLOCK) */}
+          <DetailCard
+            title={t("receptionist.bookings.title") || "Appointment & Service Details"}
+            subtitle={t("receptionist.bookings.desc") || "Scheduled treatments & selected nail designs"}
+            badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
+            headerAction={
+              selectedServiceIds.length > 0 && (
+                <Button
+                  danger
+                  type="primary"
+                  size="small"
+                  icon={<Trash2 size={14} />}
+                  onClick={handleMultiDeleteServices}
+                  loading={isDeletingService}
+                  className="rounded-full shadow-2xs font-bold"
+                >
+                  {isVi ? `Xóa (${selectedServiceIds.length})` : `Delete (${selectedServiceIds.length})`}
+                </Button>
+              )
+            }
           >
             <Table
               rowKey="id"
@@ -640,105 +1573,96 @@ export function ReceptionistBookingDetailPage() {
               dataSource={serviceRows}
               pagination={false}
               scroll={{ x: 860 }}
-              locale={{ emptyText: "No appointment services available." }}
+              locale={{ emptyText: t("receptionist.bookings.noBookings") || "No appointment services available." }}
             />
           </DetailCard>
 
+          {/* 5. FINANCIAL & PAYMENT SUMMARY (BOTTOM BLOCK) */}
           <DetailCard
-            title="Payment Summary"
-            subtitle="Booking financial overview"
-            badge="API Data"
+            title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
+            subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
+          // badge="API Validated"
           >
-            <div className="grid gap-5 lg:grid-cols-[1fr_250px]">
-              <div>
-                <div className="space-y-3 text-sm">
-                  {[
-                    ["Subtotal", totalAmount],
-                    ["Gold Member Discount (10%)", "--"],
-                    ["Deposit Paid", depositPaid],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-3">
-                      <span className="text-[#8f7b88]">{label}</span>
-                      <span className="font-bold text-[#4a3741]">{value}</span>
+            <div className="grid gap-5">
+              <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
+                    <span className="font-bold text-[#2B182B]">{price}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
+                    <span className="font-bold text-[#EF4444]">{discount}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
+                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
+                    <span className="font-bold text-[#2B182B]">{depositPaid}</span>
+                  </div>
+                  {amountDue > 0 && (
+
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
+                      <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
                     </div>
-                  ))}
+                  )}
                 </div>
 
-                <div className="mt-4 border-t border-[#f3d7e2] pt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-[#8f7b88]">Remaining Balance</span>
-                    <span className="text-sm font-extrabold text-[#eb5b92]">{remainingBalance}</span>
+                {amountDue > 0 && (
+                  <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">
+                        {t("receptionist.payments.totalAmount") || "Total Amount Payable"}
+                      </p>
+                      <p className="text-3xl font-bold text-[#047857] leading-none mt-1">
+                        {remainingBalance}
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="mt-4 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-bold text-[#4a3741]">Total Amount</p>
-                    <p className="mt-2 text-[1.8rem] font-black leading-none text-[#eb5b92]">{totalAmount}</p>
-                  </div>
-                  <div className="text-right text-[11px] text-[#a48796]">
-                    <p>Deposit paid {depositPaid}</p>
-                    <p className="mt-1">Remaining {remainingBalance}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 h-2 rounded-full bg-[#f6d6e3]">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+                )}
               </div>
 
-              <div className="space-y-3">
+              {booking.status != "Completed" && booking.status != "Cancelled" && (
                 <button
                   type="button"
-                  onClick={() => handleMockAction("Add Payment")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,#cf3d82_0%,#ef5b92_100%)] px-4 py-3 text-xs font-extrabold text-white shadow-[0_12px_24px_rgba(235,91,146,0.22)]"
+                  onClick={handleCheckout}
+                  disabled={!actionAvailability.canCheckout || isCheckoutSubmitting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <CreditCard size={14} />
-                  Add Payment
+                  {isCheckoutSubmitting ? (
+                    <LoaderCircle size={16} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={16} />
+                  )}
+                  {isCheckoutSubmitting
+                    ? (isVi ? "Đang xử lý..." : "Processing...")
+                    : (t("receptionist.payments.checkoutTitle") || "Checkout")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Print Receipt")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
-                >
-                  <Printer size={14} />
-                  Print Receipt
-                </button>
-              </div>
+              )}
             </div>
           </DetailCard>
 
+          {/* 6. RECEPTIONIST QUICK ACTION CENTER (BOTTOM GRID) */}
           <DetailCard
-            title="Receptionist Action Center"
-            subtitle="Quick operational controls for this booking"
+            title={t("receptionist.bookings.actions") || "Receptionist Quick Action Center"}
+            subtitle={t("receptionist.bookings.desc") || "Interactive operational controls for this customer session"}
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {ACTION_CENTER.map((item) => {
+              {receptionistActionCenterItems.map((item) => {
                 const Icon = item.icon;
 
                 return (
                   <button
                     key={item.label}
                     type="button"
-                    onClick={() => {
-                      if (item.label === "Check In") {
-                        void handleManualCheckIn();
-                        return;
-                      }
-
-                      handleMockAction(item.label);
-                    }}
-                    disabled={item.label === "Check In" && (!isManualCheckInAllowed || isManualCheckInSubmitting)}
-                    className={`rounded-[18px] border border-[#f0d8e2] px-4 py-4 text-center shadow-[0_10px_22px_rgba(236,72,153,0.04)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 ${item.cardTone}`}
+                    onClick={item.onClick}
+                    disabled={item.disabled || item.loading}
+                    className={`rounded-2xl border border-[#F3E2EC] p-4 text-center shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${item.cardTone}`}
                   >
-                    <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl ${item.iconTone}`}>
-                      <Icon size={18} />
+                    <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-2xl shadow-2xs ${item.iconTone}`}>
+                      {item.loading ? <LoaderCircle size={18} className="animate-spin" /> : <Icon size={18} />}
                     </span>
-                    <p className="mt-3 text-xs font-extrabold text-[#4a3741]">{item.label}</p>
-                    <p className="mt-1 text-[10px] text-[#9f8896]">{item.subtitle}</p>
+                    <p className="mt-3 text-xs font-bold text-[#2B182B]">{item.label}</p>
+                    <p className="mt-1 text-[10px] text-[#9E8497] font-medium leading-tight">{item.subtitle}</p>
                   </button>
                 );
               })}
@@ -746,128 +1670,929 @@ export function ReceptionistBookingDetailPage() {
           </DetailCard>
         </div>
 
-        <aside className="space-y-4">
-          <DetailCard title="Quick Status">
-            <div className="space-y-3 text-sm">
-              {[
-                ["Current Status", booking.status || "--"],
-                ["Assigned Artist", booking.artistName || "--"],
-                ["Chair Number", "--"],
-                ["Remaining Time", booking.totalDuration ? formatDurationMinutes(booking.totalDuration) : "--"],
-                ["Est. Finish", "--"],
-                ["Check-in Time", booking.status === "CheckedIn" ? formatTime(booking.startTime) : "--"],
-              ].map(([label, value], index) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-[#8f7b88]">{label}</span>
-                  <span
-                    className={
-                      index === 0
-                        ? `rounded-full px-2.5 py-1 text-[10px] font-extrabold ${getStatusTone(String(value))}`
-                        : "font-bold text-[#4a3741]"
-                    }
-                  >
-                    {value}
+        {/* SIDEBAR RIGHT COLUMN */}
+        <aside className="space-y-5">
+          {/* QUICK STATUS & LIVE TRACKER (TOP-RIGHT) */}
+          <DetailCard title={t("receptionist.common.status") || "Quick Status & Live Tracker"}>
+            <div className="flex flex-col items-center">
+              <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
+                <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
+                  {booking.status ?
+                    (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
+                      String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
+                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                          : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
+                            : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
+                              : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                                : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                  : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
+                </span>
+              </div>
+
+              {/* Gradient Circular Progress Ring */}
+              <CircularProgressRing
+                percent={progressPercent}
+                remainingTime={getRemainingTime(booking, language)}
+              />
+
+              <div className="self-stretch space-y-2.5 text-xs pt-1">
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
+                  <span className="font-bold text-[#2B182B]">{booking.artistName}</span>
+                </div>
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.assignChairTitle") || "Chair / Station"}</span>
+                  <span className="font-bold text-[#8B5CF6]">{booking.chairName || (language === "vi" ? "Chưa xếp ghế" : "Not Assigned")}</span>
+                </div>
+                <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
+                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.time") || "Check-in Time"}</span>
+                  <span className="font-bold text-[#2B182B]">
+                    {["CheckedIn", "In Progress", "ServiceCompleted", "Completed"].includes(String(booking.status || "")) ? formatTime(booking.startTime) : "10:00 AM"}
                   </span>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-5">
-              <div className="mb-2 flex items-center justify-between text-[10px] text-[#a48796]">
-                <span>Progress</span>
-                <span>{serviceRows.length ? `1 of ${serviceRows.length} done` : "0 of 0 done"}</span>
-              </div>
-              <div className="h-2 rounded-full bg-[#f6d6e3]">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#eb5b92_0%,#f4869f_100%)]"
-                  style={{ width: `${progressPercent}%` }}
-                />
               </div>
             </div>
           </DetailCard>
 
-          <DetailCard title="Latest Review">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd6e5_0%,#ef5b94_100%)] text-xs font-extrabold text-white">
-                {customerInitials}
+          {/* TRANSACTIONS LIST */}
+          <DetailCard title={language === "vi" ? "Lịch sử giao dịch" : "Transaction History"}>
+            {transactions && transactions.length > 0 ? (
+              <div className="space-y-3 mt-2">
+                {[...transactions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).map((tx, idx) => {
+                  const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
+                  return (
+                    <div
+                      key={tx.id || tx.transactionId}
+                      onClick={() => handleTransactionClick(tx.id || tx.transactionId)}
+                      className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(Math.abs(tx.amount))}</p>
+                        </div>
+                        <div className="text-right">
+
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
+                            String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                              'bg-[#F3F4F6] text-[#6B7280]'
+                            }`}>
+                            {language === "vi"
+                              ? (String(tx.status).toLowerCase() === 'paid' || String(tx.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
+                                : String(tx.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                                  : String(tx.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                                    : String(tx.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                      : String(tx.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : tx.status)
+                              : (String(tx.status).toLowerCase() === 'completed' ? 'Paid' : tx.status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-1 pt-2 border-t border-[#F3E2EC] border-dashed space-y-1">
+                        {tx.createdAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
+                            <span className="font-medium text-[#2B182B]">{formatVNDate(tx.createdAt, language)}</span>
+                          </div>
+                        )}
+                        {tx.paidAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
+                            <span className="font-medium text-[#059669]">{formatVNDate(tx.paidAt, language)}</span>
+                          </div>
+                        )}
+                        {!tx.paidAt && tx.expiresAt && (
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
+                            <span className="font-medium text-[#E11D48]">{formatVNDate(tx.expiresAt, language)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold 
+                            ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId)
+                              ? 'bg-[#F3E8FF] text-[#7E22CE]'
+                              : tx.paymentMethod === 'Tiền mặt'
+                                ? 'bg-[#FFF3F3] text-[#C2410C]'
+                                : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                            {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div>
-                <p className="text-xs font-extrabold text-[#4a3741]">{customerDisplayName}</p>
-                <p className="mt-1 text-[10px] text-[#a48796]">{formatDate(booking.bookingDate)}</p>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic mt-2">
+                {language === "vi" ? "Chưa có giao dịch nào cho đơn đặt lịch này." : "No transactions found for this booking yet."}
               </div>
-            </div>
-            <div className="mt-4 flex gap-1 text-[#f1aa2a]">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <span key={index}>*</span>
-              ))}
-            </div>
-            <p className="mt-4 text-xs leading-6 text-[#7e6d77]">
-              Customer review data is not available from the booking API yet. Keep this card as a receptionist-facing placeholder.
-            </p>
+            )}
           </DetailCard>
 
-          <DetailCard title="Internal Notes">
-            <textarea
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              className="min-h-[120px] w-full rounded-2xl border border-[#f3d7e2] bg-[#fffafb] px-4 py-3 text-xs leading-6 text-[#4a3741] outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => toast.success("Receptionist notes saved in local UI.")}
-              className="mt-4 w-full rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-3 text-xs font-extrabold text-[#eb5b92]"
-            >
-              Save Notes
-            </button>
+          {/* CUSTOMER REVIEW WIDGET */}
+          <DetailCard title={language === "vi" ? "Đánh giá khách hàng" : "Customer Review Widget"}>
+            {bookingRating ? (
+              <div className="bg-[#FFF9FB] p-3.5 rounded-2xl border border-[#F3E2EC] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#8B5CF6] text-xs font-bold text-white shadow-2xs">
+                      {customerInitials}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#2B182B]">{customerDisplayName}</p>
+                      <p className="text-[10px] text-[#9E8497] font-medium">{formatDate(bookingRating.createdAt || booking?.bookingDate)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star key={index} size={12} className={`fill-current ${index < (bookingRating.overallScore || 5) ? 'text-[#F59E0B]' : 'text-slate-200'}`} />
+                    ))}
+                  </div>
+                </div>
+                {bookingRating.comment && (
+                  <p className="text-xs leading-relaxed text-[#6B5B68] italic pt-1">
+                    "{bookingRating.comment}"
+                  </p>
+                )}
+                {bookingRating.imageUrl && (
+                  <div className="mt-2">
+                    <Image src={bookingRating.imageUrl} className="rounded-lg h-24 w-full object-cover" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic mt-2">
+                {language === "vi" ? "Chưa có đánh giá nào cho lịch hẹn này." : "No reviews found for this booking yet."}
+              </div>
+            )}
           </DetailCard>
 
-          <DetailCard title="Next Appointment">
-            <div className="rounded-[20px] border border-[#f3d7e2] bg-[#fff7fb] px-4 py-4">
-              <p className="text-xs font-extrabold text-[#eb5b92]">Next slot --</p>
-              <p className="mt-2 text-sm font-bold text-[#4a3741]">{serviceRows[0]?.service || "--"}</p>
-              <p className="mt-2 text-[11px] text-[#8f7b88]">with {booking.artistName || "--"} - Chair --</p>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleMockAction("View next appointment")}
-                className="rounded-xl border border-[#f3d7e2] bg-[#fff1f6] px-4 py-2.5 text-xs font-extrabold text-[#eb5b92]"
-              >
-                View
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMockAction("Edit next appointment")}
-                className="rounded-xl border border-[#e3dbff] bg-[#f2edff] px-4 py-2.5 text-xs font-extrabold text-[#7c63d8]"
-              >
-                Edit
-              </button>
-            </div>
+          {/* BOOKING OPERATIONS TIMELINE */}
+          <DetailCard
+            title={language === "vi" ? "Dòng thời gian hoạt động đặt lịch" : "Booking Operations Timeline"}
+            subtitle={language === "vi" ? "Nhật ký kiểm tra theo thời gian thực" : "Real-time timestamped audit log"}
+            badge={isBookingHistoriesLoading ? (language === "vi" ? "Đang tải..." : "Loading...") : `${bookingHistories.length} ${language === "vi" ? "Sự kiện" : "Events"}`}
+          >
+            {isBookingHistoriesLoading ? (
+              <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
+            ) : bookingHistories.length > 0 ? (
+              <div className="mt-4 flex flex-col max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                {[...bookingHistories].reverse().map((history, idx) => (
+                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={formatVNDate(history.createdAt, language)}>
+                    <div className="w-[100px] shrink-0 pt-0.5 text-right">
+                      <span className="text-[11px] font-bold text-[#F59E0B]">
+                        {language === "vi" ? toVN(history.createdAt).format("DD/MM/YY") : toVN(history.createdAt).format("MMM D, YY")}
+                      </span>
+                      <span className="mx-1 text-[#C8B0BF]">|</span>
+                      <span className="text-[11px] font-bold text-[#10B981]">
+                        {language === "vi" ? toVN(history.createdAt).format("HH:mm") : toVN(history.createdAt).format("h:mm A")}
+                      </span>
+                    </div>
+
+                    <div className="relative flex flex-col items-center">
+                      <div className="h-2.5 w-2.5 mt-1 rounded-full border-2 border-[#E84F93] bg-white z-10 shrink-0 shadow-xs" />
+                      {idx !== bookingHistories.length - 1 && (
+                        <div className="w-[2px] h-full bg-[#F3E2EC] absolute top-2.5" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 pb-4 text-xs">
+                      {(() => {
+                        let roleText = history.actorRole;
+                        if (history.actorRole === "Customer") roleText = "Khách Hàng";
+                        else if (history.actorRole === "Manager") roleText = "Quản lý";
+                        else if (history.actorRole === "Receptionist") roleText = "Lễ tân";
+                        else if (history.actorRole === "Staff_Artist" || history.actorRole === "Artist") roleText = "Thợ làm móng";
+                        else roleText = "Hệ thống";
+
+                        const actorDisplayName = (history.actorName && history.actorName.trim() !== "" && history.actorName !== "Unknown") ? history.actorName.trim() : null;
+
+                        let rawPayload = history.payload || "";
+                        rawPayload = rawPayload.replace(/\s?Mã QR \(Base64\) đã được khởi tạo\./g, "");
+                        rawPayload = rawPayload.replace(/Quản lý Salon\s?/gi, "");
+
+                        const urlRegex = /(https?:\/\/[^\s]+)/g;
+                        let imageUrl = null;
+                        const match = rawPayload.match(urlRegex);
+                        if (match) {
+                          imageUrl = match[0];
+                          rawPayload = rawPayload.replace(urlRegex, "").trim();
+                        }
+
+                        let formattedAction = "";
+                        if (rawPayload.includes("tự động hủy do khách trễ") || rawPayload.includes("trễ quá 15 phút")) {
+                          formattedAction = "đã tự động hủy lịch hẹn do khách hàng trễ quá 15 phút không check-in.";
+                        } else if (rawPayload.includes("Hủy đơn từ trạng thái") || rawPayload.toLowerCase().includes("hủy đơn")) {
+                          const reasonMatch = rawPayload.match(/Lý do:\s*(.*)/i);
+                          if (reasonMatch && reasonMatch[1]) {
+                            let cleanReason = reasonMatch[1].trim();
+                            if (cleanReason.toLowerCase().includes("hệ thống tự động hủy do")) {
+                              formattedAction = "đã tự động hủy lịch hẹn do khách hàng trễ quá 15 phút không check-in.";
+                            } else {
+                              formattedAction = `đã hủy lịch hẹn. Lý do: ${cleanReason.charAt(0).toUpperCase() + cleanReason.slice(1)}.`;
+                            }
+                          } else {
+                            formattedAction = "đã hủy lịch hẹn.";
+                          }
+                        } else if (rawPayload.includes("Đơn đặt lịch được tạo thành công") || rawPayload.includes("tạo thành công")) {
+                          formattedAction = "đã tạo đơn đặt lịch thành công.";
+                        } else if (rawPayload.includes("xác nhận duyệt đơn đặt lịch")) {
+                          formattedAction = "đã xác nhận duyệt đơn đặt lịch.";
+                        } else if (rawPayload.includes("Khách hàng đã check-in") || rawPayload === "Khách hàng đã check-in." || rawPayload.includes("check-in cho khách")) {
+                          formattedAction = "đã thực hiện check-in thành công.";
+                        } else if (rawPayload.includes("Check-in thành công")) {
+                          formattedAction = "đã hoàn tất thủ tục check-in.";
+                        } else if (rawPayload.includes("thanh toán") || rawPayload.includes("check-out")) {
+                          formattedAction = "đã hoàn tất thủ tục thanh toán & check-out.";
+                        } else if (rawPayload.includes("Đơn đặt lịch được cập nhật")) {
+                          formattedAction = "đã cập nhật thông tin đơn đặt lịch.";
+                        } else if (rawPayload.startsWith("đã ")) {
+                          formattedAction = rawPayload;
+                        } else {
+                          formattedAction = `đã ${rawPayload.toLowerCase()}`;
+                        }
+
+                        return (
+                          <>
+                            <p className="text-[#6B5B68] leading-relaxed">
+                              <span className="font-bold text-[#2B182B]">
+                                {roleText}
+                              </span>{" "}
+                              {actorDisplayName && (
+                                <>
+                                  <span className="font-bold text-[#E84F93]">
+                                    "{actorDisplayName}"
+                                  </span>{" "}
+                                </>
+                              )}
+                              {formattedAction}
+                            </p>
+                            {imageUrl && (
+                              <div className="mt-2">
+                                <Image
+                                  crossOrigin="anonymous"
+                                  src={imageUrl}
+                                  alt="Hình ảnh"
+                                  className="h-12 w-12 rounded-xl border border-[#F3E2EC] object-cover shadow-2xs"
+                                  style={{ height: "48px", width: "48px" }}
+                                />
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-6 text-center text-xs text-[#9E8497] italic">
+                {language === "vi" ? "Không có sự kiện lịch sử nào được tìm thấy cho đơn đặt lịch này." : "No history events found for this booking yet."}
+              </div>
+            )}
           </DetailCard>
         </aside>
       </div>
+
+      <AssignChairModal
+        isOpen={isAssignChairModalOpen}
+        onClose={() => setIsAssignChairModalOpen(false)}
+        booking={booking}
+        onSuccess={() => handleRefresh()}
+      />
+
+      <Modal
+        open={Boolean(selectedServiceRow)}
+        onCancel={() => setSelectedServiceRow(null)}
+        footer={null}
+        closable={false}
+        centered
+        width={720}
+        styles={{ content: { padding: 0, borderRadius: 28, overflow: "hidden" } }}
+      >
+        {selectedServiceRow ? (() => {
+          const item = selectedServiceRow.sourceItem;
+          const isNail = isNailBookingItem(item);
+          const hasImages = Boolean(
+            sanitizeImageUrl(item?.nailVariantImageUrl) || sanitizeImageUrl(item?.customerNailImageUrl)
+          );
+
+          return (
+            <div className="bg-white p-6 md:p-7 relative font-sans">
+              {/* Ambient Top Glow */}
+              <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-[#E84F93]/10 blur-3xl" />
+
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-4 mb-5 relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-white shadow-xs">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}</h3>
+                    <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn" : "Actual service and nail art details selected by the customer"}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceRow(null)}
+                  className="rounded-full p-2 text-[#9E8497] hover:bg-[#FFF0F6] hover:text-[#E84F93] transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Service Hero Banner Card */}
+              <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
+                    {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
+                  </span>
+                  <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
+                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
+                  </span>
+                </div>
+                <h3 className="mt-2 text-base font-bold text-[#2B182B]">
+                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || language === "vi" ? "Dịch Vụ Làm Móng" : "Nail Service"}
+                </h3>
+              </div>
+
+              {/* Metadata Details Unified Single Block Card */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
+                  <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
+                </h4>
+
+                <div className="divide-y divide-[#F3E2EC]/70 text-xs">
+                  {/* Tên mẫu nail */}
+                  {Boolean(item?.nailVariantName) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}</span>
+                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
+                    </div>
+                  )}
+
+                  {/* Mẫu móng khách yêu cầu (Only shown if present) */}
+                  {Boolean(item?.customerNailName) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}</span>
+                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
+                    </div>
+                  )}
+
+                  {/* Tên dịch vụ (Only shown if no nailVariantName or if different) */}
+                  {Boolean(
+                    (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
+                    (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
+                  ) && (
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                        <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Dịch Vụ" : "Service Name"}</span>
+                        <span className="font-bold text-[#2B182B] sm:text-right">
+                          {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Thời gian làm dự kiến */}
+                  {Boolean(selectedServiceRow.duration) && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
+                    </div>
+                  )}
+
+                  {/* Số lượng */}
+                  {Boolean(item?.quantity && item.quantity > 1) && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Số Lượng Suất" : "Quantity"}</span>
+                      <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
+                    </div>
+                  )}
+
+                  {/* Giá dịch vụ */}
+                  {item?.price !== undefined && item?.price !== null && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Giá Dịch Vụ" : "Service Price"}</span>
+                      <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
+                    </div>
+                  )}
+
+                  {/* Thợ đảm nhận */}
+                  {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Artist"}</span>
+                      <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Attached Images Section */}
+              {hasImages && (
+                <div className="mt-5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
+                    <span><ImageIcon size={12} /></span> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
+                  </h4>
+                  <div className="flex flex-wrap items-center justify-center gap-6">
+                    {sanitizeImageUrl(item?.nailVariantImageUrl) && (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
+                          {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                        </span>
+                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={sanitizeImageUrl(item?.nailVariantImageUrl)}
+                            alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                            height={220}
+                            className="object-cover rounded-xl"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {sanitizeImageUrl(item?.customerNailImageUrl) && (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
+                          {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                        </span>
+                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                          <Image
+                            src={sanitizeImageUrl(item?.customerNailImageUrl)}
+                            alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                            height={220}
+                            className="object-cover rounded-xl"
+                            crossOrigin="anonymous"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Close Button */}
+              <div className="mt-6 flex justify-end border-t border-[#F3E2EC] pt-4">
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceRow(null)}
+                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
+                >
+                  {language === "vi" ? "Đóng" : "Close"}
+                </button>
+              </div>
+            </div>
+          );
+        })() : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(selectedProcedureRow)}
+        onCancel={() => {
+          setSelectedProcedureRow(null);
+          setBookingProcedures([]);
+          setProceduresError("");
+          setArtistPickerProcedure(null);
+          setProcedureArtists([]);
+          setProcedureArtistsError("");
+        }}
+        footer={[
+          <Button
+            key="close-procedure-view"
+            className="rounded-full font-bold border-[#F3E2EC] text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] px-6"
+            onClick={() => {
+              setSelectedProcedureRow(null);
+              setBookingProcedures([]);
+              setProceduresError("");
+              setArtistPickerProcedure(null);
+              setProcedureArtists([]);
+              setProcedureArtistsError("");
+            }}
+          >
+            {language === "vi" ? "Đóng" : "Close"}
+          </Button>,
+        ]}
+        centered
+        width={1020}
+        title={
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-bold border-b border-[#F3E2EC] pb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#E84F93] to-[#8B5CF6] text-white shadow-xs">
+              <ClipboardList size={16} />
+            </div>
+            <span>{language === "vi" ? "Quy Trình Làm Móng & Phân Công Thợ" : "Booking Procedures & Artist Assignment"}</span>
+          </div>
+        }
+      >
+        {selectedProcedureRow ? (
+          <div className="space-y-6 py-2">
+            {/* Service Summary Hero Banner */}
+            <div className="relative overflow-hidden rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-[#E84F93] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-2xs">
+                      {language === "vi" ? "Dịch Vụ Chọn" : "Service Selected"}
+                    </span>
+                    <span className="text-xs font-bold text-[#8B5CF6]">
+                      {selectedProcedureRow.serviceType !== "--" ? selectedProcedureRow.serviceType : "Nail Treatment"}
+                    </span>
+                  </div>
+                  <h3 className="mt-1.5 text-lg font-bold text-[#2B182B]">
+                    {selectedProcedureRow.sourceItem?.serviceName ||
+                      selectedProcedureRow.service ||
+                      selectedProcedureRow.sourceItem?.nailVariantName ||
+                      selectedProcedureRow.serviceType ||
+                      selectedProcedureRow.sourceItem?.customerNailName ||
+                      "--"}
+                  </h3>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
+                    <Clock size={14} className="text-[#E84F93]" />
+                    <span>{language === "vi" ? "Thời gian:" : "Duration:"} {selectedProcedureRow.duration}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-xl border border-[#F3E2EC] bg-white/80 px-3 py-1.5 text-xs font-bold text-[#2B182B] shadow-2xs">
+                    <Sparkles size={14} className="text-[#8B5CF6]" />
+                    <span>{language === "vi" ? "Số lượng:" : "Quantity:"} x{selectedProcedureRow.sourceItem?.quantity ?? 1}</span>
+                  </div>
+                  {bookingProcedures.length > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] px-3 py-1.5 text-xs font-bold text-[#047857] shadow-2xs">
+                      <ShieldCheck size={14} />
+                      <span>{bookingProcedures.length} {language === "vi" ? "bước dịch vụ" : "service steps"}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Procedures Timeline Content - Scalable & Scrollable for 10+ steps */}
+            {isProceduresLoading ? (
+              <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8">
+                <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
+                <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Đang tải danh sách các bước quy trình..." : "Loading procedure steps..."}</p>
+              </div>
+            ) : proceduresError ? (
+              <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-sm font-bold text-[#991B1B]">
+                {proceduresError}
+              </div>
+            ) : bookingProcedures.length ? (
+              <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3.5">
+                {bookingProcedures
+                  .slice()
+                  .sort((left, right) => (left?.stepOrder ?? 0) - (right?.stepOrder ?? 0))
+                  .map((procedure, index) => {
+                    const statusLower = String(procedure.status || "").toLowerCase();
+                    const isCompleted = statusLower === "completed";
+                    const isInProgress = statusLower === "inprogress" || statusLower === "in progress";
+                    const isPending = statusLower === "pending";
+
+                    let statusTone = "border-[#E2E8F0] bg-[#F8FAFC] text-[#64748B]";
+                    let statusLabel = procedure.status || "Chưa làm";
+
+                    if (isCompleted) {
+                      statusTone = "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]";
+                      statusLabel = language === "vi" ? "Đã hoàn thành" : "Completed";
+                    } else if (isInProgress) {
+                      statusTone = "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]";
+                      statusLabel = language === "vi" ? "Đang thực hiện" : "In Progress";
+                    } else if (isPending) {
+                      statusTone = "border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]";
+                      statusLabel = language === "vi" ? "Chờ thực hiện" : "Pending";
+                    }
+
+                    const hasArtist = Boolean(procedure.assignedArtistId || procedure.assignedArtistName);
+                    const hasPassive = Boolean(procedure.passiveDuration && procedure.passiveDuration > 0);
+
+                    return (
+                      <div
+                        key={procedure.bookingProcedureId || index}
+                        className="group relative rounded-2xl border border-[#F3E2EC] bg-white p-4 shadow-xs hover:shadow-md hover:border-[#F3D6E5] transition-all duration-200"
+                      >
+                        {/* Step Header Bar */}
+                        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-[#F8F1F5] pb-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#E84F93] to-[#D93B7D] px-2.5 py-0.5 text-xs font-bold text-white shadow-2xs">
+                              {language === "vi" ? "Bước" : "Step"} {procedure.stepOrder ?? index + 1}
+                            </span>
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone}`}>
+                              {statusLabel}
+                            </span>
+                            {procedure.isRequired && (
+                              <span className="rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-bold text-[#B45309]">
+                                {language === "vi" ? "Bắt buộc" : "Required"}
+                              </span>
+                            )}
+                            {procedure.isMainStep && (
+                              <span className="rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-0.5 text-[10px] font-bold text-[#6D28D9]">
+                                {language === "vi" ? "Bước chính" : "Main Step"}
+                              </span>
+                            )}
+                            <h4 className="text-sm font-bold text-[#2B182B] ml-1">
+                              {procedure.procedureName || "Chưa đặt tên bước"}
+                            </h4>
+                          </div>
+
+                          {/* Time badge (Estimated Time) */}
+                          <div className="flex items-center gap-2 text-xs shrink-0">
+                            <span className="flex items-center gap-1 font-bold text-[#E84F93]">
+                              <Clock size={12} /> {isVi ? "Dự kiến" : "Estimated"}: {String(procedure.estimatedStartTime).slice(0, 5)} - {String(procedure.estimatedEndTime).slice(0, 5)}
+                            </span>
+                            <span className="rounded-full bg-[#FFF0F6] px-2.5 py-0.5 text-[11px] font-bold text-[#E84F93] border border-[#F3D6E5]">
+                              {formatDurationMinutes(procedure.duration || 0, language)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Step Main Content Row (Integrated Artist & Time Breakdown) */}
+                        <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto] items-center">
+                          {/* Left: Thợ Đảm Nhận Panel */}
+                          <div className="flex items-center justify-between rounded-xl border border-[#F3E2EC] bg-[#FFF9FB] p-2.5 sm:px-3.5">
+                            <div className="flex items-center gap-2.5">
+                              {hasArtist ? (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#C084FC] text-xs font-bold text-white shadow-2xs">
+                                  {(procedure.assignedArtistName || "A")
+                                    .split(" ")
+                                    .filter(Boolean)
+                                    .slice(0, 2)
+                                    .map((p) => p[0])
+                                    .join("")
+                                    .toUpperCase()}
+                                </div>
+                              ) : (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-dashed border-[#F3D6E5] bg-white text-[#C8B0BF]">
+                                  <UserRound size={16} />
+                                </div>
+                              )}
+
+                              <div>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Assigned Artist"}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-xs font-bold text-[#2B182B]">
+                                    {hasArtist ? procedure.assignedArtistName : language === "vi" ? "Chưa phân công thợ" : "Not Assigned"}
+                                  </span>
+                                  {hasArtist ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2 py-0.5 text-[9px] font-bold text-[#047857]">
+                                      <Check size={9} /> {language === "vi" ? "Đã phân công" : "Assigned"}
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 text-[9px] font-bold text-[#B45309]">
+                                      {language === "vi" ? "Cần chọn thợ" : "Need to assign artist"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
+                            >
+                              {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
+                              <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
+                              </span>
+                            </button>
+                          </div>
+
+                          {/* Right: Time Breakdown & Overlap Badges */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#DDD6FE] bg-[#F5F3FF] px-2.5 py-1 text-[11px] font-bold text-[#6D28D9]">
+                              <Zap size={12} /> {language === "vi" ? "Thao tác" : "Active"}: {formatDurationMinutes(procedure.activeDuration ?? 0, language)}
+                            </span>
+
+                            {hasPassive && (
+                              <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0284C7]">
+                                <Hourglass size={12} /> {language === "vi" ? "Hơ máy / Chờ" : "Curing / Waiting"}: {formatDurationMinutes(procedure.passiveDuration, language)}
+                              </span>
+                            )}
+
+                            {(hasPassive || procedure.canOverlap) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
+                                {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
+                              </span>
+                            ) : (
+                              <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
+                                <LockKeyhole size={12} /> {language === "vi" ? "Làm liên tục" : "Continuous"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Extra Guidance Note (If Passive Time > 0) */}
+                        {hasPassive && (
+                          <div className="mt-2 text-[11px] font-semibold text-[#6D28D9] bg-[#F5F3FF] p-2 rounded-lg border border-[#E9D5FF] flex items-center gap-1.5">
+                            <span><Lightbulb size={12} /></span>
+                            <span>
+                              {language === "vi" ? (
+                                <>
+                                  Trong <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> hơ máy / chờ khô này, thợ rảnh tay và có thể tranh thủ làm cho khách khác (Overlap).
+                                </>
+                              ) : (
+                                <>
+                                  In <strong>{formatDurationMinutes(procedure.passiveDuration, language)}</strong> of curing / waiting time, the artist is free and can take the opportunity to serve another customer (Overlap).
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Footer Row: Actual Execution Time & Completion */}
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#F8F1F5] pt-2 text-[11px]">
+                          <div>
+                            <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thực tế làm:" : "Actual time:"} </span>
+                            <span className="font-bold text-[#2B182B]">
+                              {(() => {
+                                const startVal = procedure.actualStartTime || procedure.startTime;
+                                const endVal = procedure.actualEndTime || procedure.completedAt;
+                                const fmt = (v) => (!v ? "--:--" : String(v).includes("T") ? String(v).split("T").pop().slice(0, 5) : String(v).slice(0, 5));
+                                return `${fmt(startVal)} ~ ${fmt(endVal)}`;
+                              })()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-bold text-[#9E8497]">{language === "vi" ? "Người hoàn thành:" : "Completed by:"} </span>
+                            <span className="font-bold text-[#2B182B]">
+                              {procedure.completedByName || <span className="text-[#9E8497] italic font-normal">{language === "vi" ? "Chưa xong" : "Not completed"}</span>}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
+                {language === "vi" ? "Không tìm thấy bước quy trình nào cho dịch vụ này." : "No procedure steps found for this service."}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={Boolean(artistPickerProcedure)}
+        onCancel={() => {
+          setArtistPickerProcedure(null);
+          setProcedureArtists([]);
+          setProcedureArtistsError("");
+          setAssigningProcedureArtistId("");
+        }}
+        footer={[
+          <Button
+            key="close-procedure-artist-picker"
+            className="rounded-full font-bold border-[#F3E2EC] text-[#2B182B] hover:border-[#E84F93] hover:text-[#E84F93] px-6"
+            onClick={() => {
+              setArtistPickerProcedure(null);
+              setProcedureArtists([]);
+              setProcedureArtistsError("");
+              setAssigningProcedureArtistId("");
+            }}
+          >
+            {language === "vi" ? "Đóng" : "Close"}
+          </Button>,
+        ]}
+        centered
+        width={800}
+        title={
+          <div className="flex items-center gap-2.5 text-[#2B182B] text-base font-bold border-b border-[#F3E2EC] pb-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#8B5CF6] to-[#E84F93] text-white shadow-xs">
+              <UserCheck size={16} />
+            </div>
+            <span>{artistPickerProcedure?.assignedArtistName ? language === "vi" ? "Thay Đổi Thợ Phân Công Bước" : "Change Assigned Artist" : language === "vi" ? "Chọn Thợ Phân Công Bước" : "Select Assigned Artist"}</span>
+          </div>
+        }
+      >
+        {artistPickerProcedure ? (
+          <div className="space-y-5 py-2">
+            <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] to-[#F5F3FF] p-4">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#E84F93]">{language === "vi" ? "Bước Đang Chọn Phân Công" : "Procedure Selected"}</p>
+              <h3 className="mt-1 text-base font-bold text-[#2B182B]">
+                {artistPickerProcedure.procedureName}
+              </h3>
+              <p className="mt-1 text-xs font-bold text-[#8B5CF6]">
+                {language === "vi" ? "Thợ hiện tại:" : "Current Artist:"} {artistPickerProcedure.assignedArtistName || (language === "vi" ? "Chưa phân công thợ nào" : "No artist assigned")}
+              </p>
+            </div>
+
+            {isProcedureArtistsLoading ? (
+              <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB]">
+                <LoaderCircle size={28} className="animate-spin text-[#E84F93]" />
+                <p className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Đang tìm danh sách thợ khả dụng..." : "Finding available artists..."}</p>
+              </div>
+            ) : procedureArtistsError ? (
+              <div className="rounded-2xl border border-[#FCA5A5] bg-[#FEF2F2] p-4 text-xs font-bold text-[#991B1B]">
+                {procedureArtistsError}
+              </div>
+            ) : procedureArtists.length ? (
+              <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-3">
+                {procedureArtists.map((artist) => {
+                  const isSubmitting = assigningProcedureArtistId === artist.nailArtistId;
+                  const canAssign = artist.isFree && artist.isQualified;
+
+                  return (
+                    <div
+                      key={artist.nailArtistId}
+                      className={`relative flex flex-col justify-between rounded-2xl border p-4 transition-all duration-300 ${canAssign
+                        ? "border-[#F3E2EC] bg-white hover:border-[#E84F93] hover:shadow-[0_8px_25px_rgba(232,79,147,0.12)]"
+                        : "border-slate-100 bg-slate-50/70 opacity-75"
+                        }`}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-xs ${canAssign
+                            ? "bg-gradient-to-tr from-[#E84F93] via-[#D93B7D] to-[#8B5CF6]"
+                            : "bg-slate-300"
+                            }`}
+                        >
+                          {artist.name ? artist.name.charAt(0).toUpperCase() : "A"}
+                        </div>
+
+                        <h4 className="mt-3 text-sm font-bold text-[#2B182B] truncate w-full">
+                          {artist.name}
+                        </h4>
+
+                        {/* Status Badges */}
+                        <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${artist.isFree
+                              ? "bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]"
+                              : "bg-[#FEF2F2] text-[#991B1B] border border-[#FCA5A5]"
+                              }`}
+                          >
+                            {artist.isFree ? (language === "vi" ? "Rảnh" : "Free") : (language === "vi" ? "Đang bận" : "Busy")}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleAssignProcedureArtist(artistPickerProcedure, artist)}
+                        disabled={isSubmitting || !canAssign}
+                        className={`mt-4 flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-bold transition-all cursor-pointer ${canAssign
+                          ? "bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] text-white shadow-[0_4px_12px_rgba(232,79,147,0.25)] hover:scale-[1.02] active:scale-[0.98]"
+                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          }`}
+                      >
+                        {isSubmitting ? (
+                          <LoaderCircle size={14} className="animate-spin" />
+                        ) : canAssign ? (
+                          <UserCheck size={14} />
+                        ) : null}
+                        <span>
+                          {canAssign
+                            ? artistPickerProcedure.assignedArtistName
+                              ? (language === "vi" ? "Chọn thợ này" : "Select this artist")
+                              : (language === "vi" ? "Phân công" : "Assign")
+                            : (language === "vi" ? "Thợ đang bận" : "Artist is busy")}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[#F3D6E5] bg-[#FFF9FB] p-8 text-center text-xs font-bold text-[#9E8497]">
+                {language === "vi" ? "Không có thợ nào khả dụng cho bước quy trình này." : "No available artists for this procedure step."}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <AssignReceptionistArtistModal
+        open={isAssignArtistOpen}
+        bookingId={booking?.bookingId || bookingId || ""}
+        currentArtistName={booking?.artistName || ""}
+        onClose={() => setIsAssignArtistOpen(false)}
+        onAssigned={(updatedBooking) => {
+          setBooking(updatedBooking);
+          setIsAssignArtistOpen(false);
+        }}
+      />
 
       <Modal
         open={isQrOpen}
         onCancel={() => setIsQrOpen(false)}
         footer={[
           <Button key="close" onClick={() => setIsQrOpen(false)}>
-            Close
+            {language === "vi" ? "Đóng" : "Close"}
           </Button>,
         ]}
         centered
-        title="Customer Check-In QR Code"
+        title={language === "vi" ? "Mã QR Check-in Khách Hàng" : "Customer Check-In QR Code"}
       >
         <div className="flex flex-col items-center gap-4 py-2">
           {qrImageSrc ? (
-            <img
+            <img crossOrigin="anonymous"
               src={qrImageSrc}
               alt={`QR code for booking ${booking.bookingId}`}
               className="h-72 w-72 rounded-2xl border border-[#f4d6e2] bg-white p-3 object-contain"
             />
           ) : (
             <div className="rounded-2xl border border-[#f4d6e2] bg-[#fff7fb] px-6 py-10 text-center text-sm text-[#8f7b88]">
-              QR code not available for this booking.
+              {language === "vi" ? "Mã QR không khả dụng cho đơn đặt này." : "QR code not available for this booking."}
             </div>
           )}
           <div className="text-center">
@@ -876,6 +2601,159 @@ export function ReceptionistBookingDetailPage() {
           </div>
         </div>
       </Modal>
+      <OnsiteAddonModal
+        open={isOnsiteAddonModalOpen}
+        onClose={() => setIsOnsiteAddonModalOpen(false)}
+        bookingId={booking?.bookingId || bookingId || ""}
+        booking={booking}
+        onSuccess={() => {
+          handleRefresh();
+          setIsOnsiteAddonModalOpen(false);
+        }}
+        onConflict={(data, items) => {
+          setConflictData(data);
+          setAddonItemsForConflict(items);
+          setIsOnsiteConflictModalOpen(true);
+        }}
+      />
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={booking?.bookingId || bookingId || ""}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          handleRefresh();
+        }}
+      />
+      <ProposeRescheduleModal
+        open={isMoveScheduleOpen}
+        onClose={() => setIsMoveScheduleOpen(false)}
+        bookingId={booking?.bookingId || bookingId || ""}
+        booking={booking}
+        onSuccess={() => {
+          handleRefresh();
+          setIsMoveScheduleOpen(false);
+        }}
+      />
+      <Modal
+        open={isTransactionModalOpen}
+        onCancel={() => setIsTransactionModalOpen(false)}
+        footer={null}
+        closable={false}
+        centered
+        width={400}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-[#FAF6F8] font-sans max-h-[85vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-5 border-b border-[#F3E2EC] bg-white sticky top-0 z-10">
+            <h3 className="text-base font-bold text-[#2B182B] flex items-center gap-2">
+              <CreditCard size={18} className="text-[#E84F93]" /> {language === "vi" ? "Chi tiết giao dịch" : "Transaction Details"}
+            </h3>
+            <button type="button" onClick={() => setIsTransactionModalOpen(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="p-5">
+            {isFetchingTransaction ? (
+              <div className="flex flex-col items-center justify-center py-12 text-[#9E8497]">
+                <Spin size="large" />
+                <p className="mt-3 text-xs font-medium">{language === "vi" ? "Đang tải..." : "Loading..."}</p>
+              </div>
+            ) : selectedTransactionDetail ? (
+              <div className="space-y-4">
+                <div className="text-center pb-4 border-b border-[#F3E2EC]">
+                  <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(Math.abs(selectedTransactionDetail.amount))}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
+                    String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
+                      'bg-[#F3F4F6] text-[#6B7280]'
+                    }`}>
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
+                        : String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                          : String(selectedTransactionDetail.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                            : String(selectedTransactionDetail.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                              : String(selectedTransactionDetail.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : selectedTransactionDetail.status)
+                      : (String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Paid' : selectedTransactionDetail.status)}
+                  </span>
+                </div>
+
+                <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.isWallet ? selectedTransactionDetail.referenceId : selectedTransactionDetail.orderCode}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
+                    <span className="font-medium text-[#2B182B]">{formatVNDate(selectedTransactionDetail.createdAt, language)}</span>
+                  </div>
+
+                  {selectedTransactionDetail.paidAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
+                      <span className="font-medium text-[#059669]">{formatVNDate(selectedTransactionDetail.paidAt, language)}</span>
+                    </div>
+                  )}
+
+                  {/* {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
+                      <span className="font-medium text-[#E11D48]">{toVN(selectedTransactionDetail.expiresAt).format('DD/MM/YYYY HH:mm')}</span>
+                    </div>
+                  )} */}
+
+                  {(selectedTransactionDetail.customerName || booking?.customerName) && (
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName || booking?.customerName}</span>
+                    </div>
+                  )}
+
+                  {(selectedTransactionDetail.salonName || booking?.salonName) && (
+                    <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
+                      <span className="text-[#9E8497] font-medium">Salon</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName || booking?.salonName || "Salon Long Thành Mỹ"}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-[#9E8497] text-xs">
+                {language === "vi" ? "Không tìm thấy dữ liệu" : "No data found"}
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      <ActionConfirmModal
+        open={itemsToDelete !== null}
+        intent="danger"
+        title={isVi ? (itemsToDelete?.length > 1 ? "Xác nhận xóa nhiều" : "Xác nhận xóa") : (itemsToDelete?.length > 1 ? "Confirm multi-delete" : "Confirm delete")}
+        description={isVi
+          ? (itemsToDelete?.length > 1 ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn?` : `Bạn có chắc chắn muốn xóa dịch vụ "${itemsToDelete?.[0]?.service}" không?`)
+          : (itemsToDelete?.length > 1 ? `Are you sure you want to delete ${itemsToDelete.length} selected services?` : `Are you sure you want to delete "${itemsToDelete?.[0]?.service}"?`)
+        }
+        confirmText={isVi ? "Xóa" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        onConfirm={async () => {
+          await doDeleteServices(itemsToDelete);
+          setItemsToDelete(null);
+        }}
+        onCancel={() => setItemsToDelete(null)}
+        loading={isDeletingService}
+      />
+
     </section>
   );
 }

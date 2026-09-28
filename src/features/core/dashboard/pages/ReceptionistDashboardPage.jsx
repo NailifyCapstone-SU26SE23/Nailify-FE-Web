@@ -10,105 +10,59 @@ import {
   Plus,
   Search,
   Sparkles,
+  SquareCheckBig,
   UserCheck,
   UserRound,
   Users,
+  AlertCircle,
+  ClipboardList,
+  Armchair,
+  Activity,
+  GripHorizontal,
+  Pin,
+  PinOff,
+  EyeOff,
+  Settings2,
 } from "lucide-react";
-import { Modal, Table } from "antd";
+import { Modal, Table, DatePicker, Dropdown, Button } from "antd";
+import dayjs from "dayjs";
 import jsQR from "jsqr";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import ChairMap from "../../../../shared/components/ui/ChairMap";
 import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   ROUTES,
   getReceptionistBookingDetailRoute,
+  getReceptionistBookingCheckoutRoute,
 } from "../../../../shared/constants/routes";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import {
+  checkoutReceptionistBooking,
   fetchReceptionistBookings,
   manualCheckInReceptionistBooking,
   verifyReceptionistQrToken,
+  fetchCustomersList,
 } from "../../../receptionist/bookings/services/receptionistBookingService";
-
-const RECEPTION_METRICS = [
-  {
-    label: "Walk-ins Today",
-    value: "14",
-    note: "+3 from yesterday",
-    icon: UserRound,
-    iconClassName: "bg-[#ffeaf4] text-[#ef4f92]",
-    noteClassName: "text-[#33b46e]",
-  },
-  {
-    label: "Appointments Today",
-    value: "28",
-    note: "+5 this week",
-    icon: CalendarClock,
-    iconClassName: "bg-[#f1eaff] text-[#8d54ef]",
-    noteClassName: "text-[#33b46e]",
-  },
-  {
-    label: "Waiting Customers",
-    value: "6",
-    note: "Avg 18 min wait",
-    icon: Clock3,
-    iconClassName: "bg-[#fff0ea] text-[#ff7a3d]",
-    noteClassName: "text-[#ff7a3d]",
-  },
-  {
-    label: "Available Staff",
-    value: "4",
-    note: "3 busy | 1 break",
-    icon: Users,
-    iconClassName: "bg-[#e8fbf5] text-[#1da989]",
-    noteClassName: "text-[#33b46e]",
-  },
-];
-
-const QUICK_STATUS = [
-  ["Current Queue", "6"],
-  ["Avg Wait Time", "18 min"],
-  ["Available Chairs", "4 / 10"],
-  ["In Service Now", "6"],
-  ["Completed Today", "12"],
-  ["Revenue Today", "842.000 VNĐ"],
-];
-
-const WAITING_QUEUE = [
-  ["Ava Williams", "Spa Mani + Pedi", "8 min"],
-  ["Mia Johnson", "Dip Powder Mani", "14 min"],
-  ["Walk-in #3", "Gel Manicure", "21 min"],
-  ["Lily Tran", "Classic Pedicure", "27 min"],
-  ["Walk-in #5", "Nail Art Design", "33 min"],
-  ["Walk-in #6", "Acrylic Full Set", "40 min"],
-];
-
-const STAFF_AVAILABILITY = [
-  ["Mia Chen", "MC", "Busy", "bg-[#eb5b92]", "bg-[#ffeaf2] text-[#ef5a95]"],
-  ["Sophie Park", "SP", "Available", "bg-[#8e50cf]", "bg-[#e8f8ed] text-[#30a364]"],
-  ["Luna Kim", "LK", "Busy", "bg-[#25b6c4]", "bg-[#ffeaf2] text-[#ef5a95]"],
-  ["Aria Nguyen", "AN", "Available", "bg-[#ff883d]", "bg-[#e8f8ed] text-[#30a364]"],
-  ["Rose Jin", "RJ", "Break", "bg-[#57b15a]", "bg-[#fff4e8] text-[#f08b2e]"],
-  ["Yuna Park", "YP", "Available", "bg-[#f2a33a]", "bg-[#e8f8ed] text-[#30a364]"],
-  ["Dana Lee", "DL", "Available", "bg-[#d13f85]", "bg-[#e8f8ed] text-[#30a364]"],
-  ["Hana Wu", "HW", "Busy", "bg-[#6247d8]", "bg-[#ffeaf2] text-[#ef5a95]"],
-  ["Jade Oh", "JO", "Break", "bg-[#168dd2]", "bg-[#fff4e8] text-[#f08b2e]"],
-];
-
-const RECENT_CHECK_INS = [
-  ["Emma Rose", "Gel Manicure", "9:02 AM | Checked In", "ER", "bg-[#f26e97]"],
-  ["Sophie Liu", "Acrylic Full Set", "9:28 AM | In service", "SL", "bg-[#9b59d0]"],
-  ["Chloe Kim", "French Tip Overlay", "10:55 AM | Completed", "CK", "bg-[#ef4f92]"],
-  ["Zoe Parker", "Nail Art Design", "11:32 AM | In service", "ZP", "bg-[#8f5ce4]"],
-  ["Walk-in #3", "Gel Manicure", "11:48 AM | Waiting", "WI", "bg-[#28b59b]"],
-];
+import { receptionistWalkInBookingService } from "../../../receptionist/walk-in-bookings/services/receptionistWalkInBookingService";
+import { dashboardService } from "../services/dashboardService";
+import {
+  useReceptionistDashboard,
+  useWalkInQueue,
+  useWaitlist,
+  useStaffArtists,
+} from "../hooks/useAdminDashboard";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { fetchNailArtistById } from "../../../manager/staff-artist-management/services/nailArtistsService";
 
 const APPOINTMENTS_PAGE_SIZE = 5;
 
 function getInitials(name) {
-  return (name || "--")
+  return (name)
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -148,15 +102,22 @@ function formatTimeLabel(startTime, totalDuration) {
 function getStatusTone(status) {
   switch (status) {
     case "Completed":
-      return "bg-[#ffeaf2] text-[#ef5a95]";
-    case "CheckedIn":
+      return "bg-green-100 text-green-600";
+    case "ServiceCompleted":
       return "bg-[#e8f8ed] text-[#309d63]";
-    case "Approved":
+    case "CheckedIn":
       return "bg-[#eef1fb] text-[#6876c8]";
+    case "Approved":
+      return "bg-[#f2f0ff] text-[#8b5cf6]";
     case "Pending":
       return "bg-[#fff4e8] text-[#f08b2e]";
+    case "ReschedulePending":
+      return "bg-[#fffbe6] text-[#faad14]";
+    case "Cancelled":
+    case "NoShow":
+      return "bg-[#fff1f0] text-[#f5222d]";
     default:
-      return "bg-[#fff1f6] text-[#eb5a98]";
+      return "bg-[#f3f4f6] text-[#6b7280]";
   }
 }
 
@@ -176,37 +137,50 @@ function normalizeAppointmentRow(booking, index) {
   return {
     id: booking.bookingId,
     bookingId: booking.bookingId,
+    rawStartTime: booking.startTime || "",
     time: formatTimeLabel(booking.startTime, booking.totalDuration),
-    customer: booking.customerName || "--",
+    customer: typeof booking.customerName === 'object' ? booking.customerName?.customerName : (booking.customerName),
     service:
-      booking.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", ") || "--",
-    staff: booking.artistName || "--",
-    status: booking.status || "--",
+      booking.bookingItems?.map((item) => item.serviceName).filter(Boolean).join(", "),
+    staff: booking.artistName,
+    status: booking.status,
     tone: getStatusTone(booking.status),
     avatarTone: getAvatarTone(index),
   };
 }
 
 function canManualCheckIn(status) {
-  return !["CheckedIn", "Completed", "Cancelled"].includes(status);
+  const normalizedStatus = String(status || "").trim().toLowerCase();
+  return normalizedStatus === "approved";
+}
+
+function isReadyForCheckout(status) {
+  return String(status || "").trim() === "ServiceCompleted";
+}
+
+function formatLocalTime(isoString) {
+  if (!isoString) return "--";
+  const localString = String(isoString).replace(/Z$/, "");
+  return new Date(localString).toLocaleTimeString();
 }
 
 function DashboardCard({ children, className = "" }) {
   return (
     <section
-      className={`w-full min-w-0 overflow-hidden rounded-[24px] border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
+      className={`w-full min-w-0 overflow-hidden rounded-lg border border-[#f4d8e3] bg-white p-4 shadow-[0_12px_30px_rgba(236,72,153,0.06)] ${className}`}
     >
       {children}
     </section>
   );
 }
 
-function SectionTitle({ icon: Icon, title, action }) {
+function SectionTitle({ icon: Icon, title, action, className = "" }) {
+  const { t, language } = useLanguage();
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${className}`}>
       <div className="flex min-w-0 items-center gap-2">
         {Icon ? <Icon size={14} className="text-[#eb5a98]" /> : null}
-        <h3 className="min-w-0 text-sm font-extrabold text-[#e14f91]">{title}</h3>
+        <h3 className="min-w-0 text-sm font-bold text-[#e14f91]">{title}</h3>
       </div>
       {action}
     </div>
@@ -214,44 +188,68 @@ function SectionTitle({ icon: Icon, title, action }) {
 }
 
 function MetricCard({ item }) {
-  const Icon = item.icon;
+  const { t, language } = useLanguage();
+  const Icon = item.icon || Activity;
+  const color = item.color || '#10b981';
 
   return (
-    <DashboardCard className="p-4">
-      <div className="flex items-center gap-3">
-        <div
-          className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}
-        >
-          <Icon size={18} />
-        </div>
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          background: `linear-gradient(135deg, ${color}, transparent 75%)`,
+        }}
+      />
+      <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-[1.7rem] font-black leading-none text-[#432744]">{item.value}</p>
-          <p className="mt-1 text-xs text-[#8e7a87]">{item.label}</p>
-          <p className={`mt-1 text-[11px] font-semibold ${item.noteClassName}`}>{item.note}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            {item.label}
+          </p>
+          <h2 className="mt-3 text-[24px] font-bold tracking-tight text-slate-800 leading-none break-all">
+            {item.value} <span className="text-[14px] text-slate-400 font-semibold">{item.unit !== "VND" ? "" : "₫"}</span>
+          </h2>
+          <p className="mt-2 text-[11px] font-semibold text-slate-500">{item.note}</p>
+        </div>
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm shrink-0 ml-2"
+          style={{
+            backgroundColor: `${color}18`,
+            color: color,
+          }}
+        >
+          <Icon size={24} strokeWidth={2.4} />
         </div>
       </div>
-    </DashboardCard>
+      <div
+        className="mt-6 h-1.5 rounded-full"
+        style={{
+          background: `linear-gradient(to right, ${color}, transparent)`,
+        }}
+      />
+    </div>
   );
 }
 
-function MobileAppointmentCard({ row, actions }) {
+function MobileAppointmentCard({ row, actions, formatDisplay }) {
+  const { t, language } = useLanguage();
   return (
     <article className="w-full min-w-0 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-sm font-bold text-[#432744]">{row.customer}</p>
+          {row.phone && <p className="text-[10px] font-semibold text-[#aa8a99]">{row.phone}</p>}
           <p className="mt-1 text-xs font-semibold text-[#ea4f93]">{row.time}</p>
         </div>
         <span
           className={`inline-flex max-w-full break-words rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-normal ${row.tone}`}
         >
-          {row.status}
+          {formatDisplay ? formatDisplay(row.status) : row.status}
         </span>
       </div>
 
       <div className="mt-4 flex min-w-0 items-start gap-3">
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}
         >
           {getInitials(row.customer)}
         </div>
@@ -271,10 +269,236 @@ function MobileAppointmentCard({ row, actions }) {
   );
 }
 
+function QueueDetailArtistName({ artistId, initialName }) {
+  const { language } = useLanguage();
+  const { data: artistProfile, isLoading } = useQuery({
+    queryKey: ['nailArtist', artistId],
+    queryFn: () => fetchNailArtistById(artistId),
+    enabled: !!artistId,
+  });
+
+  if (isLoading) return <span className="opacity-50">...</span>;
+
+  if (artistProfile) {
+    return artistProfile.account
+      ? `${artistProfile.account.firstName || ""} ${artistProfile.account.lastName || ""}`.trim()
+      : (artistProfile.firstName ? `${artistProfile.firstName} ${artistProfile.lastName}`.trim() : (artistProfile.name || initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned")));
+  }
+
+  return initialName || (language === "vi" ? "Chưa phân công" : "Not Assigned");
+}
+
+const defaultWidgets = [
+  { id: 'appointments', title: 'Today\'s Appointments', visible: true, pinned: false },
+  { id: 'walkInQueue', title: 'Walk-In Queue', visible: true, pinned: false },
+  { id: 'waitlist', title: 'Waitlist Queue', visible: true, pinned: false },
+  { id: 'liveChair', title: 'Live Chair Status', visible: true, pinned: false },
+];
+
+function WidgetWrapper({ id, widget, onPin, onHide, onDragStart, onDragOver, onDrop, onDragEnter, children, isPinned, fullWidth }) {
+  const { t, language } = useLanguage();
+  return (
+    <div
+      draggable={!isPinned}
+      onDragStart={(e) => onDragStart(e, id)}
+      onDragOver={onDragOver}
+      onDragEnter={(e) => onDragEnter(e, id)}
+      onDrop={(e) => onDrop(e, id)}
+      className={`relative group h-full flex flex-col ${isPinned ? 'col-span-full' : (fullWidth ? 'xl:col-span-2' : '')}`}
+    >
+      <DashboardCard className={`flex flex-col h-full ${isPinned ? 'min-h-[400px]' : ''}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {!isPinned && (
+              <div className="cursor-grab active:cursor-grabbing text-[#c59bb0] hover:text-[#ea4f93]">
+                <GripHorizontal size={18} />
+              </div>
+            )}
+            <h3 className={`min-w-0 font-bold text-[#e14f91] ${isPinned ? 'text-[18px]' : 'text-sm'}`}>
+              {t("receptionist.dashboard.widgets." + id) || widget.title}
+            </h3>
+          </div>
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onPin(id)}
+              className="p-1.5 text-[#c59bb0] hover:text-[#7a57d9] hover:bg-[#f2f0ff] rounded-md transition-colors"
+              title={isPinned ? t("adminDashboard.widgetActions.unpin") || "Unpin widget" : t("adminDashboard.widgetActions.pin") || "Pin to top"}
+            >
+              {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+            </button>
+            <button
+              onClick={() => onHide(id)}
+              className="p-1.5 text-[#c59bb0] hover:text-[#ea4f93] hover:bg-[#fff2f8] rounded-md transition-colors"
+              title={t("adminDashboard.widgetActions.hide") || "Hide widget"}
+            >
+              <EyeOff size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {children}
+        </div>
+      </DashboardCard>
+    </div>
+  );
+}
+
 export function ReceptionistDashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+
+  const formatDisplay = (s) => {
+    switch (s) {
+      case "Checked In":
+      case "CheckedIn":
+        return language === "vi" ? "Đã check in" : "Checked In";
+      case "In Progress":
+      case "InProgress":
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
+      case "Pending":
+        return language === "vi" ? "Đang chờ" : "Pending";
+      case "Confirmed":
+      case "Approved":
+        return language === "vi" ? "Đã xác nhận" : "Approved";
+      case "Completed":
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "ServiceCompleted":
+        return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
+      case "Rejected":
+        return language === "vi" ? "Đã từ chối" : "Rejected";
+      case "Cancelled":
+      case "Canceled":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
+      case "ReschedulePending":
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+      case "RescheduleSuggested":
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      case "All":
+        return language === "vi" ? "Tất cả" : "All";
+      default:
+        return s;
+    }
+  };
+
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const selectedDateStr = selectedDate.format("YYYY-MM-DD");
+
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem('receptionistDashboardWidgets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return defaultWidgets;
+  });
+
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('receptionistDashboardWidgets', JSON.stringify(widgets));
+  }, [widgets]);
+
+  const { data: dashboardData } = useReceptionistDashboard(user?.salonId, selectedDateStr);
+
+  const { data: walkInQueueData } = useWalkInQueue(user?.salonId);
+  const { data: waitlistData } = useWaitlist(user?.salonId);
+
+  const todayStr = selectedDateStr;
+  const [dashboardStaff, setDashboardStaff] = useState([]);
+  const [chairsStatus, setChairsStatus] = useState([]);
+
+  useEffect(() => {
+    if (!user?.salonId) return;
+
+    const loadChairs = async () => {
+      try {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const atDate = `${year}-${month}-${day}`;
+
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const atTime = `${hours}:${minutes}:${seconds}`;
+
+        const data = await dashboardService.getChairsStatus(user.salonId, atDate, atTime);
+        setChairsStatus(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load chairs status", err);
+      }
+    };
+
+    loadChairs();
+    const intervalId = setInterval(loadChairs, 30000);
+    return () => clearInterval(intervalId);
+  }, [user?.salonId]);
+
+  useEffect(() => {
+    if (!user?.salonId || !todayStr) return;
+
+    const loadStaff = async () => {
+      try {
+        const salonId = user.salonId;
+        const res = await receptionistWalkInBookingService.getAvailableArtists(salonId);
+        const allArtists = Array.isArray(res) ? res : res?.data?.items || res?.items || res?.data || [];
+
+        const staffWithSchedulePromises = allArtists.map(async (artist, idx) => {
+          try {
+            const artistId = artist.nailArtistId || artist.id;
+            if (!artistId) return null;
+
+            const scheduleRes = await receptionistWalkInBookingService.getArtistSchedule(artistId, todayStr, todayStr);
+            const schedules = Array.isArray(scheduleRes) ? scheduleRes : scheduleRes?.data || [];
+
+            const isOffToday = !schedules || schedules.length === 0;
+            return { artist, idx, isOffToday };
+          } catch (err) {
+            console.warn(`Could not fetch schedule for artist ${artist.nailArtistId || artist.id}:`, err);
+          }
+          return { artist, idx, isOffToday: true };
+        });
+
+        const staffWithStatus = (await Promise.all(staffWithSchedulePromises)).filter(Boolean);
+        // const { t, language } = useLanguage();
+
+        const displayData = staffWithStatus.map((s, index) => {
+          const c = s.artist;
+          const artistId = c.nailArtistId || c.id || index;
+          const name = c.account
+            ? `${c.account.firstName || ""} ${c.account.lastName || ""}`.trim()
+            : (c.firstName ? `${c.firstName} ${c.lastName}`.trim() : (c.name || "Thợ Nail"));
+
+          const isOffToday = s.isOffToday;
+
+          return [
+            name,
+            getInitials(name),
+            // isOffToday ? (t('receptionist.dashboard.widgets.offToDay')) : (t('receptionist.dashboard.widgets.available')),
+            isOffToday ? "Off Today" : "Available",
+            // isOffToday ? (language === 'vi' ? "Nghỉ hôm nay" : "Off Today") : language === 'vi' ? "Có sẵn" : "Available",
+            getAvatarTone(index),
+            isOffToday ? "bg-[#ffeaf2] text-[#ef5a95]" : "bg-[#e8f8ed] text-[#30a364]",
+            isOffToday,
+            artistId
+          ];
+        });
+
+        setDashboardStaff(displayData);
+      } catch (err) {
+        console.error("Failed to load staff for dashboard", err);
+      }
+    };
+    loadStaff();
+  }, [user?.salonId, todayStr]);
+
   const greetingName = user?.fullName?.split(" ")[0] ?? "Jessica";
+
   const [appointmentQuery, setAppointmentQuery] = useState("");
   const [isAppointmentsLoading, setIsAppointmentsLoading] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState("");
@@ -284,6 +508,13 @@ export function ReceptionistDashboardPage() {
   const [isVerifyingQr, setIsVerifyingQr] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const [lastScannedCode, setLastScannedCode] = useState("");
+
+  const [selectedChair, setSelectedChair] = useState(null);
+  const [isChairModalOpen, setIsChairModalOpen] = useState(false);
+
+  const [selectedQueueItem, setSelectedQueueItem] = useState(null);
+  const [isQueueDetailModalOpen, setIsQueueDetailModalOpen] = useState(false);
+
   const scannerVideoRef = useRef(null);
   const scannerCanvasRef = useRef(null);
   const scannerStreamRef = useRef(null);
@@ -298,17 +529,74 @@ export function ReceptionistDashboardPage() {
     ? ""
     : "Camera access requires a secure browser context with webcam support.";
 
+  const handleDragStart = (e, id) => {
+    setDraggedWidgetId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault();
+    if (!draggedWidgetId || draggedWidgetId === targetId) return;
+
+    setWidgets((prev) => {
+      const newWidgets = [...prev];
+      const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+      const targetIndex = newWidgets.findIndex(w => w.id === targetId);
+
+      const [draggedItem] = newWidgets.splice(draggedIndex, 1);
+      newWidgets.splice(targetIndex, 0, draggedItem);
+      return newWidgets;
+    });
+    setDraggedWidgetId(null);
+  };
+
+  const handleDragEnter = (e, id) => {
+    e.preventDefault();
+  };
+
+  const togglePin = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, pinned: !w.pinned } : w));
+  };
+
+  const toggleHide = (id) => {
+    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
+  };
+
+  const resetLayout = () => {
+    setWidgets(defaultWidgets);
+  };
+
   useEffect(() => {
-    const today = getTodayDateParam();
     const timerId = window.setTimeout(() => {
       void (async () => {
         setIsAppointmentsLoading(true);
         setAppointmentsError("");
 
         try {
-          const bookings = await fetchReceptionistBookings(today);
+          const [bookings, customersResponse] = await Promise.all([
+            fetchReceptionistBookings(selectedDateStr),
+            fetchCustomersList(1, 1000).catch(() => ({ items: [] }))
+          ]);
+          
+          const customers = customersResponse?.items || [];
+          const customerMap = new Map();
+          customers.forEach(c => customerMap.set(c.userId, c));
+
           const normalizedRows = Array.isArray(bookings)
-            ? bookings.map(normalizeAppointmentRow)
+            ? bookings.map((b, index) => {
+                const customerInfo = customerMap.get(b.customerId || b.customer?.id || b.customer?.userId);
+                return {
+                  ...normalizeAppointmentRow(b, index),
+                  phone: customerInfo?.phone || "",
+                  email: customerInfo?.email || "",
+                };
+              })
             : [];
           setAppointmentRows(normalizedRows);
         } catch (loadError) {
@@ -322,7 +610,7 @@ export function ReceptionistDashboardPage() {
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [selectedDateStr]);
 
   const filteredAppointmentRows = useMemo(() => {
     const normalizedQuery = appointmentQuery.trim().toLowerCase();
@@ -332,7 +620,7 @@ export function ReceptionistDashboardPage() {
     }
 
     return appointmentRows.filter((row) =>
-      [row.bookingId, row.customer, row.service, row.staff, row.status]
+      [row.bookingId, row.customer, row.service, row.staff, row.status, row.phone, row.email]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
@@ -362,7 +650,7 @@ export function ReceptionistDashboardPage() {
     try {
       const updatedBooking = await manualCheckInReceptionistBooking(bookingId);
       updateAppointmentRow(updatedBooking);
-      toast.success(`Customer for booking ${bookingId} checked in successfully.`);
+      toast.success(t("receptionist.bookings.checkinSuccess") || `Checked in successfully.`);
     } catch (actionError) {
       const message =
         actionError instanceof Error ? actionError.message : "Failed to check in booking.";
@@ -370,32 +658,47 @@ export function ReceptionistDashboardPage() {
     }
   };
 
+  const handleCheckout = (bookingId) => {
+    navigate(getReceptionistBookingCheckoutRoute(bookingId));
+  };
+
   const getActionItems = (bookingId, status) => [
     {
       key: "view",
-      label: "View Booking",
+      label: language === "vi" ? "Xem lịch hẹn" : "View Booking",
       icon: Eye,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
     ...(canManualCheckIn(status)
       ? [
         {
-          key: "check-in",
-          label: "Check In",
+          key: "checkin",
+          label: t("receptionist.dashboard.checkinBtn") || "Check In",
           icon: UserCheck,
           onSelect: () => void handleManualCheckIn(bookingId),
         },
       ]
       : []),
+    ...(isReadyForCheckout(status)
+      ? [
+        {
+          key: "checkout",
+          label: t("receptionist.dashboard.checkoutBtn") || "Checkout",
+          icon: SquareCheckBig,
+          className: "text-[#4c71d9]",
+          onSelect: () => handleCheckout(bookingId),
+        },
+      ]
+      : []),
     {
       key: "reschedule",
-      label: "Reschedule",
+      label: t("receptionist.bookings.reschedule") || "Reschedule",
       icon: CalendarClock,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
     {
       key: "edit",
-      label: "Edit Booking",
+      label: t("receptionist.bookings.editBooking") || "Edit Booking",
       icon: PencilLine,
       onSelect: () => navigate(getReceptionistBookingDetailRoute(bookingId)),
     },
@@ -403,57 +706,68 @@ export function ReceptionistDashboardPage() {
 
   const appointmentColumns = useMemo(() => ([
     {
-      title: "Time",
+      title: language === "vi" ? "Thời gian" : "Time",
       dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-semibold text-[#ea4f93]">{value}</span>,
+      width: 170,
+      sorter: (a, b) => (a.rawStartTime || "").localeCompare(b.rawStartTime || ""),
+      defaultSortOrder: 'ascend',
+      render: (value) => <span className="text-xs font-semibold text-[#ea4f93] whitespace-nowrap">{value}</span>,
     },
     {
-      title: "Customer",
+      title: language === "vi" ? "Khách hàng" : "Customer",
       key: "customer",
+      sorter: (a, b) => a.customer.localeCompare(b.customer),
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${row.avatarTone}`}>
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${row.avatarTone}`}>
             {getInitials(row.customer)}
           </div>
-          <p className="text-xs font-bold text-[#432744]">{row.customer}</p>
+          <div>
+            <p className="text-xs font-bold text-[#432744] whitespace-nowrap">{row.customer}</p>
+            {row.phone && <p className="mt-1 text-[10px] font-semibold text-[#aa8a99]">{row.phone}</p>}
+          </div>
         </div>
       ),
     },
+    // {
+    //   title: "Service",
+    //   dataIndex: "service",
+    //   key: "service",
+    //   render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+    // },
     {
-      title: "Service",
-      dataIndex: "service",
-      key: "service",
-      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
-    },
-    {
-      title: "Staff",
+      title: language === "vi" ? "Nhân viên" : "Staff",
       dataIndex: "staff",
       key: "staff",
-      render: (value) => <span className="text-xs text-[#584654]">{value}</span>,
+      sorter: (a, b) => a.staff.localeCompare(b.staff),
+      render: (value) => <span className="text-xs text-[#584654] whitespace-nowrap">{value}</span>,
     },
     {
-      title: "Status",
+      title: language === "vi" ? "Trạng thái" : "Status",
       dataIndex: "status",
       key: "status",
+      width: 150,
+      sorter: (a, b) => a.status.localeCompare(b.status),
       render: (value, row) => (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${row.tone}`}>
-          {value}
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${row.tone}`}>
+          {formatDisplay(value)}
         </span>
       ),
     },
     {
-      title: "Action",
+      title: language === "vi" ? "Thao tác" : "Action",
       key: "action",
+      width: 100,
       render: (_, row) => (
         <ActionDropdown
-          label="Action"
+          label={language === "vi" ? "Thao tác" : "Action"}
           items={getActionItems(row.bookingId, row.status)}
           buttonClassName="px-3 py-1.5 text-[11px]"
         />
       ),
     },
-  ]), [getActionItems]);
+  ]), [getActionItems, formatDisplay, language]);
 
   useEffect(() => {
     if (!isScannerOpen) {
@@ -510,7 +824,7 @@ export function ReceptionistDashboardPage() {
         const message =
           verificationError instanceof Error
             ? verificationError.message
-            : "Unable to verify the scanned QR code.";
+            : language === "vi" ? "Không thể xác minh mã QR đã quét." : "Unable to verify the scanned QR code.";
         setScannerError(message);
         toast.error(message);
         isQrHandledRef.current = false;
@@ -602,7 +916,7 @@ export function ReceptionistDashboardPage() {
         });
       } catch (cameraError) {
         const message =
-          cameraError instanceof Error ? cameraError.message : "Unable to access webcam for QR scanning.";
+          cameraError instanceof Error ? cameraError.message : language === "vi" ? "Không thể truy cập webcam để quét mã QR." : "Unable to access webcam for QR scanning.";
         setScannerError(message);
         toast.error(message);
       } finally {
@@ -621,230 +935,583 @@ export function ReceptionistDashboardPage() {
     };
   }, [isScannerOpen, navigate, scannerSupportMessage]);
 
+  const displayMetrics = dashboardData ? [
+    {
+      label: t("receptionist.dashboard.walkInQueueSize"),
+      value: String(dashboardData.currentWalkInQueueSize || "0"),
+      note: t("receptionist.dashboard.clearIn", { mins: formatDurationMinutes(dashboardData.estimatedTimeToClearQueueMins || 0, language) }),
+      icon: UserRound,
+      color: "#ef4f92",
+    },
+    {
+      label: t("receptionist.dashboard.appointmentsLeft"),
+      value: String(dashboardData.remainingAppointmentsToday || "0"),
+      note: t("receptionist.dashboard.today"),
+      icon: CalendarClock,
+      color: "#8d54ef",
+    },
+    {
+      label: t("receptionist.dashboard.waitlistSize"),
+      value: String(dashboardData.currentWaitlistSize || "0"),
+      note: t("receptionist.dashboard.avgWait", { mins: formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language) }),
+      icon: Clock3,
+      color: "#ff7a3d",
+    },
+    {
+      label: t("receptionist.dashboard.staffOnDuty"),
+      value: (dashboardData.staffOnDutyText || "").split(" ")[0] || "0",
+      note: language === "vi"
+        ? `${(dashboardData.staffOnDutyText || "").split(" ")[0] || 0} ${t("receptionist.dashboard.artists")}`
+        : dashboardData.staffOnDutyText || `0 ${t("receptionist.dashboard.artists")}`,
+      icon: Users,
+      color: "#1da989",
+    },
+  ] : [];
+
+  const displayQuickStatus = dashboardData ? [
+    [t("receptionist.dashboard.widgets.walkInQueue"), String(dashboardData.currentWalkInQueueSize || "0")],
+    [t("receptionist.dashboard.widgets.waitlist"), String(dashboardData.currentWaitlistSize || "0")],
+    [t("receptionist.dashboard.avgWait", { mins: formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language) }), formatDurationMinutes(dashboardData.averageWaitTimeMinutes || 0, language)],
+    [t("receptionist.dashboard.appointmentsLeft"), String(dashboardData.remainingAppointmentsToday || "0")],
+    [t("receptionist.dashboard.staffOnDuty"), dashboardData.staffOnDutyText || "N/A"],
+  ] : [];
+
+  const activeWaitlistItems = waitlistData?.items || dashboardData?.liveWaitlist || [];
+  const displayQueue = activeWaitlistItems.map(w => [
+    typeof w.customerName === 'object' ? w.customerName?.customerName || "Walk-in" : (w.customerName || "Walk-in"),
+    `Pos: ${w.position}`,
+    formatDurationMinutes(w.estimatedDuration || w.estimatedWait || 0, language)
+  ]);
+
+  const displayStaff = dashboardStaff;
+
+  const displayArrivals = dashboardData?.upcomingArrivals?.length ?
+    dashboardData.upcomingArrivals.map((u, idx) => {
+      const cName = typeof u.customerName === 'object' ? u.customerName?.customerName || 'Customer' : (u.customerName || 'Customer');
+      return [
+        cName,
+        u.assignedArtistName,
+        new Date(u.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " | Upcoming",
+        getInitials(cName),
+        getAvatarTone(idx)
+      ];
+    }) : [];
+
+  const displayWalkInQueue = (walkInQueueData || dashboardData?.liveWalkInQueue || [])
+    .slice()
+    .sort((a, b) => (a.queuePosition || 999) - (b.queuePosition || 999));
+  const displayMasterSchedule = dashboardData?.masterSalonSchedule || [];
+  const displayAlerts = dashboardData?.noShowLateAlerts || [];
+
+  const renderWidgetContent = (id) => {
+    switch (id) {
+      case 'appointments':
+        return (
+          <>
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-end mb-4">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] w-auto">
+                <label className="flex h-9 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
+                  <Search size={16} className="text-[#3f2f39]" />
+                  <input
+                    type="text"
+                    value={appointmentQuery}
+                    onChange={(event) => setAppointmentQuery(event.target.value)}
+                    placeholder={language === "vi" ? "Tìm kiếm khách hàng theo số điện thoại, tên..." : "Search customer by phone number, name, ..."}
+                    className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white hover:bg-[#7a57d9] hover:text-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap"
+                >
+                  <UserCheck size={15} />
+                  Check-in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.receptionistCustomers)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] hover:bg-[#eb5a98] hover:text-white px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap"
+                >
+                  <Plus size={15} />
+                  {language === "vi" ? "Tạo khách vãng lai" : "Create Walk-In"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3 md:hidden">
+              {isAppointmentsLoading ? (
+                <div className="flex min-h-40 items-center justify-center gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-sm font-medium text-[#b38a9f]">
+                  <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+                  {language === "vi" ? "Đang tải danh sách lịch hẹn hôm nay..." : "Loading today's appointments..."}
+                </div>
+              ) : appointmentsError ? (
+                <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
+                  {appointmentsError}
+                </div>
+              ) : paginatedAppointmentRows.length ? (
+                paginatedAppointmentRows.map((row) => (
+                  <MobileAppointmentCard
+                    key={row.id}
+                    row={row}
+                    actions={getActionItems(row.bookingId, row.status)}
+                    formatDisplay={formatDisplay}
+                  />
+                ))
+              ) : (
+                <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                  {language === "vi" ? "Không tìm thấy lịch hẹn nào cho hôm nay." : "No appointments found for today."}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 hidden md:block flex-1 overflow-auto">
+              <Table
+                rowKey="id"
+                columns={appointmentColumns}
+                dataSource={paginatedAppointmentRows}
+                loading={isAppointmentsLoading}
+                pagination={false}
+                size="middle"
+                scroll={{ x: "max-content" }}
+                locale={{ emptyText: appointmentsError || language === "vi" ? "Không tìm thấy lịch hẹn nào cho hôm nay." : "No appointments found for today." }}
+              />
+            </div>
+
+            {!isAppointmentsLoading && !appointmentsError && filteredAppointmentRows.length > 0 ? (
+              <div className="mt-4 flex flex-col gap-3 border-t border-[#f7e0ea] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-[#aa8a99]">
+                  {language === "vi" ? "Hiển thị " : "Showing "} {(appointmentPage - 1) * APPOINTMENTS_PAGE_SIZE + 1}
+                  {" - "}
+                  {Math.min(appointmentPage * APPOINTMENTS_PAGE_SIZE, filteredAppointmentRows.length)}
+                  {" of "}
+                  {filteredAppointmentRows.length} {language === "vi" ? "lịch hẹn" : "appointments"}
+                </p>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
+                    disabled={appointmentPage === 1}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === 1
+                      ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                      : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                      }`}
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="min-w-[84px] text-center text-xs font-bold text-[#7f6478]">
+                    {language === "vi" ? "Trang" : "Page"} {appointmentPage}/{appointmentTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
+                    disabled={appointmentPage === appointmentTotalPages}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${appointmentPage === appointmentTotalPages
+                      ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
+                      : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
+                      }`}
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </>
+        );
+
+      case 'walkInQueue':
+        return (
+          <div className="mt-2 space-y-3 flex-1 overflow-y-auto min-h-0">
+            {displayWalkInQueue.length > 0 ? (
+              displayWalkInQueue.map((item, index) => {
+                const guestName = typeof item.guestName === 'object' ? item.guestName?.customerName || 'Customer' : (item.guestName || 'Customer');
+                const requestNote = typeof item.requestNote === 'object' ? item.requestNote?.note || 'Walk-in request' : (item.requestNote);
+
+                // Convert arrivalTime to readable format (HH:mm)
+                const arrivalTimeStr = item.arrivalTime ? new Date(item.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+
+                // Determine status styling
+                const status = item.status || "Waiting";
+                let statusTone = "bg-[#fffbe6] text-[#faad14] border-[#ffe58f]";
+                let statusLabel = "Đang Đợi";
+
+                if (status.toLowerCase() === "called") {
+                  statusTone = "bg-[#e6f4ff] text-[#0066ff] border-[#91caff]";
+                  statusLabel = "Đã Gọi";
+                } else if (status.toLowerCase() === "done" || status.toLowerCase() === "completed") {
+                  statusTone = "bg-[#f6ffed] text-[#52c41a] border-[#b7eb8f]";
+                  statusLabel = "Hoàn Thành";
+                } else if (status.toLowerCase() === "in_service" || status.toLowerCase() === "inservice") {
+                  statusTone = "bg-[#f9f0ff] text-[#722ed1] border-[#d3adf7]";
+                  statusLabel = "Đang Phục Vụ";
+                }
+
+                return (
+                  <div
+                    key={item.queueId || `${guestName}-${index}`}
+                    onClick={() => { setSelectedQueueItem(item); setIsQueueDetailModalOpen(true); }}
+                    className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#F3E2EC] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(232,79,147,0.12)] cursor-pointer"
+                  >
+                    <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
+                      {/* Position Badge */}
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#E84F93] to-[#8B5CF6] text-sm font-black text-white shadow-md shadow-[#E84F93]/30 group-hover:scale-110 transition-transform">
+                          #{item.queuePosition || index + 1}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="text-[15px] font-bold text-[#2B182B] truncate">{guestName}</p>
+                          {item.isLateArrival && (
+                            <span className="rounded-full bg-[#FEF2F2] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#DC2626] border border-[#FEE2E2] flex-shrink-0">
+                              {language === "vi" ? "Trễ" : "Late"}
+                            </span>
+                          )}
+                          {item.assignedNailArtistId && (
+                            <span className="rounded-full bg-[#F5F3FF] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#7C3AED] border border-[#EDE9FE] flex-shrink-0">
+                              {language === "vi" ? "Có Thợ" : "Staff"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-xs">
+                          <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-md border border-[#D1FAE5]">
+                            <Clock3 size={11} /> {arrivalTimeStr}
+                          </span>
+                          <span className="text-[#9E8497] truncate" title={requestNote}>
+                            {requestNote}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-1 border-t border-[#F3E2EC] pt-3 sm:border-t-0 sm:pt-0 shrink-0">
+                      <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border whitespace-nowrap ${statusTone}`}>
+                        {statusLabel}
+                      </span>
+                      {status.toLowerCase() !== "done" && status.toLowerCase() !== "completed" && (
+                        <p className="text-lg font-black text-[#E84F93] leading-none whitespace-nowrap mt-1 sm:mt-0">
+                          {formatDurationMinutes(item.estimatedWait || 0, language)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-8 text-center text-sm font-medium text-[#aa8a99]">
+                {language === "vi" ? "Hiện không có khách vãng lai nào đang chờ." : "No walk-ins currently waiting."}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'waitlist':
+        return (
+          <div className="mt-2 space-y-3 flex-1 overflow-y-auto min-h-0">
+            {displayQueue.length > 0 ? (
+              displayQueue.map(([name, service, wait], index) => (
+                <div
+                  key={`${name}-${wait}`}
+                  className="group relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-lg border border-[#f7e0ea] bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(245,158,11,0.12)] cursor-pointer"
+                >
+                  <div className="flex items-start gap-3 w-full sm:w-auto overflow-hidden">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-sm font-black text-white shadow-md shadow-[#F59E0B]/30 group-hover:scale-110 transition-transform">
+                        #{index + 1}
+                      </div>
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <p className="text-[15px] font-bold text-[#2B182B] truncate">{name}</p>
+                      <div className="mt-1 flex items-center">
+                        <span className="truncate text-[11px] font-medium text-[#9E8497] bg-[#F3F4F6] inline-flex px-2 py-0.5 rounded-md border border-[#E5E7EB]" title={service}>
+                          {service}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-1 border-t border-[#F3E2EC] pt-3 sm:border-t-0 sm:pt-0 shrink-0">
+                    <span className="inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border bg-[#fffbe6] text-[#faad14] border-[#ffe58f] whitespace-nowrap">
+                      {language === "vi" ? "Đang Đợi" : "Waiting"}
+                    </span>
+                    <p className="text-lg font-black text-[#F59E0B] leading-none whitespace-nowrap mt-1 sm:mt-0">
+                      {formatDurationMinutes(Number(wait.replace('m', '')) || 0, language)}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-8 text-center text-sm font-medium text-[#aa8a99]">
+                {language === "vi" ? "Hiện không có khách hàng nào trong danh sách chờ." : "No customers currently on the waitlist."}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'liveChair':
+        return (
+          <div className="mt-2 flex-1 overflow-auto min-h-0">
+            {chairsStatus.length > 0 ? (
+              <ChairMap
+                chairs={chairsStatus.map(c => ({ ...c, name: c.chairName, currentCustomer: c.occupiedByCustomerName }))}
+                renderCell={(cellName, chair) => {
+                  if (chair) {
+                    return (
+                      <div
+                        key={cellName}
+                        onClick={() => {
+                          setSelectedChair(chair);
+                          setIsChairModalOpen(true);
+                        }}
+                        className="flex flex-col items-center justify-center gap-1 w-[90px] h-[90px] rounded-2xl border-2 transition-all duration-300 bg-[#fff8fb] border-pink-200 shadow-sm hover:shadow-md cursor-pointer hover:scale-105"
+                      >
+                        <div
+                          className={`flex shrink-0 items-center justify-center rounded-full text-sm font-bold ${chair.isOccupied ? "text-green-400" : "text-[#eb5b92]"}`}
+                        >
+                          <Armchair size={16} />
+                        </div>
+                        <p className="mt-1 text-[11px] font-bold text-[#432744] truncate w-full text-center px-1">{chair.chairName || "Chair"}</p>
+                        {chair.isOccupied ? (
+                          <div className="flex flex-col items-center leading-tight">
+                            <span className="inline-flex rounded-full bg-[#ffeaf2] px-2 py-0.5 text-[9px] font-bold text-[#ef5a95]">
+                              {language === "vi" ? "Đang sử dụng" : "Occupied"}
+                            </span>
+                            <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
+                              {chair.occupiedByCustomerName || 'Customer'}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center leading-tight">
+                            <span className="inline-flex rounded-full bg-[#e8f8ed] px-2 py-0.5 text-[9px] font-bold text-[#30a364]">
+                              {language === "vi" ? "Trống" : "Available"}
+                            </span>
+                            <span className="text-[9px] text-[#aa8a99] truncate w-20 text-center mt-0.5">
+                              --
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div
+                        key={cellName}
+                        className="flex flex-col items-center justify-center w-[90px] h-[90px] rounded-2xl border-2 border-dashed border-slate-200 bg-white/50 opacity-40 pointer-events-none"
+                      >
+                        <span className="text-[10px] font-bold text-slate-300">{cellName}</span>
+                      </div>
+                    );
+                  }
+                }}
+              />
+            ) : (
+              <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                {language === "vi" ? "Không có dữ liệu trạng thái ghế." : "No chair status data available."}
+              </div>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+
   return (
-    <section className="flex min-h-full w-full min-w-0 flex-col gap-5 overflow-x-hidden bg-[linear-gradient(180deg,#fff8fb_0%,#fff4f8_100%)]">
-      <div className="flex w-full min-w-0 flex-col gap-4 rounded-[28px] border border-[#f5d7e4] bg-[#fff7fb] p-3 shadow-[0_16px_38px_rgba(236,72,153,0.05)] sm:p-4 md:p-5">
-        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-lg font-black text-[#ea4f93]">
-              Good Morning, {greetingName}
-              <span className="ml-1 text-[#f49fc2]">*</span>
+    <section className="flex min-h-screen flex-col text-slate-800 font-sans">
+      <div className="w-full space-y-6 p-4 md:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-black text-[#e14f91]">{t("receptionDesk") || "Receptionist Dashboard"}</h1>
+            <p className="text-sm font-semibold text-[#c59bb0]">
+              {language === "vi"
+                ? `${new Date().getHours() < 12 ? "Chào buổi sáng" : "Chào buổi chiều"}, ${greetingName}!`
+                : `Good ${new Date().getHours() < 12 ? "morning" : "afternoon"}, ${greetingName}!`}
             </p>
-            <p className="mt-1 break-words text-xs text-[#bc8ca2]">
-              Saturday, July 12, 2025 | Salon opens at 9:00 AM
-            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <DatePicker
+              value={selectedDate}
+              onChange={(date) => setSelectedDate(date || dayjs())}
+              allowClear={false}
+              format="YYYY-MM-DD"
+              className="h-10 rounded-xl border-[#f4d6e2]"
+            />
+            <Dropdown
+              menu={{
+                items: [
+                  ...widgets.map(w => ({
+                    key: w.id,
+                    label: (
+                      <div className="flex items-center justify-between min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                        <span className="font-medium text-slate-700">{t("receptionist.dashboard.widgets." + w.id) || w.title}</span>
+                        <Button size="small" type="text" onClick={(e) => { e.stopPropagation(); toggleHide(w.id); }}>
+                          {w.visible ? <Eye size={14} className="text-emerald-500" /> : <EyeOff size={14} className="text-slate-400" />}
+                        </Button>
+                      </div>
+                    )
+                  })),
+                  { type: 'divider' },
+                  {
+                    key: 'reset',
+                    label: <div className="text-red-500 text-center font-bold">{t("receptionist.dashboard.resetLayout") || "Reset Layout"}</div>,
+                    onClick: resetLayout
+                  }
+                ]
+              }}
+              trigger={['click']}
+            >
+              <Button className="h-10 rounded-xl border-[#f4d6e2] text-[#e14f91] font-bold bg-white hover:bg-pink-50 flex items-center gap-2 shadow-sm">
+                <Settings2 size={16} />
+                {t("receptionist.dashboard.customize") || "Customize"}
+              </Button>
+            </Dropdown>
           </div>
         </div>
 
-        <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_280px]">
-          <div className="min-w-0 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {RECEPTION_METRICS.map((item) => (
-                <MetricCard key={item.label} item={item} />
-              ))}
+        <div className="flex w-full min-w-0 flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {displayMetrics.map((item) => (
+              <MetricCard key={item.label} item={item} />
+            ))}
+          </div>
+          <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[minmax(0,1.72fr)_320px]">
+            <div className="min-w-0 space-y-4">
+
+              <div className="grid w-full min-w-0 gap-4 grid-cols-1 lg:grid-cols-2">
+                {widgets
+                  .filter(w => w.pinned && w.visible)
+                  .map(w => (
+                    <WidgetWrapper
+                      key={w.id}
+                      id={w.id}
+                      widget={w}
+                      onPin={togglePin}
+                      onHide={toggleHide}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onDragEnter={handleDragEnter}
+                      isPinned={true}
+                      fullWidth={['appointments', 'liveChair'].includes(w.id)}
+                    >
+                      {renderWidgetContent(w.id)}
+                    </WidgetWrapper>
+                  ))}
+                {widgets
+                  .filter(w => !w.pinned && w.visible)
+                  .map(w => (
+                    <WidgetWrapper
+                      key={w.id}
+                      id={w.id}
+                      widget={w}
+                      onPin={togglePin}
+                      onHide={toggleHide}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onDragEnter={handleDragEnter}
+                      isPinned={false}
+                      fullWidth={['appointments', 'liveChair'].includes(w.id)}
+                    >
+                      {renderWidgetContent(w.id)}
+                    </WidgetWrapper>
+                  ))}
+              </div>
+              <DashboardCard>
+                <SectionTitle icon={UserRound} title={t("receptionist.dashboard.widgets.staffAvailability")} />
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {displayStaff.length > 0 ? (
+                    displayStaff.map(([name, initials, status, avatarTone, badgeTone, isOffToday, artistId], idx) => (
+                      <div
+                        key={artistId || `${name}-${idx}`}
+                        className={`rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center ${isOffToday ? "opacity-50 grayscale" : ""}`}
+                      >
+                        <div
+                          className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ${avatarTone}`}
+                        >
+                          {initials}
+                        </div>
+                        <p className={`mt-3 text-sm font-bold ${isOffToday ? "text-gray-500" : "text-[#432744]"}`}>{name}</p>
+                        <span
+                          className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeTone}`}
+                        >
+                          {isOffToday ? (language === "vi" ? "Nghỉ hôm nay" : "Off Today") : (language === "vi" ? "Sẵn sàng" : "Available")}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      {language === "vi" ? "Không có dữ liệu về tình trạng thái làm việc của nhân viên." : "No staff availability data available."}
+                    </div>
+                  )}
+                </div>
+              </DashboardCard>
             </div>
 
-            <DashboardCard>
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <SectionTitle icon={CalendarClock} title="Today's Appointments" />
-                <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] xl:w-auto xl:min-w-[720px]">
-                  <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[#f4d6e2] bg-white px-4 text-sm text-[#c59bb0] sm:min-w-[0] xl:min-w-[380px]">
-                    <Search size={16} className="text-[#3f2f39]" />
-                    <input
-                      type="text"
-                      value={appointmentQuery}
-                      onChange={(event) => setAppointmentQuery(event.target.value)}
-                      placeholder="Search customer by phone number, name, ..."
-                      className="w-full bg-transparent text-sm text-[#5c4557] outline-none placeholder:text-[#c7a0b2]"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsScannerOpen(true)}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#e7dcff] bg-white px-4 text-sm font-bold text-[#7a57d9] shadow-[0_10px_24px_rgba(122,87,217,0.1)] whitespace-nowrap sm:min-w-[140px]"
-                  >
-                    <UserCheck size={15} />
-                    Check-in
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate(ROUTES.receptionistBookingsCreate)}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#f3cfe0] bg-[#fff3f8] px-4 text-sm font-bold text-[#eb5a98] whitespace-nowrap sm:min-w-[170px]"
-                  >
-                    <Plus size={15} />
-                    Create Walk-In
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3 md:hidden">
-                {isAppointmentsLoading ? (
-                  <div className="flex min-h-40 items-center justify-center gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-sm font-medium text-[#b38a9f]">
-                    <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                    Loading today's appointments...
-                  </div>
-                ) : appointmentsError ? (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#d14c84]">
-                    {appointmentsError}
-                  </div>
-                ) : paginatedAppointmentRows.length ? (
-                  paginatedAppointmentRows.map((row) => (
-                    <MobileAppointmentCard
-                      key={row.id}
-                      row={row}
-                      actions={getActionItems(row.bookingId, row.status)}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
-                    No appointments found for today.
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 hidden md:block">
-                <Table
-                  rowKey="id"
-                  columns={appointmentColumns}
-                  dataSource={paginatedAppointmentRows}
-                  loading={isAppointmentsLoading}
-                  pagination={false}
-                  scroll={{ x: 960 }}
-                  locale={{ emptyText: appointmentsError || "No appointments found for today." }}
-                />
-              </div>
-
-              {!isAppointmentsLoading && !appointmentsError && filteredAppointmentRows.length > 0 ? (
-                <div className="mt-4 flex flex-col gap-3 border-t border-[#f7e0ea] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-xs text-[#aa8a99]">
-                    Showing {(appointmentPage - 1) * APPOINTMENTS_PAGE_SIZE + 1}
-                    {" - "}
-                    {Math.min(appointmentPage * APPOINTMENTS_PAGE_SIZE, filteredAppointmentRows.length)}
-                    {" of "}
-                    {filteredAppointmentRows.length} appointments
-                  </p>
-                  <div className="flex items-center gap-2 self-end sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={() => setAppointmentPage(Math.max(1, appointmentPage - 1))}
-                      disabled={appointmentPage === 1}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                        appointmentPage === 1
-                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
-                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                      }`}
-                    >
-                      <ChevronLeft size={15} />
-                    </button>
-                    <span className="min-w-[84px] text-center text-xs font-bold text-[#7f6478]">
-                      Page {appointmentPage}/{appointmentTotalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setAppointmentPage(Math.min(appointmentTotalPages, appointmentPage + 1))}
-                      disabled={appointmentPage === appointmentTotalPages}
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition ${
-                        appointmentPage === appointmentTotalPages
-                          ? "cursor-not-allowed border-[#f2dce6] bg-[#fff7fb] text-[#d4b5c4]"
-                          : "border-[#f2bfd4] bg-white text-[#ea4f93] hover:bg-[#fff2f8]"
-                      }`}
-                    >
-                      <ChevronRight size={15} />
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </DashboardCard>
-
-            <div className="grid w-full min-w-0 gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            <aside className="min-w-0 space-y-4">
               <DashboardCard>
-                <SectionTitle icon={Clock3} title="Waiting Queue" />
+                <SectionTitle icon={AlertCircle} title={t("receptionist.dashboard.widgets.lateNoShowAlerts")} />
                 <div className="mt-4 space-y-3">
-                  {WAITING_QUEUE.map(([name, service, wait], index) => (
-                    <div
-                      key={`${name}-${wait}`}
-                      className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ea4f93] text-[10px] font-extrabold text-white">
-                          {index + 1}
+                  {displayAlerts.length > 0 ? (
+                    displayAlerts.map((alert, index) => (
+                      <div
+                        key={alert.bookingId || index}
+                        className="flex flex-col gap-3 rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ef4f92] text-[10px] font-bold text-white">
+                            !
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#432744]">
+                              {typeof alert.customerName === 'object' ? alert.customerName?.customerName || 'Customer' : (alert.customerName || 'Customer')}
+                            </p>
+                            <p className="mt-1 text-[11px] font-semibold text-[#ef4f92]">
+                              {language === "vi"
+                                ? `Trễ ${formatDurationMinutes(alert.minutesLate || 0, language)}`
+                                : `${formatDurationMinutes(alert.minutesLate || 0, language)} late`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      {language === "vi" ? "Hiện không có thông báo trễ nào." : "No late alerts at this time."}
+                    </div>
+                  )}
+                </div>
+              </DashboardCard>
+              <DashboardCard>
+                <SectionTitle icon={Bell} title={t("receptionist.dashboard.widgets.recentCheckinsAndArrivals")} />
+                <div className="mt-4 space-y-4">
+                  {displayArrivals.length > 0 ? (
+                    displayArrivals.map(([name, service, time, initials, bg], index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${bg}`}
+                        >
+                          {initials}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-[#432744]">{name}</p>
-                          <p className="mt-1 break-words text-[11px] text-[#b28a9f]">{service}</p>
+                          <p className="mt-1 truncate text-xs text-[#aa8a99]">
+                            {service} • <span className="font-semibold text-[#ef4f92]">{time}</span>
+                          </p>
                         </div>
                       </div>
-                      <div className="text-left sm:text-right">
-                        <p className="text-sm font-extrabold text-[#ea4f93]">{wait}</p>
-                        <p className="text-[10px] text-[#c59bb0]">waiting</p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-6 text-center text-sm text-[#aa8a99]">
+                      {language === "vi" ? "Hiện không có khách check-in nào trong hôm nay." : "No upcoming arrivals today."}
                     </div>
-                  ))}
+                  )}
                 </div>
               </DashboardCard>
-
-              <DashboardCard>
-                <SectionTitle icon={UserRound} title="Staff Availability" />
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {STAFF_AVAILABILITY.map(([name, initials, status, avatarTone, badgeTone]) => (
-                    <div
-                      key={name}
-                      className="rounded-[18px] border border-[#f7e0ea] bg-[#fff8fb] px-4 py-4 text-center"
-                    >
-                      <div
-                        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-extrabold text-white ${avatarTone}`}
-                      >
-                        {initials}
-                      </div>
-                      <p className="mt-3 text-sm font-bold text-[#432744]">{name}</p>
-                      <span
-                        className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${badgeTone}`}
-                      >
-                        {status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </DashboardCard>
-            </div>
+            </aside>
           </div>
-
-          <aside className="min-w-0 space-y-4">
-            <DashboardCard>
-              <SectionTitle icon={Sparkles} title="Quick Status" />
-              <div className="mt-4 space-y-4">
-                {QUICK_STATUS.map(([label, value]) => (
-                  <div key={label} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <span className="break-words text-[#9d8191]">{label}</span>
-                    <span className="font-extrabold text-[#ea4f93]">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </DashboardCard>
-
-            <DashboardCard>
-              <SectionTitle icon={Bell} title="Recent Check-ins" />
-              <div className="mt-4 space-y-4">
-                {RECENT_CHECK_INS.map(([name, service, meta, initials, tone]) => (
-                  <div key={`${name}-${meta}`} className="flex gap-3">
-                    <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white ${tone}`}
-                    >
-                      {initials}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[#432744]">{name}</p>
-                      <p className="mt-0.5 break-words text-[10px] font-semibold text-[#ea4f93]">
-                        {service}
-                      </p>
-                      <p className="mt-0.5 break-words text-[10px] text-[#aa8a99]">{meta}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </DashboardCard>
- 
-          </aside>
         </div>
       </div>
 
@@ -859,24 +1526,24 @@ export function ReceptionistDashboardPage() {
             padding: 16,
           },
         }}
-        title={<span className="text-base font-extrabold text-[#432744]">Customer QR Check-in</span>}
+        title={<span className="text-base font-bold text-[#432744]">{language === "vi" ? "Customer QR Check-in" : "Customer QR Check-in"}</span>}
       >
         <div className="space-y-4 overflow-hidden">
           <p className="text-sm text-[#8f7484]">
-            Point the webcam at the customer QR code. The scanned token will be sent to backend
-            `verify-qr` before opening the booking.
+            {language === "vi" ? "Quét mã QR của khách hàng. Mã được quét sẽ được gửi đến backend" : "Point the webcam at the customer QR code. The scanned token will be sent to backend"}
+            `verify-qr` {language === "vi" ? "trước khi mở lịch hẹn" : "before opening the booking"}.
           </p>
 
-          <div className="overflow-hidden rounded-[20px] border border-[#f2d8e4] bg-[#fff7fb]">
+          <div className="overflow-hidden rounded-lg border border-[#f2d8e4] bg-[#fff7fb]">
             <div className="relative aspect-[4/3] bg-[#2a1d2b]">
               <video ref={scannerVideoRef} className="h-full w-full object-cover" muted />
               <canvas ref={scannerCanvasRef} className="hidden" />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
-                <div className="h-full w-full rounded-[24px] border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
+                <div className="h-full w-full rounded-lg border-2 border-dashed border-white/70 shadow-[0_0_0_9999px_rgba(42,29,43,0.18)]" />
               </div>
               {isScannerStarting || isVerifyingQr ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-[#2a1d2b]/55 px-4 text-center text-sm font-semibold text-white">
-                  {isScannerStarting ? "Starting camera..." : "Verifying QR check-in..."}
+                  {isVerifyingQr ? (language === "vi" ? "Xác nhận token với backend..." : "Checking token with backend...") : (language === "vi" ? "Đang khởi động camera..." : "Starting camera...")}
                 </div>
               ) : null}
             </div>
@@ -888,19 +1555,144 @@ export function ReceptionistDashboardPage() {
             </div>
           ) : (
             <div className="rounded-[18px] border border-[#efe3f8] bg-[#faf6ff] px-4 py-3 text-sm text-[#7a57d9]">
-              {isVerifyingQr ? "Checking token with backend..." : "Waiting for QR code..."}
+              {isVerifyingQr ? (language === "vi" ? "Xác nhận token với backend..." : "Checking token with backend...") : (language === "vi" ? "Đang chờ mã QR..." : "Waiting for QR code...")}
             </div>
           )}
 
           {lastScannedCode ? (
             <div className="rounded-[18px] border border-[#f1dde8] bg-white px-4 py-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c49aaf]">
-                Last scanned payload
+                {language === "vi" ? "Mã được quét gần nhất" : "Last scanned payload"}
               </p>
               <p className="mt-2 break-all text-sm text-[#5c4557]">{lastScannedCode}</p>
             </div>
           ) : null}
         </div>
+      </Modal>
+
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#432744]">
+            <Armchair className="text-[#ea4f93]" size={20} />
+            <span className="font-bold text-lg">{language === "vi" ? "Chi tiết ghế" : "Chair Details"} {selectedChair?.name}</span>
+          </div>
+        }
+        open={isChairModalOpen}
+        onCancel={() => {
+          setIsChairModalOpen(false);
+          setSelectedChair(null);
+        }}
+        footer={null}
+        width={400}
+        centered
+        className="rounded-2xl"
+      >
+        {selectedChair && (
+          <div className="mt-4 space-y-4 text-sm text-[#584654]">
+            <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
+              <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Ghế đang được sử dụng" : "Currently in use"}</span>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedChair.isOccupied ? "bg-pink-50 text-pink-600" : "bg-emerald-50 text-emerald-600"
+                }`}>
+                {selectedChair.isOccupied ? "true" : "false"}
+              </span>
+            </div>
+
+            <div className="bg-[#fff8fb] rounded-xl p-4 border border-[#f7e0ea] mt-4 flex items-center gap-3">
+              <div className={`p-2 rounded-full ${selectedChair.isOccupied ? 'bg-pink-100 text-pink-500' : 'bg-emerald-100 text-emerald-500'}`}>
+                <UserRound size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-[#aa8a99]">{language === "vi" ? "Khách hàng hiện tại" : "Current Customer"}</p>
+                <p className="font-bold text-[#432744] text-base truncate">
+                  {selectedChair.isOccupied ? (
+                    typeof selectedChair.currentCustomer === 'object'
+                      ? selectedChair.currentCustomer?.customerName
+                      : (selectedChair.currentCustomer || "Walk-In")
+                  ) : (
+                    <span className="text-gray-400 italic">{language === "vi" ? "Không có" : "None"}</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Queue Detail Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#2B182B] text-base font-bold">
+            <UserRound size={18} className="text-[#E84F93]" />
+            {language === "vi" ? "Chi tiết lượt chờ" : "Queue Detail"}
+          </div>
+        }
+        open={isQueueDetailModalOpen}
+        onCancel={() => setIsQueueDetailModalOpen(false)}
+        footer={null}
+        width={500}
+        centered
+        className="rounded-2xl"
+      >
+        {selectedQueueItem && (
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Khách hàng" : "Customer"}</span>
+              <span className="text-sm font-bold text-gray-900">{typeof selectedQueueItem.guestName === 'object' ? selectedQueueItem.guestName?.customerName : selectedQueueItem.guestName}</span>
+            </div>
+            {selectedQueueItem.guestPhone && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Số Điện Thoại" : "Phone Number"}</span>
+                <span className="text-sm font-bold text-gray-900">{selectedQueueItem.guestPhone}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Số Thứ Tự" : "Queue Number"}</span>
+              <span className="text-sm font-bold text-[#E84F93]">#{selectedQueueItem.queuePosition}</span>
+            </div>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Trạng Thái" : "Status"}</span>
+              <span className="text-sm font-bold text-gray-900">{selectedQueueItem.status || "Đang Đợi"}</span>
+            </div>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Giờ Đến" : "Arrival Time"}</span>
+              <span className="text-sm font-bold text-gray-900">
+                {formatLocalTime(selectedQueueItem.arrivalTime)}
+              </span>
+            </div>
+            {selectedQueueItem.calledTime && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Giờ Gọi" : "Called Time"}</span>
+                <span className="text-sm font-bold text-[#0066ff]">
+                  {formatLocalTime(selectedQueueItem.calledTime)}
+                </span>
+              </div>
+            )}
+            {selectedQueueItem.serviceStartTime && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Bắt Đầu Phục Vụ" : "Service Start Time"}</span>
+                <span className="text-sm font-bold text-[#52c41a]">
+                  {formatLocalTime(selectedQueueItem.serviceStartTime)}
+                </span>
+              </div>
+            )}
+            <div className="flex flex-col gap-2 border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Yêu Cầu / Ghi Chú" : "Request / Note"}</span>
+              <p className="text-sm font-medium text-gray-900 whitespace-pre-wrap rounded-lg bg-gray-50 p-3">
+                {typeof selectedQueueItem.requestNote === 'object' ? selectedQueueItem.requestNote?.note : (selectedQueueItem.requestNote || "Không có")}
+              </p>
+            </div>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <span className="text-sm font-medium text-gray-500">{language === "vi" ? "Thợ Phân Công" : "Assigned Staff Artist"}</span>
+              <span className="text-sm font-bold text-purple-600">
+                {selectedQueueItem.assignedNailArtistId ? (
+                  <QueueDetailArtistName artistId={selectedQueueItem.assignedNailArtistId} initialName={selectedQueueItem.assignedNailArtistName} />
+                ) : (
+                  selectedQueueItem.assignedNailArtistName || (language === "vi" ? "Chưa phân công" : "Not Assigned")
+                )}
+              </span>
+            </div>
+          </div>
+        )}
       </Modal>
     </section>
   );

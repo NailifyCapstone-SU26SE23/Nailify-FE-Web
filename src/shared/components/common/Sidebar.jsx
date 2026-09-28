@@ -1,8 +1,10 @@
 import {
+  Award,
   BarChart3,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ListTodo,
   LogOut,
   LayoutDashboard,
   MapPin,
@@ -13,12 +15,29 @@ import {
   Store,
   Users,
   X,
+  HelpCircle,
+  Wallet,
+  Clock3,
+  Armchair,
+  Scissors,
+  Shapes,
+  Layers,
+  Puzzle,
+  ClipboardList,
+  Tags,
+  Wand2,
+  FolderTree,
+  Gift,
+  BanknoteArrowUp,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PropTypes } from "../../utils/propTypes";
+import { useLanguage } from "../../hooks/useLanguage";
+import { Tooltip } from 'antd';
 
 const ICON_MAP = {
   analytics: BarChart3,
+  award: Award,
   calendar: CalendarDays,
   dashboard: LayoutDashboard,
   palette: Palette,
@@ -26,34 +45,50 @@ const ICON_MAP = {
   settings: Settings,
   store: Store,
   support: MessageSquareWarning,
+  tasks: ListTodo,
   users: Users,
+  quiz: HelpCircle,
+  wallet: Wallet,
+  clock: Clock3,
+  armchair: Armchair,
+  scissors: Scissors,
+  shapes: Shapes,
+  layers: Layers,
+  puzzle: Puzzle,
+  "clipboard-list": ClipboardList,
+  tags: Tags,
+  wand2: Wand2,
+  "folder-tree": FolderTree,
+  gift: Gift,
+  "banknote-arrow-up": BanknoteArrowUp,
 };
 
 function SidebarItem({ item, collapsed }) {
   const Icon = ICON_MAP[item.icon] ?? LayoutDashboard;
 
   const content = ({ isActive = false } = {}) => (
-    <div
-      title={collapsed ? item.label : undefined}
-      className={[
-        "flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm transition",
-        collapsed ? "justify-center" : "gap-3",
-        isActive
-          ? "bg-[rgba(255,255,255,0.18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-          : "text-white/80 hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
-        item.disabled ? "cursor-not-allowed opacity-70" : "",
-      ].join(" ")}
-    >
-      <Icon size={15} className="shrink-0" />
-      {!collapsed ? (
-        <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-      ) : null}
-      {item.badge && !collapsed ? (
-        <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.2)] px-1.5 text-[10px] font-extrabold text-white">
-          {item.badge}
-        </span>
-      ) : null}
-    </div>
+    <Tooltip placement="right" title={item.label}>
+      <div
+        className={[
+          "flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm transition",
+          collapsed ? "justify-center" : "gap-3",
+          isActive
+            ? "bg-[rgba(255,255,255,0.18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+            : "text-white/80 hover:bg-[rgba(255,255,255,0.1)] hover:text-white",
+          item.disabled ? "cursor-not-allowed opacity-70" : "",
+        ].join(" ")}
+      >
+        <Icon size={15} className="shrink-0" />
+        {!collapsed ? (
+          <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+        ) : null}
+        {item.badge && !collapsed ? (
+          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgba(255,255,255,0.2)] px-1.5 text-[10px] font-bold text-white">
+            {item.badge}
+          </span>
+        ) : null}
+      </div>
+    </Tooltip>
   );
 
   if (item.disabled) {
@@ -61,7 +96,7 @@ function SidebarItem({ item, collapsed }) {
   }
 
   return (
-    <NavLink to={item.to} end>
+    <NavLink to={item.to}>
       {({ isActive }) => content({ isActive })}
     </NavLink>
   );
@@ -91,6 +126,8 @@ export function Sidebar({
   profileRole,
   userInitials,
 }) {
+  const { t, language } = useLanguage();
+
   return (
     <aside className="relative h-full overflow-hidden bg-[linear-gradient(180deg,#ea87aa_0%,#ea5f94_55%,#cc437a_100%)] shadow-[6px_0_30px_rgba(201,45,120,0.22)]">
       <div className="flex h-full flex-col">
@@ -104,7 +141,7 @@ export function Sidebar({
             <div className="flex items-center justify-center gap-2 text-center">
               {!collapsed ? <MapPin size={18} className="shrink-0 text-white" /> : null}
               <div className="min-w-0">
-                <p className="truncate text-[1.55rem] font-black leading-none tracking-[0.01em] text-white">
+                <p className="truncate text-[1.55rem] font-bold leading-none tracking-[0.01em] text-white">
                   {collapsed ? "N" : "Nailify"}
                 </p>
                 {!collapsed ? (
@@ -135,7 +172,7 @@ export function Sidebar({
             <div key={section} className="mb-5 last:mb-0">
               {!collapsed ? (
                 <p className="px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/45">
-                  {section}
+                  {t(`menuSections.${section}`) || section}
                 </p>
               ) : null}
               <div className="mt-2 space-y-0.5">
@@ -179,7 +216,7 @@ export function Sidebar({
                 className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 md:hidden"
               >
                 <LogOut size={16} />
-                <span>Sign out</span>
+                <span>{t("signOut")}</span>
               </button>
             ) : null}
           </div>

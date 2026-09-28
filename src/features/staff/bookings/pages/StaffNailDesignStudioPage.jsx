@@ -1,30 +1,504 @@
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   Palette,
   Search,
   Star,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  LoaderCircle,
+  Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Modal, Checkbox } from "antd";
+import { toBlob } from "html-to-image";
+import toast from "react-hot-toast";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { axiosClient } from "../../../../lib/axiosClient";
+import { loadAuthSession } from "../../../../features/core/auth/model/authStorage";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  getMockBookingById,
-  getStaffDesignStudioExperienceById,
-} from "../../../core/booking-management/services/mockBookings";
+  createStaffCustomerNailComponent,
+  createStaffCustomerNail,
+  fetchStaffCustomerNailDetail,
+  fetchStaffBookingDetail,
+  fetchServiceCatalog,
+  fetchStaffBuilderNailComponents,
+  fetchStaffBuilderNailShapes,
+  fetchStaffBuilderShapeMethodConfigs,
+  fetchStaffBuilderNailSurfaces,
+  fetchStaffNailVariantDetail,
+  updateStaffBooking,
+} from "../services/staffBookingService";
+import { InteractiveStudioPreview } from "../components/InteractiveStudioPreview";
 import {
   getStaffBookingDetailRoute,
-  getStaffBookingDesignUpdateRoute,
   ROUTES,
 } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+
+const DEFAULT_DESIGN_IMAGE = "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80";
+const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
+function getAuthHeaders() {
+  const session = loadAuthSession();
+  const token = session?.accessToken || session?.token;
+
+  return token
+    ? {
+      Authorization: `Bearer ${token}`,
+    }
+    : {};
+}
+
+function unwrapApiResponse(response, fallbackMessage) {
+  const payload = response?.data;
+
+  if (!payload?.isSucceeded) {
+    throw new Error(payload?.message || fallbackMessage);
+  }
+
+  return payload.data;
+}
+
+async function fetchProcedures(type) {
+  const response = await axiosClient.get(`/Procedures`, {
+    headers: getAuthHeaders(),
+    params: {
+      ProcedureType: type,
+      PageSize: 100,
+    },
+  });
+  return unwrapApiResponse(response, "Failed to load procedures.");
+}
+
+async function assignProceduresToCustomerNail(customerNailId, payload) {
+  const response = await axiosClient.post(`/Procedures/assign/customer-nail/${customerNailId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapApiResponse(response, "Failed to assign procedures.");
+}
+
+
+function formatCurrencyValue(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
+}
+
+function rgbToHex(rgbValue) {
+  const normalized = String(rgbValue || "").trim();
+  const matched = normalized.match(/^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i);
+
+  if (!matched) {
+    return normalized || "#f8b4d9";
+  }
+
+  return `#${matched
+    .slice(1)
+    .map((value) => Number(value).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function hexToRgbLabel(hexValue) {
+  const normalized = String(hexValue || "").trim().replace("#", "");
+
+  if (!/^[\da-f]{6}$/i.test(normalized)) {
+    return "RGB(248, 180, 217)";
+  }
+
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+
+  return `RGB(${red}, ${green}, ${blue})`;
+}
+
+function normalizeGradientStops(stops, primaryColor, secondaryColor) {
+  const normalizedStops = (Array.isArray(stops) ? stops : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  if (normalizedStops.length >= 2) {
+    return normalizedStops;
+  }
+
+  return [
+    String(primaryColor || "#f8b4d9").trim() || "#f8b4d9",
+    String(secondaryColor || primaryColor || "#f3e8ff").trim() || "#f3e8ff",
+  ];
+}
+
+function buildGradientStyle(gradientStops = []) {
+  const normalizedStops = normalizeGradientStops(gradientStops);
+  const gradientFormula = normalizedStops
+    .map((color, index) => {
+      if (normalizedStops.length === 1) {
+        return `${color} 0%`;
+      }
+
+      const position = (index / (normalizedStops.length - 1)) * 100;
+      return `${color} ${position.toFixed(2)}%`;
+    })
+    .join(", ");
+
+  return `linear-gradient(135deg, ${gradientFormula})`;
+}
+
+function buildColorSummary(mode, primaryColor, secondaryColor) {
+  if (mode === "gradient") {
+    return `${hexToRgbLabel(primaryColor)} → ${hexToRgbLabel(secondaryColor)}`;
+  }
+
+  return hexToRgbLabel(primaryColor);
+}
+
+function createDefaultFingerColor(primaryColor = "#f8b4d9", secondaryColor = "#f3e8ff") {
+  return {
+    mode: "solid",
+    primaryColor,
+    secondaryColor,
+  };
+}
+
+function normalizeFingerColorConfig(colorConfig) {
+  const primaryColor = String(colorConfig?.primaryColor || "#f8b4d9").trim() || "#f8b4d9";
+  const secondaryColor = String(colorConfig?.secondaryColor || primaryColor || "#f3e8ff").trim() || "#f3e8ff";
+  const gradientStops = normalizeGradientStops(colorConfig?.gradientStops, primaryColor, secondaryColor);
+
+  return {
+    mode: colorConfig?.mode === "gradient" ? "gradient" : "solid",
+    primaryColor: gradientStops[0],
+    secondaryColor: gradientStops[1],
+    gradientStops,
+  };
+}
+
+function getFingerColorSummary(colorConfig) {
+  const normalizedConfig = normalizeFingerColorConfig(colorConfig);
+
+  return normalizedConfig.mode === "gradient"
+    ? normalizedConfig.gradientStops.map((color) => hexToRgbLabel(color)).join(" -> ")
+    : hexToRgbLabel(normalizedConfig.primaryColor);
+}
+
+function normalizeFingerIndex(value) {
+  const normalized = Number(value);
+
+  if (normalized === -1) {
+    return -1;
+  }
+
+  if (!Number.isInteger(normalized)) {
+    return 0;
+  }
+
+  return Math.min(4, Math.max(0, normalized));
+}
+
+function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondaryColor) {
+  const defaultFingerColors = Array.from({ length: NAIL_LABELS.length }, () =>
+    createDefaultFingerColor(fallbackPrimaryColor, fallbackSecondaryColor),
+  );
+
+  if (!colorJson) {
+    return defaultFingerColors;
+  }
+
+  try {
+    const parsed = typeof colorJson === "string" ? JSON.parse(colorJson) : colorJson;
+
+    if (parsed?.mode === "perFinger" && Array.isArray(parsed?.fingers)) {
+      // Detect if this JSON uses 1-based fingerIndex (legacy) or 0-based (new)
+      // If all fingerIndex values are >= 1, treat as 1-based
+      const allFingers = parsed.fingers;
+      const maxIndex = Math.max(...allFingers.map((f) => Number(f?.fingerIndex ?? 0)));
+      const isOneBased = maxIndex >= 1 && allFingers.every((f) => Number(f?.fingerIndex ?? 0) >= 1) && maxIndex <= 5;
+      const isZeroBased = allFingers.some((f) => Number(f?.fingerIndex ?? -1) === 0);
+      // Prefer 0-based if any explicit 0 exists; otherwise use 1-based conversion for legacy data
+      const useLegacy = isOneBased && !isZeroBased;
+
+      allFingers.forEach((finger) => {
+        const rawIdx = Number(finger?.fingerIndex ?? 0);
+        const fingerIndex = useLegacy ? Math.min(4, Math.max(0, rawIdx - 1)) : normalizeFingerIndex(rawIdx);
+
+        if (fingerIndex < 0 || fingerIndex > 4) {
+          return;
+        }
+
+        const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
+        const rawMode = String(finger?.mode || "").trim();
+        // Use explicit mode from JSON if present, otherwise infer from gradient stops
+        const fingerMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
+        defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
+          mode: fingerMode,
+          primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
+          secondaryColor: String(
+            finger?.secondaryColor
+            || gradientStops[1]
+            || gradientStops[0]
+            || finger?.primaryColor
+            || fallbackSecondaryColor,
+          ),
+          gradientStops,
+        });
+      });
+
+      return defaultFingerColors;
+    }
+
+    const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
+    const rawMode = String(parsed?.mode || "").trim();
+    // Respect explicit mode from JSON
+    const sharedMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
+    const sharedColor = normalizeFingerColorConfig({
+      mode: sharedMode,
+      primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
+      secondaryColor: String(
+        parsed?.secondaryColor
+        || gradientStops[1]
+        || gradientStops[0]
+        || parsed?.primaryColor
+        || fallbackSecondaryColor,
+      ),
+      gradientStops,
+    });
+
+    return Array.from({ length: NAIL_LABELS.length }, () => ({ ...sharedColor }));
+  } catch {
+    return defaultFingerColors;
+  }
+}
+
+function formatOptionMeta(option, language = "en") {
+  if (!option) {
+    return "";
+  }
+
+  const meta = [];
+
+  if (Number(option.price || 0) > 0) {
+    meta.push(formatCurrencyValue(option.price));
+  }
+
+  if (Number(option.duration || 0) > 0) {
+    meta.push(formatDurationLabel(option.duration, language));
+  }
+
+  return meta.join(" • ");
+}
+
+function buildDesignTemplateFromApi(item, language = "en") {
+  const imageUrl = String(item?.imageUrl || "").trim();
+  const categories = Array.isArray(item?.categories) ? item.categories.map((category) => category?.name).filter(Boolean) : [];
+  const firstVariant = Array.isArray(item?.nailVariants) ? item.nailVariants[0] : null;
+  const duration = Number(firstVariant?.duration || 0);
+  const minPrice = Number(item?.minPrice || 0);
+  const maxPrice = Number(item?.maxPrice || 0);
+
+  return {
+    id: String(item?.nailDesignId ?? ""),
+    name: String(item?.name || "Untitled design").trim(),
+    image: imageUrl || DEFAULT_DESIGN_IMAGE,
+    price: minPrice || maxPrice
+      ? `${formatCurrencyValue(minPrice || maxPrice)}${minPrice !== maxPrice ? ` - ${formatCurrencyValue(maxPrice)}` : ""}`
+      : "Contact for quote",
+    duration: duration > 0 ? formatDurationLabel(duration, language) : "Flexible",
+    tags: categories.length ? categories : ["Custom design"],
+    accent: categories.length ? "Live" : "Ready",
+    accentClassName: "rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-bold text-[#ea4f93]",
+    ctaLabel: language === "vi" ? "Xem các biến thể" : "View variants",
+    description: String(item?.description || "").trim(),
+    raw: item,
+  };
+}
+
+function buildVariantTemplateFromApi(item, language = "en") {
+  return {
+    id: String(item?.nailVariantId ?? ""),
+    name: String(item?.name || "Untitled variant").trim(),
+    image: String(item?.imageUrl || DEFAULT_DESIGN_IMAGE),
+    price: formatCurrencyValue(item?.price || 0),
+    duration: Number(item?.duration || 0) > 0 ? formatDurationLabel(Number(item?.duration || 0), language) : "Flexible",
+    tags: [item?.nailShape?.name, item?.nailSurface?.name].filter(Boolean),
+    raw: item,
+  };
+}
+
+function buildShapeOption(item) {
+  const rawLabel = String(item?.name).trim();
+  return {
+    id: String(item?.nailShapeId || item?.id || item?.name || ""),
+    label: rawLabel,
+    familyLabel: getShapeFamilyLabel(rawLabel),
+    lengthVariant: getShapeLengthVariant(rawLabel),
+    imageUrl: String(item?.imageUrl || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+  };
+}
+
+function buildSurfaceOption(item) {
+  return {
+    id: String(item?.nailSurfaceId || item?.id || item?.name || ""),
+    label: String(item?.name).trim(),
+    shaderParam: String(item?.shaderParam || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+  };
+}
+
+function buildDecorationOption(item) {
+  return {
+    id: String(item?.componentId || item?.id || item?.name || ""),
+    label: String(item?.name).trim(),
+    imageUrl: String(item?.imageUrl || "").trim(),
+    componentType: String(item?.componentType || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+  };
+}
+
+function buildCustomerDecorationOption(item) {
+  return {
+    id: `customer-component-${item?.customerComponentId || item?.id || item?.name || ""}`,
+    label: String(item?.name).trim(),
+    imageUrl: String(item?.imageUrl || "").trim(),
+    componentType: String(item?.componentType || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+    componentId: null,
+    customerComponentId: Number(item?.customerComponentId || 0),
+  };
+}
+
+function buildExtraServiceOption(item) {
+  return {
+    id: String(item?.serviceId || item?.id || item?.name || ""),
+    label: String(item?.name).trim(),
+    description: String(item?.description || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+  };
+}
+
+function getPresetColorHex(colorName) {
+  const normalized = String(colorName || "").trim().toLowerCase();
+  const presetMap = {
+    nude: "#d6a77a",
+    pink: "#f472b6",
+    white: "#f8fafc",
+    chrome: "#cbd5e1",
+  };
+
+  return presetMap[normalized] || "#f8b4d9";
+}
+
+function isUuidLike(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(String(value || "").trim());
+}
+
+function toNullableNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const normalizedValue = Number(value);
+
+  return Number.isFinite(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+}
+
+function toNullableUuid(value) {
+  const normalizedValue = String(value || "").trim();
+
+  return isUuidLike(normalizedValue) ? normalizedValue : null;
+}
+
+function getPrimaryNailVariantId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const variantId = Number(item?.nailVariantId || 0);
+    return Number.isInteger(variantId) && variantId > 0;
+  });
+
+  return Number(matchedItem?.nailVariantId || 0);
+}
+
+function getPrimaryCustomerNailId(bookingItems) {
+  const matchedItem = (Array.isArray(bookingItems) ? bookingItems : []).find((item) => {
+    const customerNailId = Number(item?.customerNailId || 0);
+    return Number.isInteger(customerNailId) && customerNailId > 0;
+  });
+
+  return Number(matchedItem?.customerNailId || 0);
+}
+
+function isNailLinkedBookingItem(item) {
+  return Boolean(
+    toNullableNumber(item?.nailVariantId)
+    || toNullableUuid(item?.customerNailRequestId)
+    || toNullableNumber(item?.customerNailId)
+    || toNullableNumber(item?.shapeMethodConfigId)
+    || String(item?.nailVariantName || "").trim()
+    || String(item?.customerNailName || "").trim(),
+  );
+}
+
+function buildServiceOnlyBookingItem(item, fallbackQuantity = 1) {
+  return {
+    nailVariantId: null,
+    serviceId: toNullableUuid(item?.serviceId),
+    shapeMethodConfigId: null,
+    customerNailRequestId: null,
+    customerNailId: null,
+    quantity: Number(item?.quantity || fallbackQuantity) || fallbackQuantity,
+  };
+}
+
+function getShapeLengthVariant(shapeName) {
+  const normalized = String(shapeName || "").trim().toLowerCase();
+
+  if (
+    normalized.includes("trung bình")
+    || normalized.includes("trung binh")
+    || normalized.includes("medium")
+  ) {
+    return "Medium";
+  }
+
+  if (normalized.includes("dài") || normalized.includes("dai") || normalized.includes("long")) {
+    return "Long";
+  }
+
+  return "Short";
+}
+
+function getShapeFamilyLabel(shapeName) {
+  return String(shapeName)
+    .replace(/\btrung bình\b/gi, "")
+    .replace(/\btrung binh\b/gi, "")
+    .replace(/\bmedium\b/gi, "")
+    .replace(/\bdài\b/gi, "")
+    .replace(/\bdai\b/gi, "")
+    .replace(/\blong\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getPreferredShapeVariant(shapeOptions, familyLabel, lengthVariant) {
+  const familyOptions = shapeOptions.filter((item) => item.familyLabel === familyLabel);
+
+  if (!familyOptions.length) {
+    return null;
+  }
+
+  return familyOptions.find((item) => item.lengthVariant === lengthVariant) ?? familyOptions[0];
+}
 
 function SectionTitle({ icon: Icon, title }) {
   return (
     <div className="flex items-center gap-2">
       <Icon size={14} className="text-[#ea4f93]" />
-      <h2 className="text-xs font-extrabold text-[#ea4f93]">{title}</h2>
+      <h2 className="text-xs font-bold text-[#ea4f93]">{title}</h2>
     </div>
   );
 }
@@ -39,11 +513,10 @@ function Pill({ active = false, children, className = "", onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${
-        active
-          ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
-          : "border-[#f4dbe7] bg-white text-[#b18099] hover:bg-[#fff8fc]"
-      } ${className}`}
+      className={`rounded-full border px-3 py-1.5 text-[10px] font-bold transition ${active
+        ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
+        : "border-[#f4dbe7] bg-white text-[#b18099] hover:bg-[#fff8fc]"
+        } ${className}`}
     >
       {children}
     </button>
@@ -58,21 +531,22 @@ Pill.propTypes = {
 };
 
 function TemplateCard({ item, isSelected, onSelect }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   return (
     <article
-      className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${
-        isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
-      }`}
+      className={`flex flex-col overflow-hidden rounded-lg border bg-white shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${isSelected ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20" : "border-[#f4dbe7]"
+        }`}
     >
       <img
         src={item.image}
         alt={item.name}
-        className="h-28 w-full object-cover"
+        className="h-28 w-full shrink-0 object-cover"
         loading="lazy"
         referrerPolicy="no-referrer"
       />
-      <div className="p-3">
-        <h3 className="text-xs font-extrabold text-[#38253a]">{item.name}</h3>
+      <div className="flex flex-1 flex-col p-3">
+        <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.tags.map((tag) => (
             <span
@@ -83,12 +557,12 @@ function TemplateCard({ item, isSelected, onSelect }) {
             </span>
           ))}
         </div>
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-auto pt-4 flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-extrabold text-[#ea4f93]">{item.price}</p>
-            <p className="mt-1 text-[10px] text-[#ae8da0]">{formatDurationLabel(item.duration)}</p>
+            <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
+            <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
           </div>
-          <span className={`rounded-md px-2 py-1 text-[9px] font-extrabold ${item.accentClassName}`}>
+          <span className={`rounded-md px-2 py-1 text-[9px] font-bold ${item.accentClassName}`}>
             {item.accent}
           </span>
         </div>
@@ -96,10 +570,10 @@ function TemplateCard({ item, isSelected, onSelect }) {
           <button
             type="button"
             onClick={onSelect}
-            className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-extrabold text-white"
+            className="flex-1 rounded-[10px] bg-[image:var(--gradient-accent)] px-3 py-2 text-[10px] font-bold text-white"
           >
-            {isSelected ? "Selected" : item.ctaLabel}
-          </button> 
+            {isSelected ? (isVi ? "Đã chọn" : "Selected") : item.ctaLabel}
+          </button>
         </div>
       </div>
     </article>
@@ -120,29 +594,6 @@ TemplateCard.propTypes = {
     tags: PropTypes.arrayOf(PropTypes.string).isRequired,
   }).isRequired,
   onSelect: PropTypes.func.isRequired,
-};
-
-function RecommendationBlock({ title, items }) {
-  return (
-    <div>
-      <p className="text-[10px] font-bold text-[#a78a9e]">{title}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span
-            key={item}
-            className="rounded-full border border-[#d8cbff] bg-[#f1edff] px-3 py-1.5 text-[10px] font-bold text-[#7d5ce6]"
-          >
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-RecommendationBlock.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.string).isRequired,
-  title: PropTypes.string.isRequired,
 };
 
 const TEMPLATE_PRESETS = {
@@ -212,8 +663,6 @@ const TEMPLATE_PRESETS = {
   },
 };
 
-const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
-
 function createNailDecorationLayout(decorations = []) {
   const layout = Array.from({ length: 5 }, () => []);
 
@@ -249,125 +698,386 @@ function createNailDecorationLayout(decorations = []) {
   return layout;
 }
 
-function getColorStyle(color, colors) {
-  const found = colors.find((item) => item.label === color);
-
-  if (!found) {
-    return { background: "linear-gradient(180deg,#d7e0eb 0%,#bac8d8 100%)" };
-  }
-
-  if (found.swatch.startsWith("linear-gradient")) {
-    return { backgroundImage: found.swatch };
-  }
-
-  if (color === "Chrome") {
-    return { background: "linear-gradient(180deg,#e0e6ef 0%,#b6c0cf 45%,#eff3f8 100%)" };
-  }
-
-  return { backgroundColor: found.swatch };
+function buildPlacementKey(fingerIndex, label, uniqueToken = "base") {
+  return `${fingerIndex}:${label}:${uniqueToken}`;
 }
 
-function getFinishEffect(finish) {
-  switch (finish) {
-    case "Matte":
-      return "opacity-90 saturate-[0.85]";
-    case "Glitter":
-      return "before:absolute before:inset-[18%] before:rounded-inherit before:bg-[radial-gradient(circle,_rgba(255,255,255,0.95)_0%,_transparent_58%)] before:opacity-70";
-    case "Jelly":
-      return "opacity-80";
-    case "Chrome":
-      return "before:absolute before:inset-x-[16%] before:top-[10%] before:h-[28%] before:rounded-full before:bg-white/60";
-    default:
-      return "before:absolute before:inset-x-[22%] before:top-[10%] before:h-[18%] before:rounded-full before:bg-white/35";
+function buildDefaultPlacement(option, fingerIndex, uniqueToken) {
+  const resolvedUniqueToken = uniqueToken
+    || option.customerComponentId
+    || option.componentId
+    || option.id
+    || option.label
+    || "base";
+  return {
+    key: buildPlacementKey(fingerIndex, option.label, resolvedUniqueToken),
+    fingerIndex,
+    label: option.label,
+    componentId: toNullableNumber(option.componentId || option.id),
+    customerComponentId: toNullableNumber(option.customerComponentId),
+    imageUrl: String(option.imageUrl || "").trim(),
+    componentType: String(option.componentType || "").trim(),
+    posX: 0,
+    posY: 0,
+    scale: 0.3,
+    rotation: 0,
+    zIndex: 10,
+    configJson: JSON.stringify({
+      scale: 0.3,
+      rotation: 0,
+      zIndex: 10,
+    }),
+  };
+}
+
+function parsePlacementConfig(configJson) {
+  try {
+    const parsed = typeof configJson === "string" ? JSON.parse(configJson) : configJson;
+
+    return {
+      scale: Number(parsed?.scale ?? 0.8),
+      rotation: Number(parsed?.rotation ?? 0),
+      zIndex: Number(parsed?.zIndex ?? 10),
+    };
+  } catch {
+    return {
+      scale: 0.8,
+      rotation: 0,
+      zIndex: 10,
+    };
   }
 }
 
-function PreviewNail({ decorationSet, finish, index, isActive, shape, length, colorStyle }) {
+function getColorStyle(colorMode, primaryColor, secondaryColor) {
+  if (colorMode === "gradient") {
+    return {
+      backgroundImage: buildGradientStyle([primaryColor, secondaryColor]),
+    };
+  }
+
+  return { backgroundColor: primaryColor };
+}
+
+function renderSurfaceEffects(finish) {
+  const name = String(finish || "").trim().toLowerCase();
+
+  // 🪞 CHROME - Ultra metallic mirror
+  if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương") || name.includes("metallic")) {
+    return (
+      <>
+        {/* Silver metallic base sheen */}
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: `linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(200,210,220,0.4) 35%, rgba(80,90,100,0.35) 65%, rgba(255,255,255,0.6) 100%)`,
+        }} />
+        {/* Primary chrome streak */}
+        <div className="pointer-events-none absolute" style={{
+          top: '5%', left: '15%', width: '30%', height: '65%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.45) 50%, transparent 100%)`,
+          filter: 'blur(3px)', borderRadius: '50%',
+        }} />
+        {/* Center bright line */}
+        <div className="pointer-events-none absolute" style={{
+          top: '8%', left: '35%', width: '8%', height: '55%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,1.0) 0%, rgba(255,255,255,0.3) 70%, transparent 100%)`,
+          filter: 'blur(1px)', borderRadius: '50%',
+        }} />
+        {/* Right edge reflection */}
+        <div className="pointer-events-none absolute" style={{
+          top: '15%', right: '8%', width: '22%', height: '50%',
+          background: `radial-gradient(ellipse, rgba(220,230,240,0.54) 0%, transparent 70%)`,
+          filter: 'blur(4px)',
+        }} />
+        {/* Bottom dark shadow */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '35%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🌈 HOLOGRAPHIC - Visible rainbow prism
+  if (name.includes("holographic") || name.includes("holo")) {
+    return (
+      <>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(160deg,
+              hsl(0,100%,65%) 0%,
+              hsl(30,100%,60%) 15%,
+              hsl(55,100%,60%) 28%,
+              hsl(130,80%,55%) 42%,
+              hsl(200,100%,60%) 57%,
+              hsl(260,90%,65%) 72%,
+              hsl(300,90%,65%) 85%,
+              hsl(340,100%,65%) 100%)`,
+            opacity: 0.63,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `linear-gradient(45deg,
+              hsl(320,100%,70%) 0%,
+              transparent 25%,
+              hsl(190,100%,65%) 45%,
+              transparent 65%,
+              hsl(270,100%,70%) 90%)`,
+            opacity: 0.38,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            top: '5%', left: '10%', width: '50%', height: '45%',
+            background: 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            height: '25%',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+          }}
+        />
+      </>
+    );
+  }
+
+  // 😺 CAT EYE - Magnetic vertical streak
+  if (name.includes("cat") || name.includes("cateye") || name.includes("cat-eye")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.12) 100%)',
+        }} />
+        <div className="pointer-events-none absolute" style={{
+          top: 0, bottom: 0,
+          left: '50%',
+          width: '52%',
+          transform: 'translateX(-50%) rotate(0deg)',
+          background: `linear-gradient(to right,
+            transparent 0%,
+            rgba(255,255,255,0.2) 25%,
+            rgba(255,255,255,0.6) 50%,
+            rgba(255,255,255,0.2) 75%,
+            transparent 100%)`,
+          filter: 'blur(5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '28%',
+          background: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, transparent 100%)`,
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+          height: '25%',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🎭 MATTE - Soft flat finish (no shine)
+  if (name.includes("matte") || name.includes("nhám")) {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0" style={{
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(0.5px)',
+        }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+          height: '40%',
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)',
+        }} />
+      </>
+    );
+  }
+
+  // 🧪 JELLY - Border inset translucent sheen
+  if (name.includes("jelly")) {
+    return (
+      <span className="pointer-events-none absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
+    );
+  }
+
+  // GLITTER - Sparkles
+  if (name.includes("glitter")) {
+    return (
+      <>
+        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
+        <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
+      </>
+    );
+  }
+
+  // GLOSSY (Default) - Natural shine
+  return (
+    <>
+      <div className="pointer-events-none absolute inset-0" style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.1) 0%, rgba(180,180,200,0.1) 40%, rgba(80,80,120,0.15) 75%, rgba(40,40,80,0.2) 100%)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '5%', left: '8%', width: '55%', height: '60%',
+        background: `radial-gradient(ellipse at 28% 25%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.22) 40%, transparent 72%)`,
+        filter: `blur(8px)`,
+        transform: 'rotate(-12deg)',
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '10%', left: '18%', width: '16%', height: '52%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.25) 45%, transparent 100%)`,
+        filter: `blur(2px)`,
+        borderRadius: '50%',
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 top-0" style={{
+        height: '32%',
+        background: `linear-gradient(to bottom, rgba(255,255,255,0.27) 0%, transparent 100%)`,
+      }} />
+      <div className="pointer-events-none absolute" style={{
+        top: '18%', right: '8%', width: '22%', height: '42%',
+        background: `radial-gradient(ellipse, rgba(255,255,255,0.2) 0%, transparent 70%)`,
+        filter: `blur(4px)`,
+      }} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(60,40,80,0.28) 0%, rgba(60,40,80,0.08) 60%, transparent 100%)',
+      }} />
+      <div className="pointer-events-none absolute inset-y-0 right-0" style={{
+        width: '20%',
+        background: 'linear-gradient(to left, rgba(60,40,80,0.15) 0%, transparent 100%)',
+      }} />
+    </>
+  );
+}
+
+function PreviewNail({ components = [], finish, fingerLabel, index, isActive, shape, length, colorStyle, shapeImageUrl }) {
   const metrics = getNailMetrics(shape, length, index);
-  const isChrome = finish === "Chrome";
-  const isJelly = finish === "Jelly";
-  const isMatte = finish === "Matte";
-  const isGlitter = finish === "Glitter";
-  const isCatEye = decorationSet.has("Cat Eye");
+  const maskStyle = shapeImageUrl
+    ? {
+      maskImage: `url(${shapeImageUrl})`,
+      WebkitMaskImage: `url(${shapeImageUrl})`,
+      maskSize: "100% 100%",
+      WebkitMaskSize: "100% 100%",
+      maskRepeat: "no-repeat",
+      WebkitMaskRepeat: "no-repeat",
+      maskPosition: "center",
+      WebkitMaskPosition: "center",
+    }
+    : {};
+
+  const isClippedType = (type) => {
+    const t = String(type || "").toLowerCase().trim();
+    return t === "sticker" || t === "art" || t === "1" || t === "3";
+  };
 
   return (
-    <div
-      className={`relative w-9 ${metrics.shapeClassName} ${getFinishEffect(finish)} overflow-hidden shadow-[0_12px_18px_rgba(174,190,208,0.22)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
-      style={{ ...colorStyle, height: metrics.height }}
-    >
-      <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.4),transparent_42%)]" />
+    <div className={`flex flex-col items-center gap-2 ${isActive ? "scale-[1.03]" : ""}`}>
+      <div
+        className={`relative w-[3.8rem] rounded-t-[1.9rem] rounded-b-[0.9rem] border-2 border-[#f7cadd] bg-[linear-gradient(180deg,#fff7fb_0%,#fff1f8_100%)] shadow-[0_14px_22px_rgba(236,72,153,0.10)] ${isActive ? "ring-2 ring-[#ef6aac]/45 ring-offset-2 ring-offset-[#fff2f8]" : ""}`}
+        style={{ height: metrics.height + 34 }}
+      >
+        {/* Masked section for background and Art type components */}
+        <div className="absolute inset-[10%] overflow-hidden" style={maskStyle}>
+          <div className="absolute inset-0" style={colorStyle} />
+          {renderSurfaceEffects(finish)}
 
-      {isChrome ? (
-        <>
-          <span className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.55)_0%,transparent_30%,rgba(255,255,255,0.1)_48%,rgba(255,255,255,0.45)_72%,transparent_100%)] mix-blend-screen" />
-          <span className="absolute inset-y-0 left-[18%] w-[18%] bg-white/25 blur-[3px]" />
-        </>
-      ) : null}
+          {shapeImageUrl ? (
+            <img
+              src={shapeImageUrl}
+              alt={`${shape} shape`}
+              className="absolute inset-0 h-full w-full object-cover opacity-70 mix-blend-multiply pointer-events-none"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
 
-      {isJelly ? (
-        <span className="absolute inset-[6%] rounded-[inherit] border border-white/35 bg-white/12" />
-      ) : null}
+          {components.map((component) => (
+            component.imageUrl && isClippedType(component.componentType || component.type) ? (
+              <img
+                key={component.key}
+                src={component.imageUrl}
+                alt={component.label}
+                className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                style={{
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
+                  zIndex: component.zIndex,
+                  transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : null
+          ))}
+        </div>
 
-      {isMatte ? (
-        <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.08),transparent_50%)] mix-blend-normal" />
-      ) : null}
+        {/* Unmasked section for Gen type components */}
+        <div className="absolute inset-[10%] pointer-events-none">
+          {components.map((component) => (
+            component.imageUrl && !isClippedType(component.componentType || component.type) ? (
+              <img
+                key={component.key}
+                src={component.imageUrl}
+                alt={component.label}
+                className="absolute h-9 w-9 object-contain drop-shadow-[0_4px_8px_rgba(234,79,147,0.18)]"
+                style={{
+                  left: `${(Number(component.posX ?? 0) + 0.5) * 100}%`,
+                  top: `${(Number(component.posY ?? 0) + 0.5) * 100}%`,
+                  zIndex: component.zIndex,
+                  transform: `translate(-50%, -50%) scale(${component.scale}) rotate(${component.rotation}deg)`,
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : null
+          ))}
+        </div>
+      </div>
 
-      {isGlitter ? (
-        <>
-          <span className="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,0.95)_0_1px,transparent_1.5px),radial-gradient(circle_at_70%_22%,rgba(255,255,255,0.75)_0_1px,transparent_1.6px),radial-gradient(circle_at_46%_68%,rgba(255,255,255,0.85)_0_1px,transparent_1.5px),radial-gradient(circle_at_78%_74%,rgba(255,255,255,0.9)_0_1px,transparent_1.8px)] opacity-85" />
-          <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(255,255,255,0.12)_55%,transparent_100%)]" />
-        </>
-      ) : null}
-
-      {isCatEye ? (
-        <span className="absolute inset-y-[8%] left-1/2 w-[22%] -translate-x-1/2 rounded-full bg-white/65 blur-[5px] opacity-80" />
-      ) : null}
-
-      {decorationSet.has("Pearl") ? (
-        <span className="absolute left-1/2 top-[38%] h-2 w-2 -translate-x-1/2 rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(255,255,255,0.5),0_2px_6px_rgba(255,255,255,0.55)]" />
-      ) : null}
-
-      {decorationSet.has("French Tip") ? (
-        <span className="absolute inset-x-[15%] bottom-[8%] h-[18%] rounded-full bg-white/95" />
-      ) : null}
-
-      {decorationSet.has("Gold Line") ? (
-        <span className="absolute inset-y-[18%] left-1/2 w-[2px] -translate-x-1/2 bg-[#f5c44f]/90" />
-      ) : null}
-
-      {decorationSet.has("Stone") ? (
-        <span className="absolute right-[18%] top-[24%] h-2.5 w-2.5 rounded-full bg-white/95 ring-1 ring-[#d4b6ff]" />
-      ) : null}
-
-      {decorationSet.has("Floral") ? (
-        <span className="absolute left-1/2 top-[34%] h-3 w-3 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_#ffffff_15%,_#f59ac2_18%,_#f59ac2_34%,_transparent_38%)]" />
-      ) : null}
-
-      {decorationSet.has("Sticker") ? (
-        <span className="absolute left-1/2 top-[30%] -translate-x-1/2 rounded-full bg-white/90 px-1.5 py-0.5 text-[7px] font-extrabold text-[#ea4f93] shadow-sm">
-          S
-        </span>
-      ) : null}
+      <span className="rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] border border-[#fce6f3]">
+        {fingerLabel}
+      </span>
     </div>
   );
 }
 
 PreviewNail.propTypes = {
   colorStyle: PropTypes.shape({}).isRequired,
-  decorationSet: PropTypes.shape({ has: PropTypes.func.isRequired }).isRequired,
+  components: PropTypes.arrayOf(PropTypes.shape({
+    key: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired,
+    imageUrl: PropTypes.string,
+    posX: PropTypes.number.isRequired,
+    posY: PropTypes.number.isRequired,
+    rotation: PropTypes.number.isRequired,
+    scale: PropTypes.number.isRequired,
+    zIndex: PropTypes.number,
+  })).isRequired,
+  fingerLabel: PropTypes.string.isRequired,
   finish: PropTypes.string.isRequired,
   index: PropTypes.number.isRequired,
   isActive: PropTypes.bool.isRequired,
   length: PropTypes.string.isRequired,
   shape: PropTypes.string.isRequired,
+  shapeImageUrl: PropTypes.string,
 };
 
-function getNailMetrics(shape, length, index) {
-  const heightMap = {
-    Short: [42, 52, 60, 52, 40],
-    Medium: [52, 64, 78, 64, 48],
-    Long: [66, 84, 100, 84, 62],
-  };
+function getNailMetrics(shape, _length, index) {
+  const normalized = String(shape || "").trim().toLowerCase();
+  let heights = [48, 60, 72, 60, 46];
+
+  if (normalized.includes("stiletto")) {
+    heights = [54, 68, 82, 66, 52];
+  } else if (normalized.includes("ballerina") || normalized.includes("coffin")) {
+    heights = [52, 66, 80, 64, 50];
+  } else if (normalized.includes("almond") || normalized.includes("oval")) {
+    heights = [50, 62, 76, 62, 48];
+  } else if (normalized.includes("round")) {
+    heights = [44, 54, 66, 54, 40];
+  } else if (normalized.includes("square") || normalized.includes("squoval")) {
+    heights = [46, 58, 70, 58, 44];
+  }
+
   const shapeClassMap = {
     Almond: "rounded-t-[26px] rounded-b-[18px]",
     Square: "rounded-t-[10px] rounded-b-[8px]",
@@ -377,12 +1087,18 @@ function getNailMetrics(shape, length, index) {
   };
 
   return {
-    height: heightMap[length]?.[index] ?? 60,
+    height: heights[index] ?? 60,
     shapeClassName: shapeClassMap[shape] ?? shapeClassMap.Almond,
   };
 }
 
-function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
+function getChoiceValue(item) {
+  if (typeof item === "string") return item;
+  if (item?.value !== undefined) return item.value;
+  return item?.label ?? "";
+}
+
+function ChoiceGrid({ items, selected, onSelect, type = "pill", language = "en" }) {
   if (type === "color") {
     return (
       <div className="flex flex-wrap gap-3">
@@ -396,9 +1112,8 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
               className="flex flex-col items-center gap-2 text-[10px] font-bold text-[#8c7285]"
             >
               <span
-                className={`block h-7 w-7 rounded-full border-2 ${
-                  selected === item.label ? "border-[#ea4f93] ring-2 ring-[#f7bdd6]" : "border-white shadow-sm"
-                }`}
+                className={`block h-7 w-7 rounded-full border-2 ${selected === item.label ? "border-[#ea4f93] ring-2 ring-[#f7bdd6]" : "border-white shadow-sm"
+                  }`}
                 style={isGradient ? { backgroundImage: item.swatch } : { backgroundColor: item.swatch }}
               />
               {item.label}
@@ -413,38 +1128,52 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
     return (
       <div className="flex flex-wrap gap-3">
         {items.map((item) => {
-          const isActive = selected === item;
+          const value = getChoiceValue(item);
+          const displayLabel = typeof item === "string" ? item : (item.label || value);
+          const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item, language);
+          const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
+          const isActive = selected === value;
           return (
             <button
-              key={item}
+              key={value}
               type="button"
-              onClick={() => onSelect(item)}
-              className={`flex min-w-[64px] flex-col items-center rounded-[14px] border px-3 py-3 text-[10px] font-bold ${
-                isActive
-                  ? "border-[#ef6aac] bg-[#fff4f8] text-[#ea4f93] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
-                  : "border-[#f4dbe7] bg-white text-[#b18099]"
-              }`}
+              onClick={() => onSelect(value)}
+              className={`flex min-w-[64px] flex-col items-center rounded-[14px] border px-3 py-3 text-[10px] font-bold ${isActive
+                ? "border-[#ef6aac] bg-[#fff4f8] text-[#ea4f93] shadow-[0_10px_20px_rgba(236,72,153,0.12)]"
+                : "border-[#f4dbe7] bg-white text-[#b18099]"
+                }`}
             >
-              <span
-                className={`mb-2 block rounded-full bg-[linear-gradient(180deg,#ffd7ea_0%,#f3b8d2_100%)] ${
-                  type === "shape"
-                    ? item === "Coffin"
+              {type === "shape" && imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={displayLabel}
+                  className="mb-2 h-10 w-10 rounded-full border border-[#f7d5e4] bg-white object-cover p-1"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span
+                  className={`mb-2 block rounded-full bg-[linear-gradient(180deg,#ffd7ea_0%,#f3b8d2_100%)] ${type === "shape"
+                    ? displayLabel === "Coffin"
                       ? "h-8 w-6 rounded-sm"
-                      : item === "Square"
+                      : displayLabel === "Square"
                         ? "h-8 w-6 rounded-[4px]"
-                        : item === "Oval"
+                        : displayLabel === "Oval"
                           ? "h-8 w-6 rounded-[45%]"
-                          : item === "Round"
+                          : displayLabel === "Round"
                             ? "h-8 w-6 rounded-[50%]"
                             : "h-8 w-6 rounded-[12px]"
-                    : item === "Short"
-                      ? "h-4 w-3"
-                      : item === "Medium"
-                        ? "h-7 w-3"
-                        : "h-10 w-3"
-                }`}
-              />
-              {item}
+                    : "h-7 w-3.5"
+                    }`}
+                />
+              )}
+              <span>{displayLabel}</span>
+              {type === "length" && typeof item !== "string" && item?.variantLabel ? (
+                <span className="mt-1 text-center text-[9px] font-semibold text-[#b48aa0]">
+                  {item.variantLabel}
+                </span>
+              ) : null}
+              {metaLabel ? <span className="mt-1 text-center text-[9px] font-semibold text-[#b48aa0]">{metaLabel}</span> : null}
             </button>
           );
         })}
@@ -454,11 +1183,41 @@ function ChoiceGrid({ items, selected, onSelect, type = "pill" }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <Pill key={item} active={selected.includes(item)} onClick={() => onSelect(item)}>
-          {item}
-        </Pill>
-      ))}
+      {items.map((item) => {
+        const value = getChoiceValue(item);
+        const displayLabel = typeof item === "string" ? item : (item.label || value);
+        const isSelected = selected.includes(value);
+        const metaLabel = typeof item === "string" ? "" : formatOptionMeta(item, language);
+        const subLabel = typeof item === "string" ? "" : item?.componentType || "";
+        const imageUrl = typeof item === "string" ? "" : String(item?.imageUrl || "").trim();
+
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => onSelect(value)}
+            className={`rounded-[14px] border px-3 py-2 text-left transition flex items-center gap-3 ${isSelected
+              ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
+              : "border-[#f4dbe7] bg-white text-[#b18099] hover:bg-[#fff8fc]"
+              }`}
+          >
+            {imageUrl && (
+              <img
+                src={imageUrl}
+                alt={value}
+                className="h-10 w-10 shrink-0 rounded-xl border border-[#f3c8db] bg-white object-contain p-1"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold truncate">{displayLabel}</p>
+              {subLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#a98c9f] truncate">{subLabel}</p> : null}
+              {metaLabel ? <p className="mt-0.5 text-[9px] font-semibold text-[#d2508a] truncate">{metaLabel}</p> : null}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -468,38 +1227,60 @@ ChoiceGrid.propTypes = {
     PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.shape({
-        label: PropTypes.string.isRequired,
-        swatch: PropTypes.string.isRequired,
+        id: PropTypes.string,
+        imageUrl: PropTypes.string,
+        label: PropTypes.string,
+        name: PropTypes.string,
+        price: PropTypes.number,
+        duration: PropTypes.number,
+        swatch: PropTypes.string,
+        componentType: PropTypes.string,
+        description: PropTypes.string,
       }),
     ]),
   ).isRequired,
   onSelect: PropTypes.func.isRequired,
   selected: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]).isRequired,
   type: PropTypes.oneOf(["pill", "color", "shape", "length"]),
+  language: PropTypes.string,
 };
 
 export function StaffNailDesignStudioPage() {
+  const { t, language } = useLanguage();
+
+  const isVi = language === 'vi';
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
   const studioState = location.state?.designStudio ?? null;
-  const booking = getMockBookingById(bookingId) ?? studioState?.booking ?? null;
   const studio = useMemo(() => {
-    const mockStudio = getStaffDesignStudioExperienceById(bookingId);
-
-    if (mockStudio) {
-      return mockStudio;
-    }
-
     if (!studioState) {
       return null;
     }
 
-    const baseStudio = getStaffDesignStudioExperienceById("BKG-2408");
-
-    if (!baseStudio) {
-      return null;
-    }
+    const baseStudio = {
+      bookingCode: "",
+      customerName: "",
+      staffName: "",
+      statusLabel: "",
+      selectedDesign: { id: "", name: isVi ? "Thiết kế riêng" : "Custom design", image: "", tags: [] },
+      filters: [],
+      builder: {
+        initialSelection: { shape: "", length: "", finish: "", decorations: [], extras: [] },
+        colors: [{ swatch: "#f8b4d9" }, { swatch: "#f3e8ff" }],
+        shapes: [], finishes: [], decorations: [], extras: []
+      }
+    };
 
     return {
       ...baseStudio,
@@ -513,51 +1294,1052 @@ export function StaffNailDesignStudioPage() {
         image: studioState.selectedDesignImage || baseStudio.selectedDesign.image,
       },
     };
-  }, [bookingId, studioState]);
+  }, [studioState]);
 
-  const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign.id ?? "");
-  const [selectedShape, setSelectedShape] = useState(studio?.builder.initialSelection.shape ?? "");
-  const [selectedLength, setSelectedLength] = useState(studio?.builder.initialSelection.length ?? "");
-  const [selectedColor, setSelectedColor] = useState(studio?.builder.initialSelection.color ?? "");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(studio?.selectedDesign?.id ?? "");
+  const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [isProcedureModalOpen, setIsProcedureModalOpen] = useState(false);
+  const [commonProcedures, setCommonProcedures] = useState([]);
+  const [modelSpecificProcedures, setModelSpecificProcedures] = useState([]);
+  const [selectedProcedures, setSelectedProcedures] = useState([]);
+  const [procedureCustomerNailId, setProcedureCustomerNailId] = useState(null);
+  const [isAssigningProcedures, setIsAssigningProcedures] = useState(false);
+  const previewContainerRef = useRef(null);
+  const hasHydratedInitialNailRef = useRef(false);
+  const [selectedShape, setSelectedShape] = useState(
+    getShapeFamilyLabel(studio?.builder.initialSelection.shape ?? ""),
+  );
+  const [selectedShapeMethodConfigId, setSelectedShapeMethodConfigId] = useState("");
+  const [shapeMethodConfigs, setShapeMethodConfigs] = useState([]);
+  const [isShapeMethodConfigsLoading, setIsShapeMethodConfigsLoading] = useState(false);
+  const [selectedLength, setSelectedLength] = useState(
+    getShapeLengthVariant(studio?.builder.initialSelection.shape ?? studio?.builder.initialSelection.length ?? ""),
+  );
+  const [selectedColorFingerIndices, setSelectedColorFingerIndices] = useState([3]);
+  const [fingerColorConfigs, setFingerColorConfigs] = useState(
+    Array.from({ length: NAIL_LABELS.length }, () =>
+      createDefaultFingerColor(
+        rgbToHex(studio?.builder.colors?.[0]?.swatch || "#f8b4d9"),
+        rgbToHex(studio?.builder.colors?.[1]?.swatch || "#f3e8ff"),
+      ),
+    ),
+  );
   const [selectedFinish, setSelectedFinish] = useState(studio?.builder.initialSelection.finish ?? "");
   const [isDesignConfirmed, setIsDesignConfirmed] = useState(false);
   const [activeNailIndex, setActiveNailIndex] = useState(3);
   const [templateStartIndex, setTemplateStartIndex] = useState(0);
+  const [showAllDesigns, setShowAllDesigns] = useState(false);
+  const [designTemplates, setDesignTemplates] = useState([]);
+  const [designVariants, setDesignVariants] = useState([]);
+  const [selectedDesign, setSelectedDesign] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [designView, setDesignView] = useState("designs");
+  const [designQuery, setDesignQuery] = useState("");
+  const [isDesignsLoading, setIsDesignsLoading] = useState(true);
+  const [isVariantsLoading, setIsVariantsLoading] = useState(false);
+  const [designError, setDesignError] = useState("");
+  const [isBuilderCatalogLoading, setIsBuilderCatalogLoading] = useState(true);
+  const [builderCatalogError, setBuilderCatalogError] = useState("");
+  const [shapeOptions, setShapeOptions] = useState([]);
+  const [surfaceOptions, setSurfaceOptions] = useState([]);
+  const [decorationOptions, setDecorationOptions] = useState([]);
+  const [extraServiceOptions, setExtraServiceOptions] = useState([]);
   const [nailDecorations, setNailDecorations] = useState(
     createNailDecorationLayout(studio?.builder.initialSelection.decorations ?? []),
   );
-  const [selectedExtras, setSelectedExtras] = useState(studio?.builder.initialSelection.extras ?? []);
+  const [componentPlacements, setComponentPlacements] = useState([]);
+  const [selectedPlacementKey, setSelectedPlacementKey] = useState("");
+  const [selectedExtrasMap, setSelectedExtrasMap] = useState(() => {
+    const initial = {};
+    (studio?.builder.initialSelection.extras ?? []).forEach(e => initial[e] = 1);
+    return initial;
+  });
+  const [bookingDetail, setBookingDetail] = useState(studioState?.booking ?? null);
+  const [bookingDetailError, setBookingDetailError] = useState("");
+  const [confirmedCustomerNail, setConfirmedCustomerNail] = useState(null);
+  const [isConfirmingDesign, setIsConfirmingDesign] = useState(false);
+  const [isUpdatingBookingDesign, setIsUpdatingBookingDesign] = useState(false);
+  const [designActionError, setDesignActionError] = useState("");
+  const [designActionSuccess, setDesignActionSuccess] = useState("");
+  const [customerNailNameDraft, setCustomerNailNameDraft] = useState("");
   const templateWindowSize = 3;
-
-  const activeTemplate = useMemo(
-    () => studio?.templates.find((item) => item.id === selectedTemplateId) ?? studio?.selectedDesign,
-    [selectedTemplateId, studio],
+  const resolvedBookingApiId = useMemo(
+    () => String(studioState?.booking?.bookingId || bookingId || "").trim(),
+    [bookingId, studioState?.booking?.bookingId],
   );
+
+  useEffect(() => {
+    if (!isUuidLike(resolvedBookingApiId)) {
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadBookingDetail = async () => {
+      try {
+        const nextBookingDetail = await fetchStaffBookingDetail(resolvedBookingApiId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setBookingDetail(nextBookingDetail);
+        setBookingDetailError("");
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load booking detail.";
+        setBookingDetailError(message);
+      }
+    };
+
+    void loadBookingDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [resolvedBookingApiId]);
+
+  const loadDesignVariants = async (designId) => {
+    if (!designId) {
+      return;
+    }
+
+    setIsVariantsLoading(true);
+    setDesignError("");
+    setSelectedVariantId("");
+    setSelectedVariant(null);
+
+    try {
+      const response = await axiosClient.get("/NailVariants", {
+        headers: getAuthHeaders(),
+        params: {
+          pageNumber: 1,
+          pageSize: 100,
+          nailDesignId: designId,
+        },
+      });
+      const payload = unwrapApiResponse(response, "Failed to load nail design variants.");
+      const items = Array.isArray(payload?.items) ? payload.items.map((item) => buildVariantTemplateFromApi(item, language)) : [];
+
+      setDesignVariants(items);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load nail design variants.";
+      setDesignError(message);
+    } finally {
+      setIsVariantsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchTemplates = async () => {
+      setIsDesignsLoading(true);
+      setDesignError("");
+
+      try {
+        const response = await axiosClient.get("/NailDesigns", {
+          headers: getAuthHeaders(),
+          params: {
+            pageNumber: 1,
+            pageSize: 50,
+            name: designQuery || undefined,
+          },
+        });
+
+        const payload = unwrapApiResponse(response, isVi ? "Không thể tải mẫu thiết kế móng." : "Failed to load nail design templates.");
+        const items = Array.isArray(payload?.items) ? payload.items.map((item) => buildDesignTemplateFromApi(item, language)) : [];
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDesignTemplates(items);
+        setTemplateStartIndex(0);
+        setShowAllDesigns(false);
+        if (!selectedTemplateId && items[0]) {
+          setSelectedTemplateId(items[0].id);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : isVi ? "Không thể tải mẫu thiết kế móng." : "Failed to load nail design templates.";
+        setDesignError(message);
+      } finally {
+        if (isMounted) {
+          setIsDesignsLoading(false);
+        }
+      }
+    };
+
+    void fetchTemplates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [designQuery, selectedTemplateId, language]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBuilderCatalog = async () => {
+      setIsBuilderCatalogLoading(true);
+      setBuilderCatalogError("");
+
+      try {
+        const [shapes, surfaces, components, services] = await Promise.all([
+          fetchStaffBuilderNailShapes(),
+          fetchStaffBuilderNailSurfaces(),
+          fetchStaffBuilderNailComponents(),
+          fetchServiceCatalog({ pageNumber: 1, pageSize: 100 }),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextShapeOptions = shapes.map(buildShapeOption);
+        const nextSurfaceOptions = surfaces.map(buildSurfaceOption);
+        const nextDecorationOptions = components.map(buildDecorationOption);
+        const nextExtraServiceOptions = services.items.map(buildExtraServiceOption);
+
+        setShapeOptions(nextShapeOptions);
+        setSurfaceOptions(nextSurfaceOptions);
+        setDecorationOptions(nextDecorationOptions);
+        setExtraServiceOptions(nextExtraServiceOptions);
+        setSelectedShape((current) => {
+          const nextValue = nextShapeOptions.find((item) => item.familyLabel === current)?.familyLabel;
+          return nextValue
+            || getShapeFamilyLabel(studio?.builder.initialSelection.shape)
+            || nextShapeOptions[0]?.familyLabel
+            || current;
+        });
+        setSelectedLength((current) => {
+          const currentFamily = getShapeFamilyLabel(studio?.builder.initialSelection.shape);
+          const preferredFamily = nextShapeOptions.find((item) => item.familyLabel === currentFamily)?.familyLabel
+            || nextShapeOptions[0]?.familyLabel
+            || "";
+          const preferredOption = getPreferredShapeVariant(
+            nextShapeOptions,
+            preferredFamily,
+            current,
+          );
+
+          return preferredOption?.lengthVariant
+            || getShapeLengthVariant(studio?.builder.initialSelection.shape)
+            || "Short";
+        });
+        setSelectedFinish((current) => {
+          const nextValue = nextSurfaceOptions.find((item) => item.label === current)?.label;
+          return nextValue || nextSurfaceOptions.find((item) => item.label === studio?.builder.initialSelection.finish)?.label || nextSurfaceOptions[0]?.label || current;
+        });
+        setSelectedExtrasMap((current) => {
+          const allowedLabels = new Set(nextExtraServiceOptions.map((item) => item.label));
+          const sanitized = {};
+          for (const [key, qty] of Object.entries(current)) {
+            if (allowedLabels.has(key)) sanitized[key] = qty;
+          }
+          return sanitized;
+        });
+        setNailDecorations((current) => {
+          const allowedLabels = new Set(nextDecorationOptions.map((item) => item.label));
+          const sourceLayout = Array.isArray(current) && current.length === NAIL_LABELS.length
+            ? current
+            : createNailDecorationLayout(studio?.builder.initialSelection.decorations ?? []);
+
+          const nextDecorations = sourceLayout.map((items) => items.filter((item) => allowedLabels.has(item)));
+          const nextDecorationMap = new Map(nextDecorationOptions.map((item) => [item.label, item]));
+          const nextPlacements = [];
+
+          nextDecorations.forEach((items, fingerIndex) => {
+            items.forEach((label) => {
+              const option = nextDecorationMap.get(label);
+
+              if (!option) {
+                return;
+              }
+
+              nextPlacements.push(buildDefaultPlacement(option, fingerIndex));
+            });
+          });
+
+          setComponentPlacements(nextPlacements);
+          setSelectedPlacementKey(nextPlacements[0]?.key || "");
+
+          return nextDecorations;
+        });
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : isVi ? "Không thể tải danh mục xây dựng." : "Failed to load builder catalog.";
+        setBuilderCatalogError(message);
+      } finally {
+        if (isMounted) {
+          setIsBuilderCatalogLoading(false);
+        }
+      }
+    };
+
+    void loadBuilderCatalog();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [studio]);
+
+  const activeTemplate = useMemo(() => {
+    if (designView === "variants" && selectedVariant) {
+      return selectedVariant;
+    }
+
+    const selectedDesignTemplate = designTemplates.find((item) => item.id === selectedTemplateId);
+
+    if (selectedDesignTemplate) {
+      return selectedDesignTemplate;
+    }
+
+    return selectedDesign ?? studio?.selectedDesign;
+  }, [designTemplates, designView, selectedDesign, selectedTemplateId, selectedVariant, studio]);
   const visibleTemplates = useMemo(() => {
-    if (!studio?.templates?.length) {
+    if (designView === "variants") {
+      return designVariants;
+    }
+
+    if (showAllDesigns) {
+      return designTemplates;
+    }
+
+    if (!designTemplates.length) {
       return [];
     }
 
-    if (studio.templates.length <= templateWindowSize) {
-      return studio.templates;
+    if (designTemplates.length <= templateWindowSize) {
+      return designTemplates;
     }
 
     return Array.from({ length: templateWindowSize }, (_, offset) => {
-      const index = (templateStartIndex + offset) % studio.templates.length;
-      return studio.templates[index];
+      const index = (templateStartIndex + offset) % designTemplates.length;
+      return designTemplates[index];
     });
-  }, [studio, templateStartIndex]);
-  const previewColorStyle = useMemo(
-    () => getColorStyle(selectedColor, studio?.builder.colors ?? []),
-    [selectedColor, studio],
+  }, [designTemplates, designVariants, designView, showAllDesigns, templateStartIndex]);
+  const activeColorConfig = useMemo(
+    () => normalizeFingerColorConfig(
+      fingerColorConfigs[selectedColorFingerIndices[0] ?? 0] ?? createDefaultFingerColor(),
+    ),
+    [fingerColorConfigs, selectedColorFingerIndices],
+  );
+  const selectedColorMode = activeColorConfig.mode;
+  const selectedPrimaryColor = activeColorConfig.primaryColor;
+  const selectedSecondaryColor = activeColorConfig.secondaryColor;
+  const selectedGradientStops = activeColorConfig.gradientStops;
+  const selectedColor = useMemo(
+    () => getFingerColorSummary(activeColorConfig),
+    [activeColorConfig],
+  );
+  const shapeFamilyOptions = useMemo(() => {
+    const familyMap = new Map();
+
+    shapeOptions.forEach((item) => {
+      if (familyMap.has(item.familyLabel)) {
+        const current = familyMap.get(item.familyLabel);
+        if (!current.imageUrl && item.imageUrl) {
+          familyMap.set(item.familyLabel, { ...current, imageUrl: item.imageUrl });
+        }
+        return;
+      }
+
+      familyMap.set(item.familyLabel, {
+        ...item,
+        label: item.familyLabel,
+      });
+    });
+
+    return [...familyMap.values()];
+  }, [shapeOptions]);
+
+  const selectedShapeOption = useMemo(
+    () => shapeOptions.find((shape) => shape.label === selectedShape) || shapeOptions[0],
+    [selectedShape, shapeOptions],
+  );
+
+  const selectedShapeMethodConfig = useMemo(
+    () => shapeMethodConfigs.find((c) => String(c.shapeMethodConfigId) === String(selectedShapeMethodConfigId)),
+    [shapeMethodConfigs, selectedShapeMethodConfigId]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchConfigs = async () => {
+      if (!selectedShapeOption?.id) {
+        setShapeMethodConfigs([]);
+        setSelectedShapeMethodConfigId("");
+        return;
+      }
+      setIsShapeMethodConfigsLoading(true);
+      try {
+        const configs = await fetchStaffBuilderShapeMethodConfigs(selectedShapeOption.id);
+        if (!isMounted) return;
+        setShapeMethodConfigs(configs);
+        // Auto-select first config during initial hydration so user doesn't need to re-pick
+        // After hydration (user manually changes shape), reset to empty so user picks explicitly
+        if (!hasHydratedInitialNailRef.current && configs.length > 0) {
+          setSelectedShapeMethodConfigId(String(configs[0].shapeMethodConfigId));
+        } else {
+          setSelectedShapeMethodConfigId("");
+        }
+      } catch (error) {
+        console.error("Failed to fetch shape method configs:", error);
+      } finally {
+        if (isMounted) {
+          setIsShapeMethodConfigsLoading(false);
+        }
+      }
+    };
+    fetchConfigs();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedShapeOption]);
+
+
+
+  const selectedSurfaceOption = useMemo(
+    () => surfaceOptions.find((item) => item.label === selectedFinish) ?? null,
+    [selectedFinish, surfaceOptions],
+  );
+  const decorationOptionMap = useMemo(
+    () => new Map(decorationOptions.map((item) => [item.label, item])),
+    [decorationOptions],
+  );
+  const extraServiceOptionMap = useMemo(
+    () => new Map(extraServiceOptions.map((item) => [item.label, item])),
+    [extraServiceOptions],
   );
   const selectedDecorations = useMemo(
-    () => nailDecorations[activeNailIndex] ?? [],
+    () => {
+      if (activeNailIndex === -1) {
+        return Array.from(new Set(nailDecorations.flat()));
+      }
+
+      return nailDecorations[activeNailIndex] ?? [];
+    },
     [activeNailIndex, nailDecorations],
   );
 
-  const applyTemplatePreset = (templateId) => {
+  const selectedDecorationEntries = useMemo(
+    () => nailDecorations
+      .flatMap((items, fingerIndex) => items.map((label) => ({ fingerIndex, label })))
+      .map((item) => ({
+        ...item,
+        option: decorationOptionMap.get(item.label) ?? null,
+      }))
+      .filter((item) => item.option),
+    [decorationOptionMap, nailDecorations],
+  );
+
+  const selectedExtraOptions = useMemo(
+    () => Object.entries(selectedExtrasMap)
+      .filter(([id, qty]) => qty > 0)
+      .map(([id, qty]) => {
+        const option = extraServiceOptionMap.get(id);
+        return option ? { ...option, quantity: qty } : null;
+      })
+      .filter(Boolean),
+    [extraServiceOptionMap, selectedExtrasMap],
+  );
+  const suggestedCustomerNailName = useMemo(() => {
+    const parts = [
+      selectedVariant?.name || selectedDesign?.name || studio?.selectedDesign?.name || (isVi ? "Thiết kế tùy chỉnh" : "Custom design"),
+      selectedShape,
+      selectedFinish,
+    ].filter(Boolean);
+
+    return parts.join(" • ").trim() || (isVi ? "Thiết kế móng tùy chỉnh" : "Custom Nail Design");
+  }, [selectedDesign?.name, selectedFinish, selectedShape, selectedVariant?.name, studio?.selectedDesign?.name]);
+  const customerNailName = useMemo(
+    () => String(customerNailNameDraft || "").trim() || suggestedCustomerNailName,
+    [customerNailNameDraft, suggestedCustomerNailName],
+  );
+  const customerNailCustomColor = useMemo(
+    () => JSON.stringify({
+      mode: "perFinger",
+      fingers: fingerColorConfigs.map((item, index) => ({
+        ...normalizeFingerColorConfig(item),
+        fingerIndex: index,
+        gradient: {
+          stops: normalizeFingerColorConfig(item).gradientStops,
+        },
+      })),
+    }),
+    [fingerColorConfigs],
+  );
+  const resolvedSelectedVariantId = useMemo(
+    () => toNullableNumber(selectedVariant?.raw?.nailVariantId || selectedVariantId),
+    [selectedVariant?.raw?.nailVariantId, selectedVariantId],
+  );
+  const isVariantSelectionMode = Boolean(resolvedSelectedVariantId);
+  const activeFingerPlacements = useMemo(
+    () => componentPlacements.filter((item) => (
+      activeNailIndex === -1 ? true : item.fingerIndex === activeNailIndex
+    )),
+    [activeNailIndex, componentPlacements],
+  );
+  const selectedPlacement = useMemo(
+    () => componentPlacements.find((item) => item.key === selectedPlacementKey) ?? activeFingerPlacements[0] ?? null,
+    [activeFingerPlacements, componentPlacements, selectedPlacementKey],
+  );
+
+  const estimationRows = useMemo(() => {
+    const nailRows = [];
+    const rows = [];
+
+    if (selectedShapeOption) {
+      nailRows.push({
+        key: `shape-${selectedShapeOption.id}`,
+        label: `${isVi ? "Kiểu dáng" : "Shape"} • ${selectedShapeOption.label}`,
+        price: selectedShapeOption.price || 0,
+        duration: selectedShapeOption.duration || 0,
+      });
+    }
+
+    if (selectedShapeMethodConfig) {
+      nailRows.push({
+        key: `shape-method-config-${selectedShapeMethodConfig.shapeMethodConfigId}`,
+        label: `${isVi ? "Cấu hình móng" : "Shape Method Config"} • ${selectedShapeMethodConfig.name}`,
+        price: selectedShapeMethodConfig.price || 0,
+        duration: selectedShapeMethodConfig.duration || 0,
+      });
+    }
+
+    if (selectedSurfaceOption) {
+      nailRows.push({
+        key: `${isVi ? "Bề mặt móng" : "surface"}-${selectedSurfaceOption.id}`,
+        label: `${isVi ? "Bề mặt móng" : "Finish / Texture"} • ${selectedSurfaceOption.label}`,
+        price: selectedSurfaceOption.price,
+        duration: selectedSurfaceOption.duration,
+      });
+    }
+
+    const groupedDecorations = new Map(); // optionId -> { option, fingerIndices: [] }
+
+    selectedDecorationEntries.forEach((item) => {
+      const key = String(item.option.id);
+      if (!groupedDecorations.has(key)) {
+        groupedDecorations.set(key, { option: item.option, fingerIndices: [] });
+      }
+      groupedDecorations.get(key).fingerIndices.push(item.fingerIndex);
+    });
+
+    groupedDecorations.forEach(({ option, fingerIndices }) => {
+      const count = fingerIndices.length;
+      const allFingers = count === NAIL_LABELS.length;
+      const fingersLabel = allFingers
+        ? (isVi ? "Tất cả các ngón" : "All fingers")
+        : fingerIndices.map((i) => fingerLabels[i]).join(", ");
+
+      nailRows.push({
+        key: `decoration-${option.id}`,
+        label: `${option.label} • ${fingersLabel}`,
+        price: option.price * count,
+        duration: option.duration * count,
+        quantity: count,
+      });
+    });
+
+    rows.push(...nailRows);
+
+    const nailPrice = nailRows.reduce(
+      (sum, item) => sum + Number(item.price || 0),
+      0,
+    );
+
+    const nailDuration = nailRows.reduce(
+      (sum, item) => sum + Number(item.duration || 0),
+      0,
+    );
+
+    // rows.push({
+    //   key: "summary-nail-price",
+    //   label: (
+    //     <span className="font-bold text-[#38253a]">
+    //       {isVi ? "Tổng giá móng" : "Summary Nail Price"}
+    //     </span>
+    //   ),
+    //   price: nailPrice,
+    //   duration: nailDuration,
+    //   isSummary: true,
+    // });
+
+    selectedExtraOptions.forEach((item) => {
+      rows.push({
+        key: `extra-${item.id}`,
+        label: (
+          <>
+            <span className="font-semibold text-black">{isVi ? "Dịch vụ bổ sung" : "Extra"}</span>
+            {" • "}
+            {item.label} {item.quantity > 1 ? ` (x${item.quantity})` : ""}
+          </>
+        ),
+        price: item.price * item.quantity,
+        duration: item.duration * item.quantity,
+        quantity: item.quantity,
+      });
+    });
+
+    return rows;
+  }, [
+    fingerLabels,
+    isVi,
+    selectedDecorationEntries,
+    selectedExtraOptions,
+    selectedShapeOption,
+    selectedShapeMethodConfig,
+    selectedSurfaceOption,
+  ]);
+
+  const totalEstimatedPrice = useMemo(
+    () => estimationRows.filter((item) => !item.isSummary).reduce((sum, item) => sum + Number(item.price || 0), 0),
+    [estimationRows],
+  );
+  const totalEstimatedDuration = useMemo(
+    () => estimationRows.filter((item) => !item.isSummary).reduce((sum, item) => sum + Number(item.duration || 0), 0),
+    [estimationRows],
+  );
+  const totalEstimatedPriceLabel = useMemo(
+    () => formatCurrencyValue(totalEstimatedPrice),
+    [totalEstimatedPrice],
+  );
+  const totalEstimatedDurationLabel = useMemo(
+    () => formatDurationLabel(totalEstimatedDuration, language),
+    [totalEstimatedDuration, language],
+  );
+
+  const updateSelectedFingerColors = (updater) => {
+    if (!selectedColorFingerIndices.length) {
+      return;
+    }
+
+    setFingerColorConfigs((current) =>
+      current.map((item, index) => (
+        selectedColorFingerIndices.includes(index) ? updater(item, index) : item
+      )),
+    );
+  };
+
+  const clearSelectedVariant = () => {
+    setSelectedVariantId("");
+    setSelectedVariant(null);
+  };
+
+  const resetConfirmedDesignState = () => {
+    setIsDesignConfirmed(false);
+    setConfirmedCustomerNail(null);
+    setDesignActionError("");
+    setDesignActionSuccess("");
+  };
+
+  const markAsCustomized = () => {
+    resetConfirmedDesignState();
+
+    if (!selectedVariantId) {
+      return;
+    }
+
+    clearSelectedVariant();
+  };
+
+  const syncPlacementsFromDecorations = (nextDecorations, basePlacements = componentPlacements) => {
+    const currentMap = new Map(basePlacements.map((item) => [item.key, item]));
+    const nextPlacements = [];
+
+    nextDecorations.forEach((items, fingerIndex) => {
+      const itemCounts = new Map();
+      items.forEach((label) => {
+        const option = decorationOptionMap.get(label);
+
+        if (!option) {
+          return;
+        }
+
+        const count = itemCounts.get(label) || 0;
+        itemCounts.set(label, count + 1);
+        const uniqueSuffix = count > 0 ? `-${count}` : "";
+        const uniqueToken = (option.customerComponentId || option.componentId || option.id || label) + uniqueSuffix;
+
+        const key = buildPlacementKey(fingerIndex, label, uniqueToken);
+
+        let placement = currentMap.get(key);
+        if (!placement) {
+          placement = buildDefaultPlacement(
+            option,
+            fingerIndex,
+            uniqueToken
+          );
+
+          if (count > 0) {
+            // Offset duplicate components slightly (e.g. 5% = 0.05) so they don't overlap completely
+            placement.posX += count * 0.05;
+            placement.posY += count * 0.05;
+            placement.zIndex += count;
+            placement.configJson = JSON.stringify({
+              scale: placement.scale,
+              rotation: placement.rotation,
+              zIndex: placement.zIndex,
+            });
+          }
+        }
+
+        nextPlacements.push(placement);
+      });
+    });
+
+    setComponentPlacements(nextPlacements);
+    setSelectedPlacementKey((current) => (
+      nextPlacements.some((item) => item.key === current) ? current : nextPlacements[0]?.key || ""
+    ));
+  };
+
+  const capturePreviewImageFile = async () => {
+    if (!previewContainerRef.current) {
+      return null;
+    }
+
+    try {
+      const blob = await toBlob(previewContainerRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#fff5fb",
+      });
+
+      if (!blob) {
+        return null;
+      }
+
+      return new File([blob], `customer-nail-preview-${Date.now()}.png`, {
+        type: "image/png",
+      });
+    } catch (error) {
+      console.error("Failed to capture live nail preview image.", error);
+      return null;
+    }
+  };
+
+  const applyCustomerNailDetailToBuilder = useEffectEvent((customerNailDetail) => {
+    if (!customerNailDetail) {
+      return;
+    }
+
+    if (customerNailDetail?.name) {
+      setCustomerNailNameDraft(String(customerNailDetail.name).trim());
+    }
+
+    const nextShapeLabel = String(customerNailDetail?.nailShape?.name || "").trim();
+    const nextSurfaceLabel = String(customerNailDetail?.nailSurface?.name || "").trim();
+
+    if (nextShapeLabel) {
+      setSelectedShape(getShapeFamilyLabel(nextShapeLabel));
+      setSelectedLength(getShapeLengthVariant(nextShapeLabel));
+    }
+
+    if (nextSurfaceLabel) {
+      setSelectedFinish(nextSurfaceLabel);
+    }
+
+    setFingerColorConfigs(
+      parseVariantColorJson(
+        customerNailDetail?.customColor || customerNailDetail?.colorJson,
+        rgbToHex(studio?.builder.colors?.[0]?.swatch || "#f8b4d9"),
+        rgbToHex(studio?.builder.colors?.[1]?.swatch || "#f3e8ff"),
+      ),
+    );
+    setSelectedColorFingerIndices([3]);
+
+    const rawComponents = Array.isArray(customerNailDetail?.customerNailComponents)
+      ? customerNailDetail.customerNailComponents
+      : Array.isArray(customerNailDetail?.nailComponents)
+        ? customerNailDetail.nailComponents
+        : [];
+    const dynamicDecorationOptions = [];
+    const dynamicDecorationMap = new Map();
+    const nextDecorations = Array.from({ length: NAIL_LABELS.length }, () => []);
+    const nextPlacements = [];
+
+    rawComponents.forEach((item, index) => {
+      const sourceComponent = item?.customerComponent || item?.component;
+      const label = String(sourceComponent?.name || "").trim();
+      // Backend stores fingerIndex as 0-based for customerNailComponents (same as how we save)
+      const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
+
+      if (!label || fingerIndex < 0) {
+        return;
+      }
+
+      const option = item?.customerComponent
+        ? buildCustomerDecorationOption(item.customerComponent)
+        : buildDecorationOption(item.component || {
+          componentId: item?.componentId,
+          name: label,
+          imageUrl: sourceComponent?.imageUrl,
+          componentType: sourceComponent?.componentType,
+        });
+
+      if (!dynamicDecorationMap.has(option.id)) {
+        dynamicDecorationMap.set(option.id, option);
+        dynamicDecorationOptions.push(option);
+      }
+
+      if (!nextDecorations[fingerIndex].includes(label)) {
+        nextDecorations[fingerIndex].push(label);
+      }
+
+      nextPlacements.push({
+        key: buildPlacementKey(
+          fingerIndex,
+          label,
+          item?.customerNailComponentId || item?.nailComponentId || `existing-${index}`,
+        ),
+        fingerIndex,
+        label,
+        componentId: toNullableNumber(item?.componentId),
+        customerComponentId: toNullableNumber(item?.customerComponentId),
+        imageUrl: String(sourceComponent?.imageUrl || "").trim(),
+        componentType: String(sourceComponent?.componentType || "").trim(),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
+        ...parsePlacementConfig(item?.configJson),
+        configJson: String(item?.configJson || ""),
+      });
+    });
+
+    if (dynamicDecorationOptions.length > 0) {
+      setDecorationOptions((current) => {
+        const currentMap = new Map(current.map((item) => [String(item.id), item]));
+        dynamicDecorationOptions.forEach((item) => {
+          if (!currentMap.has(String(item.id))) {
+            currentMap.set(String(item.id), item);
+          }
+        });
+        return [...currentMap.values()];
+      });
+    }
+
+    setNailDecorations(nextDecorations);
+    setComponentPlacements(nextPlacements);
+    setSelectedPlacementKey(nextPlacements[0]?.key || "");
+  });
+
+  useEffect(() => {
+    if (hasHydratedInitialNailRef.current || isBuilderCatalogLoading) {
+      return;
+    }
+
+    const stateDesignDetail = studioState?.currentDesignDetail || studioState?.designDetail || null;
+
+    if (stateDesignDetail) {
+      if (stateDesignDetail?.detailType === "customerNail" || stateDesignDetail?.customerNailId) {
+        applyCustomerNailDetailToBuilder(stateDesignDetail);
+      } else {
+        applyVariantToBuilder(stateDesignDetail);
+      }
+      hasHydratedInitialNailRef.current = true;
+      return;
+    }
+
+    if (!bookingDetail) {
+      return;
+    }
+
+    const customerNailId = toNullableNumber(getPrimaryCustomerNailId(bookingDetail?.bookingItems));
+    const nailVariantId = toNullableNumber(getPrimaryNailVariantId(bookingDetail?.bookingItems));
+
+    if (!customerNailId && !nailVariantId) {
+      hasHydratedInitialNailRef.current = true;
+      return;
+    }
+
+    let isMounted = true;
+
+    const hydrateCustomerNail = async () => {
+      try {
+        if (customerNailId) {
+          const customerNailDetail = await fetchStaffCustomerNailDetail(customerNailId);
+
+          if (!isMounted) {
+            return;
+          }
+
+          applyCustomerNailDetailToBuilder(customerNailDetail);
+          return;
+        }
+
+        if (nailVariantId) {
+          const variantDetail = await fetchStaffNailVariantDetail(nailVariantId);
+
+          if (!isMounted) {
+            return;
+          }
+
+          applyVariantToBuilder(variantDetail);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : "Failed to load existing customer nail detail.";
+        setBookingDetailError(message);
+      } finally {
+        if (isMounted) {
+          hasHydratedInitialNailRef.current = true;
+        }
+      }
+    };
+
+    void hydrateCustomerNail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [applyCustomerNailDetailToBuilder, bookingDetail, isBuilderCatalogLoading, studioState]);
+
+  const applyVariantToBuilder = (variantDetail) => {
+    if (!variantDetail) {
+      return;
+    }
+
+    const nextShapeLabel = String(variantDetail?.nailShape?.name || "").trim();
+    const nextSurfaceLabel = String(variantDetail?.nailSurface?.name || "").trim();
+
+    if (nextShapeLabel) {
+      setSelectedShape(getShapeFamilyLabel(nextShapeLabel));
+      setSelectedLength(getShapeLengthVariant(nextShapeLabel));
+    }
+
+    if (nextSurfaceLabel) {
+      setSelectedFinish(nextSurfaceLabel);
+    }
+
+    setSelectedVariantId(String(variantDetail?.nailVariantId || ""));
+    setSelectedVariant({
+      id: String(variantDetail?.nailVariantId || ""),
+      name: String(variantDetail?.name || "Selected variant").trim(),
+      image: String(variantDetail?.imageUrl || DEFAULT_DESIGN_IMAGE).trim(),
+      price: formatCurrencyValue(variantDetail?.price || 0),
+      duration: Number(variantDetail?.duration || 0) > 0
+        ? formatDurationLabel(Number(variantDetail?.duration || 0), language)
+        : "Flexible",
+      tags: [variantDetail?.nailShape?.name, variantDetail?.nailSurface?.name].filter(Boolean),
+      raw: variantDetail,
+    });
+
+    setFingerColorConfigs(
+      parseVariantColorJson(
+        variantDetail?.colorJson,
+        rgbToHex(studio?.builder.colors?.[0]?.swatch || "#f8b4d9"),
+        rgbToHex(studio?.builder.colors?.[1]?.swatch || "#f3e8ff"),
+      ),
+    );
+    setSelectedColorFingerIndices([3]);
+
+    const allowedDecorationLabels = new Set(decorationOptions.map((item) => item.label));
+    const nextDecorations = Array.from({ length: NAIL_LABELS.length }, () => []);
+    const nextPlacements = [];
+    const variantComponents = Array.isArray(variantDetail?.nailComponents) ? variantDetail.nailComponents : [];
+
+    variantComponents.forEach((item, index) => {
+      const componentName = String(item?.component?.name || "").trim();
+
+      if (!componentName || (allowedDecorationLabels.size > 0 && !allowedDecorationLabels.has(componentName))) {
+        return;
+      }
+
+      // Backend stores fingerIndex as 0-based (same convention for both variant and customerNail)
+      const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
+
+      if (fingerIndex === -1) {
+        nextDecorations.forEach((fingerItems, currentFingerIndex) => {
+          if (!fingerItems.includes(componentName)) {
+            fingerItems.push(componentName);
+          }
+
+          nextPlacements.push({
+            key: buildPlacementKey(currentFingerIndex, componentName, `variant-${index}-${currentFingerIndex}`),
+            fingerIndex: currentFingerIndex,
+            label: componentName,
+            componentId: Number(item?.component?.componentId || item?.componentId || 0),
+            imageUrl: String(item?.component?.imageUrl || "").trim(),
+            componentType: String(item?.component?.componentType || "").trim(),
+            posX: Number(item?.posX ?? 0),
+            posY: Number(item?.posY ?? 0),
+            ...parsePlacementConfig(item?.configJson),
+            configJson: String(item?.configJson || ""),
+          });
+        });
+        return;
+      }
+
+      if (!nextDecorations[fingerIndex].includes(componentName)) {
+        nextDecorations[fingerIndex].push(componentName);
+      }
+
+      nextPlacements.push({
+        key: buildPlacementKey(fingerIndex, componentName, `variant-${index}`),
+        fingerIndex,
+        label: componentName,
+        componentId: Number(item?.component?.componentId || item?.componentId || 0),
+        imageUrl: String(item?.component?.imageUrl || "").trim(),
+        componentType: String(item?.component?.componentType || "").trim(),
+        posX: Number(item?.posX ?? 0),
+        posY: Number(item?.posY ?? 0),
+        ...parsePlacementConfig(item?.configJson),
+        configJson: String(item?.configJson || ""),
+      });
+    });
+
+    setNailDecorations(nextDecorations);
+    setComponentPlacements(nextPlacements);
+    setSelectedPlacementKey(nextPlacements[0]?.key || "");
+  };
+
+  const handleVariantSelect = async (variantId) => {
+    const normalizedVariantId = Number(variantId || 0);
+
+    if (!Number.isInteger(normalizedVariantId) || normalizedVariantId <= 0) {
+      return;
+    }
+
+    resetConfirmedDesignState();
+    setSelectedVariantId(String(normalizedVariantId));
+
+    try {
+      const variantDetail = await fetchStaffNailVariantDetail(normalizedVariantId);
+      applyVariantToBuilder(variantDetail);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : isVi ? "Không thể tải chi tiết biến thể đã chọn." : "Failed to load selected variant detail.";
+      setDesignError(message);
+    }
+  };
+
+  const applyTemplatePreset = async (templateId) => {
+    resetConfirmedDesignState();
     setSelectedTemplateId(templateId);
+    setSelectedVariantId("");
+    setSelectedVariant(null);
+
+    const matchingTemplate = designTemplates.find((item) => item.id === templateId);
+    if (matchingTemplate) {
+      setSelectedDesign(matchingTemplate);
+      setDesignView("variants");
+      await loadDesignVariants(templateId);
+      return;
+    }
 
     const preset = TEMPLATE_PRESETS[templateId];
 
@@ -565,160 +2347,459 @@ export function StaffNailDesignStudioPage() {
       return;
     }
 
-    setSelectedShape(preset.shape);
-    setSelectedLength(preset.length);
-    setSelectedColor(preset.color);
+    setSelectedShape(getShapeFamilyLabel(preset.shape));
+    setSelectedLength(preset.length || "Short");
+    setFingerColorConfigs(Array.from({ length: NAIL_LABELS.length }, () => createDefaultFingerColor(getPresetColorHex(preset.color), "#f3e8ff")));
+    setSelectedColorFingerIndices([3]);
     setSelectedFinish(preset.finish);
-    setNailDecorations(createNailDecorationLayout(preset.decorations));
+    const nextDecorations = createNailDecorationLayout(preset.decorations);
+    setNailDecorations(nextDecorations);
+    syncPlacementsFromDecorations(nextDecorations, []);
     setActiveNailIndex(preset.decorations.length > 0 ? 3 : 0);
-    setSelectedExtras(preset.extras);
+    setSelectedExtrasMap(preset.extras.reduce((acc, e) => ({ ...acc, [e]: 1 }), {}));
   };
 
   const handleTemplateSlide = (direction) => {
-    if (!studio?.templates?.length || studio.templates.length <= templateWindowSize) {
+    if (showAllDesigns || !designTemplates.length || designTemplates.length <= templateWindowSize) {
       return;
     }
 
     setTemplateStartIndex((current) => {
       const delta = direction === "next" ? 1 : -1;
-      return (current + delta + studio.templates.length) % studio.templates.length;
+      return (current + delta + designTemplates.length) % designTemplates.length;
     });
   };
 
-  if (!booking || !studio) {
+  const handleBackToDesigns = () => {
+    setDesignView("designs");
+    setShowAllDesigns(false);
+    setDesignVariants([]);
+    setSelectedDesign(null);
+    setSelectedVariantId("");
+    setSelectedVariant(null);
+  };
+
+  const handleToggleShowAllDesigns = () => {
+    if (designView !== "designs") {
+      return;
+    }
+
+    setShowAllDesigns((current) => !current);
+  };
+
+  if (!studio) {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
+  const resolvedActiveTemplate = activeTemplate ?? studio.selectedDesign ?? {
+    name: "Custom design",
+    image: DEFAULT_DESIGN_IMAGE,
+    summaryService: "Custom service",
+  };
+
   const toggleArraySelection = (value, current, setter) => {
+    markAsCustomized();
     setter(current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   };
 
   const toggleNailDecoration = (decoration) => {
-    setNailDecorations((current) =>
-      current.map((items, index) => {
-        if (index !== activeNailIndex) {
+    markAsCustomized();
+    setNailDecorations((current) => {
+      const nextDecorations = current.map((items, index) => {
+        if (activeNailIndex !== -1 && index !== activeNailIndex) {
           return items;
         }
 
-        return items.includes(decoration)
-          ? items.filter((item) => item !== decoration)
-          : [...items, decoration];
+        return [...items, decoration];
+      });
+
+      syncPlacementsFromDecorations(nextDecorations);
+      return nextDecorations;
+    });
+  };
+
+  const handleShapeSelect = (value) => {
+    markAsCustomized();
+    setSelectedShape(value);
+  };
+
+  const handleFinishSelect = (value) => {
+    markAsCustomized();
+    setSelectedFinish(value);
+  };
+
+  const updateFingerColors = (updater) => {
+    markAsCustomized();
+    updateSelectedFingerColors((item, index) => normalizeFingerColorConfig(updater(
+      normalizeFingerColorConfig(item),
+      index,
+    )));
+  };
+
+  const handleGradientStopChange = (stopIndex, value) => {
+    updateFingerColors((item) => {
+      const gradientStops = [...normalizeFingerColorConfig(item).gradientStops];
+      gradientStops[stopIndex] = value;
+
+      return {
+        ...item,
+        mode: "gradient",
+        primaryColor: gradientStops[0],
+        secondaryColor: gradientStops[1] || gradientStops[0],
+        gradientStops,
+      };
+    });
+  };
+
+  const handleAddGradientStop = () => {
+    updateFingerColors((item) => {
+      const normalizedConfig = normalizeFingerColorConfig(item);
+      const gradientStops = [
+        ...normalizedConfig.gradientStops,
+        normalizedConfig.gradientStops[normalizedConfig.gradientStops.length - 1] || normalizedConfig.secondaryColor,
+      ];
+
+      return {
+        ...normalizedConfig,
+        mode: "gradient",
+        gradientStops,
+      };
+    });
+  };
+
+  const handleRemoveGradientStop = (stopIndex) => {
+    updateFingerColors((item) => {
+      const normalizedConfig = normalizeFingerColorConfig(item);
+      const gradientStops = normalizedConfig.gradientStops.filter((_, index) => index !== stopIndex);
+      const nextStops = normalizeGradientStops(
+        gradientStops,
+        gradientStops[0] || normalizedConfig.primaryColor,
+        gradientStops[1] || gradientStops[0] || normalizedConfig.secondaryColor,
+      );
+
+      return {
+        ...normalizedConfig,
+        mode: "gradient",
+        primaryColor: nextStops[0],
+        secondaryColor: nextStops[1],
+        gradientStops: nextStops,
+      };
+    });
+  };
+
+  const updatePlacementConfig = (placementKey, patch) => {
+    markAsCustomized();
+    setComponentPlacements((current) =>
+      current.map((item) => {
+        if (item.key !== placementKey) {
+          return item;
+        }
+
+        const nextItem = { ...item, ...patch };
+
+        return {
+          ...nextItem,
+          configJson: JSON.stringify({
+            scale: nextItem.scale,
+            rotation: nextItem.rotation,
+            zIndex: nextItem.zIndex,
+          }),
+        };
       }),
     );
   };
 
-  const detailRoute = getStaffBookingDetailRoute(bookingId);
-  const updateDesignRoute = getStaffBookingDesignUpdateRoute(bookingId);
-  const priceMap = {
-    "chrome-pearl": "$48.00",
-    "korean-nude": "$35.00",
-    "french-ombre": "$42.00",
-    "wedding-floral": "$65.00",
-    "minimal-beige": "$30.00",
-    "soft-nude": "$35.00",
-    "pink-gloss": "$42.00",
-    "custom-consultation": "$56.00",
+  const handleRemovePlacements = (placementKeys) => {
+    if (!placementKeys || placementKeys.length === 0) return;
+    markAsCustomized();
+
+    setComponentPlacements((currentPlacements) => {
+      const nextPlacements = currentPlacements.filter(p => !placementKeys.includes(p.key));
+
+      setNailDecorations(() => {
+        const newDecorations = Array.from({ length: 5 }, () => []);
+        nextPlacements.forEach(p => {
+          if (p.fingerIndex >= 0 && p.fingerIndex < 5) {
+            newDecorations[p.fingerIndex].push(p.label);
+          }
+        });
+        return newDecorations;
+      });
+
+      return nextPlacements;
+    });
+
+    setSelectedPlacementKey((current) => placementKeys.includes(current) ? "" : current);
   };
 
-  const handleConfirmDesign = () => {
-    setIsDesignConfirmed(true);
+  const handlePreviewNailSelect = (fingerIndex) => {
+    setActiveNailIndex(fingerIndex);
+    const firstPlacement = componentPlacements.find((item) => item.fingerIndex === fingerIndex);
+    setSelectedPlacementKey((current) => {
+      if (current && componentPlacements.some((item) => item.key === current && item.fingerIndex === fingerIndex)) {
+        return current;
+      }
+
+      return firstPlacement?.key || "";
+    });
   };
 
-  const handleOpenUpdateBookingDesign = () => {
-    if (!isDesignConfirmed) {
+  const moveStep = (index, direction) => {
+    const nextList = [...selectedProcedures];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= nextList.length) return;
+    const temp = nextList[index];
+    nextList[index] = nextList[targetIndex];
+    nextList[targetIndex] = temp;
+    setSelectedProcedures(nextList);
+  };
+
+  const handleCloseProcedureModal = () => {
+    setIsProcedureModalOpen(false);
+    setSelectedProcedures([]);
+    setCommonProcedures([]);
+    setModelSpecificProcedures([]);
+  };
+
+  const handleSaveProcedures = async () => {
+    if (!procedureCustomerNailId || isAssigningProcedures) return;
+    if (selectedProcedures.length === 0) {
+      toast.error(language === "vi" ? "Vui lòng chọn ít nhất một quy trình." : "Please select at least one procedure.");
       return;
     }
 
-    navigate(updateDesignRoute, {
-      state: {
-        designUpdate: {
-          bookingCode: studio.bookingCode,
-          statusLabel: "Updating Design",
-          summaryStatus: "Updating Design",
-          customer: studio.customerName,
-          staffArtist: studio.staffName,
-          appointment: "Today, 2:30 PM",
-          chair: "Chair #3",
-          previousDesign: {
-            name: "Classic French Manicure",
-            shortName: "Classic French",
-            price: "$45.00",
-            duration: "45 min",
-            image: "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80",
-          },
-          newDesign: {
-            name:
-              `${selectedColor} ${selectedFinish} ${selectedDecorations.length > 0 ? selectedDecorations[0] : activeTemplate.name}`.replace(/\s+/g, " ").trim(),
-            shortName: activeTemplate.name,
-            price: priceMap[selectedTemplateId] ?? studio.builder.totalPrice,
-            duration: studio.builder.estimatedDuration,
-            image: activeTemplate.image,
-          },
-          serviceSummary: {
-            shape: [selectedShape],
-            length: [selectedLength === "Long" ? "Medium Long" : selectedLength],
-            colors: [selectedColor, "Deep Rose", "Pearl White"].filter((value, index, arr) => arr.indexOf(value) === index),
-            finish: [selectedFinish, selectedFinish === "Chrome" ? "Mirror Effect" : "Soft Reflection"],
-            decorations: Array.from(new Set(nailDecorations.flat())).length > 0 ? Array.from(new Set(nailDecorations.flat())) : ["Minimal Finish"],
-            extras: selectedExtras.length > 0 ? selectedExtras : ["Gel Top Coat"],
-          },
-          pricing: {
-            originalPrice: "$45.00",
-            newPrice: priceMap[selectedTemplateId] ?? studio.builder.totalPrice,
-            additionalCost: "+$33.00",
-            additionalNote: "To be collected",
-            updatedDuration: studio.builder.estimatedDuration,
-            durationNote: "+30 min added",
-            warning: "Additional payment required - customer must pay an extra $33.00 before service begins.",
-          },
-          designStatus: {
-            previousDesign: "Classic French",
-            newDesign: activeTemplate.name,
-            designSelected: "Confirmed",
-            bookingUpdated: "Pending",
-            customerAgreed: "Pending",
-          },
-          addOns: [
-            { title: "Hand Spa", note: "Moisturizing treatment", price: "+$18", tone: "pink", kind: "spa" },
-            { title: "Chrome Upgrade", note: "Mirror chrome powder", price: "+$12", tone: "violet", kind: "chrome" },
-            { title: "Nail Repair", note: "Fix broken nails", price: "+$8", tone: "emerald", kind: "repair" },
-          ],
-          confirmations: [
-            {
-              key: "reviewed",
-              title: "Customer reviewed new design",
-              note: `Customer has seen and approved the ${activeTemplate.name} design preview`,
-              checked: true,
-            },
-            {
-              key: "price",
-              title: "Customer accepted updated price",
-              note: "Customer agrees to pay updated total before service starts",
-              checked: false,
-            },
-            {
-              key: "duration",
-              title: "Customer accepted updated duration",
-              note: `Customer acknowledges service will take approximately ${studio.builder.estimatedDuration}`,
-              checked: false,
-            },
-          ],
-        },
-      },
+    setIsAssigningProcedures(true);
+    try {
+      const payload = selectedProcedures.map((p, index) => ({
+        procedureId: p.procedureId,
+        stepOrder: index + 1,
+      }));
+      await assignProceduresToCustomerNail(procedureCustomerNailId, payload);
+      toast.success(language === "vi" ? "Lưu quy trình thành công!" : "Procedures assigned successfully!");
+      handleCloseProcedureModal();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : isVi ? "Không thể gán quy trình." : "Failed to assign procedures.";
+      toast.error(msg);
+    } finally {
+      setIsAssigningProcedures(false);
+    }
+  };
+
+  const detailRoute = getStaffBookingDetailRoute(bookingId);
+  const handleConfirmDesign = async () => {
+    // eslint-disable-next-line no-console
+    console.log("=== CONFIRM DESIGN INFO ===", {
+      isVariantSelectionMode,
+      selectedVariantId,
+      selectedVariant,
+      procedureCustomerNailId,
+      confirmedCustomerNail,
+      selectedShapeOption,
+      selectedSurfaceOption,
+      customerNailName,
+      customerNailCustomColor,
+      componentPlacements,
+      selectedExtrasMap,
+      bookingId,
+      originalDesignContext: location.state?.designContext
     });
+
+    if (!selectedShapeOption || !selectedSurfaceOption || isConfirmingDesign) {
+      return;
+    }
+
+    if (isVariantSelectionMode) {
+      setConfirmedCustomerNail(null);
+      setIsDesignConfirmed(true);
+      setDesignActionError("");
+      setDesignActionSuccess(isVi ? "Mẫu móng đã được xác nhận. Bây giờ bạn có thể cập nhật booking này." : "Variant confirmed successfully. You can update this booking now.");
+      toast.success(isVi ? "Mẫu móng đã được xác nhận." : "Variant confirmed successfully.");
+      return;
+    }
+
+    setIsConfirmingDesign(true);
+    setDesignActionError("");
+    setDesignActionSuccess("");
+
+    try {
+      const previewImageFile = await capturePreviewImageFile();
+      const createdCustomerNail = await createStaffCustomerNail({
+        name: customerNailName,
+        nailShapeId: Number(selectedShapeOption.nailShapeId || selectedShapeOption.id || 0),
+        nailSurfaceId: Number(selectedSurfaceOption.nailSurfaceId || selectedSurfaceOption.id || 0),
+        customColor: customerNailCustomColor,
+        isPublic: true,
+        image: previewImageFile,
+      });
+
+      const componentPayloads = componentPlacements
+        .map((item) => ({
+          customerNailId: Number(createdCustomerNail?.customerNailId || 0),
+          componentId: toNullableNumber(item?.componentId),
+          customerComponentId: toNullableNumber(item?.customerComponentId),
+          posX: Number(item?.posX ?? 0),
+          posY: Number(item?.posY ?? 0),
+          fingerIndex: Number(item?.fingerIndex ?? 0),
+          configJson: String(item?.configJson || "").trim(),
+        }))
+        .filter((item) => item.componentId || item.customerComponentId);
+
+      if (componentPayloads.length > 0) {
+        await Promise.all(
+          componentPayloads.map((item) => createStaffCustomerNailComponent(item)),
+        );
+      }
+
+      setConfirmedCustomerNail(createdCustomerNail);
+      setIsDesignConfirmed(true);
+      setDesignActionSuccess(isVi ? "Thiết kế móng tùy chỉnh đã được tạo thành công. Bây giờ bạn có thể cập nhật booking này." : "Custom nail created successfully. You can update this booking now.");
+      toast.success(isVi ? "Thiết kế móng tùy chỉnh đã được tạo thành công." : "Custom nail created successfully.");
+
+      const customerNailId = Number(createdCustomerNail?.customerNailId || 0);
+      if (customerNailId) {
+        setProcedureCustomerNailId(customerNailId);
+        setIsProcedureModalOpen(true);
+        try {
+          const [commonData, specificData] = await Promise.all([
+            fetchProcedures("Common"),
+            fetchProcedures("ModelSpecific")
+          ]);
+          setCommonProcedures(commonData?.items || []);
+          setModelSpecificProcedures(specificData?.items || []);
+        } catch (err) {
+          console.error("Failed to fetch procedures", err);
+          toast.error(isVi ? "Không thể tải danh sách quy trình." : "Failed to load procedures list.");
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : isVi ? "Không thể tạo thiết kế móng." : "Failed to create customer nail.";
+      setIsDesignConfirmed(false);
+      setConfirmedCustomerNail(null);
+      setDesignActionError(message);
+      toast.error(message);
+    } finally {
+      setIsConfirmingDesign(false);
+    }
+  };
+
+  const handleOpenUpdateBookingDesign = async () => {
+    if (!isDesignConfirmed || isUpdatingBookingDesign) {
+      return;
+    }
+
+    if (!isUuidLike(resolvedBookingApiId)) {
+      setDesignActionError(isVi ? "Cần có ID booking hợp lệ trước khi cập nhật booking." : "A valid booking ID is required before updating the booking.");
+      return;
+    }
+
+    setIsUpdatingBookingDesign(true);
+    setDesignActionError("");
+    setDesignActionSuccess("");
+
+    try {
+      const nextBookingDetail = bookingDetail ?? await fetchStaffBookingDetail(resolvedBookingApiId);
+
+      if (!nextBookingDetail) {
+        throw new Error(isVi ? "Không thể cập nhật booking chi tiết." : "Booking detail is not available for update.");
+      }
+
+      const nextCustomerNailId = isVariantSelectionMode
+        ? null
+        : toNullableNumber(confirmedCustomerNail?.customerNailId);
+      const nextNailVariantId = isVariantSelectionMode ? resolvedSelectedVariantId : null;
+
+      if (!nextNailVariantId && !nextCustomerNailId) {
+        throw new Error(isVi ? "Vui lòng xác nhận biến thể móng hoặc tạo thiết kế móng tùy chỉnh trước khi cập nhật booking." : "Please confirm a nail variant or create a custom nail before updating the booking.");
+      }
+
+      const existingBookingItems = Array.isArray(nextBookingDetail?.bookingItems) ? nextBookingDetail.bookingItems : [];
+      const baseNailItems = existingBookingItems.filter(isNailLinkedBookingItem);
+      const existingServiceItems = existingBookingItems.filter((item) => !isNailLinkedBookingItem(item));
+      const fallbackNailItem = baseNailItems[0] || existingBookingItems[0] || null;
+      const payloadNailItemsSource = baseNailItems.length > 0 ? baseNailItems : [fallbackNailItem].filter(Boolean);
+      const replacementNailItems = (payloadNailItemsSource.length > 0
+        ? payloadNailItemsSource
+        : [{
+          quantity: 1,
+          serviceId: null,
+          shapeMethodConfigId: null,
+          nailVariantId: null,
+          customerNailRequestId: null,
+          customerNailId: null,
+        }]).map((item) => ({
+          nailVariantId: nextNailVariantId,
+          serviceId: toNullableUuid(item?.serviceId),
+          shapeMethodConfigId: Number(selectedShapeMethodConfig?.shapeMethodConfigId) || null,
+          customerNailId: nextCustomerNailId,
+          customerNailRequestId: null,
+          quantity: Number(item?.quantity || 1) || 1,
+        }));
+      const preservedServiceItems = existingServiceItems
+        .map((item) => buildServiceOnlyBookingItem(item))
+        .filter((item) => item.serviceId);
+      const mergedServiceItemsMap = new Map(
+        preservedServiceItems.map((item) => [item.serviceId, item]),
+      );
+
+      selectedExtraOptions.forEach((item) => {
+        const serviceId = toNullableUuid(item.id);
+
+        if (!serviceId || mergedServiceItemsMap.has(serviceId)) {
+          return;
+        }
+
+        mergedServiceItemsMap.set(serviceId, buildServiceOnlyBookingItem({ serviceId, quantity: item.quantity || 1 }));
+      });
+
+      const payloadBookingItems = [
+        ...replacementNailItems,
+        ...mergedServiceItemsMap.values(),
+      ];
+
+      const updatedBooking = await updateStaffBooking(resolvedBookingApiId, {
+        bookingDate: nextBookingDetail.bookingDate,
+        startTime: nextBookingDetail.startTime,
+        nailArtistId: toNullableUuid(
+          nextBookingDetail.nailArtistId
+          || nextBookingDetail.artistId
+          || loadAuthSession()?.user?.staffId
+          || loadAuthSession()?.staffId,
+        ),
+        bookingItems: payloadBookingItems,
+      });
+
+      setBookingDetail(updatedBooking);
+      setDesignActionSuccess(
+        isVariantSelectionMode
+          ? isVi ? "Lịch hẹn đã được cập nhật với biến thể móng đã chọn." : "Booking updated successfully with the selected nail variant."
+          : isVi ? "Lịch hẹn đã được cập nhật với thiết kế móng tùy chỉnh." : "Booking updated successfully with the new customer nail design.",
+      );
+      toast.success(
+        isVariantSelectionMode
+          ? isVi ? "Lịch hẹn đã được cập nhật với biến thể móng đã chọn." : "Booking updated successfully with the selected nail variant."
+          : isVi ? "Lịch hẹn đã được cập nhật với thiết kế móng tùy chỉnh." : "Booking updated successfully with the new customer nail design.",
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : isVi ? "Không thể cập nhật thiết kế booking." : "Failed to update booking design.";
+      setDesignActionError(message);
+      toast.error(message);
+    } finally {
+      setIsUpdatingBookingDesign(false);
+    }
   };
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
         <div className="space-y-4">
-          <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+          <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
             <label className="relative block">
               <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#80687d]" />
               <input
                 type="text"
-                defaultValue=""
-                placeholder="Search nails designs..."
+                value={designQuery}
+                onChange={(event) => setDesignQuery(event.target.value)}
+                placeholder={isVi ? "Tìm kiếm mẫu móng..." : "Search nails designs..."}
                 className="h-11 w-full rounded-[12px] border border-[#f4dbe7] bg-[#fffafc] pl-11 pr-4 text-sm text-[#594456] outline-none transition focus:border-[#ef6aac]"
               />
             </label>
@@ -731,132 +2812,402 @@ export function StaffNailDesignStudioPage() {
             </div>
           </article>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.44fr)]">
             <div className="space-y-4">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-extrabold text-[#38253a]">Ready-Made Design Templates</h2>
+                    <h2 className="text-sm font-bold text-[#38253a]">{isVi ? "Danh sách mẫu móng" : "Ready-Made Design Templates"}</h2>
                     <p className="mt-1 text-[11px] text-[#a8899c]">
-                      Select a template or customize from scratch
+                      {designView === "designs"
+                        ? isVi ? "Chọn một mẫu để xem các biến thể có sẵn" : "Select a template to view its available variants"
+                        : isVi ? "Xem các biến thể cho mẫu đã chọn" : "Review the variants for the selected design"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {designView !== "designs" ? (
+                      <button
+                        type="button"
+                        onClick={handleBackToDesigns}
+                        className="rounded-full border border-[#f2bfd4] bg-[#fff4f8] px-3 py-1.5 text-[11px] font-bold text-[#ea4f93]"
+                      >
+                        {isVi ? "Quay lại" : "Back to designs"}
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      onClick={() => handleTemplateSlide("prev")}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
-                      aria-label="Show previous nail templates"
+                      onClick={handleToggleShowAllDesigns}
+                      className="text-[11px] font-bold text-[#ea4f93]"
                     >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTemplateSlide("next")}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-[#fff4f8] text-[#ea4f93] transition hover:bg-[#ffe9f2]"
-                      aria-label="Show next nail templates"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" className="text-[11px] font-bold text-[#ea4f93]">
-                      See all {studio.templates.length} designs
+                      {designView === "designs"
+                        ? showAllDesigns
+                          ? isVi ? "Hiện chế độ xem trước" : "Show preview mode"
+                          : isVi ? `Xem tất cả ${designTemplates.length} mẫu` : `See all ${designTemplates.length} designs`
+                        : isVi ? `${designVariants.length} biến thể` : `${designVariants.length} variants`}
                     </button>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-[11px] font-medium text-[#b48ba0]">
-                    Showing {Math.min(templateWindowSize, studio.templates.length)} preview templates at a time
+                    {designView === "designs"
+                      ? showAllDesigns
+                        ? isVi ? `Hiển thị tất cả ${designTemplates.length} mẫu` : `Showing all ${designTemplates.length} designs`
+                        : isVi ? `Hiển thị ${Math.min(templateWindowSize, designTemplates.length)} mẫu xem trước cùng lúc` : `Showing ${Math.min(templateWindowSize, designTemplates.length)} preview templates at a time`
+                      : isVi ? `Hiển thị ${designVariants.length} biến thể` : `Showing ${designVariants.length} variant${designVariants.length === 1 ? "" : "s"}`}
                   </p>
                   <p className="text-[11px] font-bold text-[#ea4f93]">
-                    {studio.templates.length > templateWindowSize
-                      ? `${templateStartIndex + 1}-${Math.min(
-                        templateStartIndex + templateWindowSize,
-                        studio.templates.length,
-                      )} of ${studio.templates.length}`
-                      : `${studio.templates.length} templates`}
+                    {designView === "designs"
+                      ? showAllDesigns
+                        ? `${designTemplates.length} templates`
+                        : designTemplates.length > templateWindowSize
+                          ? `${templateStartIndex + 1}-${Math.min(
+                            templateStartIndex + templateWindowSize,
+                            designTemplates.length,
+                          )} of ${designTemplates.length}`
+                          : `${designTemplates.length} templates`
+                      : `${designVariants.length} variants`}
                   </p>
                 </div>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {visibleTemplates.map((item) => (
-                    <TemplateCard
-                      key={item.id}
-                      item={item}
-                      isSelected={item.id === selectedTemplateId}
-                      onSelect={() => applyTemplatePreset(item.id)}
-                    />
-                  ))}
+                {designError ? (
+                  <p className="mt-3 text-[11px] font-semibold text-[#d14c84]">{designError}</p>
+                ) : null}
+                <div className="relative mt-5">
+                  {designView === "designs" && !showAllDesigns && designTemplates.length > templateWindowSize ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleTemplateSlide("prev")}
+                        className="absolute -left-5 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.12)] transition hover:bg-[#fff1f7] xl:inline-flex"
+                        aria-label={isVi ? "Hiển thị mẫu trước" : "Show previous nail templates"}
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTemplateSlide("next")}
+                        className="absolute -right-5 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] shadow-[0_12px_24px_rgba(236,72,153,0.12)] transition hover:bg-[#fff1f7] xl:inline-flex"
+                        aria-label={isVi ? "Hiển thị mẫu tiếp theo" : "Show next nail templates"}
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  ) : null}
+
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {designView === "designs" ? (
+                      isDesignsLoading ? (
+                        <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
+                          {language === "vi" ? "Đang tải danh sách mẫu móng..." : "Loading nail designs..."}
+                        </p>
+                      ) : (
+                        visibleTemplates.map((item) => (
+                          <TemplateCard
+                            key={item.id}
+                            item={item}
+                            isSelected={item.id === selectedTemplateId}
+                            onSelect={() => void applyTemplatePreset(item.id)}
+                          />
+                        ))
+                      )
+                    ) : isVariantsLoading ? (
+                      <p className="text-[11px] font-semibold text-[#a8899c] sm:col-span-2 xl:col-span-3">
+                        {isVi ? "Đang tải danh sách biến thể..." : "Loading variants..."}
+                      </p>
+                    ) : (
+                      visibleTemplates.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => void handleVariantSelect(item.id)}
+                          className={`flex flex-col overflow-hidden rounded-lg border bg-white text-left shadow-[0_10px_24px_rgba(236,72,153,0.08)] ${selectedVariantId === String(item.id)
+                            ? "border-[#ef6aac] ring-2 ring-[#ef6aac]/20"
+                            : "border-[#f4dbe7]"
+                            }`}
+                        >
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="h-28 w-full shrink-0 object-cover"
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="flex w-full flex-1 flex-col p-3">
+                            <h3 className="text-xs font-bold text-[#38253a]">{item.name}</h3>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {item.tags.map((tag) => (
+                                <span key={tag} className="rounded-md bg-[#fff1f7] px-2 py-1 text-[9px] font-bold text-[#ea4f93]">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="mt-auto pt-4 flex items-end justify-between gap-3 text-left">
+                              <div>
+                                <p className="text-sm font-bold text-[#ea4f93]">{item.price}</p>
+                                <p className="mt-1 text-[10px] text-[#ae8da0]">{item.duration}</p>
+                              </div>
+                              <span className="rounded-md bg-[#f3f1ff] px-2 py-1 text-[9px] font-bold text-[#7d5ce6]">
+                                {selectedVariantId === String(item.id) ? "Selected" : "Variant"}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
               </article>
 
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-sm font-extrabold text-[#38253a]">Layer-Based Custom Builder</h2>
-                  <span className="rounded-full border border-[#f2bfd4] bg-[#fff4f8] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                    {studio.builder.modeLabel}
+                  <h2 className="text-sm font-bold text-[#38253a]">{isVi ? "Trình tạo móng tùy chỉnh dựa trên layer" : "Layer-Based Custom Builder"}</h2>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-[10px] font-bold ${selectedVariantId
+                      ? "border-orange-200 bg-orange-100 text-orange-600"
+                      : "border-green-200 bg-green-100 text-green-600"
+                      }`}
+                  >
+                    {selectedVariantId ? (isVi ? "Chọn biến thể" : "Variant Selected") : (isVi ? "Tùy chỉnh" : "Customizing")}
                   </span>
                 </div>
 
                 <div className="mt-6 space-y-6">
+                  {!isVariantSelectionMode ? (
+                    <div>
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">0</span>
+                        <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Tên móng" : "Nail Name"}</p>
+                      </div>
+                      <input
+                        type="text"
+                        value={customerNailNameDraft}
+                        onChange={(event) => setCustomerNailNameDraft(event.target.value)}
+                        placeholder={suggestedCustomerNailName}
+                        className="h-11 w-full rounded-[14px] border border-[#f4dbe7] bg-[#fff8fc] px-4 text-sm font-semibold text-[#5f4256] outline-none transition focus:border-[#ef6aac]"
+                      />
+                    </div>
+                  ) : null}
+
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">1</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Nail Shape</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">1</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Hình dạng móng" : "Nail Shape"}</p>
                     </div>
+                    {builderCatalogError ? <p className="mb-3 text-[11px] font-semibold text-[#d14c84]">{builderCatalogError}</p> : null}
                     <ChoiceGrid
-                      items={studio.builder.shapes}
+                      items={shapeFamilyOptions.length ? shapeFamilyOptions : studio.builder.shapes}
                       selected={selectedShape}
-                      onSelect={setSelectedShape}
+                      onSelect={handleShapeSelect}
                       type="shape"
+                      language={language}
                     />
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">2</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Nail Length</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">2</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Cấu hình móng" : "Shape Method Config"}</p>
                     </div>
-                    <ChoiceGrid
-                      items={studio.builder.lengths}
-                      selected={selectedLength}
-                      onSelect={setSelectedLength}
-                      type="length"
-                    />
+                    {isShapeMethodConfigsLoading ? (
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Đang tải..." : "Loading..."}</p>
+                    ) : (
+                      <ChoiceGrid
+                        items={shapeMethodConfigs.map(c => ({
+                          id: c.shapeMethodConfigId,
+                          value: c.shapeMethodConfigId,
+                          label: c.name,
+                          price: c.price,
+                          duration: c.duration,
+                        }))}
+                        selected={selectedShapeMethodConfigId ? [selectedShapeMethodConfigId] : []}
+                        onSelect={(val) => setSelectedShapeMethodConfigId(val)}
+                        type="shapeMethod"
+                        language={language}
+                      />
+                    )}
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">3</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Nail Color</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">3</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Màu móng" : "Finger Colors"}</p>
                     </div>
-                    <ChoiceGrid
-                      items={studio.builder.colors}
-                      selected={selectedColor}
-                      onSelect={setSelectedColor}
-                      type="color"
-                    />
+                    <div className="space-y-4 rounded-[18px] border border-[#f4dbe7] bg-[#fff8fc] p-4">
+                      <div>
+                        <p className="mb-3 text-[10px] font-bold text-[#ea4f93]">{isVi ? "Chọn ngón tay trước" : "Choose fingers first"}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Pill
+                            active={selectedColorFingerIndices.length === NAIL_LABELS.length}
+                            onClick={() => setSelectedColorFingerIndices([0, 1, 2, 3, 4])}
+                          >
+                            {isVi ? "Tất cả" : "All fingers"}
+                          </Pill>
+                          {fingerLabels.map((label, index) => (
+                            <Pill
+                              key={`color-finger-${label}`}
+                              active={selectedColorFingerIndices.includes(index)}
+                              onClick={() => {
+                                setSelectedColorFingerIndices((current) => {
+                                  if (current.includes(index)) {
+                                    const next = current.filter((item) => item !== index);
+                                    return next.length > 0 ? next : [index];
+                                  }
+
+                                  return [...current, index];
+                                });
+                              }}
+                            >
+                              {label}
+                            </Pill>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Pill
+                          active={selectedColorMode === "solid"}
+                          onClick={() => updateFingerColors((item) => ({ ...item, mode: "solid" }))}
+                        >
+                          {isVi ? "Đơn sắc" : "Solid"}
+                        </Pill>
+                        <Pill
+                          active={selectedColorMode === "gradient"}
+                          onClick={() => updateFingerColors((item) => ({
+                            ...item,
+                            mode: "gradient",
+                            gradientStops: normalizeFingerColorConfig(item).gradientStops,
+                          }))}
+                        >
+                          {isVi ? "Gradient" : "Gradient"}
+                        </Pill>
+                      </div>
+                      {selectedColorMode === "gradient" ? (
+                        <div className="space-y-3 rounded-[14px] border border-[#f4dbe7] bg-white p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Gradient Stops" : "Gradient Stops"}</p>
+                              <p className="mt-1 text-[10px] text-[#a98c9f]">{isVi ? "Thêm nhiều màu cho phong cách móng cầu vồng." : "Add multiple colors for rainbow-style nails."}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleAddGradientStop}
+                              className="rounded-full border border-[#f2bfd4] bg-[#fff5fa] px-3 py-1 text-[10px] font-bold text-[#ea4f93]"
+                            >
+                              {isVi ? "Thêm màu" : "Add color"}
+                            </button>
+                          </div>
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                            {selectedGradientStops.map((stopColor, stopIndex) => (
+                              <label
+                                key={`gradient-stop-${stopIndex}`}
+                                className="rounded-[14px] border border-[#f4dbe7] bg-[#fffafd] p-3"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-bold text-[#ea4f93]">
+                                    {isVi ? `Điểm màu ${stopIndex + 1}` : `Stop ${stopIndex + 1}`}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveGradientStop(stopIndex)}
+                                    disabled={selectedGradientStops.length <= 2}
+                                    className="text-[10px] font-bold text-[#c48aa4] disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    {isVi ? "Xóa" : "Remove"}
+                                  </button>
+                                </div>
+                                <div className="mt-3 flex items-center gap-3">
+                                  <input
+                                    type="color"
+                                    value={stopColor}
+                                    onChange={(event) => handleGradientStopChange(stopIndex, event.target.value)}
+                                    className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
+                                  />
+                                  <div>
+                                    <p className="text-[10px] font-bold text-[#38253a]">{stopColor.toUpperCase()}</p>
+                                    <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(stopColor)}</p>
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
+                            <span className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Màu chính" : "Primary Color"}</span>
+                            <div className="mt-3 flex items-center gap-3">
+                              <input
+                                type="color"
+                                value={selectedPrimaryColor}
+                                onChange={(event) => updateFingerColors((item) => ({
+                                  ...item,
+                                  primaryColor: event.target.value,
+                                  gradientStops: [
+                                    event.target.value,
+                                    normalizeFingerColorConfig(item).gradientStops[1] || event.target.value,
+                                    ...normalizeFingerColorConfig(item).gradientStops.slice(2),
+                                  ],
+                                }))}
+                                className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
+                              />
+                              <div>
+                                <p className="text-[10px] font-bold text-[#38253a]">{selectedPrimaryColor.toUpperCase()}</p>
+                                <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedPrimaryColor)}</p>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                      <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white p-3">
+                        <p className="text-[10px] font-bold text-[#a98c9f]">{isVi ? "Công thức màu trực tiếp" : "Live Color Formula"}</p>
+                        <div className="mt-2 flex items-center gap-3">
+                          <span
+                            className="h-10 w-10 rounded-full border border-[#f2bfd4]"
+                            style={selectedColorMode === "gradient"
+                              ? { backgroundImage: buildGradientStyle(selectedGradientStops) }
+                              : { backgroundColor: selectedPrimaryColor }}
+                          />
+                          <div>
+                            <p className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Gradient RGB" : "Gradient RGB"}</p>
+                            <p className="mt-1 text-[10px] text-[#38253a]">{selectedColor}</p>
+                            <p className="mt-1 text-[10px] text-[#a98c9f]">
+                              {isVi ? "Áp dụng cho" : "Applying to"}
+                              {selectedColorFingerIndices.length === fingerLabels.length
+                                ? isVi ? "tất cả các ngón" : "all fingers"
+                                : selectedColorFingerIndices.map((index) => fingerLabels[index]).join(", ")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">4</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Finish / Texture</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">4</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Bề mặt móng" : "Nail Surface"}</p>
                     </div>
                     <ChoiceGrid
-                      items={studio.builder.finishes}
+                      items={surfaceOptions.length ? surfaceOptions : studio.builder.finishes}
                       selected={[selectedFinish]}
-                      onSelect={setSelectedFinish}
+                      onSelect={handleFinishSelect}
+                      language={language}
                     />
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">5</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Decorations</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">5</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Trang trí" : "Decorations"}</p>
                     </div>
                     <div className="mb-3 flex flex-wrap gap-2">
-                      {NAIL_LABELS.map((label, index) => (
+                      <Pill
+                        active={activeNailIndex === -1}
+                        onClick={() => setActiveNailIndex(-1)}
+                      >
+                        {isVi ? "Tất cả" : "All fingers"}
+                      </Pill>
+                      {fingerLabels.map((label, index) => (
                         <Pill
-                          key={label}
+                          key={`finger-${index}`}
                           active={activeNailIndex === index}
                           onClick={() => setActiveNailIndex(index)}
                         >
@@ -865,204 +3216,414 @@ export function StaffNailDesignStudioPage() {
                       ))}
                     </div>
                     <p className="mb-3 text-[10px] font-bold text-[#b07d97]">
-                      Editing decoration for {NAIL_LABELS[activeNailIndex]} nail
+                      {isVi ? "Chỉnh sửa trang trí" : "Editing decoration"} {isVi ? "cho" : "for"} {activeNailIndex === -1 ? isVi ? "tất cả các ngón" : "all fingers" : (isVi ? fingerLabels[activeNailIndex] : `${fingerLabels[activeNailIndex]} nail`)}
                     </p>
-                    <ChoiceGrid
-                      items={studio.builder.decorations}
-                      selected={selectedDecorations}
-                      onSelect={toggleNailDecoration}
-                    />
+                    {(() => {
+                      const allDecorations = decorationOptions.length ? decorationOptions : (studio?.builder?.decorations || []);
+
+                      const groupByType = (decorations) => {
+                        const groups = {
+                          Gem: [],
+                          Sticker: [],
+                          Charm: [],
+                          Art: []
+                        };
+
+                        decorations.forEach(dec => {
+                          const type = String(dec?.componentType || dec?.type || "").trim();
+                          const normalized = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+                          if (groups[normalized]) {
+                            groups[normalized].push(dec);
+                          } else {
+                            if (normalized.toLowerCase().includes("art")) groups.Art.push(dec);
+                            else if (normalized.toLowerCase().includes("sticker")) groups.Sticker.push(dec);
+                            else if (normalized.toLowerCase().includes("charm")) groups.Charm.push(dec);
+                            else groups.Gem.push(dec);
+                          }
+                        });
+                        return groups;
+                      };
+
+                      const grouped = groupByType(allDecorations);
+
+                      return (
+                        <div className="space-y-4">
+                          {Object.entries(grouped).map(([category, list]) => {
+                            if (list.length === 0) return null;
+                            return (
+                              <div key={category} className="space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#ea4f93] pl-1">
+                                  {category}
+                                </p>
+                                <ChoiceGrid
+                                  items={list}
+                                  selected={selectedDecorations}
+                                  onSelect={toggleNailDecoration}
+                                  language={language}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-extrabold text-white">6</span>
-                      <p className="text-xs font-extrabold text-[#ea4f93]">Extra Services</p>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">6</span>
+                      <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Dịch vụ bổ sung" : "Extra Services"}</p>
                     </div>
-                    <ChoiceGrid
-                      items={studio.builder.extras}
-                      selected={selectedExtras}
-                      onSelect={(value) => toggleArraySelection(value, selectedExtras, setSelectedExtras)}
-                    />
+                    <div className="flex flex-col gap-2">
+                      {(extraServiceOptions.length ? extraServiceOptions : studio.builder.extras).map((item) => {
+                        const quantity = selectedExtrasMap[item.label] || 0;
+                        return (
+                          <div key={item.id || item.label} className="flex items-center justify-between rounded-lg border border-[#f4dbe7] bg-white p-3 shadow-sm">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-[#594456]">{item.label}</span>
+                              <span className="text-[11px] text-[#b48ba0]">
+                                {formatCurrencyValue(item.price)} • {formatDurationLabel(item.duration, isVi)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedExtrasMap(prev => ({ ...prev, [item.label]: Math.max(0, quantity - 1) }))}
+                                className="ring-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#fff4f8] text-[#ea4f93] disabled:opacity-50"
+                                disabled={quantity === 0}
+                              >
+                                -
+                              </button>
+                              <span className="w-4 text-center text-sm font-bold text-[#38253a]">{quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedExtrasMap(prev => ({ ...prev, [item.label]: quantity + 1 }))}
+                                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ef6aac] text-white"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-6 rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-4">
-                  <SectionTitle icon={Star} title="Price & Duration Estimation" />
+                  <SectionTitle icon={Star} title={isVi ? "Ước tính giá và thời lượng" : "Price & Duration Estimation"} />
                   <div className="mt-4 space-y-3 text-sm text-[#8a6f83]">
-                    {studio.builder.priceRows.map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between gap-3 border-b border-[#f6d8e7] pb-2">
-                        <span>{label}</span>
-                        <span className="font-bold text-[#ea4f93]">{value}</span>
-                      </div>
-                    ))}
+                    {isBuilderCatalogLoading ? (
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Đang tải danh sách dịch vụ..." : "Loading builder options..."}</p>
+                    ) : estimationRows.length > 0 ? (
+                      estimationRows.map((item) => (
+                        <div key={item.key} className="flex items-center justify-between gap-3 border-b border-[#f6d8e7] pb-2">
+                          <div>
+                            <p>{item.label}</p>
+                            {Number(item.duration) > 0 ? (
+                              <p className="mt-1 text-[10px] text-[#b48aa0]">
+                                {formatDurationLabel(item.duration, language)}
+                              </p>
+                            ) : null}
+                          </div>
+                          {Number(item.price) > 0 ? (
+                            <span className="font-bold text-[#ea4f93]">{formatCurrencyValue(item.price)}</span>
+                          ) : null}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[11px] font-semibold text-[#a8899c]">{isVi ? "Chọn hình dạng, kết thúc, trang trí và dịch vụ bổ sung để xem ước tính." : "Select shape, finish, decorations, and extra services to see the estimate."}</p>
+                    )}
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-base font-extrabold text-[#38253a]">Estimated Total</p>
-                    <p className="text-[1.6rem] font-extrabold text-[#d83379]">{studio.builder.totalPrice}</p>
+                    <p className="text-base font-bold text-[#38253a]">{isVi ? "Tổng ước tính" : "Estimated Total"}</p>
+                    <p className="text-[1.6rem] font-bold text-green-600">{totalEstimatedPriceLabel}</p>
                   </div>
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-[#d34f88]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#ea4f93]" />
-                    Estimated Duration: {formatDurationLabel(studio.builder.estimatedDuration)}
+                    {isVi ? "Thời gian ước tính" : "Estimated Duration"}: {totalEstimatedDurationLabel}
                   </div>
                 </div>
+
+                {designActionError || designActionSuccess || bookingDetailError ? (
+                  <div className={`mt-4 rounded-[14px] border px-4 py-3 text-[11px] font-semibold ${designActionError || bookingDetailError
+                    ? "border-[#f4c7d7] bg-[#fff1f6] text-[#c33f79]"
+                    : "border-[#bde7d2] bg-[#effbf4] text-[#178a58]"
+                    }`}>
+                    {designActionError || bookingDetailError || designActionSuccess}
+                  </div>
+                ) : null}
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={handleOpenUpdateBookingDesign}
-                    disabled={!isDesignConfirmed}
-                    className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${
-                      isDesignConfirmed
-                        ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                        : "cursor-not-allowed border border-[#f2bfd4] bg-[#fff4f8] text-[#c7a0b4]"
-                    }`}
+                    disabled={!isDesignConfirmed || isUpdatingBookingDesign || isConfirmingDesign}
+                    className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${isDesignConfirmed && !isUpdatingBookingDesign && !isConfirmingDesign
+                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                      : "cursor-not-allowed border border-[#f2bfd4] bg-[#fff4f8] text-[#c7a0b4]"
+                      }`}
                   >
-                    Update Booking Design
+                    {isUpdatingBookingDesign ? isVi ? "Đang cập nhật..." : "Updating Booking..." : isVi ? "Cập nhật thiết kế" : "Update Booking Design"}
                   </button>
-                  <button
-                    type="button"
-                    className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
-                  >
-                    Save Design
-                  </button>
+
                   <button
                     type="button"
                     onClick={handleConfirmDesign}
-                    className="rounded-[12px] bg-[linear-gradient(135deg,#37d999_0%,#11b879_100%)] px-4 py-3 text-xs font-bold text-white shadow-[0_12px_24px_rgba(17,184,121,0.18)]"
+                    disabled={isConfirmingDesign || !selectedShapeOption || !selectedSurfaceOption}
+                    className={`rounded-[12px] px-4 py-3 text-xs font-bold text-white shadow-[0_12px_24px_rgba(17,184,121,0.18)] ${isConfirmingDesign || !selectedShapeOption || !selectedSurfaceOption
+                      ? "cursor-not-allowed bg-[#9fd9bf]"
+                      : "bg-[linear-gradient(135deg,#37d999_0%,#11b879_100%)]"
+                      }`}
                   >
-                    {isDesignConfirmed ? "Design Confirmed" : "Confirm Design"}
+                    {isConfirmingDesign
+                      ? isVi ? "Đang tạo móng..." : "Creating Nail..."
+                      : isDesignConfirmed
+                        ? isVariantSelectionMode
+                          ? isVi ? "Đã xác nhận biến thể" : "Variant Confirmed"
+                          : isVi ? "Đã xác nhận thiết kế" : "Design Confirmed"
+                        : isVariantSelectionMode
+                          ? isVi ? "Xác nhận biến thể" : "Confirm Variant"
+                          : isVi ? "Xác nhận thiết kế" : "Confirm Design"}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(detailRoute)}
                     className="rounded-[12px] border border-[#ded2da] bg-white px-4 py-3 text-xs font-bold text-[#846e7f]"
                   >
-                    Back to Booking Detail
+                    {isVi ? "Quay lại chi tiết đơn đặt hàng" : "Back to Booking Detail"}
                   </button>
                 </div>
               </article>
             </div>
 
-            <aside className="space-y-4">
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Palette} title="Live Nail Preview" />
-                <div className="mt-4 rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-5">
-                  <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
-                    <span>Surface Mode</span>
-                    <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
-                      {selectedFinish}
-                    </span>
-                  </div>
-                  <div className="flex items-end justify-center gap-3">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <PreviewNail
-                        key={index}
-                        colorStyle={previewColorStyle}
-                        decorationSet={new Set(nailDecorations[index] ?? [])}
-                        finish={selectedFinish}
-                        index={index}
-                        isActive={activeNailIndex === index}
-                        length={selectedLength}
-                        shape={selectedShape}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-5 text-center">
-                    <p className="text-[10px] text-[#aa8c9f]">Current Design</p>
-                    <p className="mt-1 text-sm font-extrabold text-[#ea4f93]">{activeTemplate.name}</p>
-                    <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-[10px] font-bold text-[#d2508a]">
-                      <span>{selectedShape}</span>
-                      <span>{selectedLength}</span>
-                      <span>{selectedColor}</span>
-                      <span>{selectedFinish}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {selectedDecorations.length > 0 ? (
-                      selectedDecorations.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full border border-[#f2bfd4] bg-white px-2.5 py-1 text-[10px] font-bold text-[#ea4f93]"
-                        >
-                          {NAIL_LABELS[activeNailIndex]}: {item}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="rounded-full border border-[#f0d7e3] bg-white px-2.5 py-1 text-[10px] font-bold text-[#b48aa0]">
-                        {NAIL_LABELS[activeNailIndex]}: No decoration
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-5 grid grid-cols-2 gap-2">
-                    {[
-                      ["Shape", selectedShape],
-                      ["Finish", selectedFinish],
-                      ["Length", selectedLength],
-                      ["Color", selectedColor],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-[12px] bg-white px-3 py-2 text-center">
-                        <p className="text-[10px] text-[#a98c9f]">{label}</p>
-                        <p className="mt-1 text-xs font-extrabold text-[#ea4f93]">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 rounded-[12px] border border-[#f2bfd4] bg-white/70 px-3 py-2 text-center text-[10px] font-bold text-[#b07d97]">
-                    {isDesignConfirmed
-                      ? "Design confirmed. Update Booking Design is now ready."
-                      : "Confirm Design first to unlock Update Booking Design."}
-                  </div>
-                </div>
-              </article>
-
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Star} title="Customer Preferences" />
-                <div className="mt-4 space-y-4">
-                  {studio.preferences.map((item) => (
-                    <div key={item.label} className="border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
-                      <p className="text-[10px] text-[#a98c9f]">{item.label}</p>
-                      <p className="mt-1 text-xs font-extrabold text-[#38253a]">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-
-              <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-                <SectionTitle icon={Check} title="Current Booking Summary" />
-                <div className="mt-4 space-y-3 text-sm">
-                  {[
-                    ["Booking ID", `#${studio.bookingCode}`],
-                    ["Status", studio.statusLabel],
-                    ["Current Service", activeTemplate.summaryService ?? studio.selectedDesign.summaryService],
-                    ["Assigned Staff", studio.staffName],
-                    ["Selected Design", activeTemplate.name],
-                    ["Appointment", "Today, 2:30 PM"],
-                    ["Est. Total", studio.builder.totalPrice],
-                  ].map(([label, value], index) => (
-                    <div
-                      key={label}
-                      className={`flex items-center justify-between gap-4 ${
-                        index < 6 ? "border-b border-[#f8e6ef] pb-3" : ""
-                      }`}
-                    >
-                      <span className="text-[11px] text-[#a98c9f]">{label}</span>
-                      <span className={`text-right font-extrabold ${label === "Est. Total" ? "text-[#d83379]" : "text-[#38253a]"}`}>
-                        {label === "Status" ? (
-                          <span className="rounded-full bg-[#fff3d9] px-2 py-1 text-[10px] text-[#c58a12]">
-                            {value}
-                          </span>
-                        ) : (
-                          value
-                        )}
-                      </span>
-                    </div>
-                  ))}
+            <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+              <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
+                <SectionTitle icon={Palette} title={isVi ? "Thử móng" : "Live Nail Preview"} />
+                <InteractiveStudioPreview
+                  previewRef={previewContainerRef}
+                  finish={selectedFinish}
+                  shape={selectedShape}
+                  length={selectedLength}
+                  shapeImageUrl={selectedShapeOption?.imageUrl || ""}
+                  fingerColorConfigs={fingerColorConfigs}
+                  componentPlacements={componentPlacements}
+                  activeNailIndex={activeNailIndex}
+                  selectedPlacementKey={selectedPlacementKey}
+                  selectedPlacement={selectedPlacement}
+                  activeFingerPlacements={activeFingerPlacements}
+                  activeTemplateName={resolvedActiveTemplate.name}
+                  selectedShape={selectedShape}
+                  selectedNailShapeConfig={selectedShapeMethodConfig}
+                  selectedColor={selectedColor}
+                  selectedFinish={selectedFinish}
+                  selectedDecorations={selectedDecorations}
+                  onSelectNail={handlePreviewNailSelect}
+                  onSelectPlacement={setSelectedPlacementKey}
+                  onPlacementChange={updatePlacementConfig}
+                  onRemovePlacements={handleRemovePlacements}
+                />
+                <div className="mt-4 rounded-[12px] border border-[#f2bfd4] bg-white/70 px-3 py-2 text-center text-[10px] font-bold text-[#b07d97]">
+                  {isDesignConfirmed
+                    ? isVariantSelectionMode
+                      ? isVi ? "Đã xác nhận biến thể. Cập nhật thiết kế ngay bây giờ." : "Variant confirmed. Update Booking Design is now ready."
+                      : isVi ? "Đã xác nhận thiết kế. Cập nhật thiết kế ngay bây giờ." : "Custom nail confirmed. Update Booking Design is now ready."
+                    : isVi ? "Xác nhận thiết kế trước để mở khóa Cập nhật thiết kế." : "Confirm Design first to unlock Update Booking Design."}
                 </div>
               </article>
             </aside>
           </div>
         </div>
       </div>
+      {/* Assign Procedures Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-[#402542] border-b border-[#f3d6e5] pb-3">
+            <Sparkles className="text-[#ea4f93]" size={20} />
+            <span className="font-bold text-lg">
+              {language === "vi" ? "Chỉ định Quy trình Thực hiện" : "Assign Service Procedures"}
+            </span>
+          </div>
+        }
+        open={isProcedureModalOpen}
+        onCancel={handleCloseProcedureModal}
+        footer={null}
+        width={900}
+        centered
+        destroyOnClose
+        className="rounded-2xl"
+      >
+        <div className="mt-4 grid gap-6 md:grid-cols-[1.5fr_1fr]">
+          {/* Group Lists */}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            {/* Common Procedures */}
+            <div>
+              <h4 className="text-xs font-bold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "1. Quy trình chung" : "1. Common Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {commonProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {formatDurationLabel(proc.duration, language)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Model Specific Procedures */}
+            <div className="pt-2">
+              <h4 className="text-xs font-bold text-[#c08aa4] uppercase tracking-wider mb-2">
+                {language === "vi" ? "2. Quy trình riêng theo mẫu" : "2. Model Specific Procedures"}
+              </h4>
+              <div className="grid gap-2">
+                {modelSpecificProcedures.map((proc) => {
+                  const isChecked = selectedProcedures.some((p) => p.procedureId === proc.procedureId);
+                  return (
+                    <div
+                      key={proc.procedureId}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isChecked
+                        ? "border-[#ea4f93] bg-[#fff9fc]"
+                        : "border-slate-100 bg-slate-50/50 hover:bg-slate-50"
+                        }`}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId));
+                        } else {
+                          setSelectedProcedures([...selectedProcedures, proc]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onChange={() => { }} // handled by div onClick
+                          className="accent-[#ea4f93]"
+                        />
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{proc.name}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{proc.description}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                        {formatDurationLabel(proc.duration, language)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Timeline */}
+          <div className="rounded-2xl border border-[#f3d6e5] bg-[#fffafc] p-4 flex flex-col min-h-[300px]">
+            <h4 className="text-xs font-bold text-[#ea4f93] uppercase tracking-wider mb-3">
+              {language === "vi" ? "Quy trình đã chọn (Theo thứ tự)" : "Selected Order Timeline"}
+            </h4>
+
+            <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[45vh] custom-scrollbar">
+              {selectedProcedures.length === 0 ? (
+                <p className="text-xs text-[#a98c9f] italic text-center mt-12">
+                  {language === "vi" ? "Vui lòng chọn các bước bên trái..." : "Please check steps from the left list..."}
+                </p>
+              ) : (
+                selectedProcedures.map((proc, idx) => (
+                  <div
+                    key={proc.procedureId}
+                    className="flex items-center justify-between bg-white border border-[#f5dfeb] p-2.5 rounded-xl shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ea4f93]/10 text-[10px] font-bold text-[#ea4f93]">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 truncate">{proc.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveStep(idx, -1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === selectedProcedures.length - 1}
+                        onClick={() => moveStep(idx, 1)}
+                        className="p-1 rounded-md text-slate-400 hover:text-[#ea4f93] hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProcedures(selectedProcedures.filter((p) => p.procedureId !== proc.procedureId))}
+                        className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-slate-50 cursor-pointer flex items-center justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-[#f7dfeb] mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleCloseProcedureModal}
+                className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 cursor-pointer"
+              >
+                {language === "vi" ? "Bỏ qua" : "Skip / Close"}
+              </button>
+              <button
+                type="button"
+                disabled={selectedProcedures.length === 0 || isAssigningProcedures}
+                onClick={handleSaveProcedures}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#ea4f93] to-[#d93b7d] py-2.5 text-xs font-bold text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                {isAssigningProcedures ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <LoaderCircle size={14} className="animate-spin" />
+                    {language === "vi" ? "Đang lưu..." : "Saving..."}
+                  </span>
+                ) : (
+                  language === "vi" ? "Xác nhận Quy trình" : "Confirm Assignment"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
+

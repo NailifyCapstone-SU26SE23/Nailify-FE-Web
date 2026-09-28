@@ -1,13 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { authReducer } from "./authSlice";
-import { bookingReducer } from "./bookingSlice";
+import {
+  BOOKING_STORAGE,
+  bookingReducer,
+  sanitizeBookingStateForStorage,
+} from "./bookingSlice";
 import { layoutReducer } from "./layoutSlice";
 import { nailDesignReducer } from "./nailDesignSlice";
 import {
   SERVICE_SESSION_STORAGE,
   serviceSessionReducer,
+  sanitizeServiceSessionsForStorage,
 } from "./serviceSessionSlice";
 import { storage } from "../shared/utils/storage";
+import { managerBookingsReducer } from "./managerBookingsSlice";
+import { receptionistBookingsReducer } from "./receptionistBookingsSlice";
+import { staffBookingsReducer } from "./staffBookingsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,12 +24,23 @@ export const store = configureStore({
     layout: layoutReducer,
     nailDesign: nailDesignReducer,
     serviceSession: serviceSessionReducer,
+    managerBookings: managerBookingsReducer,
+    receptionistBookings: receptionistBookingsReducer,
+    staffBookings: staffBookingsReducer,
   },
 });
 
 store.subscribe(() => {
   storage.set(
+    BOOKING_STORAGE.key,
+    sanitizeBookingStateForStorage(store.getState().booking),
+  );
+  storage.set(
     SERVICE_SESSION_STORAGE.key,
-    store.getState().serviceSession.sessions,
+    sanitizeServiceSessionsForStorage(store.getState().serviceSession.sessions),
+  );
+  storage.set(
+    "nailify.staff.bookings",
+    store.getState().staffBookings.filters,
   );
 });

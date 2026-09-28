@@ -13,9 +13,9 @@ import {
 import toast from "react-hot-toast";
 import { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { getMockBookingById } from "../../../core/booking-management/services/mockBookings";
 import { formatAppointmentEndTime, formatTimeValue } from "../services/staffBookingService";
 import {
   getStaffBookingDesignStudioRoute,
@@ -29,7 +29,7 @@ function SectionTitle({ icon: Icon, title, badge }) {
     <div className="flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
         <Icon size={14} className="text-[#ea4f93]" />
-        <h2 className="text-sm font-extrabold text-[#3f2b3f]">{title}</h2>
+        <h2 className="text-sm font-bold text-[#3f2b3f]">{title}</h2>
       </div>
       {badge ? (
         <span className="rounded-full border border-[#cbeed5] bg-[#f0fff4] px-3 py-1 text-[10px] font-bold text-[#21a55f]">
@@ -63,7 +63,7 @@ function PriceCard({ label, value, note, accent = false }) {
   return (
     <article className={`rounded-[18px] border p-4 ${accent ? "border-[#f2bfd4] bg-[linear-gradient(135deg,#fff4f9_0%,#ffeef7_100%)]" : "border-[#f4dbe7] bg-[#fff9fc]"}`}>
       <p className="text-[10px] font-medium text-[#a88a9d]">{label}</p>
-      <p className={`mt-3 text-[1.5rem] font-extrabold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>{value}</p>
+      <p className={`mt-3 text-[1.5rem] font-bold ${accent ? "text-[#ea4f93]" : "text-[#3f2b3f]"}`}>{value}</p>
       <p className="mt-2 text-[10px] text-[#b690a4]">{note}</p>
     </article>
   );
@@ -81,16 +81,14 @@ function ConfirmationRow({ item, checked, onToggle }) {
     <button
       type="button"
       onClick={onToggle}
-      className={`flex w-full items-start gap-3 rounded-[16px] border px-4 py-4 text-left transition ${
-        checked
-          ? "border-[#bfe8ca] bg-[#effcf3]"
-          : "border-[#f4dbe7] bg-[#fffafb] hover:bg-[#fff6fa]"
-      }`}
+      className={`flex w-full items-start gap-3 rounded-[16px] border px-4 py-4 text-left transition ${checked
+        ? "border-[#bfe8ca] bg-[#effcf3]"
+        : "border-[#f4dbe7] bg-[#fffafb] hover:bg-[#fff6fa]"
+        }`}
     >
       <span
-        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-          checked ? "border-[#20a760] bg-[#20a760] text-white" : "border-[#e6cddd] bg-white text-transparent"
-        }`}
+        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${checked ? "border-[#20a760] bg-[#20a760] text-white" : "border-[#e6cddd] bg-white text-transparent"
+          }`}
       >
         <Check size={12} />
       </span>
@@ -131,18 +129,17 @@ function AddonRow({ item }) {
           <Icon size={14} />
         </span>
         <div>
-          <p className="text-xs font-extrabold text-[#3f2b3f]">{item.title}</p>
+          <p className="text-xs font-bold text-[#3f2b3f]">{item.title}</p>
           <p className="mt-1 text-[10px] text-[#a88a9d]">{item.note}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs font-extrabold text-[#ea4f93]">{item.price}</span>
+        <span className="text-xs font-bold text-[#ea4f93]">{item.price}</span>
         <button
           type="button"
           onClick={item.onToggle}
-          className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${
-            item.isAdded ? "bg-[#22a865]" : "bg-[image:var(--gradient-accent)]"
-          }`}
+          className={`flex h-6 w-6 items-center justify-center rounded-md text-white ${item.isAdded ? "bg-[#22a865]" : "bg-[image:var(--gradient-accent)]"
+            }`}
         >
           {item.isAdded ? <Check size={12} /> : <Plus size={12} />}
         </button>
@@ -163,15 +160,17 @@ AddonRow.propTypes = {
   }).isRequired,
 };
 
-function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions }) {
+function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions, isVi }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1322]/35 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-xl rounded-[24px] border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
+      <div className="w-full max-w-xl rounded-lg border border-[#f6dbe8] bg-white p-5 shadow-[0_26px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-extrabold text-[#3f2b3f]">Change Staff Artist</h3>
+            <h3 className="text-lg font-bold text-[#3f2b3f]">
+              {isVi ? "Đổi nhân viên thực hiện" : "Change Staff Artist"}
+            </h3>
             <p className="mt-1 text-sm text-[#a88a9d]">
-              Select another available artist for this updated booking.
+              {isVi ? "Chọn một thợ móng khác đang rảnh cho lịch hẹn này." : "Select another available artist for this updated booking."}
             </p>
           </div>
           <button
@@ -192,31 +191,29 @@ function StaffArtistModal({ onClose, onSelect, selectedStaff, staffOptions }) {
                 key={staff.name}
                 type="button"
                 onClick={() => onSelect(staff.name)}
-                className={`flex w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-4 text-left transition ${
-                  isSelected
-                    ? "border-[#f2bfd4] bg-[#fff2f8] shadow-[0_10px_20px_rgba(236,72,153,0.08)]"
-                    : "border-[#f4dbe7] bg-white hover:bg-[#fff8fc]"
-                }`}
+                className={`flex w-full items-center justify-between gap-3 rounded-[18px] border px-4 py-4 text-left transition ${isSelected
+                  ? "border-[#f2bfd4] bg-[#fff2f8] shadow-[0_10px_20px_rgba(236,72,153,0.08)]"
+                  : "border-[#f4dbe7] bg-white hover:bg-[#fff8fc]"
+                  }`}
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-extrabold text-white">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
                     {staff.initials}
                   </span>
                   <div>
-                    <p className="text-sm font-extrabold text-[#3f2b3f]">{staff.name}</p>
+                    <p className="text-sm font-bold text-[#3f2b3f]">{staff.name}</p>
                     <p className="mt-1 text-[11px] text-[#a88a9d]">
                       {staff.level} • {staff.specialty}
                     </p>
                   </div>
                 </div>
                 <span
-                  className={`rounded-full px-3 py-1 text-[10px] font-bold ${
-                    isSelected
-                      ? "bg-[#ea4f93] text-white"
-                      : "border border-[#d4efdc] bg-[#effcf3] text-[#22a865]"
-                  }`}
+                  className={`rounded-full px-3 py-1 text-[10px] font-bold ${isSelected
+                    ? "bg-[#ea4f93] text-white"
+                    : "border border-[#d4efdc] bg-[#effcf3] text-[#22a865]"
+                    }`}
                 >
-                  {isSelected ? "Current" : "Available"}
+                  {isSelected ? (isVi ? "Hiện tại" : "Current") : (isVi ? "Sẵn sàng" : "Available")}
                 </span>
               </button>
             );
@@ -245,94 +242,14 @@ export function StaffUpdateBookingDesignPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { bookingId } = useParams();
-  const booking = getMockBookingById(bookingId);
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   const payload = location.state?.designUpdate;
-  const appointmentStartTime = booking?.bookingTime ? formatTimeValue(booking.bookingTime) : "--";
-  const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, booking?.totalDuration || booking?.duration);
+  const data = payload || null;
 
-  const fallbackData = useMemo(() => {
-    if (!booking) {
-      return null;
-    }
+  const appointmentStartTime = data?.appointment ?? "--";
+  const appointmentEndTime = formatAppointmentEndTime(appointmentStartTime, data?.duration ?? "60 min");
 
-    return {
-      bookingCode: booking.id.replace("BKG", "BK"),
-      statusLabel: "Updating Design",
-      summaryStatus: "Updating Design",
-      customer: booking.customerName || "Minh Thornton",
-      customerPhone: booking.customerPhone || "--",
-      customerAvatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
-      staffArtist: "Sophie Lee",
-      appointment: appointmentStartTime,
-      chair: "Chair #3",
-      previousDesign: {
-        name: "Classic French Manicure",
-        shortName: "Classic French",
-        price: "$45.00",
-        duration: "45 min",
-        image: "https://images.unsplash.com/photo-1604902396830-aca29e19b067?auto=format&fit=crop&w=800&q=80",
-      },
-      newDesign: {
-        name: "Pink Ombre Chrome Floral",
-        shortName: "Pink Ombre Chrome",
-        price: "$78.00",
-        duration: "75 min",
-        image: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=800&q=80",
-      },
-      serviceSummary: {
-        shape: ["Almond"],
-        length: ["Medium Long"],
-        colors: ["Blush Pink", "Deep Rose", "Pearl White"],
-        finish: ["Chrome Mirror", "Ombre Fade"],
-        decorations: ["Floral Art", "Rhinestones", "Foil Accent"],
-        extras: ["Gel Top Coat", "Cuticle Care"],
-      },
-      pricing: {
-        originalPrice: "$45.00",
-        newPrice: "$78.00",
-        additionalCost: "+$33.00",
-        additionalNote: "To be collected",
-        updatedDuration: "75 min",
-        durationNote: "+30 min added",
-        warning: "Additional payment required - customer must pay an extra $33.00 before service begins.",
-      },
-      designStatus: {
-        previousDesign: "Classic French",
-        newDesign: "Pink Ombre Chrome",
-        designSelected: "Confirmed",
-        bookingUpdated: "Pending",
-        customerAgreed: "Pending",
-      },
-      addOns: [
-        { title: "Hand Spa", note: "Moisturizing treatment", price: "+$18", tone: "pink", kind: "spa" },
-        { title: "Chrome Upgrade", note: "Mirror chrome powder", price: "+$12", tone: "violet", kind: "chrome" },
-        { title: "Nail Repair", note: "Fix broken nails", price: "+$8", tone: "emerald", kind: "repair" },
-      ],
-      confirmations: [
-        {
-          key: "reviewed",
-          title: "Customer reviewed new design",
-          note: "Customer has seen and approved the Pink Ombre Chrome Floral design preview",
-          checked: true,
-        },
-        {
-          key: "price",
-          title: "Customer accepted updated price",
-          note: "Customer agrees to pay $78.00 total (+$33.00 additional charge)",
-          checked: false,
-        },
-        {
-          key: "duration",
-          title: "Customer accepted updated duration",
-          note: `Customer acknowledges service will take approximately ${formatDurationLabel("75 minutes")}`,
-          checked: false,
-        },
-      ],
-    };
-  }, [appointmentStartTime, booking]);
-
-  const data = payload ?? fallbackData;
   const [confirmations, setConfirmations] = useState(data?.confirmations ?? []);
   const [selectedStaffArtist, setSelectedStaffArtist] = useState(data?.staffArtist ?? "Assigned Artist");
   const [selectedAddOns, setSelectedAddOns] = useState([]);
@@ -351,6 +268,34 @@ export function StaffUpdateBookingDesignPage() {
     );
   };
 
+  const displayConfirmations = useMemo(
+    () =>
+      confirmations.map((item) => {
+        const isReviewed = item.key === "reviewed";
+        const isPrice = item.key === "price";
+        const isDuration = item.key === "duration";
+
+        return {
+          ...item,
+          title: isReviewed
+            ? (isVi ? "Khách hàng đã xem thiết kế mới" : "Customer reviewed new design")
+            : isPrice
+              ? (isVi ? "Khách hàng đồng ý với giá mới" : "Customer accepted updated price")
+              : isDuration
+                ? (isVi ? "Khách hàng đồng ý với thời gian làm mới" : "Customer accepted updated duration")
+                : item.title,
+          note: isReviewed
+            ? (isVi ? "Khách đã xem và đồng ý với bản xem trước thiết kế móng mới" : "Customer has seen and approved the new design preview")
+            : isPrice
+              ? (isVi ? `Khách đồng ý trả tổng cộng ${data.pricing.newPrice} (phát sinh ${data.pricing.additionalCost})` : `Customer agrees to pay ${data.pricing.newPrice} total (${data.pricing.additionalCost} additional charge)`)
+              : isDuration
+                ? (isVi ? `Khách xác nhận quá trình làm sẽ tốn khoảng ${formatDurationLabel(data.pricing.updatedDuration, language)}` : `Customer acknowledges service will take approximately ${formatDurationLabel(data.pricing.updatedDuration, language)}`)
+                : item.note,
+        };
+      }),
+    [confirmations, isVi, language, data.pricing.newPrice, data.pricing.additionalCost, data.pricing.updatedDuration],
+  );
+
   const allConfirmed = confirmations.every((item) => item.checked);
   const designStudioRoute = getStaffBookingDesignStudioRoute(bookingId);
   const detailRoute = getStaffBookingDetailRoute(bookingId);
@@ -363,18 +308,46 @@ export function StaffUpdateBookingDesignPage() {
   const staffOptions = [
     {
       name: data.staffArtist,
-      initials: data.staffArtist
+      initials: (data.staffArtist || "")
         .split(" ")
         .map((word) => word[0])
         .slice(0, 2)
         .join(""),
-      level: "Current Artist",
-      specialty: "Current assignment",
+      level: isVi ? "Thợ hiện tại" : "Current Artist",
+      specialty: isVi ? "Đang được phân công" : "Current assignment",
     },
-    { name: "Linh Pham", initials: "LP", level: "Senior Artist", specialty: "Chrome / Ombre" },
-    { name: "Mia Tran", initials: "MT", level: "Design Specialist", specialty: "Floral / Bridal" },
-    { name: "An Nguyen", initials: "AN", level: "Express Artist", specialty: "Minimal / Glossy" },
+    { name: "Linh Pham", initials: "LP", level: isVi ? "Thợ chính" : "Senior Artist", specialty: "Chrome / Ombre" },
+    { name: "Mia Tran", initials: "MT", level: isVi ? "Chuyên viên thiết kế" : "Design Specialist", specialty: "Floral / Bridal" },
+    { name: "An Nguyen", initials: "AN", level: isVi ? "Thợ làm nhanh" : "Express Artist", specialty: "Minimal / Glossy" },
   ];
+
+  const displayAddOns = useMemo(
+    () =>
+      data.addOns.map((item) => {
+        const isSpa = item.kind === "spa";
+        const isChrome = item.kind === "chrome";
+        const isRepair = item.kind === "repair";
+
+        return {
+          ...item,
+          title: isSpa
+            ? (isVi ? "Chăm sóc tay / Spa" : "Hand Spa")
+            : isChrome
+              ? (isVi ? "Tráng gương cao cấp" : "Chrome Upgrade")
+              : isRepair
+                ? (isVi ? "Phục hồi móng hỏng" : "Nail Repair")
+                : item.title,
+          note: isSpa
+            ? (isVi ? "Liệu trình dưỡng ẩm tay" : "Moisturizing treatment")
+            : isChrome
+              ? (isVi ? "Tráng gương bột ngọc trai" : "Mirror chrome powder")
+              : isRepair
+                ? (isVi ? "Sửa móng bị nứt/gãy" : "Fix broken nails")
+                : item.note,
+        };
+      }),
+    [data.addOns, isVi],
+  );
 
   const handleToggleAddOn = (title) => {
     setSelectedAddOns((current) =>
@@ -384,16 +357,16 @@ export function StaffUpdateBookingDesignPage() {
 
   const handleConfirmBooking = () => {
     if (!allConfirmed) {
-      toast.error("Complete all customer confirmations first.");
+      toast.error(isVi ? "Vui lòng hoàn thành tất cả các xác nhận trước." : "Complete all customer confirmations first.");
       return;
     }
 
     setIsBookingConfirmed(true);
-    toast.success("Updated booking confirmed.");
+    toast.success(isVi ? "Đã xác nhận cập nhật lịch hẹn." : "Updated booking confirmed.");
   };
 
   const handleSaveAndContinue = () => {
-    toast.success("Updated design saved. You can continue to the next step.");
+    toast.success(isVi ? "Đã lưu thiết kế cập nhật. Bạn có thể tiếp tục bước tiếp theo." : "Updated design saved. You can continue to the next step.");
   };
 
   const handleCancelChanges = () => {
@@ -402,13 +375,13 @@ export function StaffUpdateBookingDesignPage() {
     setIsBookingConfirmed(false);
     setSelectedStaffArtist(data.staffArtist);
     setShowStaffModal(false);
-    toast.success("Design update changes have been reset.");
+    toast.success(isVi ? "Đã khôi phục thiết kế ban đầu." : "Design update changes have been reset.");
   };
 
   const handleSelectStaffArtist = (staffName) => {
     setSelectedStaffArtist(staffName);
     setShowStaffModal(false);
-    toast.success(`Staff artist changed to ${staffName}.`);
+    toast.success(isVi ? `Đã đổi nhân viên thực hiện thành ${staffName}.` : `Staff artist changed to ${staffName}.`);
   };
 
   const handleOpenServiceSession = () => {
@@ -416,9 +389,9 @@ export function StaffUpdateBookingDesignPage() {
       state: {
         serviceSession: {
           bookingCode: data.bookingCode,
-          bookingItemId: booking?.bookingItems?.[0]?.bookingItemId ?? booking?.bookingItems?.[0]?.id ?? "",
-          customerName: booking?.customerName ?? data.customer,
-          customerPhone: booking?.customerPhone ?? data.customerPhone ?? "--",
+          bookingItemId: "",
+          customerName: data.customer,
+          customerPhone: data.customerPhone ?? "--",
           customerAvatar:
             data.customerAvatar ||
             "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80",
@@ -444,19 +417,23 @@ export function StaffUpdateBookingDesignPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4f9_100%)]">
-      <div className="rounded-[24px] border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+      <div className="rounded-lg border border-[#f6dbe8] bg-[#fff7fb] p-4 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-              <SectionTitle icon={FilePenLine} title="Design Comparison" badge="Step 1 of 4" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <SectionTitle
+                icon={FilePenLine}
+                title={isVi ? "So sánh thiết kế" : "Design Comparison"}
+                badge={isVi ? "Bước 1 trên 4" : "Step 1 of 4"}
+              />
               <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)]">
-                <div className="rounded-[20px] border border-[#f4dbe7] bg-[#fffafb] p-3">
+                <div className="rounded-lg border border-[#f4dbe7] bg-[#fffafb] p-3">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">
-                    Previous Design
+                    {isVi ? "Thiết kế trước" : "Previous Design"}
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.previousDesign.image}
                       alt={data.previousDesign.name}
                       className="h-44 w-full object-cover"
@@ -464,28 +441,28 @@ export function StaffUpdateBookingDesignPage() {
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.previousDesign.name}</p>
+                  <p className="mt-4 text-base font-bold text-[#3f2b3f]">{data.previousDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.previousDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration)}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.previousDesign.duration, language)}</Tag>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center gap-2 rounded-[20px] bg-[linear-gradient(180deg,#fff6fa_0%,#fffdfd_100%)]">
+                <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-[linear-gradient(180deg,#fff6fa_0%,#fffdfd_100%)]">
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.24)]">
                     <ArrowRight size={18} />
                   </div>
                   <p className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[#ea4f93]">
-                    Updated Design
+                    {isVi ? "Thiết kế mới" : "Updated Design"}
                   </p>
                 </div>
 
-                <div className="rounded-[20px] border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-3">
+                <div className="rounded-lg border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-3">
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#ea4f93]">
-                    New Design
+                    {isVi ? "Thiết kế mới" : "New Design"}
                   </p>
                   <div className="overflow-hidden rounded-[16px]">
-                    <img
+                    <img crossOrigin="anonymous"
                       src={data.newDesign.image}
                       alt={data.newDesign.name}
                       className="h-44 w-full object-cover"
@@ -493,25 +470,29 @@ export function StaffUpdateBookingDesignPage() {
                       referrerPolicy="no-referrer"
                     />
                   </div>
-                  <p className="mt-4 text-base font-extrabold text-[#3f2b3f]">{data.newDesign.name}</p>
+                  <p className="mt-4 text-base font-bold text-[#3f2b3f]">{data.newDesign.name}</p>
                   <div className="mt-3 flex gap-2">
                     <Tag className="border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]">{data.newDesign.price}</Tag>
-                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration)}</Tag>
+                    <Tag className="border-[#f4dbe7] bg-white text-[#ab8ea0]">{formatDurationLabel(data.newDesign.duration, language)}</Tag>
                   </div>
                 </div>
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-              <SectionTitle icon={ClipboardCheck} title="Updated Service Summary" badge="Design Updated" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <SectionTitle
+                icon={ClipboardCheck}
+                title={isVi ? "Tóm tắt dịch vụ cập nhật" : "Updated Service Summary"}
+                badge={isVi ? "Đã cập nhật" : "Design Updated"}
+              />
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 {[
-                  ["Shape", data.serviceSummary.shape, "pink"],
-                  ["Length", data.serviceSummary.length, "violet"],
-                  ["Colors", data.serviceSummary.colors, "pink"],
-                  ["Finish", data.serviceSummary.finish, "amber"],
-                  ["Decorations", data.serviceSummary.decorations, "pink"],
-                  ["Extra Services", data.serviceSummary.extras, "green"],
+                  [isVi ? "Form móng" : "Shape", data.serviceSummary.shape, "pink"],
+                  [isVi ? "Độ dài" : "Length", data.serviceSummary.length, "violet"],
+                  [isVi ? "Màu sắc" : "Colors", data.serviceSummary.colors, "pink"],
+                  [isVi ? "Hiệu ứng sơn" : "Finish", data.serviceSummary.finish, "amber"],
+                  [isVi ? "Họa tiết trang trí" : "Decorations", data.serviceSummary.decorations, "pink"],
+                  [isVi ? "Dịch vụ phụ thêm" : "Extra Services", data.serviceSummary.extras, "green"],
                 ].map(([label, values, tone]) => (
                   <div key={label}>
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#b59aab]">{label}</p>
@@ -538,41 +519,43 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-              <SectionTitle icon={DollarSign} title="Price Difference" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <SectionTitle icon={DollarSign} title={isVi ? "Chênh lệch giá" : "Price Difference"} />
               <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <PriceCard
-                  label="Original Price"
+                  label={isVi ? "Giá ban đầu" : "Original Price"}
                   value={data.pricing.originalPrice}
                   note={data.previousDesign.shortName}
                 />
                 <PriceCard
-                  label="New Price"
+                  label={isVi ? "Giá mới" : "New Price"}
                   value={data.pricing.newPrice}
                   note={data.newDesign.shortName}
                 />
                 <PriceCard
-                  label="Additional Cost"
+                  label={isVi ? "Phát sinh thêm" : "Additional Cost"}
                   value={data.pricing.additionalCost}
                   note={data.pricing.additionalNote}
                   accent
                 />
                 <PriceCard
-                  label="Updated Duration"
+                  label={isVi ? "Thời gian làm mới" : "Updated Duration"}
                   value={data.pricing.updatedDuration}
                   note={data.pricing.durationNote}
                 />
               </div>
               <div className="mt-4 flex items-start gap-3 rounded-[14px] border border-[#f1ddb2] bg-[linear-gradient(135deg,#fff4dc_0%,#ffe9b7_100%)] px-4 py-3 text-sm text-[#9a6610]">
                 <CircleAlert size={18} className="mt-0.5 shrink-0" />
-                <p className="font-semibold">{data.pricing.warning}</p>
+                <p className="font-semibold">
+                  {isVi ? `Yêu cầu thanh toán bổ sung - khách hàng cần trả thêm ${data.pricing.additionalCost} trước khi bắt đầu.` : data.pricing.warning}
+                </p>
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-              <SectionTitle icon={Check} title="Customer Confirmation" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <SectionTitle icon={Check} title={isVi ? "Xác nhận của khách hàng" : "Customer Confirmation"} />
               <div className="mt-5 space-y-3">
-                {confirmations.map((item) => (
+                {displayConfirmations.map((item) => (
                   <ConfirmationRow
                     key={item.key}
                     item={item}
@@ -583,68 +566,67 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4 md:p-5">
-              <SectionTitle icon={FilePenLine} title="Booking Update Actions" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4 md:p-5">
+              <SectionTitle icon={FilePenLine} title={isVi ? "Thao tác cập nhật lịch hẹn" : "Booking Update Actions"} />
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
                   disabled={!allConfirmed}
                   onClick={handleConfirmBooking}
-                  className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${
-                    allConfirmed
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
+                  className={`rounded-[12px] px-4 py-3 text-xs font-bold transition ${allConfirmed
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
                 >
-                  Confirm Updated Booking
+                  {isVi ? "Xác nhận cập nhật" : "Confirm Updated Booking"}
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveAndContinue}
                   className="rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                 >
-                  Save & Continue
+                  {isVi ? "Lưu & Tiếp tục" : "Save & Continue"}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(designStudioRoute)}
                   className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-3 text-xs font-bold text-[#856f80]"
                 >
-                  Return to Design Studio
+                  {isVi ? "Trở lại Design Studio" : "Return to Design Studio"}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate(detailRoute)}
                   className="rounded-[12px] border border-[#ddd0d8] bg-white px-4 py-3 text-xs font-bold text-[#856f80]"
                 >
-                  Back to Booking Detail
+                  {isVi ? "Quay lại chi tiết lịch hẹn" : "Back to Booking Detail"}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelChanges}
                   className="sm:col-span-2 rounded-[12px] border border-[#f0c2cf] bg-[#fff4f7] px-4 py-3 text-xs font-bold text-[#d84b80]"
                 >
-                  Cancel Changes
+                  {isVi ? "Hủy thay đổi" : "Cancel Changes"}
                 </button>
               </div>
             </article>
           </div>
 
           <aside className="space-y-4">
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-              <SectionTitle icon={ClipboardCheck} title="Booking Summary" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
+              <SectionTitle icon={ClipboardCheck} title={isVi ? "Tóm tắt lịch hẹn" : "Booking Summary"} />
               <div className="mt-4 space-y-3 text-sm">
                 {[
-                  ["Customer", data.customer],
-                  ["Staff Artist", selectedStaffArtist],
-                  ["Appointment", data.appointment],
-                  ["Chair", data.chair],
-                  ["Status", data.summaryStatus],
+                  [isVi ? "Khách hàng" : "Customer", data.customer],
+                  [isVi ? "Nhân viên thực hiện" : "Staff Artist", selectedStaffArtist],
+                  [isVi ? "Lịch hẹn" : "Appointment", data.appointment],
+                  [isVi ? "Ghế" : "Chair", data.chair],
+                  [isVi ? "Trạng thái" : "Status", isVi ? "Cập nhật thiết kế" : data.summaryStatus],
                 ].map(([label, value]) => (
                   <div key={label} className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
                     <span className="text-[11px] text-[#a98c9f]">{label}</span>
-                    <span className="text-right text-xs font-extrabold text-[#3f2b3f]">
-                      {label === "Status" ? (
+                    <span className="text-right text-xs font-bold text-[#3f2b3f]">
+                      {label === (isVi ? "Trạng thái" : "Status") ? (
                         <Tag className="border-[#f1ddac] bg-[#fff4da] text-[#bd8517]">{value}</Tag>
                       ) : (
                         value
@@ -655,34 +637,45 @@ export function StaffUpdateBookingDesignPage() {
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-              <SectionTitle icon={Sparkles} title="Design Update Status" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
+              <SectionTitle icon={Sparkles} title={isVi ? "Trạng thái cập nhật" : "Design Update Status"} />
               <div className="mt-4 space-y-3 text-sm">
-                {Object.entries(updatedDesignStatus).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
-                    <span className="text-[11px] capitalize text-[#a98c9f]">
-                      {key.replace(/([A-Z])/g, " $1")}
-                    </span>
-                    <Tag
-                      className={
-                        value === "Confirmed"
-                          ? "border-[#cdeed7] bg-[#effcf3] text-[#22a865]"
-                          : value === "Pending"
-                            ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
-                            : "border-[#f4dbe7] bg-white text-[#856f80]"
-                      }
-                    >
-                      {value}
-                    </Tag>
-                  </div>
-                ))}
+                {Object.entries(updatedDesignStatus).map(([key, value]) => {
+                  const designStatusLabels = {
+                    previousDesign: isVi ? "Thiết kế trước" : "Previous Design",
+                    newDesign: isVi ? "Thiết kế mới" : "New Design",
+                    designSelected: isVi ? "Đã chọn thiết kế" : "Design Selected",
+                    bookingUpdated: isVi ? "Lịch hẹn đã cập nhật" : "Booking Updated",
+                    customerAgreed: isVi ? "Khách hàng đồng ý" : "Customer Agreed",
+                  };
+                  return (
+                    <div key={key} className="flex items-center justify-between gap-3 border-b border-[#f8e6ef] pb-3 last:border-b-0 last:pb-0">
+                      <span className="text-[11px] capitalize text-[#a98c9f]">
+                        {designStatusLabels[key] || key.replace(/([A-Z])/g, " $1")}
+                      </span>
+                      <Tag
+                        className={
+                          value === "Confirmed"
+                            ? "border-[#cdeed7] bg-[#effcf3] text-[#22a865]"
+                            : value === "Pending"
+                              ? "border-[#f2bfd4] bg-[#fff1f7] text-[#ea4f93]"
+                              : "border-[#f4dbe7] bg-white text-[#856f80]"
+                        }
+                      >
+                        {value === "Confirmed" ? (isVi ? "Đã xác nhận" : "Confirmed")
+                          : value === "Pending" ? (isVi ? "Đang chờ" : "Pending")
+                            : value}
+                      </Tag>
+                    </div>
+                  );
+                })}
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-              <SectionTitle icon={Star} title="Recommended Add-ons" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
+              <SectionTitle icon={Star} title={isVi ? "Dịch vụ gợi ý thêm" : "Recommended Add-ons"} />
               <div className="mt-4 space-y-3">
-                {data.addOns.map((item) => (
+                {displayAddOns.map((item) => (
                   <AddonRow
                     key={item.title}
                     item={{
@@ -694,43 +687,42 @@ export function StaffUpdateBookingDesignPage() {
                 ))}
                 {selectedAddOns.length ? (
                   <div className="rounded-[14px] border border-[#cdeed7] bg-[#effcf3] px-3 py-2 text-[11px] font-semibold text-[#1f9f59]">
-                    Added add-ons: {selectedAddOns.join(", ")}
+                    {isVi ? `Dịch vụ thêm đã chọn: ${selectedAddOns.join(", ")}` : `Added add-ons: ${selectedAddOns.join(", ")}`}
                   </div>
                 ) : null}
               </div>
             </article>
 
-            <article className="rounded-[22px] border border-[#f3d5e2] bg-white p-4">
-              <SectionTitle icon={Check} title="Next Step" />
+            <article className="rounded-lg border border-[#f3d5e2] bg-white p-4">
+              <SectionTitle icon={Check} title={isVi ? "Bước tiếp theo" : "Next Step"} />
               <p className="mt-4 text-xs leading-5 text-[#a88a9d]">
-                Complete all confirmations above, then proceed to confirm the booking and start the service session.
+                {isVi ? "Hoàn thành tất cả các xác nhận bên trên, sau đó tiến hành chốt lịch hẹn và bắt đầu phiên làm việc." : "Complete all confirmations above, then proceed to confirm the booking and start the service session."}
               </p>
               <div className="mt-5 space-y-3">
                 <button
                   type="button"
                   disabled={!allConfirmed}
                   onClick={handleConfirmBooking}
-                  className={`w-full rounded-[12px] px-4 py-3 text-xs font-bold ${
-                    allConfirmed
-                      ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-                      : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
-                  }`}
+                  className={`w-full rounded-[12px] px-4 py-3 text-xs font-bold ${allConfirmed
+                    ? "bg-[image:var(--gradient-accent)] text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                    : "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                    }`}
                 >
-                  Confirm Booking
+                  {isVi ? "Xác nhận lịch hẹn" : "Confirm Booking"}
                 </button>
                 <button
                   type="button"
                   onClick={handleOpenServiceSession}
                   className="w-full rounded-[12px] border border-[#f2bfd4] bg-white px-4 py-3 text-xs font-bold text-[#ea4f93]"
                 >
-                  Start Service Session
+                  {isVi ? "Bắt đầu phiên làm việc" : "Start Service Session"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowStaffModal(true)}
                   className="w-full rounded-[12px] bg-[linear-gradient(135deg,#f36b98_0%,#e24384_100%)] px-4 py-3 text-xs font-bold text-white"
                 >
-                  Change staff artist
+                  {isVi ? "Đổi nhân viên thực hiện" : "Change staff artist"}
                 </button>
               </div>
             </article>
@@ -744,8 +736,10 @@ export function StaffUpdateBookingDesignPage() {
           staffOptions={staffOptions}
           onClose={() => setShowStaffModal(false)}
           onSelect={handleSelectStaffArtist}
+          isVi={isVi}
         />
       ) : null}
     </section>
   );
 }
+

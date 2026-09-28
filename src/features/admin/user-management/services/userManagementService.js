@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -35,7 +35,7 @@ function normalizeStatus(status) {
     case "pending":
       return "Pending";
     default:
-      return status || "--";
+      return status;
   }
 }
 
@@ -54,7 +54,7 @@ function normalizeRole(role) {
     case "customer":
       return "Customer";
     default:
-      return role || "--";
+      return role;
   }
 }
 
@@ -79,32 +79,11 @@ function getAvatar(name) {
     .toUpperCase();
 }
 
-function getJoinedAtLabel() {
-  return "Loaded from API";
-}
-
-function getLastActiveLabel(status) {
-  const normalizedStatus = String(status || "").trim().toLowerCase();
-
-  switch (normalizedStatus) {
-    case "active":
-      return "Available now";
-    case "pending":
-      return "Pending activation";
-    case "suspended":
-      return "Access restricted";
-    case "inactive":
-      return "Inactive";
-    default:
-      return "Recently updated";
-  }
-}
-
 export function normalizeAdminUser(user) {
   const role = normalizeRole(user?.role);
   const firstName = String(user?.firstName || "").trim();
   const lastName = String(user?.lastName || "").trim();
-  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email || "--";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || user?.email;
   const statusLabel = normalizeStatus(user?.status);
 
   return {
@@ -113,28 +92,40 @@ export function normalizeAdminUser(user) {
     name: fullName,
     firstName,
     lastName,
-    email: user?.email || "--",
-    phone: String(user?.phone || "--").trim() || "--",
+    email: user?.email,
+    phone: String(user?.phone).trim(),
     role,
+    rawRole: String(user?.role || "").trim(),
     displayRole: getDisplayRole(role),
+    salonId: user?.salonId || "",
     salon: user?.salonId ? "Assigned salon" : "No salon",
+    salonId: user?.salonId || "",
+    staffId: user?.staffId || "",
     avatar: getAvatar(fullName),
     avatarUrl: user?.avatarUrl || "",
     status: statusLabel,
     statusLabel,
-    lastActive: getLastActiveLabel(statusLabel),
-    joinedAt: getJoinedAtLabel(),
+    // lastActive: getLastActiveLabel(statusLabel),
+    joinedAt: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown",
     notes: "",
   };
 }
 
-export async function fetchAdminUsers({ pageNumber = 1, pageSize = 10, searchTerm = "" } = {}) {
+export async function fetchAdminUsers({
+  pageNumber = 1,
+  pageSize = 10,
+  searchTerm = "",
+  role = "",
+  salonId = "",
+} = {}) {
   const response = await axiosClient.get("/Users", {
     headers: getAuthHeaders(),
     params: {
       pageNumber,
       pageSize,
       searchTerm: searchTerm || undefined,
+      role: mapRoleToApi(role) || undefined,
+      salonId: salonId || undefined,
     },
   });
 
@@ -173,6 +164,21 @@ export async function fetchAdminUserDetail(userId) {
   return normalizeAdminUser(data);
 }
 
+// New function to fetch raw user data without normalization
+export async function fetchRawAdminUserDetail(userId) {
+  const normalizedUserId = String(userId || "").trim();
+
+  if (!normalizedUserId) {
+    throw new Error("User ID is required.");
+  }
+
+  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load user detail.");
+}
+
 function mapRoleToApi(role) {
   switch (role) {
     case "Staff":
@@ -182,18 +188,35 @@ function mapRoleToApi(role) {
   }
 }
 
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
+
 export async function createAdminUser(formValues) {
+  const formData = new FormData();
+  formData.append("Email", String(formValues?.email || "").trim());
+  formData.append("Password", String(formValues?.password || ""));
+  formData.append("FirstName", String(formValues?.firstName || "").trim());
+  formData.append("LastName", String(formValues?.lastName || "").trim());
+  formData.append("Phone", String(formValues?.phone || "").trim());
+  formData.append("AvatarUrl", String(formValues?.avatarUrl || "").trim());
+  formData.append("Role", mapRoleToApi(formValues?.role));
+
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    if (sId) {
+      formData.append("SalonId", sId);
+    }
+  }
+
+  if (formValues?.imageFile) {
+    formData.append("image", formValues.imageFile);
+  }
+
   const response = await axiosClient.post(
     "/Users",
-    {
-      email: String(formValues?.email || "").trim(),
-      password: String(formValues?.password || ""),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      avatarUrl: String(formValues?.avatarUrl || "").trim(),
-      role: mapRoleToApi(formValues?.role),
-    },
+    formData,
     {
       headers: getAuthHeaders(),
     },
@@ -211,23 +234,40 @@ export async function updateAdminUser(userId, formValues) {
     throw new Error("User ID is required.");
   }
 
-  const response = await axiosClient.put(
-    `/Users/${normalizedUserId}`,
-    {
-      email: String(formValues?.email || "").trim(),
-      firstName: String(formValues?.firstName || "").trim(),
-      lastName: String(formValues?.lastName || "").trim(),
-      phone: String(formValues?.phone || "").trim(),
-      status: String(formValues?.status || "").trim(),
-    },
-    {
-      headers: getAuthHeaders(),
-    },
-  );
+  // Only include fields that are expected by the API
+  const payload = {};
+  if (formValues?.email !== undefined) payload.email = String(formValues.email || "").trim();
+  if (formValues?.firstName !== undefined) payload.firstName = String(formValues.firstName || "").trim();
+  if (formValues?.lastName !== undefined) payload.lastName = String(formValues.lastName || "").trim();
+  if (formValues?.phone !== undefined) payload.phone = String(formValues.phone || "").trim();
+  if (formValues?.status !== undefined) payload.status = String(formValues.status || "").trim();
 
-  const data = unwrapResponse(response, "Failed to update user.");
+  if (isSalonRole(formValues?.role)) {
+    const sId = String(formValues?.salonId || "").trim();
+    payload.salonId = sId ? sId : null;
+  } else {
+    payload.salonId = null;
+  }
 
-  return normalizeAdminUser(data);
+  console.log("updateAdminUser - userId:", normalizedUserId);
+  console.log("updateAdminUser - payload:", payload);
+
+  try {
+    const response = await axiosClient.put(
+      `/Users/${normalizedUserId}`,
+      payload,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+
+    const data = unwrapResponse(response, "Failed to update user.");
+
+    return normalizeAdminUser(data);
+  } catch (error) {
+    console.error("updateAdminUser error response:", error.response?.data);
+    throw error;
+  }
 }
 
 export async function deleteAdminUser(userId) {

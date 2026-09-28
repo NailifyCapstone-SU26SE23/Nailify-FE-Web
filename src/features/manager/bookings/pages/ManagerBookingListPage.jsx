@@ -1,170 +1,131 @@
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock3,
-  Download,
   Eye,
-  RefreshCw,
   Search,
   Sparkles,
   UserCheck,
-  UserPlus,
   Calendar,
   CheckCircle2,
   XCircle,
+  X,
+  Loader2,
+  Maximize2,
+  Phone,
+  User,
+  ShieldCheck,
+  TrendingUp,
+  Filter,
+  Sparkle,
+  LayoutGrid,
+  CalendarDays,
+  Grid as GridIcon,
+  Table as TableIcon,
+  GripVertical,
+  Plus,
+  Image as ImageIcon,
+  Edit3,
+  ArrowUpDown,
+  RefreshCcw,
 } from "lucide-react";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Spin, Alert, DatePicker, Dropdown } from "antd";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
+import { Spin, Alert, Drawer, Modal, Tooltip, Table } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
+import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROLES } from "../../../../shared/constants/roles";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { formatDurationLabel } from "../../../../shared/utils/formatDuration";
 import { BOOKING_ROLE_CONFIG } from "../services/mockBookings";
-import { fetchBookingsBySalonId } from "../services/bookingsService";
+import { fetchBookingsBySalonId, fetchBookingById, fetchUserById, fetchSalonStaff, assignArtistToBookingOld } from "../services/bookingsService";
+import { OnsiteAddonModal } from "../components/OnsiteAddonModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
+import { SlaViolationModal } from "../components/SlaViolationModal";
+import { NegativeReviewModal } from "../components/NegativeReviewModal";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+
+import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
 const roleConfig = BOOKING_ROLE_CONFIG[ROLES.manager];
-const DEFAULT_SALON_ID = "484c3aef-3ae1-4ad6-8aba-6b0bc6df586d";
 const BOOKING_PAGE_SIZE = 10;
+const getManagerSalonId = () => {
+  const session = loadAuthSession();
+  return session?.user?.salonId || session?.salonId;
+};
 
-const appointmentFilters = [
-  { value: "All", label: "All" },
-  { value: "Pending", label: "Pending" },
-  { value: "Confirmed", label: "Confirmed" },
-  { value: "CheckedIn", label: "Checked In" },
-  { value: "InProgress", label: "In Progress" },
-  { value: "Completed", label: "Completed" },
-  { value: "Rejected", label: "Rejected" },
-  { value: "Reschedule", label: "Reschedule" },
+// --- Sample Luxury Nail Art Try-On Thumbnails for Demo ---
+const SAMPLE_NAIL_THUMBNAILS = [
+  "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=150&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=150&auto=format&fit=crop&q=80",
 ];
 
-const scheduleStaff = [
-  {
-    name: "Luna Park",
-    tone: "bg-[#e7ecff] border-[#c7d7ff] text-[#4755b8]",
-    blocks: [{ start: 9, end: 10.5, label: "Sarah Chen", service: "Gel Full Set" }],
-  },
-  {
-    name: "Aria Nguyen",
-    tone: "bg-[#ffe7ef] border-[#f8c4d8] text-[#ea4f93]",
-    blocks: [
-      { start: 9.5, end: 11, label: "Emily Wong", service: "Nail Art" },
-      { start: 11.5, end: 12.5, label: "Priya Nair", service: "Gel Pedicure", alert: true },
-    ],
-  },
-  {
-    name: "Chloe Davis",
-    tone: "bg-[#eaf9ee] border-[#b8e6cc] text-[#2fa25f]",
-    blocks: [{ start: 10, end: 10.75, label: "Jessica Tan", service: "Gel Manicure" }],
-  },
-  {
-    name: "Mel Santos",
-    tone: "bg-[#fff0dd] border-[#f5d0a0] text-[#db8520]",
-    blocks: [{ start: 10.5, end: 11.75, label: "Grace Teo", service: "Acrylic Set" }],
-  },
-];
+// --- Motion Presets ---
+const fadeInUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
+};
 
-const smartSlots = [
-  {
-    time: "12:00 PM",
-    date: "Sat, Jul 12",
-    tag: "Easy",
-    tagTone: "bg-[#eaf9ee] text-[#2fa25f]",
-    artist: "Luna Park",
-    duration: "60 min",
-    service: "Gel Manicure",
-    complexity: "Standard service",
-    avatarTone: "from-[#d8c4ff] to-[#8b5cf6]",
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    },
   },
-  {
-    time: "1:30 PM",
-    date: "Sat, Jul 12",
-    tag: "Medium",
-    tagTone: "bg-[#fff0dd] text-[#db8520]",
-    artist: "Aria Nguyen",
-    duration: "90 min",
-    service: "Nail Art Design",
-    complexity: "Custom design",
-    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
-  },
-  {
-    time: "3:00 PM",
-    date: "Sat, Jul 12",
-    tag: "Complex",
-    tagTone: "bg-[#ffe7ef] text-[#ea4f93]",
-    artist: "Chloe Davis",
-    duration: "120 min",
-    service: "Acrylic Full Set",
-    complexity: "Full set + art",
-    avatarTone: "from-[#b8f0d8] to-[#2fc5a9]",
-  },
-];
+};
 
-const capacityPeriods = [
-  { label: "Morning (9-12)", value: 85, tone: "bg-[#ea4f93]" },
-  { label: "Afternoon (12-3)", value: 72, tone: "bg-[#8b5cf6]" },
-  { label: "Evening (3-6)", value: 58, tone: "bg-[#ff9800]" },
-];
-
-const staffWorkload = [
-  { name: "Luna Park", filled: 8, total: 10, tone: "from-[#d8c4ff] to-[#8b5cf6]" },
-  { name: "Aria Nguyen", filled: 9, total: 10, tone: "from-[#ffc5de] to-[#ea4f93]" },
-  { name: "Chloe Davis", filled: 6, total: 10, tone: "from-[#b8f0d8] to-[#2fc5a9]" },
-  { name: "Mel Santos", filled: 7, total: 10, tone: "from-[#ffe0b2] to-[#ff9800]" },
-];
-
-const waitlist = [
-  { name: "Kim Nguyen", service: "Gel Manicure", time: "ASAP · Morning" },
-  { name: "Lisa Hoang", service: "Nail Art", time: "After 2 PM" },
-  { name: "Anna Tran", service: "Pedicure", time: "Any slot today" },
-];
-
-const bookingConflicts = [
-  {
-    title: "Double Booking",
-    time: "11 AM · Aria Nguyen",
-    action: "Resolve Now",
-  },
-  {
-    title: "Unassigned Booking",
-    time: "2 PM · No staff assigned",
-    action: "Assign staff",
-  },
-  {
-    title: "Deposit Missing",
-    time: "10 AM · Jessica Tan",
-    action: "Resolve Now",
-  },
-];
-
-const scheduleHours = [9, 10, 11, 12, 13, 14, 15, 16, 17];
-
-function Card({ className = "", children }) {
+// --- Custom Components ---
+function PremiumCard({ className = "", children, noHover = false }) {
   return (
     <article
-      className={`rounded-[18px] border border-[#f8deea] bg-white p-5 shadow-[0_10px_24px_rgba(236,72,153,0.06)] ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-[#F3E2EC] bg-white p-6 shadow-[0_12px_32px_-8px_rgba(219,70,117,0.05)] transition-all duration-300 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_40px_-8px_rgba(219,70,117,0.12)] hover:border-[#E8C5D8]" : ""
+        } ${className}`}
     >
       {children}
     </article>
   );
 }
 
-Card.propTypes = {
+PremiumCard.propTypes = {
   className: PropTypes.string,
   children: PropTypes.node,
+  noHover: PropTypes.bool,
 };
 
-function SectionHeading({ title, subtitle }) {
+function SectionHeading({ title, subtitle, icon: Icon, actionButton }) {
   return (
-    <div>
-      <h3 className="text-sm font-extrabold text-[#3f2240]">{title}</h3>
-      {subtitle ? <p className="mt-1 text-xs text-[#c08aa4]">{subtitle}</p> : null}
+    <div className="flex items-start justify-between">
+      <div className="flex items-start gap-2.5">
+        {Icon && (
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={16} />
+          </div>
+        )}
+        <div>
+          <h3 className="text-base font-bold text-[#2B182B] tracking-tight flex items-center gap-2">
+            {title}
+          </h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
     </div>
   );
 }
@@ -172,146 +133,228 @@ function SectionHeading({ title, subtitle }) {
 SectionHeading.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
 };
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
+
+function sortAppointments(items, sortValue) {
+  const [sortKey = "time", sortDirection = "asc"] = String(sortValue || "time-asc").split("-");
+  const directionMultiplier = sortDirection === "desc" ? -1 : 1;
+
+  return [...items].sort((left, right) => {
+    const getSortValue = (item) => {
+      switch (sortKey) {
+        case "customer":
+          return item.customer || "";
+        case "artist":
+          return item.artist || "";
+        case "status":
+          return item.status || "";
+        case "time":
+        default:
+          return new Date(`${item.parsedDateStr || "1970-01-01"}T${item.startTime || "00:00:00"}`).getTime();
+      }
+    };
+
+    const leftValue = getSortValue(left);
+    const rightValue = getSortValue(right);
+
+    if (typeof leftValue === "number" && typeof rightValue === "number") {
+      return (leftValue - rightValue) * directionMultiplier;
+    }
+
+    return String(leftValue).localeCompare(String(rightValue)) * directionMultiplier;
+  });
+}
+
+function InfoItem({ label, children }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-          <Icon size={16} />
-        </div>
-      </div>
-      <p className="mt-3 text-[1.65rem] font-extrabold leading-none text-[#3b2241]">{item.value}</p>
-      <p className="mt-2 text-[13px] font-semibold text-[#7f6478]">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-medium ${item.noteClassName}`}>{item.note}</p>
-    </Card>
+    <div className="min-w-0">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9E8497] mb-1">{label}</p>
+      <div className="text-sm font-medium text-[#2B182B] break-all">{children}</div>
+    </div>
   );
 }
 
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteClassName: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
+InfoItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node,
 };
 
-function getStatusTone(status) {
-  switch (status) {
-    case "CheckedIn":
-    case "Checked In":
-      return "bg-[#e7ecff] text-[#4755b8]";
-    case "InProgress":
-    case "In Progress":
-      return "bg-[#f3ebff] text-[#7e4fe6]";
-    case "Pending":
-      return "bg-[#fff0dd] text-[#db8520]";
-    case "Confirmed":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Completed":
-    case "ServiceCompleted":
-      return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Rejected":
-      return "bg-[#ffe6ec] text-[#e1447f]";
-    case "RescheduleReq":
-    case "Reschedule Req":
-      return "bg-[#fff0dd] text-[#db8520]";
-    default:
-      return "bg-[#f3f4f6] text-[#6b7280]";
-  }
+function StatusPill({ status, compact = false }) {
+  const { t, language } = useLanguage();
+
+  const getStyle = () => {
+    switch (status) {
+      case "Checked In":
+      case "CheckedIn":
+        return "bg-[#EEF2FF] text-[#4338CA] border-[#A5B4FC] shadow-2xs";
+      case "In Progress":
+      case "InProgress":
+        return "bg-[#F5F3FF] text-[#6D28D9] border-[#C4B5FD] shadow-2xs";
+      case "Pending":
+        return "bg-[#FFFBEB] text-[#B45309] border-[#FCD34D] shadow-2xs";
+      case "Confirmed":
+      case "Approved":
+        return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
+      case "Completed":
+        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
+      case "ServiceCompleted":
+        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
+      case "Rejected":
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
+      case "RescheduleReq":
+      case "Reschedule Req":
+      case "ReschedulePending":
+        return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
+      case "RescheduleSuggested":
+        return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
+      case "Cancelled":
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
+      case "Repaired":
+        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+
+      default:
+        return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
+    }
+  };
+
+  const formatDisplay = (s) => {
+    switch (s) {
+      case "Checked In":
+      case "CheckedIn":
+        return language === "vi" ? "Đã check in" : "Checked In";
+      case "In Progress":
+      case "InProgress":
+        return language === "vi" ? "Đang tiến hành" : "In Progress";
+      case "Pending":
+        return language === "vi" ? "Đang chờ" : "Pending";
+      case "Confirmed":
+      case "Approved":
+        return language === "vi" ? "Đã xác nhận" : "Confirmed";
+      case "Completed":
+        return language === "vi" ? "Đã hoàn thành" : "Completed";
+      case "ServiceCompleted":
+        return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
+      case "Rejected":
+        return language === "vi" ? "Đã từ chối" : "Rejected";
+      case "Cancelled":
+      case "Canceled":
+        return language === "vi" ? "Đã hủy" : "Cancelled";
+      case "ReschedulePending":
+        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
+      case "RescheduleSuggested":
+        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
+      case "Repaired":
+        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      default:
+        return s;
+    }
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${getStyle()}`}>
+      {(status === "InProgress" || status === "In Progress") && (
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
+        </span>
+      )}
+      <span>{formatDisplay(status)}</span>
+    </span>
+  );
 }
 
-function formatDuration(totalMinutes) {
-  if (!totalMinutes) return "0m";
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours > 0 && minutes > 0) {
-    return `${hours}h${minutes}m`;
-  } else if (hours > 0) {
-    return `${hours}h`;
-  } else {
-    return `${minutes}m`;
-  }
+function SkeletonLoader() {
+  return (
+    <div className="space-y-4 p-4 animate-pulse">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[#FAF0F5]/50">
+          <div className="h-4 w-28 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-40 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-32 bg-[#F3D6E5] rounded-full" />
+          <div className="h-4 w-32 bg-[#F3D6E5] rounded-full" />
+          <div className="h-7 w-24 bg-[#F3D6E5] rounded-full" />
+          <div className="h-8 w-28 bg-[#F3D6E5] rounded-full ml-auto" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
-function formatStatusDisplay(status) {
-  if (status === "CheckedIn") return "Checked In";
-  if (status === "InProgress") return "In Progress";
-  if (status === "RescheduleReq") return "Reschedule Req";
-  if (status === "ServiceCompleted") return "Completed";
-  return status;
-}
-
-function matchesFilter(status, filter) {
-  if (filter === "All") return true;
-  if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req";
-  if (filter === "Completed") return status === "Completed" || status === "ServiceCompleted";
-  return status === filter;
-}
-
-function formatHourLabel(hour) {
-  if (hour === 12) return "12 PM";
-  if (hour > 12) return `${hour - 12} PM`;
-  return `${hour} AM`;
-}
-
-function parseDatePart(dateString) {
-  const normalized = String(dateString || "").trim();
-  if (!normalized) return null;
-
+// --- Utility Functions ---
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const normalized = String(dateString).trim();
   const datePart = normalized.includes("T") ? normalized.split("T")[0] : normalized;
   const [year, month, day] = datePart.split("-").map(Number);
-
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
-}
-
-function parseTimePart(timeString) {
-  const normalized = String(timeString || "").trim();
-  if (!normalized) return null;
-
-  const rawTime = normalized.includes("T")
-    ? normalized.split("T")[1]?.replace("Z", "")
-    : normalized;
-  const [hours, minutes = 0, seconds = 0] = String(rawTime || "")
-    .split(".")[0]
-    .split(":")
-    .map(Number);
-
-  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) {
-    return null;
-  }
-
-  return new Date(2000, 0, 1, hours, minutes, seconds);
-}
-
-function formatBookingDate(dateString) {
-  const parsedDate = parseDatePart(dateString);
-  if (!parsedDate) return "N/A";
-
-  return parsedDate.toLocaleDateString("en-US", {
+  if (!year || !month || !day) return "N/A";
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function formatBookingTime(startTime, bookingDate) {
-  const parsedTime = parseTimePart(startTime) || parseTimePart(bookingDate);
-  if (!parsedTime) return "N/A";
-
-  return parsedTime.toLocaleTimeString("en-US", {
+function formatTime(startTime, fallbackDateTime) {
+  const normalizedTime = String(startTime || "").trim();
+  const rawTime = normalizedTime
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
+  if (!rawTime) return "N/A";
+  const [hours, minutes = 0, seconds = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) return "N/A";
+  return new Date(2000, 0, 1, hours, minutes, seconds).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
+}
+
+function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
+  const formattedStart = formatTime(startTime, fallbackDateTime);
+  if (!durationMinutes || formattedStart === "N/A") return formattedStart;
+
+  const normalizedTime = String(startTime || "").trim();
+  let rawTime = normalizedTime
+    || String(fallbackDateTime || "")
+      .trim()
+      .split("T")[1]
+      ?.replace("Z", "")
+      ?.split(".")[0];
+  if (!rawTime) return formattedStart;
+
+  let [hours, minutes = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
+
+  const totalStartMinutes = hours * 60 + minutes;
+  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const endHours = Math.floor(totalEndMinutes / 60) % 24;
+  const endMinutes = totalEndMinutes % 60;
+
+  const formattedEnd = new Date(2000, 0, 1, endHours, endMinutes).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${formattedStart} - ${formattedEnd}`;
+}
+
+function formatVND(amount) {
+  if (amount === null || amount === undefined) return "N/A";
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(amount);
+}
+
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
 }
 
 function getArtistDisplayName(artist) {
@@ -319,62 +362,115 @@ function getArtistDisplayName(artist) {
   return name === "Chưa chỉ định" ? "Unassigned" : name || "Unassigned";
 }
 
-function normalizeStatusKey(status) {
-  return String(status || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, "");
+function matchesFilter(status, filter) {
+  if (filter === "All") return true;
+  if (filter === "Reschedule") return status === "RescheduleReq" || status === "Reschedule Req" || status === "ReschedulePending" || status === "RescheduleSuggested";
+  if (filter === "Completed") return status === "Completed" || status === "ServiceCompleted";
+  return status === filter;
 }
 
-function isCheckedInStatus(status) {
-  const key = normalizeStatusKey(status);
-  return key === "checkedin" || key.includes("checkedin");
+function getQrCodeSrc(qrCode) {
+  if (!qrCode) return null;
+  const trimmed = String(qrCode).trim();
+  if (trimmed.startsWith("data:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  if (/^[A-Za-z0-9+/=]+$/.test(trimmed) && trimmed.length > 50) {
+    return `data:image/png;base64,${trimmed}`;
+  }
+  return trimmed;
 }
 
-function isFinalStatus(status) {
-  const s = String(status || "").trim().toLowerCase();
-  return s.includes("cancel") || s.includes("reject") || s.includes("complete");
+function mapBookingForDrawer(rawBooking, language = "en") {
+  const artistName = getArtistDisplayName(rawBooking);
+  const artistId = rawBooking.staffId || rawBooking.nailArtistId || rawBooking.staffArtistId || rawBooking.artistId || null;
+  return {
+    ...rawBooking,
+    id: rawBooking.bookingId || rawBooking.id,
+    bookingId: rawBooking.bookingId || rawBooking.id,
+    date: formatDate(rawBooking.bookingDate || rawBooking.createdAt),
+    time: formatTime(rawBooking.startTime, rawBooking.bookingDate || rawBooking.createdAt),
+    customerName: rawBooking.customerName || (rawBooking.customer ? `${rawBooking.customer.firstName} ${rawBooking.customer.lastName}` : "Unknown Customer"),
+    customerId: rawBooking.customerId,
+    phone: rawBooking.customerPhone || rawBooking.phone || (rawBooking.customer ? rawBooking.customer.phone : "") || rawBooking.customer?.phoneNumber || rawBooking.phoneNumber,
+    email: rawBooking.email || (rawBooking.customer ? rawBooking.customer.email : ""),
+    serviceName: rawBooking.serviceName || "Nail Service",
+    artistName,
+    artistId,
+    deposit: rawBooking.depositAmount ? formatVND(rawBooking.depositAmount) : "Pending",
+    depositAmount: rawBooking.depositAmount,
+    depositTone: rawBooking.depositAmount ? "text-[#059669] font-bold" : "text-[#D97706] font-bold",
+    status: rawBooking.status || "Pending",
+    totalPrice: rawBooking.totalPrice,
+    qrCode: rawBooking.qrCode,
+    qtCode: rawBooking.qtCode,
+    checkInImageUrl: rawBooking.checkInImageUrl,
+    bookingItems: rawBooking.bookingItems || [],
+    totalDuration: rawBooking.totalDuration,
+    startTime: rawBooking.startTime,
+    salonId: rawBooking.salonId,
+  };
 }
 
-function hasAssignedArtist(row) {
-  return Boolean(row?.staffId || row?.staffArtistId || row?.nailArtistId || row?.artistId);
-}
-
-function mapApiBookingToUiFormat(apiBooking) {
-  console.log("Mapping API booking:", apiBooking);
-
-  const customerName = apiBooking.customerName || "Unknown Customer";
+function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
+  const customerName = apiBooking.customerName || (apiBooking.customer ? `${apiBooking.customer.firstName} ${apiBooking.customer.lastName}` : "Unknown Customer");
   const customerInitials = customerName
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
   const artistName = getArtistDisplayName(apiBooking);
   const artistId = apiBooking.staffId || apiBooking.nailArtistId || apiBooking.staffArtistId || apiBooking.artistId || null;
+
+  // Extract or assign thumbnail URL
+  let thumbnail = null;
+  if (apiBooking.bookingItems && apiBooking.bookingItems.length > 0) {
+    const item = apiBooking.bookingItems[0];
+    thumbnail = item.nailVariantImageUrl || item.customerNailImageUrl;
+  }
+  if (!thumbnail) {
+    thumbnail = SAMPLE_NAIL_THUMBNAILS[index % SAMPLE_NAIL_THUMBNAILS.length];
+  }
+
+  // Precompute expensive fields for filtering
+  const phoneVal = apiBooking.customerPhone || apiBooking.phone || apiBooking.customer?.phone || apiBooking.customer?.phoneNumber || apiBooking.phoneNumber || "";
+  const serviceVal = apiBooking.serviceName || "Nail Service";
+  const statusVal = apiBooking.status || "Pending";
+  const searchString = [customerName, phoneVal, artistName, serviceVal, statusVal].join(" ").toLowerCase();
+
+  let parsedDateStr = "";
+  if (apiBooking.bookingDate || apiBooking.createdAt) {
+    const d = dayjs(apiBooking.bookingDate || apiBooking.createdAt);
+    if (d.isValid()) {
+      parsedDateStr = d.format("YYYY-MM-DD");
+    }
+  }
 
   return {
     id: apiBooking.bookingId || apiBooking.id,
     bookingId: apiBooking.bookingId || apiBooking.id,
+    searchString,
+    parsedDateStr,
     bookingDate: apiBooking.bookingDate,
-    date: formatBookingDate(apiBooking.bookingDate || apiBooking.createdAt),
-    time: formatBookingTime(apiBooking.startTime, apiBooking.bookingDate || apiBooking.createdAt),
+    date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
+    time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
-    duration: formatDuration(apiBooking.totalDuration || 60),
+    duration: formatDuration(apiBooking.totalDuration || 60, language),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
-    customerName: apiBooking.customerName,
+    customerName: customerName,
     customerId: apiBooking.customerId,
-    phone: apiBooking.customerPhone || "N/A",
+    phone: apiBooking.customerPhone || apiBooking.phone || (apiBooking.customer ? apiBooking.customer.phone : "") || apiBooking.customer?.phoneNumber || apiBooking.phoneNumber,
+    email: apiBooking.email || (apiBooking.customer ? apiBooking.customer.email : ""),
     service: apiBooking.serviceName || "Nail Service",
     serviceName: apiBooking.serviceName,
     artist: artistName,
     nailArtistName: artistName,
     nailArtistId: artistId,
-    deposit: apiBooking.depositAmount ? `$${apiBooking.depositAmount} Paid` : "Pending",
+    deposit: apiBooking.depositAmount ? formatVND(apiBooking.depositAmount) : "Pending",
     depositAmount: apiBooking.depositAmount,
-    depositTone: apiBooking.depositAmount ? "text-[#2fa25f]" : "text-[#db8520]",
+    depositTone: apiBooking.depositAmount ? "text-[#059669]" : "text-[#D97706]",
     status: apiBooking.status || "Pending",
     totalPrice: apiBooking.totalPrice,
     qrCode: apiBooking.qrCode,
@@ -383,764 +479,1801 @@ function mapApiBookingToUiFormat(apiBooking) {
     bookingItems: apiBooking.bookingItems || [],
     salonId: apiBooking.salonId,
     initials: customerInitials,
-    avatarTone: "from-[#ffc5de] to-[#ea4f93]",
-    artistTone: "from-[#d8c4ff] to-[#8b5cf6]",
+    thumbnailUrl: thumbnail,
     ...apiBooking,
   };
 }
 
+function isFinalStatus(status) {
+  const s = String(status || "").trim().toLowerCase();
+  return s.includes("cancel") || s.includes("reject") || s.includes("complete") || s.includes("confirmed") || s.includes("approved");
+}
+
+const scheduleColorPalette = [
+  { dot: "bg-[#8B5CF6]", tone: "border-[#DDD6FE] bg-[#F5F3FF] text-[#6D28D9]" },
+  { dot: "bg-[#E84F93]", tone: "border-[#FBCFE8] bg-[#FFF0F5] text-[#DB2777]" },
+  { dot: "bg-[#3B82F6]", tone: "border-[#BFDBFE] bg-[#EFF6FF] text-[#1D4ED8]" },
+  { dot: "bg-[#10B981]", tone: "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]" },
+  { dot: "bg-[#F59E0B]", tone: "border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]" },
+];
+
+function formatHourLabel(hour) {
+  if (hour === 12) return "12:00 PM";
+  if (hour > 12) return `${hour - 12}:00 PM`;
+  return `${hour}:00 AM`;
+}
+const appointmentFilters = [
+  { value: "All", label: "All" },
+  { value: "Pending", label: "Pending" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Cancelled", label: "Cancelled" },
+  { value: "CheckedIn", label: "Checked In" },
+  { value: "InProgress", label: "In Progress" },
+  { value: "ServiceCompleted", label: "Service Completed" },
+  { value: "Completed", label: "Completed" },
+  { value: "Repaired", label: "Repaired" },
+  { value: "ReschedulePending", label: "Reschedule Pending" },
+  { value: "RescheduleSuggested", label: "Reschedule Suggested" }
+]
+
+function getCalendarCardStyle(status) {
+  switch (status) {
+    case "CheckedIn":
+    case "Checked In":
+      return "border-[#A5B4FC] bg-[#EEF2FF] text-[#4338CA]";
+    case "InProgress":
+    case "In Progress":
+      return "border-[#C4B5FD] bg-[#F5F3FF] text-[#6D28D9]";
+    case "Pending":
+      return "border-[#FCD34D] bg-[#FFFBEB] text-[#B45309]";
+    case "Confirmed":
+    case "Approved":
+      return "border-[#6EE7B7] bg-[#ECFDF5] text-[#047857]";
+    case "Completed":
+    case "ServiceCompleted":
+      return "border-[#34D399] bg-[#ECFDF5] text-[#065F46]";
+    case "Rejected":
+      return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
+    case "RescheduleReq":
+    case "RescheduleReq":
+    case "ReschedulePending":
+      return "border-[#FDBA74] bg-[#FFF7ED] text-[#C2410C]";
+    case "RescheduleSuggested":
+      return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
+    case "Cancelled":
+    case "Canceled":
+      return "border-[#FCA5A5] bg-[#FEF2F2] text-[#B91C1C]";
+    case "Repaired":
+      return "border-[#93C5FD] bg-[#EFF6FF] text-[#1D4ED8]";
+    default:
+      return "border-[#E5E7EB] bg-[#F9FAFB] text-[#4B5563]";
+  }
+}
+
+
+function getBookingStatusLabel(status, language) {
+  switch (status) {
+    case "Checked In":
+    case "CheckedIn":
+      return language === "vi" ? "Đã check in" : "Checked In";
+    case "In Progress":
+    case "InProgress":
+      return language === "vi" ? "Đang làm" : "In Progress";
+    case "Pending":
+      return language === "vi" ? "Đang chờ" : "Pending";
+    case "Confirmed":
+    case "Approved":
+      return language === "vi" ? "Đã xác nhận" : "Approved";
+    case "Completed":
+      return language === "vi" ? "Đã hoàn thành" : "Completed";
+    case "ServiceCompleted":
+      return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
+    case "Rejected":
+      return language === "vi" ? "Đã từ chối" : "Rejected";
+    case "Cancelled":
+    case "Canceled":
+      return language === "vi" ? "Đã hủy" : "Cancelled";
+    case "ReschedulePending":
+      return language === "vi" ? "Yêu cầu dời lịch" : "Reschedule Requested";
+    case "RescheduleSuggested":
+      return language === "vi" ? "Đề xuất dời lịch" : "Reschedule Proposed";
+    case "Repaired":
+      return language === "vi" ? "Đã sửa" : "Repaired";
+    default:
+      return status;
+  }
+}
+
+const tableComponents = {
+  body: {
+    wrapper: ({ children, ...props }) => (
+      <tbody {...props}>
+        <AnimatePresence>{children}</AnimatePresence>
+      </tbody>
+    ),
+    row: ({ children, className, style, ...props }) => (
+      <motion.tr
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        className={`group relative cursor-pointer border-b border-[#F7E7EE] transition-colors duration-200 hover:bg-[#FFF9FB] last:border-b-0 ${className || ""}`}
+        style={style}
+        {...props}
+      >
+        {children}
+      </motion.tr>
+    )
+  }
+};
+
+// --- Main Page Component ---
 export function ManagerBookingListPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [flashMessage] = useState(location.state?.flashMessage ?? "");
-  const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [bookings, setBookings] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filteredPageSize] = useState(10); // ✅ Client-side page size
+  const tableContainerRef = useRef(null);
 
-  // Assign Artist modal
+  const dispatch = useDispatch();
+
+  // Core state from Redux
+  const { bookings: rawBookings, salonStaffList, isLoading, error, filters, hasLoadedOnce } = useSelector((state) => state.managerBookings);
+  const { query, activeFilter, dateFrom: dateFromISO, dateTo: dateToISO, viewMode, currentPage } = filters;
+
+  const dateFrom = useMemo(() => dateFromISO ? dayjs(dateFromISO) : null, [dateFromISO]);
+  const dateTo = useMemo(() => dateToISO ? dayjs(dateToISO) : null, [dateToISO]);
+
+  // Compute UI bookings from raw Redux bookings
+  const bookings = useMemo(() => {
+    return rawBookings.map((b, idx) => mapApiBookingToUiFormat(b, idx, language));
+  }, [rawBookings, language]);
+
+  // Set viewMode via Redux
+  const setViewMode = (mode) => dispatch(setFilter({ key: "viewMode", value: mode }));
+  const setQuery = (val) => dispatch(setFilter({ key: "query", value: val }));
+  const setActiveFilter = (val) => dispatch(setFilter({ key: "activeFilter", value: val }));
+  const setDateFrom = (val) => dispatch(setFilter({ key: "dateFrom", value: val ? val.toISOString() : null }));
+  const setDateTo = (val) => dispatch(setFilter({ key: "dateTo", value: val ? val.toISOString() : null }));
+  const setCurrentPage = (val) => dispatch(setFilter({ key: "currentPage", value: val }));
+
+  // Keep some local UI state
+  const [anchorDate, setAnchorDate] = useState(() => dayjs());
+  const [selectedSort, setSelectedSort] = useState("time-asc");
+
+  // Drag & Drop State
+  const [draggedBooking, setDraggedBooking] = useState(null);
+  const [dragOverTarget, setDragOverTarget] = useState(null);
+
+  // Thumbnail preview modal state
+  const [activeImageModalUrl, setActiveImageModalUrl] = useState(null);
+
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedBookingForDrawer, setSelectedBookingForDrawer] = useState(null);
+  const [selectedCustomerForDrawer, setSelectedCustomerForDrawer] = useState(null);
+  const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
+
+  // Schedule state
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState('morning');
+
+  const timeFilters = [
+    { label: "9 AM - 3 PM", value: "morning", startHour: 9, endHour: 15 },
+    { label: "3 PM - 8 PM", value: "afternoon", startHour: 15, endHour: 20 }
+  ];
+
+  // Modal states
   const [isAssignArtistModalOpen, setIsAssignArtistModalOpen] = useState(false);
   const [selectedBookingForAssign, setSelectedBookingForAssign] = useState(null);
-
-  // Confirm / Cancel / Reject modals
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
+  const [isQrExpanded, setIsQrExpanded] = useState(false);
+  const [expandedHours, setExpandedHours] = useState(new Set());
+  const [selectedDateForModal, setSelectedDateForModal] = useState(null);
+  const [isDayBookingsModalOpen, setIsDayBookingsModalOpen] = useState(false);
 
-  const loadBookings = useCallback(async (page = currentPage) => {
-    setIsLoading(true);
-    setError("");
-    try {
-      // Load ALL bookings with a large page size (1000)
-      const result = await fetchBookingsBySalonId(DEFAULT_SALON_ID, { pageNumber: 1, pageSize: 1000 });
-      console.log("loadBookings all bookings result:", result);
-      
-      let apiBookings = [];
-      if (result?.items) {
-        apiBookings = result.items;
-      } else if (Array.isArray(result)) {
-        apiBookings = result;
-      }
-
-      const uiBookings = apiBookings.map(mapApiBookingToUiFormat);
-      console.log("loadBookings all uiBookings loaded:", uiBookings.length, "bookings");
-      setBookings(uiBookings);
-    } catch (err) {
-      console.error("Failed to load bookings:", err);
-      setError(err.message || "Failed to load bookings. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage]);
-
-  // ✅ Filtered appointments (after applying search & filters)
-  const filteredAppointments = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return bookings.filter((appointment) => {
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        [appointment.customer, appointment.phone, appointment.artist, appointment.time]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
-
-      let matchesDate = true;
-      if (selectedDate) {
-        const bookingDate = dayjs(appointment.bookingDate || appointment.createdAt);
-        matchesDate = bookingDate.isSame(selectedDate, "day");
-        console.log("matchesDate check:", { appointment, selectedDate, bookingDate, matchesDate });
-      }
-
-      const matchesFilterResult = matchesFilter(appointment.status, activeFilter);
-      console.log("Filter check for appointment:", { 
-        appointment, 
-        matchesQuery, 
-        matchesDate, 
-        matchesFilterResult,
-        activeFilter 
-      });
-
-      return matchesQuery && matchesFilterResult && matchesDate;
-    });
-  }, [activeFilter, query, bookings, selectedDate]);
-
-  // ✅ Client-side pagination for filtered results
-  const paginatedAppointments = useMemo(() => {
-    const startIndex = (currentPage - 1) * filteredPageSize;
-    const endIndex = startIndex + filteredPageSize;
-    console.log("Pagination slicing:", { startIndex, endIndex, filteredLength: filteredAppointments.length });
-    return filteredAppointments.slice(startIndex, endIndex);
-  }, [filteredAppointments, currentPage, filteredPageSize]);
-
-  // ✅ Calculate totalPages based on filtered results
-  const filteredTotalPages = useMemo(() => {
-    const pages = Math.max(1, Math.ceil(filteredAppointments.length / filteredPageSize));
-    console.log("filteredTotalPages calculated:", pages, "from", filteredAppointments.length, "items");
-    return pages;
-  }, [filteredAppointments.length, filteredPageSize]);
-
-  // ✅ Reset to page 1 when filters change
+  // --- Effects ---
   useEffect(() => {
-    console.log("Filters changed, resetting to page 1");
-    setCurrentPage(1);
-  }, [query, activeFilter, selectedDate]);
-
-  const handlePageChange = useCallback((newPage) => {
-    console.log("handlePageChange called with:", newPage);
-    setCurrentPage(newPage);
-  }, []);
-
-  // Log current pagination state
-  console.log("ManagerBookingListPage pagination state:", { 
-    currentPage, 
-    filteredTotalPages, 
-    filteredAppointmentsLength: filteredAppointments.length,
-    paginatedAppointmentsLength: paginatedAppointments.length,
-    filteredPageSize 
-  });
-
-  useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
-    }
+    if (!location.state?.flashMessage) return;
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
 
+  // Fetch salon staff once on mount or when salonId changes
   useEffect(() => {
-    Promise.resolve().then(() => loadBookings());
+    dispatch(fetchManagerSalonStaffThunk());
+  }, [dispatch]);
+
+  const dayViewStaffList = useMemo(() => {
+    if (!salonStaffList || salonStaffList.length === 0) {
+      return [
+        { id: "unassigned", name: "Unassigned", isUnassigned: true }
+      ];
+    }
+
+    const artists = salonStaffList.map((member) => {
+      const name = [member?.firstName, member?.lastName].filter(Boolean).join(" ").trim() || member?.fullName || member?.name || member?.email || "Thợ Nail";
+      const staffArtistId = member?.staffArtistId || member?.staffId || member?.userId || member?.id;
+      return {
+        id: staffArtistId,
+        staffArtistId,
+        name,
+        member,
+        isUnassigned: false,
+      };
+    });
+
+    return [
+      ...artists,
+      { id: "unassigned", name: "Unassigned", isUnassigned: true }
+    ];
+  }, [salonStaffList]);
+
+  const loadBookings = useCallback(async () => {
+    const startParam = dateFrom ? dateFrom.format("YYYY-MM-DD") : undefined;
+    const endParam = dateTo ? dateTo.format("YYYY-MM-DD") : undefined;
+    dispatch(fetchManagerBookingsThunk({ startDate: startParam, endDate: endParam }));
+  }, [dateFrom, dateTo, dispatch]);
+
+  useEffect(() => {
+    loadBookings();
   }, [loadBookings]);
+
+  // --- Drag & Drop Handlers ---
+  const handleDragStart = (e, booking) => {
+    setDraggedBooking(booking);
+    e.dataTransfer.setData("text/plain", booking.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, targetId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverTarget !== targetId) {
+      setDragOverTarget(targetId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTarget(null);
+  };
+
+  const handleDropSlot = async (e, targetHour, artistItem) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    if (!draggedBooking) return;
+
+    const formattedTime = `${String(targetHour).padStart(2, "0")}:00:00`;
+    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration || 60);
+    const bookingIdToAssign = draggedBooking.id || draggedBooking.bookingId;
+
+    const targetArtistName = typeof artistItem === "object" ? artistItem.name : artistItem;
+    const staffArtistId = typeof artistItem === "object" ? artistItem.staffArtistId : null;
+    const isUnassigned = typeof artistItem === "object" ? artistItem.isUnassigned : (artistItem === "Unassigned");
+
+    // Optimistically update UI
+    dispatch(updateBookingLocally({
+      id: bookingIdToAssign,
+      updates: {
+        startTime: formattedTime,
+        artist: targetArtistName,
+        nailArtistName: targetArtistName,
+        artistId: staffArtistId,
+        nailArtistId: staffArtistId,
+      }
+    }));
+
+    const activeDragged = draggedBooking;
+    setDraggedBooking(null);
+
+    // Call API POST /api/Bookings/{id}/receptionist-assign-artist
+    if (!isUnassigned && staffArtistId && bookingIdToAssign) {
+      try {
+        await assignArtistToBookingOld(bookingIdToAssign, staffArtistId);
+        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`);
+        loadBookings();
+      } catch (err) {
+        console.error("Failed to assign artist via drag & drop:", err);
+        toast.error(err.message || "Không thể phân công thợ cho lịch hẹn này.");
+        loadBookings();
+      }
+    } else {
+      toast.success(
+        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`
+      );
+    }
+  };
+
+  const handleDropDate = (e, targetDate) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    if (!draggedBooking) return;
+
+    const formattedDate = targetDate.format("YYYY-MM-DD");
+    const displayDate = targetDate.format("MMM D, YYYY");
+
+    setBookings((prevBookings) =>
+      prevBookings.map((b) => {
+        if (b.id === draggedBooking.id) {
+          return {
+            ...b,
+            bookingDate: formattedDate,
+            date: displayDate,
+          };
+        }
+        return b;
+      })
+    );
+
+    toast.success(
+      language === "vi" ? `Đã dời lịch cho ${draggedBooking.customer} vào ngày ${displayDate}` : `Rescheduled ${draggedBooking.customer}'s booking to ${displayDate}`,
+      { icon: <CalendarDays /> }
+    );
+    setDraggedBooking(null);
+  };
+
+  // --- Derived State ---
+  const quickStats = useMemo(() => {
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    let todayCount = 0;
+    let actionRequiredCount = 0;
+
+    for (let i = 0; i < bookings.length; i++) {
+      const b = bookings[i];
+      if (b.parsedDateStr === todayStr) {
+        todayCount++;
+      }
+      if (b.status === "Pending" || !(b.nailArtistId || b.staffId || b.staffArtistId || b.artistId)) {
+        actionRequiredCount++;
+      }
+    }
+    return { todayCount, actionRequiredCount };
+  }, [bookings]);
 
   const summaryStats = useMemo(() => {
     const pending = bookings.filter(b => b.status === "Pending").length;
-    const confirmed = bookings.filter(b => b.status === "Confirmed").length;
+    const confirmed = bookings.filter(b => b.status === "Confirmed" || b.status === "Approved").length;
     const checkedIn = bookings.filter(b => b.status === "CheckedIn" || b.status === "Checked In").length;
-    const noShows = bookings.filter(b => b.status === "No Show").length;
-    const rescheduleReqs = bookings.filter(b => b.status === "RescheduleReq" || b.status === "Reschedule Req").length;
     const completed = bookings.filter(b => b.status === "Completed" || b.status === "ServiceCompleted").length;
 
     return [
       {
-        label: "Pending Bookings",
-        value: pending.toString(),
-        note: "awaiting confirmation",
+        label: t("manager.dashboard.statusWaiting"),
+        value: pending,
+        note: t("manager.bookings.awaitingConfirm") || "Awaiting confirmation",
         icon: Clock3,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
-        noteClassName: "text-[#c08aa4]",
+        color: "#D97706",
       },
       {
-        label: "Confirmed Bookings",
-        value: confirmed.toString(),
-        note: "+5 since yesterday",
+        label: t("manager.bookings.ready") || "Confirmed",
+        value: confirmed,
+        note: t("manager.bookings.lockedReady") || "Locked & ready",
         icon: CheckCircle2,
-        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-        noteClassName: "text-[#2fa25f]",
+        color: "#059669",
       },
       {
-        label: "Checked-in Customers",
-        value: checkedIn.toString(),
-        note: "+2 this hour",
+        label: t("manager.dashboard.statusCalled") || "Checked In",
+        value: checkedIn,
+        note: t("manager.bookings.inSalon") || "In salon",
         icon: UserCheck,
-        iconClassName: "bg-[#e7ecff] text-[#4755b8]",
-        noteClassName: "text-[#2fa25f]",
+        color: "#4F46E5",
       },
       {
-        label: "Completed Bookings",
-        value: completed.toString(),
-        note: "services finished",
-        icon: CheckCircle2,
-        iconClassName: "bg-[#eaf9ee] text-[#2fa25f]",
-        noteClassName: "text-[#2fa25f]",
-      },
-      {
-        label: "No-shows Today",
-        value: noShows.toString(),
-        note: "+1 from last week",
-        icon: XCircle,
-        iconClassName: "bg-[#ffe6ec] text-[#e1447f]",
-        noteClassName: "text-[#e1447f]",
-      },
-      {
-        label: "Reschedule Requests",
-        value: rescheduleReqs.toString(),
-        note: "needs attention",
-        icon: RefreshCw,
-        iconClassName: "bg-[#fff0dd] text-[#db8520]",
-        noteClassName: "text-[#db8520]",
+        label: t("manager.dashboard.statusCompleted") || "Completed",
+        value: completed,
+        note: t("manager.bookings.finishedToday") || "Finished today",
+        icon: Sparkles,
+        color: "#E84F93",
       },
     ];
-  }, [bookings]);
+  }, [bookings, t]);
 
-  return (
-    <section className="flex min-h-full flex-col gap-5">
-      <Card className="overflow-hidden border-none bg-[linear-gradient(135deg,#fff0f8_0%,#fffafb_58%,#fff5fb_100%)] p-0 shadow-[0_18px_36px_rgba(236,72,153,0.12)]">
-        <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-[#ff8ebb] to-[#ea4f93] text-white shadow-[0_10px_22px_rgba(234,79,147,0.28)]">
-                <Calendar size={22} />
-              </div>
-              <div>
-                <h1 className="text-3xl font-extrabold text-[#402542]">Branch Bookings</h1>
-                <p className="text-sm text-[#b07a94]">Track appointments, assign artists, and monitor branch activity in one workspace.</p>
-              </div>
-            </div>
-            <p className="mt-4 text-sm leading-6 text-[#8f6b80]">
-              Keep an eye on daily flow, customer arrivals, staffing assignments, and potential conflicts with a manager-focused booking dashboard.
+  const filteredAppointments = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("YYYY-MM-DD");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("YYYY-MM-DD");
+
+    return bookings.filter((appointment) => {
+      const matchesQuery = normalizedQuery.length === 0 || appointment.searchString.includes(normalizedQuery);
+
+      let matchesDate = true;
+      if (fromStr || toStr) {
+        const dStr = appointment.parsedDateStr;
+        if (dStr) {
+          if (fromStr && dStr < fromStr) matchesDate = false;
+          if (toStr && dStr > toStr) matchesDate = false;
+        } else {
+          matchesDate = false;
+        }
+      }
+      return matchesQuery && matchesFilter(appointment.status, activeFilter) && matchesDate;
+    });
+  }, [activeFilter, query, bookings, dateFrom, dateTo]);
+
+  const sortedAppointments = useMemo(
+    () => sortAppointments(filteredAppointments, selectedSort),
+    [filteredAppointments, selectedSort]
+  );
+
+  const paginatedAppointments = useMemo(() => {
+    const startIndex = (currentPage - 1) * BOOKING_PAGE_SIZE;
+    return sortedAppointments.slice(startIndex, startIndex + BOOKING_PAGE_SIZE);
+  }, [sortedAppointments, currentPage]);
+
+  const filteredTotalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredAppointments.length / BOOKING_PAGE_SIZE));
+  }, [filteredAppointments.length]);
+
+  const scheduleDateBookings = useMemo(() => {
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("YYYY-MM-DD");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("YYYY-MM-DD");
+
+    if (!fromStr && !toStr) {
+      const todayStr = dayjs().format("YYYY-MM-DD");
+      return bookings.filter(b => b.parsedDateStr === todayStr);
+    }
+
+    return bookings.filter(b => {
+      const dStr = b.parsedDateStr;
+      if (!dStr) return false;
+      if (fromStr && dStr < fromStr) return false;
+      if (toStr && dStr > toStr) return false;
+      return true;
+    });
+  }, [bookings, dateFrom, dateTo]);
+
+  const scheduleDaysCount = useMemo(() => {
+    if (dateFrom && dateTo && dateFrom.isValid() && dateTo.isValid()) {
+      return Math.max(1, dateTo.diff(dateFrom, 'day') + 1);
+    }
+    const uniqueDays = new Set(scheduleDateBookings.map(b => b.parsedDateStr)).size;
+    return Math.max(1, uniqueDays);
+  }, [dateFrom, dateTo, scheduleDateBookings]);
+
+  const scheduleDateLabel = useMemo(() => {
+    let fromStr = null;
+    let toStr = null;
+    if (dateFrom && dateFrom.isValid()) fromStr = dateFrom.format("MMM D, YYYY");
+    if (dateTo && dateTo.isValid()) toStr = dateTo.format("MMM D, YYYY");
+
+    if (fromStr && toStr) {
+      return fromStr === toStr ? fromStr : `${fromStr} - ${toStr}`;
+    }
+    if (fromStr) return `${fromStr} - ...`;
+    if (toStr) return `... - ${toStr}`;
+    return dayjs().format("MMM D, YYYY");
+  }, [dateFrom, dateTo]);
+
+  const capacityData = useMemo(() => {
+    const periods = [
+      { label: language === "vi" ? "Buổi sáng (9 giờ sáng - 12 giờ trưa)" : "Morning (9 AM - 12 PM)", start: 9, end: 12, maxSlots: 10 * scheduleDaysCount },
+      { label: language === "vi" ? "Buổi chiều (12 giờ trưa - 3 giờ chiều)" : "Afternoon (12 PM - 3 PM)", start: 12, end: 15, maxSlots: 10 * scheduleDaysCount },
+      { label: language === "vi" ? "Buổi tối (3 giờ chiều - 6 giờ tối)" : "Evening (3 PM - 6 PM)", start: 15, end: 18, maxSlots: 10 * scheduleDaysCount }
+    ];
+
+    return periods.map(period => {
+      const bookingsInPeriod = scheduleDateBookings.filter(b => {
+        const startHour = parseInt(b.startTime?.split(':')[0] || '0');
+        return startHour >= period.start && startHour < period.end;
+      });
+      const value = Math.min(100, Math.round((bookingsInPeriod.length / period.maxSlots) * 100));
+      const tone = value > 80 ? "from-[#F59E0B] to-[#D97706]" : value > 50 ? "from-[#8B5CF6] to-[#7C3AED]" : "from-[#FF75A8] to-[#E84F93]";
+      return { ...period, value, tone };
+    });
+  }, [scheduleDateBookings, scheduleDaysCount, language]);
+
+  const staffWorkloadData = useMemo(() => {
+    const staffMap = new Map();
+
+    scheduleDateBookings.forEach(b => {
+      const artistName = getArtistDisplayName(b);
+      if (artistName !== "Unassigned") {
+        const current = staffMap.get(artistName) || { name: artistName, filled: 0, total: 10 * scheduleDaysCount };
+        staffMap.set(artistName, { ...current, filled: current.filled + 1 });
+      }
+    });
+
+    const workload = Array.from(staffMap.values());
+    if (workload.length === 0) {
+      return [
+        { name: "Luna Park", filled: 0, total: 10 * scheduleDaysCount, tone: "from-[#8B5CF6] to-[#6D28D9]" },
+        { name: "Aria Nguyen", filled: 0, total: 10 * scheduleDaysCount, tone: "from-[#FF75A8] to-[#E84F93]" }
+      ];
+    }
+
+    const tones = [
+      "from-[#8B5CF6] to-[#6D28D9]",
+      "from-[#FF75A8] to-[#E84F93]",
+      "from-[#10B981] to-[#047857]",
+      "from-[#F59E0B] to-[#D97706]"
+    ];
+    return workload.map((staff, i) => ({
+      ...staff,
+      tone: tones[i % tones.length]
+    }));
+  }, [scheduleDateBookings]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, activeFilter, dateFrom, dateTo, selectedSort]);
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    if (sorter && sorter.field) {
+      if (sorter.order) {
+        setSelectedSort(`${sorter.field}-${sorter.order === "ascend" ? "asc" : "desc"}`);
+      } else {
+        setSelectedSort("time-asc");
+      }
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      title: t("manager.bookings.time"),
+      dataIndex: "time",
+      key: "time",
+      sorter: true,
+      sortOrder: selectedSort === "time-asc" ? "ascend" : selectedSort === "time-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div>
+          <p className="text-xs font-bold text-[#2B182B] truncate" title={row.date}>{row.date}</p>
+          <p className="text-[11px] font-medium text-[#9E8497] truncate" title={row.time}>{row.time}</p>
+          <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-[#9E8497]">
+            <Clock3 size={11} className="text-[#E84F93]" />
+            <span>{row.duration}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.customer"),
+      dataIndex: "customer",
+      key: "customer",
+      sorter: true,
+      sortOrder: selectedSort === "customer-asc" ? "ascend" : selectedSort === "customer-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF9EBF] to-[#E84F93] text-xs font-bold text-white shadow-sm border border-white">
+            {row.initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-bold text-[#2B182B] group-hover:text-[#E84F93] transition-colors">
+              {row.customer}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#ea4f93] shadow-[0_8px_18px_rgba(236,72,153,0.06)] transition hover:bg-[#fff7fb]"
-            >
-              <Download size={14} />
-              Export
-            </button>
-            <Link
-              to={roleConfig.createRoute}
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ea4f93] px-4 py-2.5 text-xs font-bold text-white shadow-[0_10px_22px_rgba(234,79,147,0.22)] transition hover:bg-[#df4588]"
-            >
-              <UserPlus size={14} />
-              New Booking
-            </Link>
+        </div>
+      ),
+    },
+    {
+      title: t("manager.bookings.artist"),
+      dataIndex: "artist",
+      key: "artist",
+      sorter: true,
+      sortOrder: selectedSort === "artist-asc" ? "ascend" : selectedSort === "artist-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex min-w-0 items-center gap-2">
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-[9px] font-bold text-white shadow-xs ${row.artist === "Unassigned" ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+            {row.artist === "Unassigned" ? "!" : (row.artist || "").split(" ").map(p => p[0]).join("")}
+          </div>
+          <div className="min-w-0">
+            <p className={`truncate text-xs font-semibold ${row.artist === "Unassigned" ? "text-[#D97706] italic" : "text-[#2B182B]"}`}>
+              {row.artist === "Unassigned" ? t("manager.bookings.unassigned") : row.artist}
+            </p>
           </div>
         </div>
-      </Card>
-
-      {flashMessage ? (
-        <div className="rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-          {flashMessage}
+      ),
+    },
+    {
+      title: t("manager.common.status"),
+      dataIndex: "status",
+      key: "status",
+      sorter: true,
+      sortOrder: selectedSort === "status-asc" ? "ascend" : selectedSort === "status-desc" ? "descend" : null,
+      render: (_, row) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusPill status={row.status} />
         </div>
-      ) : null}
-
-      {error ? (
-        <Alert
-          message="Error Loading Bookings"
-          description={error}
-          type="error"
-          showIcon
-        />
-      ) : null}
-
-      {isLoading ? (
-        <div className="flex min-h-[300px] items-center justify-center">
-          <Spin size="large" />
+      ),
+    },
+    {
+      title: t("manager.common.actions"),
+      key: "actions",
+      align: "center",
+      render: (_, row) => (
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <ActionButtons onView={() => handleViewBooking(row.id)} />
         </div>
-      ) : null}
+      ),
+    },
+  ], [language, selectedSort, t]);
 
-      {!isLoading && !error ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          {summaryStats.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
+  // --- Handlers ---
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    if (mode === "day") {
+      setDateFrom(anchorDate);
+      setDateTo(anchorDate);
+    } else if (mode === "week") {
+      setDateFrom(anchorDate.startOf("week"));
+      setDateTo(anchorDate.endOf("week"));
+    } else if (mode === "month") {
+      setDateFrom(anchorDate.startOf("month"));
+      setDateTo(anchorDate.endOf("month"));
+    } else if (mode === "table") {
+      setDateFrom(anchorDate);
+      setDateTo(anchorDate);
+    }
+  };
+
+  const handleDateFromChange = (newDate) => {
+    if (!newDate) {
+      setDateFrom(null);
+      if (viewMode !== "table") setDateTo(null);
+      return;
+    }
+    setAnchorDate(newDate);
+    if (viewMode === "table") {
+      setDateFrom(newDate);
+    } else if (viewMode === "day") {
+      setDateFrom(newDate);
+      setDateTo(newDate);
+    } else if (viewMode === "week") {
+      setDateFrom(newDate.startOf("week"));
+      setDateTo(newDate.endOf("week"));
+    } else if (viewMode === "month") {
+      setDateFrom(newDate.startOf("month"));
+      setDateTo(newDate.endOf("month"));
+    }
+  };
+  const handleOpenDrawer = useCallback(async (bookingId) => {
+    setIsDrawerOpen(true);
+    setIsLoadingDrawer(true);
+    try {
+      const rawBooking = await fetchBookingById(bookingId);
+      const mappedBooking = mapBookingForDrawer(rawBooking, language);
+      setSelectedBookingForDrawer(mappedBooking);
+      if (mappedBooking.customerId) {
+        try {
+          const rawCustomer = await fetchUserById(mappedBooking.customerId);
+          setSelectedCustomerForDrawer(rawCustomer);
+        } catch (err) {
+          console.warn("Failed to load customer details:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load booking:", err);
+    } finally {
+      setIsLoadingDrawer(false);
+    }
+  }, [language]);
+
+  const handleViewBooking = (bookingId) => {
+    navigate(roleConfig.getDetailRoute(bookingId));
+  };
+
+  const handleResetFilters = () => {
+    const today = dayjs();
+    setQuery("");
+    setActiveFilter("All");
+    setDateFrom(today);
+    setDateTo(today);
+    setAnchorDate(today);
+  };
+
+  const handlePageChange = (newPage) => setCurrentPage(newPage);
+
+  const toggleHourExpanded = (hour) => {
+    const newExpanded = new Set(expandedHours);
+    if (newExpanded.has(hour)) {
+      newExpanded.delete(hour);
+    } else {
+      newExpanded.add(hour);
+    }
+    setExpandedHours(newExpanded);
+  };
+
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+
+  return (
+    <section className="flex min-h-[100dvh] flex-col gap-6 font-sans">
+      {/* Luxury Hero Banner */}
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+        <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-4 lg:p-4 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
+          <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-gradient-to-br from-[#FFD6E8]/40 to-[#E84F93]/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-[#F7E7CE]/40 to-[#C99635]/10 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-4">
+                <motion.div
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#F7E7CE] via-[#E5C158] to-[#C99635] text-white shadow-[0_8px_20px_rgba(201,150,53,0.3)] border border-white/60 shrink-0"
+                  whileHover={{ scale: 1.06, rotate: 3 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 12 }}
+                >
+                  <Calendar size={28} className="drop-shadow-sm text-white" />
+                </motion.div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#E5C687]/50 bg-gradient-to-r from-[#FFF9EE] to-[#FFF3DC] px-3 py-1 text-[11px] font-bold text-[#9E731A] shadow-xs">
+                    <Sparkles size={12} className="text-[#C99635]" />
+                    <span>{language === "vi" ? "Cổng Quản Lý Nailify" : "Nailify Salon Manager Portal"} </span>
+                  </div>
+                  <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] mt-1.5 tracking-tight">
+                    {language === "vi" ? "Lịch trình tiệm nails" : "Salon Bookings"}
+                  </h1>
+                  <p className="mt-1 text-xs lg:text-sm text-[#9E8497] font-medium leading-relaxed">
+                    {language === "vi" ? "Tổng quan và quản lý các hành động cho tất cả các đặt lịch của khách hàng." : "Overview and action manager for all customer bookings."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Hero Highlights */}
+            <div className="grid grid-cols-3 gap-2.5 w-full lg:w-[380px]">
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.dashboard.today")}</p>
+                <p className="mt-0.5 text-xl font-bold text-[#2B182B]">
+                  {quickStats.todayCount}
+                </p>
+                <p className="text-[9px] text-[#E84F93] font-semibold">{t("manager.dashboard.appointmentsLeft") || "Appointments"}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.common.view")}</p>
+                <p className="mt-0.5 text-xl font-bold text-[#2B182B]">{filteredAppointments.length}</p>
+                <p className="text-[9px] text-[#4F46E5] font-semibold">{t("manager.payments.services") || "Bookings"}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("manager.common.actions")}</p>
+                <p className="mt-0.5 text-xl font-bold text-[#D97706]">
+                  {quickStats.actionRequiredCount}
+                </p>
+                <p className="text-[9px] text-[#D97706] font-semibold">{t("manager.dashboard.statusWaiting")}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : null}
+      </motion.div>
 
-      {!isLoading && !error ? (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_300px]">
-          <div className="space-y-4">
-            <Card className="overflow-hidden p-0">
-              <div className="flex flex-col gap-4 border-b border-[#f6dce7] bg-[linear-gradient(180deg,#fffafb_0%,#fff8fb_100%)] p-6 lg:flex-row lg:items-center lg:justify-between">
-                <SectionHeading
-                  title="Today's Appointments"
-                  subtitle={`${filteredAppointments.length} appointments match the current filters`}
-                />
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="flex flex-wrap gap-2">
-                    <Dropdown
-                      menu={{
-                        items: appointmentFilters.map((filter) => ({
-                          key: filter.value,
-                          label: (
-                            <span className={activeFilter === filter.value ? "font-bold text-[#ea4f93]" : "text-[#5c4559]"}>
-                              {filter.label}
+      {
+        flashMessage && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-[#A7F3D0] bg-[#ECFDF5] px-4 py-3 text-sm font-semibold text-[#047857] shadow-sm flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            {flashMessage}
+          </motion.div>
+        )
+      }
+
+      {
+        error && (
+          <Alert message="Error Loading Data" description={error} type="error" showIcon className="rounded-2xl border-rose-200" />
+        )
+      }
+
+      {
+        isLoading ? (
+          <div className="flex min-h-[350px] items-center justify-center">
+            <Spin size="large" tip="Loading booking list..." />
+          </div>
+        ) : hasLoadedOnce ? (
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_320px]">
+            {/* Main Content Area */}
+            <div className="space-y-6">
+              {/* KPI Summary Stats Grid */}
+              <motion.div variants={fadeInUp} className="mb-4">
+                <TopMetricsRow metrics={summaryStats} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
+              </motion.div>
+
+              {/* Booking Board Card */}
+              <motion.div variants={fadeInUp}>
+                <PremiumCard className="!p-0 overflow-hidden border-[#F3E2EC]">
+                  {/* Header, View Switcher & Filter Controls */}
+                  <div className="border-b border-[#F3E2EC] bg-gradient-to-b from-[#FFF7FA] to-white px-5 py-4 sm:px-6">
+                    {/* Top row */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      {/* Status Filter */}
+                      <div className="relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsStatusOpen((prev) => !prev)}
+                          className="flex h-9 items-center gap-2 rounded-xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F5] to-[#FFF9FB] px-3 shadow-[0_2px_8px_rgba(219,70,117,0.06)] transition-all hover:border-[#E84F93]/40"
+                        >
+                          <div className="flex items-center gap-1.5 border-r border-[#F3D6E5] pr-2.5">
+                            <Filter size={13} className="text-[#E84F93]" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                              {t("manager.common.status")}
                             </span>
-                          ),
-                          onClick: () => setActiveFilter(filter.value),
-                        })),
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full border border-[#f4c1d8] bg-white px-4 py-2.5 text-xs font-bold text-[#5c4559] transition hover:bg-[#fff7fb]"
-                      >
-                        <span>{appointmentFilters.find((f) => f.value === activeFilter)?.label || activeFilter}</span>
-                        <ChevronDown size={12} />
-                      </button>
-                    </Dropdown>
-                    <DatePicker
-                      value={selectedDate}
-                      onChange={(date) => setSelectedDate(date)}
-                      placeholder="Select date"
-                      className="h-10 rounded-full border border-[#f5d7e4] bg-white text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                      suffixIcon={<Calendar size={14} className="text-[#c08aa4]" />}
-                    />
-                  </div>
-                  <label className="relative block min-w-[220px]">
-                    <Search
-                      size={14}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#c08aa4]"
-                    />
-                    <input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search customer, artist, phone..."
-                      className="h-10 w-full rounded-full border border-[#f5d7e4] bg-white pl-9 pr-4 text-xs text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                    />
-                  </label>
-                </div>
-              </div>
+                          </div>
 
-              <div className="overflow-x-auto px-4 pt-0 pb-6">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-[#f6dce7] text-[10px] uppercase tracking-[0.16em] text-[#c693ad]">
-                      <th className="px-2 py-3 whitespace-nowrap">Time</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Customer</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Staff Artist</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Deposit</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Status</th>
-                      <th className="px-2 py-3 whitespace-nowrap">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedAppointments.map((row) => (
-                      <tr key={row.id} className="border-b border-[#fbe7ef] transition hover:bg-[#fff9fc] last:border-b-0">
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <p className="text-sm font-semibold text-[#402542]">{row.time}</p>
-                          <p className="text-[11px] text-[#c08aa4]">{row.duration}</p>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.avatarTone} text-[9px] font-bold text-white shadow-[0_8px_18px_rgba(236,72,153,0.12)]`}
-                            >
-                              {row.initials}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-[#402542]">{row.customer}</p>
-                              <p className="text-[11px] text-[#c08aa4]">{row.phone}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${row.artistTone} text-[8px] font-bold text-white shadow-[0_8px_18px_rgba(139,92,246,0.12)]`}
-                            >
-                              {row.artist
-                                .split(" ")
-                                .map((part) => part[0])
-                                .join("")}
-                            </div>
-                            <span className="text-sm text-[#7a6176]">{row.artist}</span>
-                          </div>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <span className={`text-sm font-semibold ${row.depositTone}`}>{row.deposit}</span>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${getStatusTone(row.status)}`}
-                          >
-                            {formatStatusDisplay(row.status)}
+                          <span className="w-[125px] text-left truncate text-[12px] font-semibold text-[#2B182B]">
+                            {(() => {
+                              const count =
+                                activeFilter === "All"
+                                  ? bookings.length
+                                  : bookings.filter((b) => matchesFilter(b.status, activeFilter)).length;
+                              const label =
+                                activeFilter === "All"
+                                  ? t("manager.common.all")
+                                  : getBookingStatusLabel(activeFilter, language);
+                              return `${label} (${count})`;
+                            })()}
                           </span>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <Link
-                              to={roleConfig.getDetailRoute(row.id)}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#ea4f93] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(234,79,147,0.25)] transition hover:bg-[#df4588]"
-                            >
-                              <Eye size={12} />
-                              View
-                            </Link>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedBookingForAssign(row);
-                                setIsAssignArtistModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-1 rounded-full bg-[#4755b8] px-3 py-1.5 text-[10px] font-bold text-white shadow-[0_4px_12px_rgba(71,85,184,0.25)] transition hover:bg-[#3d4aa8]"
-                            >
-                              <UserCheck size={12} />
-                              Assign
-                            </button>
+                          <ChevronDown
+                            size={13}
+                            className={`text-[#9E8497] transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
 
-                            {!isFinalStatus(row.status) ? (
-                              <Dropdown
-                                trigger={["click"]}
-                                menu={{
-                                  items: [
-                                    {
-                                      key: "confirm",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#2fa25f]">
-                                          <CheckCircle2 size={13} />
-                                          Confirm
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsConfirmModalOpen(true);
-                                      },
-                                    },
-                                    {
-                                      key: "cancel",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#db8520]">
-                                          <XCircle size={13} />
-                                          Cancel
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsCancelModalOpen(true);
-                                      },
-                                    },
-                                    {
-                                      key: "reject",
-                                      label: (
-                                        <span className="flex items-center gap-2 text-xs font-semibold text-[#e1447f]">
-                                          <XCircle size={13} />
-                                          Reject
-                                        </span>
-                                      ),
-                                      onClick: () => {
-                                        setSelectedBookingForAction(row);
-                                        setIsRejectModalOpen(true);
-                                      },
-                                    },
-                                  ],
-                                }}
+                        <AnimatePresence>
+                          {isStatusOpen && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setIsStatusOpen(false)} />
+                              <motion.div
+                                initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 top-full z-50 mt-1.5 min-w-[200px] overflow-hidden rounded-xl border border-[#F3D6E5] bg-white shadow-[0_10px_30px_rgba(232,79,147,0.12)]"
                               >
-                                <button
-                                  type="button"
-                                  className="inline-flex items-center gap-1 rounded-full border border-[#f4c1d8] bg-white px-3 py-1.5 text-[10px] font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
-                                >
-                                  More
-                                  <ChevronDown size={12} />
-                                </button>
-                              </Dropdown>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                                <div className="max-h-[260px] overflow-y-auto py-1">
+                                  {appointmentFilters.map((filter) => {
+                                    const count =
+                                      filter.value === "All"
+                                        ? bookings.length
+                                        : bookings.filter((b) => matchesFilter(b.status, filter.value)).length;
+                                    const displayLabel =
+                                      filter.value === "All"
+                                        ? t("manager.common.all")
+                                        : getBookingStatusLabel(filter.value, language);
+                                    const isActive = activeFilter === filter.value;
 
-                {filteredAppointments.length === 0 ? (
-                  <div className="py-10 text-center text-sm text-[#8a7082]">
-                    No appointments matched the current filters.
-                  </div>
-                ) : null}
-                <div className="flex justify-end p-4 border-t border-[#f6dce7]">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={filteredTotalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* Assign Artist Modal */}
-            <AssignArtistModal
-              open={isAssignArtistModalOpen}
-              onClose={() => {
-                setIsAssignArtistModalOpen(false);
-                setSelectedBookingForAssign(null);
-              }}
-              bookingId={selectedBookingForAssign?.id ? String(selectedBookingForAssign.id) : ""}
-              salonId={
-                selectedBookingForAssign?.salonId
-                  ? String(selectedBookingForAssign.salonId)
-                  : DEFAULT_SALON_ID
-              }
-              onSuccess={() => loadBookings()}
-            />
-
-            {/* Confirm / Cancel / Reject Modals */}
-            <ConfirmBookingModal
-              open={isConfirmModalOpen}
-              onClose={() => {
-                setIsConfirmModalOpen(false);
-                setSelectedBookingForAction(null);
-              }}
-              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
-              onSuccess={() => loadBookings()}
-            />
-            <CancelBookingModal
-              open={isCancelModalOpen}
-              onClose={() => {
-                setIsCancelModalOpen(false);
-                setSelectedBookingForAction(null);
-              }}
-              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
-              onSuccess={() => loadBookings()}
-            />
-            <RejectBookingModal
-              open={isRejectModalOpen}
-              onClose={() => {
-                setIsRejectModalOpen(false);
-                setSelectedBookingForAction(null);
-              }}
-              bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
-              onSuccess={() => loadBookings()}
-            />
-
-            <Card className="overflow-hidden">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <SectionHeading title="Staff Schedule - Day View" />
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex rounded-full border border-[#f4c1d8] bg-[#fff7fb] p-0.5">
-                    {["Day", "Week", "Month"].map((view, index) => (
-                      <button
-                        key={view}
-                        type="button"
-                        className={
-                          index === 0
-                            ? "rounded-full bg-[#ea4f93] px-3 py-1 text-[10px] font-bold text-white"
-                            : "rounded-full px-3 py-1 text-[10px] font-bold text-[#c08aa4]"
-                        }
-                      >
-                        {view}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                    >
-                      <ChevronLeft size={12} />
-                    </button>
-                    <span className="px-2 text-xs font-bold text-[#7f6478]">Jul 12, 2025</span>
-                    <button
-                      type="button"
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
-                    >
-                      <ChevronRight size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 overflow-x-auto rounded-2xl border border-[#f7d7e5] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-4">
-                <div className="min-w-[720px]">
-                  <div className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#f6dce7] pb-2">
-                    <div />
-                    {scheduleHours.map((hour) => (
-                      <div key={hour} className="text-center text-[10px] font-bold text-[#c08aa4]">
-                        {formatHourLabel(hour)}
+                                    return (
+                                      <button
+                                        key={filter.value}
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveFilter(filter.value);
+                                          setIsStatusOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left text-[12px] font-medium transition-colors ${isActive
+                                          ? "bg-[#FFF0F5] text-[#E84F93]"
+                                          : "text-[#2B182B] hover:bg-[#FFF7FA]"
+                                          }`}
+                                      >
+                                        <span>{displayLabel}</span>
+                                        <span
+                                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isActive ? "bg-[#E84F93]/15 text-[#E84F93]" : "bg-[#F8EEF3] text-[#9E8497]"
+                                            }`}
+                                        >
+                                          {count}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    ))}
+
+                      {/* View Switcher */}
+                      <div className="flex h-9 items-center gap-0.5 rounded-xl border border-[#F3D6E5] bg-[#FFF0F5] p-0.5">
+                        {[
+                          { mode: "table", label: t("manager.common.table") || "Bảng", icon: TableIcon },
+                          { mode: "day", label: t("adminDashboard.day"), icon: LayoutGrid },
+                          { mode: "week", label: t("adminDashboard.week"), icon: CalendarDays },
+                          { mode: "month", label: t("adminDashboard.month"), icon: GridIcon },
+                        ].map((btn) => (
+                          <button
+                            key={btn.mode}
+                            type="button"
+                            onClick={() => handleViewModeChange(btn.mode)}
+                            className={`flex h-full items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold transition-all whitespace-nowrap ${viewMode === btn.mode
+                              ? "bg-gradient-to-r from-[#E84F93] to-[#F43F5E] text-white shadow-sm"
+                              : "text-[#9E8497] hover:bg-white hover:text-[#2B182B]"
+                              }`}
+                          >
+                            <btn.icon size={12} />
+                            <span>{btn.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Search + Date filters */}
+                    <div className="mt-4 flex flex-wrap items-end gap-3">
+                      {/* Search */}
+                      <div className="w-full flex-1 min-w-[200px]">
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                          {t("manager.common.search")}
+                        </span>
+                        <div className="relative">
+                          <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#9E8497]" />
+                          <input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder={t("manager.bookings.searchPlaceholder")}
+                            className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white pl-9 pr-3 text-[12px] font-medium text-[#2B182B] outline-none transition-all placeholder:text-[#C8B0BF] hover:border-[#F0B7CF] focus:border-[#E84F93] focus:ring-2 focus:ring-[#E84F93]/10"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Date Range */}
+                      <div>
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
+                          {t("manager.bookings.dateFrom")} - {t("manager.bookings.dateTo")}
+                        </span>
+                        <DateRangePicker
+                          value={dateFrom || dateTo ? [dateFrom, dateTo] : null}
+                          onChange={(dates) => {
+                            setDateFrom(dates?.[0] || null);
+                            setDateTo(dates?.[1] || null);
+                          }}
+                          disabled={viewMode !== "table"}
+                          className="h-9 w-full min-w-[260px] rounded-xl border border-[#F3D7E4] bg-white text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
+                        />
+                      </div>
+
+                      {/* Reset */}
+                      <div className="w-auto">
+                        <motion.button
+                          whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
+                          whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
+                          onClick={handleResetFilters}
+                          disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
+                          className={`flex items-center justify-center gap-2 h-9 w-auto rounded-xl border px-4 font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
+                            ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA]"
+                            : "cursor-not-allowed border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8]"
+                            }`}
+                        >
+                          <RefreshCcw size={16} />
+                          {language === 'vi' ? "Đặt lại" : "Reset"}
+                        </motion.button>
+                      </div>
+                    </div>
                   </div>
 
-                  {scheduleStaff.map((staff) => (
-                    <div
-                      key={staff.name}
-                      className="grid grid-cols-[120px_repeat(9,minmax(0,1fr))] gap-1 border-b border-[#fbe7ef] py-3 last:border-b-0"
-                    >
-                      <p className="pr-2 text-xs font-bold text-[#402542]">{staff.name}</p>
-                      <div className="relative col-span-9 grid grid-cols-9 gap-1">
-                        {scheduleHours.map((hour) => (
-                          <div key={hour} className="h-10 rounded-md bg-[#fffafb] border border-[#f8deea]" />
-                        ))}
-                        {staff.blocks.map((block) => {
-                          const startOffset = ((block.start - 9) / 8) * 100;
-                          const width = ((block.end - block.start) / 8) * 100;
-
-                          return (
-                            <div
-                              key={`${block.label}-${block.start}`}
-                              className={`absolute top-0 flex h-10 flex-col justify-center rounded-md border px-2 ${staff.tone} ${block.alert ? "ring-2 ring-[#e1447f]" : ""}`}
-                              style={{ left: `${startOffset}%`, width: `${width}%` }}
-                            >
-                              <p className="truncate text-[10px] font-bold">{block.label}</p>
-                              <p className="truncate text-[9px] opacity-80">{block.service}</p>
-                              {block.alert ? (
-                                <span className="absolute -top-2 right-1 rounded-full bg-[#e1447f] px-1.5 py-0.5 text-[8px] font-bold text-white">
-                                  Conflict
-                                </span>
-                              ) : null}
-                            </div>
-                          );
+                  {/* Main View Renderer (Table / Day / Week / Month) */}
+                  <div ref={tableContainerRef} className="overflow-x-auto bg-white">
+                    {isLoading ? (
+                      <SkeletonLoader />
+                    ) : filteredAppointments.length === 0 ? (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FFF0F8] text-[#E84F93] mb-3 shadow-inner">
+                          <Search size={28} />
+                        </div>
+                        <p className="text-base font-bold text-[#2B182B]">{t("manager.bookings.noBookings") || "No bookings found"}</p>
+                        <p className="mt-1 text-xs text-[#9E8497] max-w-xs leading-relaxed">
+                          {t("manager.bookings.noBookingsDesc") || "Try adjusting your search terms or filter selection"}
+                        </p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleResetFilters}
+                          className="mt-4 rounded-full bg-[#E84F93] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#D93D82]"
+                        >
+                          {t("manager.common.reset")}
+                        </motion.button>
+                      </motion.div>
+                    ) : viewMode === "table" ? (
+                      /* --- 1. TABLE BOARD VIEW (WITH TRY-ON NAIL THUMBNAILS & TOOLTIPS) --- */
+                      <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={paginatedAppointments}
+                        pagination={false}
+                        onChange={handleTableChange}
+                        components={tableComponents}
+                        onRow={(record) => ({
+                          onClick: () => handleOpenDrawer(record.id)
                         })}
+                        scroll={{ x: 720 }}
+                        className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+                      />
+                    ) : viewMode === "day" ? (
+                      /* --- 2. DAY VIEW SCHEDULER (ARTISTS x HOURS MATRIX WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> {t("manager.bookings.dragDropTip") || "Drag & drop booking cards onto another hour or artist column to reschedule!"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            {dateFrom ? dateFrom.format("dddd, MMM D, YYYY") : dayjs().format("dddd, MMM D, YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto border border-[#F3E2EC] rounded-2xl scrollbar-thin scrollbar-thumb-[#E84F93]/20">
+                          <table className="w-full border-collapse min-w-full">
+                            <thead>
+                              <tr className="bg-[#FFF5F8] text-xs font-bold text-[#2B182B] border-b border-[#F3E2EC]">
+                                <th className="w-24 min-w-[90px] p-3 text-center border-r border-[#F3E2EC] bg-[#FFF5F8] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                  {language === "vi" ? "Thời gian" : "Time"}
+                                </th>
+                                {dayViewStaffList.map((artistItem) => {
+                                  const isUnassigned = artistItem.isUnassigned;
+                                  const displayName = artistItem.name;
+                                  const initials = isUnassigned
+                                    ? "!"
+                                    : (displayName || "").split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+
+                                  return (
+                                    <th key={artistItem.id || displayName} className="min-w-[175px] p-3 text-center border-r border-[#F3E2EC] last:border-r-0">
+                                      <div className="flex items-center justify-center gap-1.5 min-w-0">
+                                        <div className={`h-6 w-6 rounded-full shrink-0 flex items-center justify-center text-[10px] text-white font-bold ${isUnassigned ? "bg-[#D97706]" : "bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9]"}`}>
+                                          {initials}
+                                        </div>
+                                        <span className="truncate" title={displayName}>{displayName}</span>
+                                      </div>
+                                    </th>
+                                  );
+                                })}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((hour) => (
+                                <tr key={hour} className="border-b border-[#F7E7EE] last:border-b-0 text-xs">
+                                  <td className="w-24 min-w-[90px] p-3 font-bold text-[#9E8497] bg-[#FFF9FB] text-center border-r border-[#F3E2EC] sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                                    {formatHourLabel(hour)}
+                                  </td>
+                                  {dayViewStaffList.map((artistItem) => {
+                                    const cellTargetId = `day-${hour}-${artistItem.id || artistItem.name}`;
+                                    const isOver = dragOverTarget === cellTargetId;
+                                    const slotBookings = filteredAppointments.filter((b) => {
+                                      const bHour = parseInt(b.startTime?.split(":")[0] || "0");
+                                      if (bHour !== hour) return false;
+                                      if (artistItem.isUnassigned) {
+                                        return !b.artistId && (!b.nailArtistName || b.nailArtistName === "Chưa chỉ định" || b.artist === "Unassigned");
+                                      }
+                                      return (
+                                        (b.artistId && String(b.artistId).toLowerCase() === String(artistItem.staffArtistId).toLowerCase()) ||
+                                        (b.nailArtistName && b.nailArtistName.toLowerCase() === artistItem.name.toLowerCase()) ||
+                                        (b.artist && b.artist.toLowerCase() === artistItem.name.toLowerCase())
+                                      );
+                                    });
+
+                                    return (
+                                      <td
+                                        key={cellTargetId}
+                                        onDragOver={(e) => handleDragOver(e, cellTargetId)}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={(e) => handleDropSlot(e, hour, artistItem)}
+                                        className={`min-w-[175px] p-2 border-r border-[#F3E2EC] last:border-r-0 align-top transition-all min-h-[70px] ${isOver
+                                          ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-inner"
+                                          : "hover:bg-[#FFFDFE]"
+                                          }`}
+                                      >
+                                        <div className="space-y-2 min-h-[50px] w-full">
+                                          {slotBookings.map((b) => (
+                                            <div
+                                              key={b.id}
+                                              draggable
+                                              onDragStart={(e) => handleDragStart(e, b)}
+                                              onClick={() => handleOpenDrawer(b.id)}
+                                              className={`group relative rounded-xl border p-2.5 cursor-grab active:cursor-grabbing shadow-2xs hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
+                                            >
+                                              <div className="flex items-center justify-between mb-1 min-w-0">
+                                                <span className="font-semibold">{getBookingStatusLabel(b.status, language)}</span><span className="font-bold text-xs truncate" title={b.customer}>{b.customer}</span>
+                                                <GripVertical size={14} className="opacity-40 group-hover:opacity-100 transition shrink-0 ml-1" />
+                                              </div>
+                                              <p className="text-[10px] opacity-80 truncate mb-1" title={b.service}>{b.service}</p>
+                                              <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-[9px] font-bold">
+                                                <span className="shrink-0">{b.time}</span>
+                                                <StatusPill status={b.status} />
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : viewMode === "week" ? (
+                      /* --- 3. WEEK VIEW CALENDAR (7 DAYS GRID WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> {language === "vi" ? "Kéo và thả thẻ đặt lịch sang ngày khác để lên lịch lại!" : "Drag & drop booking cards to another day to reschedule!"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            {language === "vi" ? "Tuần của" : "Week of"} {(dateFrom || dayjs()).startOf("week").format("MMM D")} - {(dateFrom || dayjs()).endOf("week").format("MMM D, YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto border border-[#F3E2EC] rounded-2xl p-2 scrollbar-thin scrollbar-thumb-[#E84F93]/20">
+                          <div className="grid grid-cols-7 gap-2 min-w-[950px]">
+                            {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
+                              const currentDay = (dateFrom || dayjs()).startOf("week").add(dayOffset, "day");
+                              const dayKey = currentDay.format("YYYY-MM-DD");
+                              const isOver = dragOverTarget === `week-${dayKey}`;
+                              const dayBookings = filteredAppointments.filter((b) => {
+                                const bDate = dayjs(b.bookingDate || b.createdAt);
+                                return bDate.isValid() && bDate.isSame(currentDay, "day");
+                              });
+
+                              return (
+                                <div
+                                  key={dayKey}
+                                  onDragOver={(e) => handleDragOver(e, `week-${dayKey}`)}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={(e) => handleDropDate(e, currentDay)}
+                                  className={`rounded-2xl border border-[#F3E2EC] p-2.5 min-h-[360px] flex flex-col transition-all min-w-[130px] ${isOver
+                                    ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-md"
+                                    : currentDay.isSame(dayjs(), "day")
+                                      ? "bg-gradient-to-b from-[#FFF0F5] to-white border-[#E84F93]/40"
+                                      : "bg-white"
+                                    }`}
+                                >
+                                  <div className="text-center border-b border-[#F3E2EC] pb-2 mb-2">
+                                    <p className="text-[10px] font-bold text-[#9E8497] uppercase">{currentDay.format("ddd")}</p>
+                                    <p className={`text-sm font-bold ${currentDay.isSame(dayjs(), "day") ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                      {currentDay.format("D")}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex-1 space-y-2 overflow-y-auto max-h-[320px] pr-1">
+                                    {dayBookings.length === 0 ? (
+                                      <p className="text-[10px] text-[#C8B0BF] italic text-center py-4">{language === "vi" ? "Không có lịch hẹn" : "No bookings"}</p>
+                                    ) : (
+                                      dayBookings.map((b) => (
+                                        <div
+                                          key={b.id}
+                                          draggable
+                                          onDragStart={(e) => handleDragStart(e, b)}
+                                          onClick={() => handleOpenDrawer(b.id)}
+                                          className={`group relative rounded-xl border p-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-all w-full overflow-hidden ${getCalendarCardStyle(b.status)}`}
+                                        >
+                                          <div className="flex items-center justify-between min-w-0">
+                                            <p className="text-xs font-bold truncate" title={b.customer}>{b.customer}</p>
+                                            <GripVertical size={12} className="opacity-40 group-hover:opacity-100 shrink-0 ml-1" />
+                                          </div>
+                                          <p className="text-[10px] opacity-80 truncate mt-0.5" title={b.service}>{b.service}</p>
+                                          <div className="mt-1.5 flex flex-col gap-1 text-[9px] font-bold min-w-0">
+                                            <span className="text-[#86687D] truncate" title={b.time}>{b.time}</span>
+                                            <div className="self-start max-w-full overflow-hidden">
+                                              <StatusPill status={b.status} compact />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* --- 4. MONTH VIEW CALENDAR GRID (35 DAYS WITH DRAG & DROP) --- */
+                      <div className="p-4 space-y-4">
+                        <div className="flex items-center justify-between bg-[#FFF5F8] p-3 rounded-2xl border border-[#F3D6E5]/60 text-xs">
+                          <span className="font-bold text-[#E84F93] flex items-center gap-1.5">
+                            <GripVertical size={16} /> {language === "vi" ? "Kéo và thả thẻ đặt lịch sang ô ngày khác trong lịch!" : "Drag & drop booking cards to another calendar date cell!"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">
+                            {(dateFrom || dayjs()).format("MMMM YYYY")}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-7 gap-1.5">
+                          {language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((dayName) => (
+                            <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
+                              {dayName}
+                            </div>
+                          )) : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+                            <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
+                              {dayName}
+                            </div>
+                          ))}
+
+                          {(() => {
+                            const baseMonth = dateFrom || dayjs();
+                            const startOfMonth = baseMonth.startOf("month");
+                            const startDayOfWeek = startOfMonth.day();
+                            const startDate = startOfMonth.subtract(startDayOfWeek, "day");
+
+                            const monthDays = [];
+                            for (let i = 0; i < 35; i++) {
+                              monthDays.push(startDate.add(i, "day"));
+                            }
+
+                            return monthDays.map((cellDay) => {
+                              const dateKey = cellDay.format("YYYY-MM-DD");
+                              const isOver = dragOverTarget === `month-${dateKey}`;
+                              const isCurrentMonth = cellDay.isSame(baseMonth, "month");
+                              const isToday = cellDay.isSame(dayjs(), "day");
+
+                              const dayBookings = filteredAppointments.filter((b) => {
+                                const bDate = dayjs(b.bookingDate || b.createdAt);
+                                return bDate.isValid() && bDate.isSame(cellDay, "day");
+                              });
+
+                              return (
+                                <div
+                                  key={dateKey}
+                                  onDragOver={(e) => handleDragOver(e, `month-${dateKey}`)}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={(e) => handleDropDate(e, cellDay)}
+                                  className={`rounded-xl border border-[#F3E2EC] p-2 min-h-[95px] flex flex-col justify-between transition-all ${isOver
+                                    ? "bg-[#FFF0F5] border-2 border-dashed border-[#E84F93] shadow-md"
+                                    : !isCurrentMonth
+                                      ? "bg-[#FAFAFA] opacity-50"
+                                      : isToday
+                                        ? "bg-gradient-to-b from-[#FFF0F5] to-white border-[#E84F93]"
+                                        : "bg-white hover:bg-[#FFF9FB]"
+                                    }`}
+                                >
+                                  <div
+                                    className="flex items-center justify-between text-[11px] cursor-pointer hover:opacity-80 transition"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (dayBookings.length > 0) {
+                                        setSelectedDateForModal(cellDay);
+                                        setIsDayBookingsModalOpen(true);
+                                      }
+                                    }}
+                                  >
+                                    <span className={`font-bold ${isToday ? "text-[#E84F93]" : "text-[#2B182B]"}`}>
+                                      {cellDay.format("D")}
+                                    </span>
+                                    {dayBookings.length > 0 && (
+                                      <span className="rounded-full bg-[#FFF0F6] px-1.5 py-0.5 text-[9px] font-bold text-[#E84F93] hover:bg-[#FCE2EE] transition">
+                                        {dayBookings.length}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="space-y-1 my-1 overflow-hidden">
+                                    {dayBookings.slice(0, 2).map((b) => (
+                                      <div
+                                        key={b.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, b)}
+                                        onClick={() => handleOpenDrawer(b.id)}
+                                        className={`rounded-lg border px-1.5 py-1 text-[9px] font-bold cursor-grab active:cursor-grabbing truncate ${getCalendarCardStyle(b.status)}`}
+                                      >
+                                        {b.customer} ({(b.time || "").split("-")[0]?.trim() || ""})
+                                      </div>
+                                    ))}
+                                    {dayBookings.length > 2 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedDateForModal(cellDay);
+                                          setIsDayBookingsModalOpen(true);
+                                        }}
+                                        className="w-full text-[9px] font-bold text-[#E84F93] hover:text-[#D93B7D] text-center py-0.5 rounded bg-[#FFF0F6] hover:bg-[#FCE2EE] transition cursor-pointer"
+                                      >
+                                        +{dayBookings.length - 2} more
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {viewMode === "table" && paginatedAppointments.length > 0 && (
+                    <div className="flex justify-end p-4 border-t border-[#F3E2EC] bg-gradient-to-b from-white to-[#FFF9FB]">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={filteredTotalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </PremiumCard>
+              </motion.div>
+            </div>
+
+            {/* Right Operations Column */}
+            <motion.div variants={fadeInUp} className="space-y-5 lg:sticky lg:top-8 lg:self-start">
+              {/* Today Capacity Progress */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title={language === "vi" ? "Tổng quan công suất" : "Capacity Overview"} subtitle={language === "vi" ? "Phân bổ chỗ theo ca" : "Slot distribution by shift"} icon={TrendingUp} />
+                <div className="mt-4 space-y-4">
+                  {capacityData.map((period, i) => (
+                    <div key={i}>
+                      <div className="flex items-center justify-between text-xs text-[#9E8497]">
+                        <span className="font-semibold">{period.label}</span>
+                        <span className="font-bold text-[#E84F93]">{period.value}%</span>
+                      </div>
+                      <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${period.value}%` }}
+                          transition={{ delay: 0.3 + i * 0.1, duration: 1, ease: "easeOut" }}
+                          className={`h-full rounded-full bg-gradient-to-r ${period.tone}`}
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            </Card>
+              </PremiumCard>
 
-            <Card className="overflow-hidden">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#ffe7ef] text-[#ea4f93]">
-                  <Sparkles size={15} />
-                </div>
-                <SectionHeading
-                  title="Smart Slot Suggestions"
-                  subtitle="AI-recommended openings based on staff availability & service type"
-                />
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                {smartSlots.map((slot) => (
-                  <div
-                    key={slot.time}
-                    className="rounded-[18px] border border-[#f8deea] bg-[linear-gradient(180deg,#fffafb_0%,#fff6fa_100%)] p-4 shadow-[0_10px_24px_rgba(236,72,153,0.05)]"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-lg font-extrabold text-[#402542]">{slot.time}</p>
-                        <p className="text-[11px] text-[#c08aa4]">{slot.date}</p>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${slot.tagTone}`}>
-                        {slot.tag}
-                      </span>
-                    </div>
-                    <div className="mt-4 flex items-center gap-2">
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${slot.avatarTone} text-[9px] font-bold text-white`}
-                      >
-                        {slot.artist
-                          .split(" ")
-                          .map((part) => part[0])
-                          .join("")}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#402542]">{slot.artist}</p>
-                        <p className="text-[11px] text-[#c08aa4]">{slot.duration}</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-[#7f6478]">{slot.service}</p>
-                    <p className="mt-1 text-[11px] text-[#c08aa4]">{slot.complexity}</p>
+              {/* Today Schedule Timeline */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title={language === "vi" ? "Lịch trình" : "Schedule"} subtitle={language === "vi" ? "Dòng thời gian" : "Time slots timeline"} icon={Clock3} />
+
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFF5F8] p-1 border border-[#F3D6E5]/60">
+                  {timeFilters.map((tf) => (
                     <button
-                      type="button"
-                      className="mt-4 w-full rounded-full border border-[#f4c1d8] bg-white py-2 text-xs font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                      key={tf.value}
+                      onClick={() => setSelectedTimeFilter(tf.value)}
+                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-all ${selectedTimeFilter === tf.value
+                        ? "bg-white text-[#E84F93] shadow-xs"
+                        : "text-[#9E8497] hover:text-[#2B182B]"
+                        }`}
                     >
-                      Book This Slot
+                      {tf.label}
                     </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-[#9E8497] border-b border-[#F3E2EC] pb-2">
+                    <span className="font-semibold">{language === "vi" ? "Ngày" : "Date"}</span>
+                    <span className="font-bold text-[#2B182B]">{scheduleDateLabel}</span>
                   </div>
-                ))}
-              </div>
-            </Card>
+
+                  <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                    {(() => {
+                      const currentFilter = timeFilters.find((tf) => tf.value === selectedTimeFilter) || timeFilters[0];
+                      const filteredBookings = scheduleDateBookings.filter(b => {
+                        const startHour = parseInt(b.startTime?.split(':')[0] || '0');
+                        return startHour >= currentFilter.startHour && startHour < currentFilter.endHour;
+                      });
+
+                      const bookingsByHour = {};
+                      filteredBookings.forEach(b => {
+                        const startHour = parseInt(b.startTime?.split(':')[0] || '0');
+                        if (!bookingsByHour[startHour]) bookingsByHour[startHour] = [];
+                        bookingsByHour[startHour].push(b);
+                      });
+
+                      const hours = [];
+                      for (let h = currentFilter.startHour; h < currentFilter.endHour; h++) {
+                        hours.push(h);
+                      }
+
+                      return hours.map((hour) => {
+                        const bookingsAtHour = bookingsByHour[hour] || [];
+
+                        if (bookingsAtHour.length === 0) {
+                          return (
+                            <div key={hour} className="flex items-start gap-2.5">
+                              <div className="mt-1 h-2 w-2 rounded-full bg-[#E5CCD8]" />
+                              <div className="min-w-[65px] text-[11px] font-bold text-[#9E8497]">
+                                {formatHourLabel(hour)}
+                              </div>
+                              <div className="flex-1 border-l border-dashed border-[#F3D6E5] pl-3 py-1">
+                                <p className="text-[11px] text-[#C8B0BF] italic">{language === "vi" ? "Không có lịch hẹn" : "No bookings"}</p>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        const isExpanded = expandedHours.has(hour);
+                        const MAX_BOOKINGS = 2;
+                        const hasMoreBookings = bookingsAtHour.length > MAX_BOOKINGS;
+                        const visibleBookings = isExpanded ? bookingsAtHour : bookingsAtHour.slice(0, MAX_BOOKINGS);
+
+                        return (
+                          <div key={hour} className="flex items-start gap-2.5">
+                            <div className="mt-1 h-2 w-2 rounded-full bg-[#E84F93]" />
+                            <div className="min-w-[65px] text-[11px] font-bold text-[#2B182B]">
+                              {formatHourLabel(hour)}
+                            </div>
+                            <div className="flex-1 border-l-2 border-[#E84F93]/30 pl-3 space-y-2">
+                              {visibleBookings.map((b, bIdx) => {
+                                const palette = scheduleColorPalette[bIdx % scheduleColorPalette.length];
+                                const artistName = getArtistDisplayName(b);
+                                return (
+                                  <div
+                                    key={b.id}
+                                    className={`rounded-xl border ${palette.tone} p-2.5 cursor-pointer hover:shadow-sm transition-all`}
+                                    onClick={() => handleOpenDrawer(b.id)}
+                                  >
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <p className="text-xs font-bold truncate">{b.customerName || b.customer}</p>
+                                      {scheduleDaysCount > 1 && (
+                                        <span className="text-[9px] font-semibold text-[#86687D] ml-2 shrink-0">{dayjs(b.parsedDateStr).format("MMM D")}</span>
+                                      )}
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
+                                      <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
+                                      <span>{formatDuration(b.totalDuration || 60, language)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {hasMoreBookings && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); toggleHourExpanded(hour); }}
+                                  className="w-full text-center rounded-lg border border-[#F3D6E5] bg-[#FFF0F5] py-1 text-[10px] font-bold text-[#E84F93] hover:bg-[#FFE4EE]"
+                                >
+                                  {isExpanded ? "Show less" : `+${bookingsAtHour.length - MAX_BOOKINGS} more bookings`}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </PremiumCard>
+
+              {/* Staff Workload */}
+              <PremiumCard className="p-5 border-[#F3E2EC]">
+                <SectionHeading title={language === "vi" ? "Khối lượng công việc của nhân viên" : "Staff Workload"} subtitle={language === "vi" ? "Lượt đặt lịch mỗi kỹ thuật viên" : "Bookings per nail tech"} icon={UserCheck} />
+                <div className="mt-4 space-y-3.5">
+                  {staffWorkloadData.map((staff, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${staff.tone} text-xs font-bold text-white shadow-xs`}>
+                        {(staff.name || "").split(" ").map((p) => p[0]).join("")}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <p className="font-bold text-[#2B182B] truncate">{staff.name}</p>
+                          <p className="font-bold text-[#E84F93]">
+                            {staff.filled}/{staff.total} {language === "vi" ? "lượt" : "slots"}
+                          </p>
+                        </div>
+                        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-[#FAF0F5]">
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${staff.tone}`}
+                            style={{ width: `${(staff.filled / staff.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </PremiumCard>
+            </motion.div>
+          </motion.div>
+        ) : null
+      }
+
+      {/* --- Image Zoom Modal --- */}
+      <Modal
+        open={!!activeImageModalUrl}
+        onCancel={() => setActiveImageModalUrl(null)}
+        footer={null}
+        closable={false}
+        centered
+        width={480}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-white p-6 text-center">
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Thiết kế móng khách hàng đã chọn" : "Customer Selected Nail Design"}</p>
+            <button type="button" onClick={() => setActiveImageModalUrl(null)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
           </div>
+          {activeImageModalUrl && (
+            <img src={activeImageModalUrl} alt="Try-On Design" className="w-[400px] max-h-auto mx-auto rounded-xl shadow-md border border-[#F3E2EC]" />
+          )}
+        </div>
+      </Modal>
 
-          <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
-            <Card className="overflow-hidden">
-              <SectionHeading title="Today's Capacity" />
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                {[
-                  ["31", "Booked"],
-                  ["40", "Total Slots"],
-                  ["78%", "Filled"],
-                ].map(([value, label]) => (
-                  <div key={label} className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-2 py-3">
-                    <p className="text-xl font-extrabold text-[#ea4f93]">{value}</p>
-                    <p className="mt-1 text-[10px] text-[#c08aa4]">{label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 space-y-4">
-                {capacityPeriods.map((period) => (
-                  <div key={period.label}>
-                    <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-                      <span className="font-medium text-[#7f6478]">{period.label}</span>
-                      <span className="font-bold text-[#ea4f93]">{period.value}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#fbe1ec]">
-                      <div
-                        className={`h-full rounded-full ${period.tone}`}
-                        style={{ width: `${period.value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+      {/* --- Modals --- */}
+      {
+        selectedBookingForAssign && (
+          <AssignArtistModal
+            open={isAssignArtistModalOpen}
+            onClose={() => { setIsAssignArtistModalOpen(false); setSelectedBookingForAssign(null); }}
+            bookingId={String(selectedBookingForAssign.id)}
+            salonId={selectedBookingForAssign.salonId ? String(selectedBookingForAssign.salonId) : (getSalonId() || "")}
+            booking={selectedBookingForAssign}
+            onSuccess={() => loadBookings()}
+          />
+        )
+      }
 
-            <Card className="overflow-hidden">
-              <SectionHeading title="Staff Workload" />
-              <div className="mt-4 space-y-4">
-                {staffWorkload.map((staff) => (
-                  <div key={staff.name} className="flex items-center gap-3">
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.tone} text-[9px] font-bold text-white`}
+      <ConfirmBookingModal
+        open={isConfirmModalOpen}
+        onClose={() => { setIsConfirmModalOpen(false); setSelectedBookingForAction(null); }}
+        bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
+        onSuccess={() => loadBookings()}
+      />
+
+      <CancelBookingModal
+        open={isCancelModalOpen}
+        onClose={() => { setIsCancelModalOpen(false); setSelectedBookingForAction(null); }}
+        bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
+        onSuccess={() => loadBookings()}
+      />
+
+      <RejectBookingModal
+        open={isRejectModalOpen}
+        onClose={() => { setIsRejectModalOpen(false); setSelectedBookingForAction(null); }}
+        bookingId={selectedBookingForAction?.id ? String(selectedBookingForAction.id) : ""}
+        booking={selectedBookingForAction || {}}
+        onSuccess={() => loadBookings()}
+      />
+
+      {/* Quick View Drawer */}
+      <Drawer
+        title={null}
+        open={isDrawerOpen}
+        onClose={() => { setIsDrawerOpen(false); setSelectedBookingForDrawer(null); }}
+        width={460}
+        styles={{
+          body: { padding: 0 },
+          content: { background: "#FAF6F8" }
+        }}
+        placement="right"
+        mask={true}
+        maskClosable={true}
+        destroyOnClose
+        closable={false}
+      >
+        {isLoadingDrawer ? (
+          <div className="flex min-h-[400px] items-center justify-center">
+            <Spin size="large" tip="Loading booking details..." />
+          </div>
+        ) : selectedBookingForDrawer ? (
+          <div className="bg-[#FAF6F8] h-full flex flex-col font-sans">
+            {/* Header Card */}
+            <div className="sticky top-0 z-10 bg-gradient-to-br from-[#E84F93] via-[#EC4899] to-[#F43F5E] shadow-md p-6 text-white rounded-b-[24px]">
+              <div className="flex items-center justify-between gap-4">
+                {/* <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/80">Booking ID</p>
+                  <h2 className="text-xl font-bold text-white mt-0.5 tracking-tight">
+                    #{String(selectedBookingForDrawer.bookingId || selectedBookingForDrawer.id).slice(0, 8).toUpperCase()}
+                  </h2>
+                </div> */}
+                <button
+                  type="button"
+                  onClick={() => { setIsDrawerOpen(false); setSelectedBookingForDrawer(null); }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <StatusPill status={selectedBookingForDrawer.status} />
+                <button
+                  type="button"
+                  onClick={() => handleViewBooking(selectedBookingForDrawer.id)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-bold text-white hover:bg-white hover:text-[#E84F93] transition"
+                >
+                  <Eye size={12} />
+                  <span>{language === "vi" ? "Xem chi tiết" : "Full Details Page"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Customer Info */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Thông tin khách hàng" : "Customer Info"}</h3>
+                <div className="space-y-2.5">
+                  <InfoItem label="Full Name">
+                    {selectedCustomerForDrawer
+                      ? `${selectedCustomerForDrawer.firstName || ''} ${selectedCustomerForDrawer.lastName || ''}`.trim()
+                      : selectedBookingForDrawer.customerName}
+                  </InfoItem>
+                  {(selectedBookingForDrawer.phone || selectedCustomerForDrawer?.phone) && (
+                    <InfoItem label="Phone Number">
+                      <span className="font-bold text-[#E84F93]">
+                        {selectedCustomerForDrawer?.phone || selectedBookingForDrawer.phone}
+                      </span>
+                    </InfoItem>
+                  )}
+                  {(selectedBookingForDrawer.email || selectedCustomerForDrawer?.email) && (
+                    <InfoItem label="Email Address">
+                      {selectedCustomerForDrawer?.email || selectedBookingForDrawer.email}
+                    </InfoItem>
+                  )}
+                </div>
+              </PremiumCard>
+
+              {/* Service Info */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Dịch vụ & Lịch trình" : "Service & Schedule"}</h3>
+                <div className="space-y-2.5">
+                  <InfoItem label="Service Name">{selectedBookingForDrawer.serviceName}</InfoItem>
+                  <InfoItem label="Assigned Artist">{selectedBookingForDrawer.artistName}</InfoItem>
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <InfoItem label="Date">{selectedBookingForDrawer.date}</InfoItem>
+                    <InfoItem label="Time Slot">{selectedBookingForDrawer.time}</InfoItem>
+                  </div>
+                </div>
+              </PremiumCard>
+
+              {/* Payment & QR */}
+              <PremiumCard className="p-4 border-[#F3E2EC]">
+                <h3 className="text-xs font-bold text-[#9E8497] uppercase tracking-wider mb-3">{language === "vi" ? "Thanh toán & Mã Check-in" : "Payment & Check-in Codes"}</h3>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-2">
+                    <span className="text-xs font-semibold text-[#9E8497]">{language === "vi" ? "Trạng thái đặt cọc" : "Deposit Status"}:</span>
+                    <span className={`text-xs font-bold ${selectedBookingForDrawer.depositTone}`}>{selectedBookingForDrawer.deposit}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng số tiền" : "Total Amount"}:</span>
+                    <span className="text-base font-bold text-[#E84F93]">{formatVND(selectedBookingForDrawer.totalPrice)}</span>
+                  </div>
+
+                  {(selectedBookingForDrawer.qrCode || selectedBookingForDrawer.qtCode) && (
+                    <div className="pt-3 mt-2 border-t border-[#F3E2EC]">
+                      <p className="text-[11px] font-bold text-[#9E8497] uppercase tracking-wider mb-2">{language === "vi" ? "Mã QR Check-in" : "Check-in QR Code"}</p>
+                      {selectedBookingForDrawer.qrCode && (
+                        <div
+                          className="rounded-2xl border border-[#F3D6E5] bg-white p-3 text-center cursor-pointer hover:border-[#E84F93] transition"
+                          onClick={() => setIsQrExpanded(true)}
+                        >
+                          <img
+                            crossOrigin="anonymous"
+                            src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
+                            alt="QR Code"
+                            className="max-w-[120px] mx-auto rounded-xl"
+                            onError={(e) => { e.target.style.display = "none"; }}
+                          />
+                          <p className="mt-2 text-[10px] font-bold text-[#E84F93] flex items-center justify-center gap-1">
+                            <Maximize2 size={12} /> {language === "vi" ? "Nhấn để xem chi tiết" : "Click to enlarge"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </PremiumCard>
+            </div>
+          </div>
+        ) : null}
+      </Drawer>
+
+      <Modal
+        open={isQrExpanded}
+        onCancel={() => setIsQrExpanded(false)}
+        footer={null}
+        closable={false}
+        centered
+        width={380}
+        styles={{ content: { padding: 0, borderRadius: 24, overflow: "hidden" } }}
+      >
+        <div className="bg-white p-6 text-center">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "QR Code khách hàng" : "Customer QR Code"}</p>
+            <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#9E8497] hover:text-[#E84F93]">
+              <X size={18} />
+            </button>
+          </div>
+          {selectedBookingForDrawer && (
+            <img
+              crossOrigin="anonymous"
+              src={getQrCodeSrc(selectedBookingForDrawer.qrCode)}
+              alt="QR Code"
+              className="max-w-[260px] mx-auto rounded-xl shadow-md border border-[#F3E2EC]"
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+          )}
+        </div>
+      </Modal>
+
+      {/* Modal chi tiết danh sách tất cả lịch hẹn trong ngày khi bấm +N more */}
+      <Modal
+        open={isDayBookingsModalOpen}
+        onCancel={() => setIsDayBookingsModalOpen(false)}
+        footer={null}
+        width={640}
+        centered
+        destroyOnClose
+        styles={{
+          content: { padding: 0, borderRadius: 24, overflow: "hidden" },
+          mask: { backdropFilter: "blur(6px)" },
+        }}
+      >
+        {selectedDateForModal && (() => {
+          const modalDayBookings = filteredAppointments.filter((b) => {
+            const bDate = dayjs(b.bookingDate || b.createdAt);
+            return bDate.isValid() && bDate.isSame(selectedDateForModal, "day");
+          });
+
+          return (
+            <div className="p-6 space-y-5">
+              <div className="flex items-center justify-between border-b border-[#F3E2EC] pb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-[#2B182B] flex items-center gap-2">
+                    <Calendar className="text-[#E84F93]" size={20} />
+                    {language === "vi" ? "Lịch hẹn ngày" : "Bookings for"} {selectedDateForModal.format("DD/MM/YYYY")}
+                  </h3>
+                  <p className="text-xs text-[#9E8497] mt-0.5 font-medium">
+                    {language === "vi" ? "Tổng cộng" : "Total"} {modalDayBookings.length} {language === "vi" ? "đơn đặt lịch" : "bookings"} {language === "vi" ? "trong ngày này" : "for this day"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDayBookingsModalOpen(false);
+                    setSelectedDate(selectedDateForModal);
+                    setViewMode("day");
+                  }}
+                  className="px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#D93B7D] rounded-full shadow-xs hover:opacity-90 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CalendarDays size={14} /> {language === "vi" ? "Xem ma trận giờ & thợ" : "View schedule & staff matrix"}
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                {modalDayBookings.length === 0 ? (
+                  <p className="text-xs text-[#9E8497] italic text-center py-8">
+                    {language === "vi" ? "Không có lịch hẹn nào trong ngày này" : "No bookings for this day"}
+                  </p>
+                ) : (
+                  modalDayBookings.map((b) => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        setIsDayBookingsModalOpen(false);
+                        handleOpenDrawer(b.id);
+                      }}
+                      className="group p-3.5 rounded-2xl border border-[#F3E2EC] bg-[#FFFBFD] hover:bg-[#FFF0F6]/60 hover:border-[#E84F93]/40 transition-all cursor-pointer flex items-center justify-between gap-4 shadow-2xs w-full text-left"
                     >
-                      {staff.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-                        <span className="font-semibold text-[#402542]">{staff.name}</span>
-                        <span className="font-bold text-[#ea4f93]">
-                          {staff.filled}/{staff.total}
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-[#2B182B] truncate">{b.customer}</span>
+                          <StatusPill status={b.status} compact />
+                        </div>
+                        <p className="text-xs text-[#6B5B68] truncate">{b.service}</p>
+                        <div className="flex items-center gap-4 text-[11px] text-[#9E8497] font-semibold pt-0.5">
+                          <span className="flex items-center gap-1 text-[#E84F93] font-bold">
+                            <Clock3 size={12} /> {b.time}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <User size={12} /> Thợ: {b.nailArtistName || b.artist || "Chưa chỉ định"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+                        <span className="text-xs font-bold text-[#E84F93]">{formatVND(b.totalPrice)}</span>
+                        <span className="text-[10px] font-bold text-[#8B5CF6] group-hover:underline flex items-center gap-0.5">
+                          {language === "vi" ? "Chi tiết" : "Details"} <ChevronRight size={12} />
                         </span>
                       </div>
-                      <div className="h-2 rounded-full bg-[#fbe1ec]">
-                        <div
-                          className="h-full rounded-full bg-[#ea4f93]"
-                          style={{ width: `${(staff.filled / staff.total) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
 
-            <Card className="overflow-hidden">
-              <SectionHeading title="Waitlist" subtitle="Customers waiting for an opening" />
-              <div className="mt-4 space-y-3">
-                {waitlist.map((item) => (
-                  <div
-                    key={item.name}
-                    className="rounded-[12px] border border-[#f8deea] bg-[#fffafb] px-3 py-3"
-                  >
-                    <p className="text-sm font-bold text-[#402542]">{item.name}</p>
-                    <p className="mt-1 text-xs text-[#7a6176]">{item.service}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-[#ea4f93]">{item.time}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    </button>
 
-            <Card className="overflow-hidden">
-              <SectionHeading title="Booking Conflicts" subtitle="3 items need attention" />
-              <div className="mt-4 space-y-3">
-                {bookingConflicts.map((conflict) => (
-                  <div
-                    key={conflict.title}
-                    className="rounded-[12px] border border-[#f8c4d8] bg-[#fff0f6] px-3 py-3"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#e1447f]" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-extrabold text-[#e1447f]">{conflict.title}</p>
-                        <p className="mt-1 text-[11px] text-[#c08aa4]">{conflict.time}</p>
-                        <button type="button" className="mt-2 text-[11px] font-bold text-[#ea4f93]">
-                          {conflict.action}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-            </Card>
-          </aside>
-        </div>
-      ) : null}
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* SLA Alert Modal */}
+      <SlaViolationModal />
+      {/* Negative Review Modal */}
+      <NegativeReviewModal />
     </section>
   );
 }

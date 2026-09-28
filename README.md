@@ -1,390 +1,479 @@
-# React + Vite
+# Nailify FE Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend web cho hệ thống Nailify, phục vụ 4 nhóm người dùng chính:
 
-Currently, two official plugins are available:
+- `staff`
+- `receptionist`
+- `manager`
+- `admin`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Stack hiện tại:
 
-## React Compiler
+- `React 19`
+- `Vite`
+- `React Router`
+- `Redux Toolkit`
+- `TanStack Query`
+- `Tailwind CSS`
+- `Axios`
+- `Ant Design`
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Chạy dự án
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-## Feature based architecture (Đề xuất cấu trúc)
-
-Format nên dùng thống nhất cho mọi feature:
-
-```
-feature-name/
-├── pages/ // màn hình chính của feature
-├── components/ // component chỉ dùng trong feature đó
-├── services/ // gọi API của feature đó
-├── hooks/ // custom hook xử lý logic/data của feature
-├── utils/ // hàm xử lý dữ liệu nội bộ feature
-└── constants/ // hằng số riêng của feature
+```bash
+npm install
+npm run dev
 ```
 
-Cấu trúc này phù hợp cho web nội bộ (Staff / Manager / Admin):
+Build production:
 
+```bash
+npm run build
 ```
-nailify-web/ // thư mục gốc của frontend web Staff, Manager, Admin
-|
-├── public/ // chứa file tĩnh public, không cần import trong React
-│   ├── favicon.ico // icon tab trình duyệt
-│   └── images/ // ảnh public dùng trực tiếp bằng đường dẫn /images/...
-│
-├── src/ // chứa toàn bộ source code chính của React
-│
-│   ├── app/ // cấu hình cấp ứng dụng
-│   │   ├── router/ // cấu hình route toàn hệ thống
-│   │   │   ├── AppRouter.jsx // router tổng, gom public/staff/manager/admin routes
-│   │   │   ├── publicRoutes.jsx // route không cần đăng nhập: login, forgot password
-│   │   │   ├── staffRoutes.jsx // route dành cho Staff
-│   │   │   ├── managerRoutes.jsx // route dành cho Salon Manager
-│   │   │   └── adminRoutes.jsx // route dành cho Admin hệ thống
-│   │   │
-│   │   ├── layouts/ // layout theo từng nhóm role
-│   │   │   ├── PublicLayout.jsx // layout cho login/forgot password
-│   │   │   ├── StaffLayout.jsx // layout cho nhân viên nail
-│   │   │   ├── ManagerLayout.jsx // layout cho quản lý salon
-│   │   │   └── AdminLayout.jsx // layout cho admin hệ thống
-│   │   │
-│   │   └── providers/ // provider bọc toàn app
-│   │       ├── AppProviders.jsx // gom tất cả provider
-│   │       ├── AuthProvider.jsx // quản lý user, token, role
-│   │       ├── QueryProvider.jsx // cấu hình React Query
-│   │       └── ThemeProvider.jsx // quản lý theme nếu có dark/light mode
-│   │
-│   ├── features/ // chứa các module nghiệp vụ chính
-│   │
-│   │   ├── auth/ // đăng nhập, đăng xuất, quên mật khẩu
-│   │   │   ├── pages/
-│   │   │   │   ├── LoginPage.jsx // trang đăng nhập
-│   │   │   │   └── ForgotPasswordPage.jsx // trang quên mật khẩu
-│   │   │   ├── components/
-│   │   │   │   ├── LoginForm.jsx // form đăng nhập
-│   │   │   │   └── ForgotPasswordForm.jsx // form quên mật khẩu
-│   │   │   ├── services/
-│   │   │   │   └── authService.js // login, logout, refresh token, forgot password
-│   │   │   ├── hooks/
-│   │   │   │   └── useAuth.js // xử lý login/logout/user hiện tại
-│   │   │   ├── utils/
-│   │   │   │   └── authStorage.js // lưu token, lấy token, xóa token
-│   │   │   └── constants/
-│   │   │       └── authConstants.js // token key, auth status
-│   │   │
-│   │   ├── dashboard/ // dashboard tổng quan theo role
-│   │   │   ├── pages/
-│   │   │   │   ├── StaffDashboardPage.jsx // dashboard Staff
-│   │   │   │   ├── ManagerDashboardPage.jsx // dashboard Manager
-│   │   │   │   └── AdminDashboardPage.jsx // dashboard Admin
-│   │   │   ├── components/
-│   │   │   │   ├── RevenueChart.jsx // biểu đồ doanh thu
-│   │   │   │   ├── BookingStatsCard.jsx // card thống kê booking
-│   │   │   │   ├── SalonPerformanceTable.jsx // bảng hiệu suất salon
-│   │   │   │   └── StaffRankingTable.jsx // bảng xếp hạng staff
-│   │   │   ├── services/
-│   │   │   │   └── dashboardService.js // API dashboard
-│   │   │   ├── hooks/
-│   │   │   │   └── useDashboard.js // lấy dữ liệu dashboard
-│   │   │   ├── utils/
-│   │   │   │   └── dashboardMapper.js // map dữ liệu chart/card
-│   │   │   └── constants/
-│   │   │       └── dashboardConstants.js // loại thống kê, filter thời gian
-│   │   │
-│   │   ├── salons/ // quản lý chuỗi salon/chi nhánh
-│   │   │   ├── pages/
-│   │   │   │   ├── SalonListPage.jsx // danh sách salon
-│   │   │   │   ├── SalonDetailPage.jsx // chi tiết salon
-│   │   │   │   ├── CreateSalonPage.jsx // tạo salon
-│   │   │   │   └── EditSalonPage.jsx // chỉnh sửa salon
-│   │   │   ├── components/
-│   │   │   │   ├── SalonCard.jsx // card salon
-│   │   │   │   ├── SalonTable.jsx // bảng salon
-│   │   │   │   ├── SalonForm.jsx // form tạo/sửa salon
-│   │   │   │   ├── SalonFilter.jsx // bộ lọc salon
-│   │   │   │   └── SalonStatusBadge.jsx // badge trạng thái salon
-│   │   │   ├── services/
-│   │   │   │   └── salonService.js // API salon
-│   │   │   ├── hooks/
-│   │   │   │   ├── useSalons.js // lấy danh sách salon
-│   │   │   │   └── useSalonDetail.js // lấy chi tiết salon
-│   │   │   ├── utils/
-│   │   │   │   └── salonMapper.js // map dữ liệu salon
-│   │   │   └── constants/
-│   │   │       └── salonConstants.js // trạng thái salon, loại salon
-│   │   │
-│   │   ├── bookings/ // quản lý lịch hẹn
-│   │   │   ├── pages/
-│   │   │   │   ├── BookingListPage.jsx // danh sách booking
-│   │   │   │   ├── BookingDetailPage.jsx // chi tiết booking
-│   │   │   │   └── BookingCalendarPage.jsx // lịch booking dạng calendar
-│   │   │   ├── components/
-│   │   │   │   ├── BookingTable.jsx // bảng booking
-│   │   │   │   ├── BookingCalendar.jsx // lịch booking
-│   │   │   │   ├── BookingStatusBadge.jsx // trạng thái booking
-│   │   │   │   ├── BookingFilter.jsx // lọc booking
-│   │   │   │   └── BookingTimeline.jsx // tiến trình xử lý booking
-│   │   │   ├── services/
-│   │   │   │   └── bookingService.js // API booking
-│   │   │   ├── hooks/
-│   │   │   │   ├── useBookings.js // lấy danh sách booking
-│   │   │   │   └── useBookingDetail.js // lấy chi tiết booking
-│   │   │   ├── utils/
-│   │   │   │   └── bookingMapper.js // map trạng thái, format booking
-│   │   │   └── constants/
-│   │   │       └── bookingStatus.js // pending, confirmed, completed, cancelled
-│   │   │
-│   │   ├── nail-designs/ // quản lý mẫu nail, layer, skill, costing
-│   │   │   ├── pages/
-│   │   │   │   ├── NailDesignListPage.jsx // danh sách mẫu nail
-│   │   │   │   ├── NailDesignDetailPage.jsx // chi tiết mẫu nail
-│   │   │   │   ├── CreateNailDesignPage.jsx // tạo mẫu nail
-│   │   │   │   └── EditNailDesignPage.jsx // chỉnh sửa mẫu nail
-│   │   │   ├── components/
-│   │   │   │   ├── NailDesignCard.jsx // card mẫu nail
-│   │   │   │   ├── NailDesignTable.jsx // bảng mẫu nail
-│   │   │   │   ├── NailDesignForm.jsx // form thông tin mẫu nail
-│   │   │   │   ├── NailLayerBuilder.jsx // tạo từng layer nail
-│   │   │   │   ├── NailPreview.jsx // xem trước mẫu nail
-│   │   │   │   ├── SkillRequirementForm.jsx // yêu cầu kỹ năng staff
-│   │   │   │   ├── CostingForm.jsx // vật liệu và chi phí dịch vụ
-│   │   │   │   └── PublishReviewPanel.jsx // kiểm tra cuối và publish
-│   │   │   ├── services/
-│   │   │   │   └── nailDesignService.js // API nail design
-│   │   │   ├── hooks/
-│   │   │   │   ├── useNailDesigns.js // lấy danh sách mẫu nail
-│   │   │   │   └── useNailDesignDetail.js // lấy chi tiết mẫu nail
-│   │   │   ├── utils/
-│   │   │   │   ├── nailDesignMapper.js // map payload nail design
-│   │   │   │   └── layerUtils.js // xử lý layer nail
-│   │   │   └── constants/
-│   │   │       ├── nailShape.js // dáng móng
-│   │   │       ├── nailLength.js // độ dài móng
-│   │   │       ├── nailStyle.js // style nail
-│   │   │       ├── skinTone.js // tông da
-│   │   │       └── skillLevels.js // level kỹ năng 1-5 sao
-│   │   │
-│   │   ├── services/ // quản lý dịch vụ nail
-│   │   │   ├── pages/
-│   │   │   │   ├── ServiceListPage.jsx // danh sách dịch vụ
-│   │   │   │   ├── ServiceDetailPage.jsx // chi tiết dịch vụ
-│   │   │   │   ├── CreateServicePage.jsx // tạo dịch vụ
-│   │   │   │   └── EditServicePage.jsx // sửa dịch vụ
-│   │   │   ├── components/
-│   │   │   │   ├── ServiceCard.jsx // card dịch vụ
-│   │   │   │   ├── ServiceTable.jsx // bảng dịch vụ
-│   │   │   │   ├── ServiceForm.jsx // form dịch vụ
-│   │   │   │   └── ServicePriceInput.jsx // input giá dịch vụ
-│   │   │   ├── services/
-│   │   │   │   └── serviceApi.js // API dịch vụ
-│   │   │   ├── hooks/
-│   │   │   │   └── useServices.js // lấy danh sách dịch vụ
-│   │   │   ├── utils/
-│   │   │   │   └── serviceMapper.js // map dữ liệu dịch vụ
-│   │   │   └── constants/
-│   │   │       └── serviceCategory.js // manicure, pedicure, gel, acrylic...
-│   │   │
-│   │   ├── staff/ // quản lý nhân viên nail
-│   │   │   ├── pages/
-│   │   │   │   ├── StaffListPage.jsx // danh sách staff
-│   │   │   │   ├── StaffDetailPage.jsx // chi tiết staff
-│   │   │   │   ├── StaffSchedulePage.jsx // lịch làm staff
-│   │   │   │   └── StaffPerformancePage.jsx // hiệu suất staff
-│   │   │   ├── components/
-│   │   │   │   ├── StaffTable.jsx // bảng staff
-│   │   │   │   ├── StaffCard.jsx // card staff
-│   │   │   │   ├── StaffForm.jsx // form staff
-│   │   │   │   ├── StaffSkillMatrix.jsx // ma trận kỹ năng staff
-│   │   │   │   └── StaffScheduleCalendar.jsx // lịch làm staff
-│   │   │   ├── services/
-│   │   │   │   └── staffService.js // API staff
-│   │   │   ├── hooks/
-│   │   │   │   ├── useStaff.js // lấy danh sách staff
-│   │   │   │   └── useStaffDetail.js // lấy chi tiết staff
-│   │   │   ├── utils/
-│   │   │   │   └── staffMapper.js // map dữ liệu staff
-│   │   │   └── constants/
-│   │   │       └── staffConstants.js // role staff, skill type, status
-│   │   │
-│   │   ├── customers/ // xem và quản lý dữ liệu khách hàng từ mobile app
-│   │   │   ├── pages/
-│   │   │   │   ├── CustomerListPage.jsx // danh sách khách hàng
-│   │   │   │   └── CustomerDetailPage.jsx // chi tiết khách hàng
-│   │   │   ├── components/
-│   │   │   │   ├── CustomerTable.jsx // bảng khách hàng
-│   │   │   │   ├── CustomerInfoCard.jsx // card thông tin khách
-│   │   │   │   └── CustomerBookingHistory.jsx // lịch sử booking của khách
-│   │   │   ├── services/
-│   │   │   │   └── customerService.js // API customer
-│   │   │   ├── hooks/
-│   │   │   │   ├── useCustomers.js // lấy danh sách khách hàng
-│   │   │   │   └── useCustomerDetail.js // lấy chi tiết khách hàng
-│   │   │   ├── utils/
-│   │   │   │   └── customerMapper.js // format dữ liệu khách hàng
-│   │   │   └── constants/
-│   │   │       └── customerConstants.js // loại khách hàng, trạng thái khách
-│   │   │
-│   │   ├── schedules/ // quản lý ca làm và phân công lịch
-│   │   │   ├── pages/
-│   │   │   │   ├── SchedulePage.jsx // màn lịch làm việc tổng
-│   │   │   │   └── ShiftManagementPage.jsx // quản lý ca làm
-│   │   │   ├── components/
-│   │   │   │   ├── ScheduleCalendar.jsx // lịch ca làm
-│   │   │   │   ├── ShiftForm.jsx // form tạo/sửa ca
-│   │   │   │   ├── ShiftTable.jsx // bảng ca làm
-│   │   │   │   └── StaffShiftCard.jsx // card ca làm của staff
-│   │   │   ├── services/
-│   │   │   │   └── scheduleService.js // API schedule/shift
-│   │   │   ├── hooks/
-│   │   │   │   └── useSchedules.js // lấy lịch làm việc
-│   │   │   ├── utils/
-│   │   │   │   └── scheduleUtils.js // kiểm tra trùng lịch, map ca làm
-│   │   │   └── constants/
-│   │   │       └── shiftConstants.js // loại ca, trạng thái ca
-│   │   │
-│   │   ├── payments/ // thanh toán, hóa đơn, giao dịch
-│   │   │   ├── pages/
-│   │   │   │   ├── PaymentListPage.jsx // danh sách giao dịch
-│   │   │   │   ├── PaymentDetailPage.jsx // chi tiết giao dịch
-│   │   │   │   └── InvoicePage.jsx // hóa đơn
-│   │   │   ├── components/
-│   │   │   │   ├── PaymentTable.jsx // bảng thanh toán
-│   │   │   │   ├── PaymentSummary.jsx // tóm tắt thanh toán
-│   │   │   │   ├── PaymentMethodBadge.jsx // phương thức thanh toán
-│   │   │   │   └── InvoiceCard.jsx // card hóa đơn
-│   │   │   ├── services/
-│   │   │   │   └── paymentService.js // API payment
-│   │   │   ├── hooks/
-│   │   │   │   └── usePayments.js // lấy dữ liệu payment
-│   │   │   ├── utils/
-│   │   │   │   └── paymentMapper.js // map trạng thái, format tiền
-│   │   │   └── constants/
-│   │   │       └── paymentConstants.js // cash, momo, vnpay, refund...
-│   │   │
-│   │   ├── reports/ // báo cáo doanh thu, booking, staff, salon
-│   │   │   ├── pages/
-│   │   │   │   ├── RevenueReportPage.jsx // báo cáo doanh thu
-│   │   │   │   ├── BookingReportPage.jsx // báo cáo booking
-│   │   │   │   ├── StaffReportPage.jsx // báo cáo staff
-│   │   │   │   └── SalonReportPage.jsx // báo cáo salon
-│   │   │   ├── components/
-│   │   │   │   ├── ReportFilter.jsx // bộ lọc báo cáo
-│   │   │   │   ├── ReportTable.jsx // bảng báo cáo
-│   │   │   │   ├── ReportChart.jsx // biểu đồ báo cáo
-│   │   │   │   └── ExportButton.jsx // nút export file
-│   │   │   ├── services/
-│   │   │   │   └── reportService.js // API report
-│   │   │   ├── hooks/
-│   │   │   │   └── useReports.js // lấy dữ liệu report
-│   │   │   ├── utils/
-│   │   │   │   ├── reportMapper.js // map dữ liệu chart/table
-│   │   │   │   └── exportUtils.js // xử lý export CSV/Excel
-│   │   │   └── constants/
-│   │   │       └── reportConstants.js // loại report, range thời gian
-│   │   │
-│   │   └── notifications/ // thông báo nội bộ
-│   │       ├── pages/
-│   │       │   └── NotificationListPage.jsx // danh sách thông báo
-│   │       ├── components/
-│   │       │   ├── NotificationDropdown.jsx // dropdown thông báo ở header
-│   │       │   ├── NotificationItem.jsx // item thông báo
-│   │       │   └── NotificationBadge.jsx // badge số lượng thông báo
-│   │       ├── services/
-│   │       │   └── notificationService.js // API notification
-│   │       ├── hooks/
-│   │       │   └── useNotifications.js // lấy thông báo
-│   │       ├── utils/
-│   │       │   └── notificationUtils.js // format thời gian, trạng thái đã đọc
-│   │       └── constants/
-│   │           └── notificationConstants.js // loại thông báo
-│   │
-│   ├── shared/ // phần dùng chung giữa nhiều feature
-│   │   ├── components/ // component tái sử dụng toàn app
-│   │   │   ├── ui/ // UI component nhỏ, không chứa nghiệp vụ
-│   │   │   │   ├── Button.jsx // button dùng chung
-│   │   │   │   ├── Input.jsx // input dùng chung
-│   │   │   │   ├── Select.jsx // select dùng chung
-│   │   │   │   ├── Modal.jsx // modal dùng chung
-│   │   │   │   ├── Table.jsx // table base dùng chung
-│   │   │   │   ├── Badge.jsx // badge dùng chung
-│   │   │   │   ├── Card.jsx // card base dùng chung
-│   │   │   │   └── DatePicker.jsx // chọn ngày dùng chung
-│   │   │   │
-│   │   │   ├── common/ // component layout/common dùng nhiều nơi
-│   │   │   │   ├── Header.jsx // header chung
-│   │   │   │   ├── Sidebar.jsx // sidebar chung
-│   │   │   │   ├── Navbar.jsx // navbar nếu cần
-│   │   │   │   ├── Pagination.jsx // phân trang
-│   │   │   │   ├── Loading.jsx // loading chung
-│   │   │   │   ├── EmptyState.jsx // trạng thái không có dữ liệu
-│   │   │   │   └── SearchBox.jsx // ô tìm kiếm chung
-│   │   │   │
-│   │   │   └── guards/ // component bảo vệ route
-│   │   │       ├── AuthGuard.jsx // bắt buộc đăng nhập
-│   │   │       ├── RoleGuard.jsx // kiểm tra role Staff/Manager/Admin
-│   │   │       └── GuestGuard.jsx // chặn user đã login vào login page
-│   │   │
-│   │   ├── hooks/ // custom hook dùng chung toàn app
-│   │   │   ├── useDebounce.js // delay search input
-│   │   │   ├── usePagination.js // xử lý phân trang
-│   │   │   ├── useModal.js // đóng/mở modal
-│   │   │   ├── useLocalStorage.js // đọc/ghi localStorage
-│   │   │   └── useClickOutside.js // bắt sự kiện click ngoài element
-│   │   │
-│   │   ├── utils/ // hàm tiện ích dùng chung
-│   │   │   ├── formatDate.js // format ngày giờ
-│   │   │   ├── formatCurrency.js // format tiền VND
-│   │   │   ├── validators.js // validate form chung
-│   │   │   ├── storage.js // helper localStorage/sessionStorage
-│   │   │   ├── errorHandler.js // xử lý lỗi API
-│   │   │   └── classNames.js // nối class Tailwind có điều kiện
-│   │   │
-│   │   ├── constants/ // hằng số dùng chung toàn app
-│   │   │   ├── roles.js // STAFF, MANAGER, ADMIN
-│   │   │   ├── routes.js // path route toàn app
-│   │   │   ├── apiEndpoints.js // endpoint API dùng chung
-│   │   │   ├── status.js // status chung
-│   │   │   └── appConfig.js // config app
-│   │   │
-│   │   └── assets/ // asset import trực tiếp trong React
-│   │       ├── images/ // ảnh
-│   │   │   ├── icons/ // icon
-│   │   │   └── fonts/ // font
-│   │
-│   ├── lib/ // cấu hình thư viện ngoài
-│   │   ├── axiosClient.js // cấu hình Axios, baseURL, interceptor token
-│   │   ├── queryClient.js // cấu hình React Query client
-│   │   ├── dayjs.js // cấu hình dayjs, locale vi
-│   │   └── tailwindHelper.js // helper merge class Tailwind nếu cần
-│   │
-│   ├── store/ // Redux/global state nếu dùng
-│   │   ├── index.js // cấu hình Redux store
-│   │   ├── authSlice.js // lưu user, token, role
-│   │   ├── bookingSlice.js // lưu booking đang thao tác nếu cần global
-│   │   ├── nailDesignSlice.js // lưu trạng thái tạo nail design/layer
-│   │   └── layoutSlice.js // lưu trạng thái sidebar/theme/menu
-│   │
-│   ├── styles/ // CSS global
-│   │   ├── index.css // file CSS chính, import Tailwind
-│   │   └── tailwind.css // tách Tailwind layer nếu muốn
-│   │
-│   ├── App.jsx // component gốc, thường chỉ render AppRouter
-│   │   └── main.jsx // entry point của Vite React
-│
-├── .env // biến môi trường chung, phải bắt đầu bằng VITE_
-├── .env.development // biến môi trường cho môi trường dev
-├── .env.production // biến môi trường cho production
-├── index.html // HTML gốc của Vite
-├── vite.config.js // cấu hình Vite, React plugin, alias @
-├── tailwind.config.js // cấu hình Tailwind
-├── postcss.config.js // cấu hình PostCSS cho Tailwind
-├── jsconfig.json // cấu hình alias @ cho VS Code
-├── eslint.config.js // cấu hình lint code
-├── package.json // dependencies và script chạy project
-└── README.md // mô tả project
+
+Lint:
+
+```bash
+npm run lint
+```
+
+## Package Diagram
+
+Sơ đồ dưới đây mô tả package-level architecture hiện tại của FE:
+
+```mermaid
+flowchart TD
+    A[main.jsx] --> B[AppProviders]
+    A --> C[App.jsx]
+    B --> B1[Redux Provider]
+    B --> B2[ThemeProvider]
+    B --> B3[QueryProvider]
+    B --> B4[AuthProvider]
+    C --> D[AppRouter]
+
+    D --> R1[publicRoutes]
+    D --> R2[staffRoutes]
+    D --> R3[receptionistRoutes]
+    D --> R4[managerRoutes]
+    D --> R5[adminRoutes]
+
+    R1 --> L1[PublicLayout]
+    R2 --> L2[StaffLayout]
+    R3 --> L3[DashboardLayout]
+    R4 --> L4[ManagerLayout]
+    R5 --> L5[AdminLayout]
+
+    R1 --> G[Guards]
+    R2 --> G
+    R3 --> G
+    R4 --> G
+    R5 --> G
+
+    L1 --> F[features]
+    L2 --> F
+    L3 --> F
+    L4 --> F
+    L5 --> F
+
+    F --> FC[features/core]
+    F --> FS[features/staff]
+    F --> FR[features/receptionist]
+    F --> FM[features/manager]
+    F --> FA[features/admin]
+
+    FC --> SH[shared]
+    FS --> SH
+    FR --> SH
+    FM --> SH
+    FA --> SH
+
+    FC --> LIB[lib]
+    FS --> LIB
+    FR --> LIB
+    FM --> LIB
+    FA --> LIB
+
+    FC --> STORE[store]
+    FS --> STORE
+    FR --> STORE
+    FM --> STORE
+    FA --> STORE
+```
+
+## Relationships
+
+Quan hệ package theo diagram nên hiểu như sau:
+
+```text
+src
+├── app
+│   ├── layouts
+│   ├── providers
+│   └── router
+├── features
+│   ├── admin
+│   ├── core
+│   ├── manager
+│   ├── receptionist
+│   └── staff
+├── lib
+├── store
+├── styles
+└── shared
+    ├── components
+    │   ├── common
+    │   ├── guards
+    │   └── ui
+    ├── assets
+    │   ├── fonts
+    │   ├── icons
+    │   └── images
+    ├── constants
+    ├── guards
+    ├── hooks
+    └── utils
+```
+
+Luồng phụ thuộc chính:
+
+```text
+src/app -> src/features
+src/app -> src/shared
+src/app -> src/store
+
+src/features/admin -> src/shared, src/lib, src/store
+src/features/core -> src/shared, src/lib, src/store
+src/features/manager -> src/shared, src/lib, src/store
+src/features/receptionist -> src/shared, src/lib, src/store
+src/features/staff -> src/shared, src/lib, src/store
+
+src/shared/components -> src/shared/constants, src/shared/hooks, src/shared/utils
+src/shared/guards -> src/features/core/auth, src/shared/constants, src/shared/utils
+```
+
+Ràng buộc nên giữ:
+
+- `app` chỉ điều phối `router`, `layouts`, `providers`; không chứa business logic nghiệp vụ.
+- `features` là tầng nghiệp vụ chính, được phép dùng `shared`, `lib`, `store`.
+- `shared` là tầng tái sử dụng chung; nên tránh để `shared` phụ thuộc ngược vào feature khác, trừ các guard/auth helper nếu dự án đang dùng tạm.
+- `lib` là adapter cho thư viện ngoài như `axios`, `query client`, date helpers.
+- `store` là state dùng xuyên feature; không nên nhét logic UI cục bộ vào đây.
+- `styles` là package độc lập cho global styling, không nên chứa logic nghiệp vụ.
+
+## ASCII package flow
+
+### 1. Người dùng đi vào hệ thống
+
+```text
+[User]
+   |
+   +--> [Public Routes] --> [Login Page]
+   |
+   +--> [Staff Routes] --> [Staff Layout] --> [Staff Features]
+   |
+   +--> [Receptionist Routes] --> [Dashboard Layout] --> [Receptionist Features]
+   |
+   +--> [Manager Routes] --> [Manager Layout] --> [Manager Features]
+   |
+   +--> [Admin Routes] --> [Admin Layout] --> [Admin Features]
+```
+
+### 2. Luồng xử lý chính của frontend
+
+```text
+[main.jsx]
+   |
+   +--> [AppProviders]
+   |       |
+   |       +--> [Redux Provider]
+   |       +--> [ThemeProvider]
+   |       +--> [QueryProvider]
+   |       +--> [AuthProvider]
+   |
+   +--> [App.jsx]
+           |
+           +--> [AppRouter]
+                   |
+                   +--> [publicRoutes]
+                   +--> [staffRoutes]
+                   +--> [receptionistRoutes]
+                   +--> [managerRoutes]
+                   +--> [adminRoutes]
+```
+
+### 3. Layer/package dependency
+
+```text
+[Users]
+   |
+   v
+[Route Guards]
+   |
+   v
+[Layouts]
+   |
+   v
+[Feature Pages]
+   |
+   +--> [Feature Components]
+   |
+   +--> [Feature Hooks]
+   |
+   +--> [Feature Services] ---> [lib/axiosClient]
+   |                                 |
+   |                                 +--> [Backend API]
+   |
+   +--> [shared/*]
+   |
+   +--> [store/*]
+```
+
+### 4. Phụ thuộc ở mức package
+
+```text
+[app]
+   |
+   +--> [router]
+   +--> [layouts]
+   +--> [providers]
+           |
+           +--> [store]
+           +--> [shared]
+
+[features/core]
+   |
+   +--> [shared]
+   +--> [lib]
+   +--> [store]
+
+[features/staff]
+   |
+   +--> [shared]
+   +--> [lib]
+   +--> [store]
+   +--> [features/core/booking-management]
+
+[features/receptionist]
+   |
+   +--> [shared]
+   +--> [lib]
+   +--> [store]
+   +--> [features/core/dashboard]
+
+[features/manager]
+   |
+   +--> [shared]
+   +--> [lib]
+   +--> [store]
+
+[features/admin]
+   |
+   +--> [shared]
+   +--> [lib]
+   +--> [store]
+```
+
+### 5. Data flow thực tế trong project
+
+```text
+[Page]
+   |
+   +--> [Hook] ------------------+
+   |                             |
+   +--> [Dispatch Redux Action]  |
+   |                             v
+   +------------------------> [Service]
+                                 |
+                                 +--> [Mock Data]
+                                 |
+                                 +--> [Axios Client] --> [API]
+```
+
+## Cấu trúc package
+
+### 1. `src/app`
+
+Tầng bootstrap ứng dụng:
+
+- `providers/`: bọc toàn app bằng Redux, theme, query, auth
+- `router/`: khai báo route theo role
+- `layouts/`: layout riêng cho public, staff, receptionist, manager, admin
+
+Luồng vào app:
+
+`main.jsx` -> `AppProviders` -> `App.jsx` -> `AppRouter`
+
+### 2. `src/features`
+
+Tầng nghiệp vụ chính, tổ chức theo domain và role.
+
+Các package chính đang có:
+
+- `features/core/auth`: đăng nhập, auth hook, auth service
+- `features/core/dashboard`: dashboard theo role
+- `features/core/booking-management`: booking dùng chung nhiều role
+- `features/staff/bookings`: luồng staff xử lý design studio và service session
+- `features/receptionist/bookings`: booking phía lễ tân
+- `features/receptionist/payment`: checkout/thanh toán phía lễ tân
+- `features/manager/bookings`: booking phía manager
+- `features/manager/staff-artist-management`: quản lý staff/artist
+- `features/manager/customer-nail`: quản lý mẫu móng của khách
+- `features/admin/*`: các module quản trị hệ thống như users, salons, staff, nail designs, categories, procedures, components, nail shapes, nail surfaces, pricing
+
+Mỗi feature đang đi theo pattern tương đối ổn định:
+
+```text
+feature/
+├── pages/
+├── components/
+├── services/
+├── hooks/
+├── utils/
+└── constants/
+```
+
+Lưu ý: không phải feature nào cũng có đủ toàn bộ thư mục trên. Một số module hiện chỉ dùng `pages/` và `services/`.
+
+### 3. `src/shared`
+
+Tầng dùng chung cho toàn app:
+
+- `components/ui`: UI primitives và reusable widgets
+- `components/common`: navbar, sidebar, pagination, loading, empty state
+- `components/guards`: `AuthGuard`, `RoleGuard`, `GuestGuard`
+- `constants`: route constants, role constants, app config, API endpoint constants
+- `hooks`: hook generic
+- `utils`: formatter, validator, storage, error handler
+- `assets`: ảnh dùng chung
+
+Đây là package nền mà hầu hết feature đều phụ thuộc.
+
+### 4. `src/lib`
+
+Tầng adapter cho thư viện ngoài:
+
+- `axiosClient.js`: cấu hình axios, `baseURL`, request interceptor
+- `queryClient.js`: cấu hình TanStack Query client
+- `dayjs.js`: cấu hình date handling
+- `tailwindHelper.js`: helper cho class Tailwind
+
+Nguyên tắc: feature nên gọi API qua `services/`, còn `services/` dùng lại `lib/axiosClient.js`.
+
+### 5. `src/store`
+
+Global state bằng Redux Toolkit:
+
+- `authSlice`
+- `bookingSlice`
+- `layoutSlice`
+- `nailDesignSlice`
+- `serviceSessionSlice`
+- `index.js`: cấu hình store và subscribe lưu local storage
+
+Store hiện được dùng cho các state cần chia sẻ xuyên màn hình hoặc cần persistence cục bộ.
+
+## Sơ đồ phụ thuộc
+
+Thứ tự phụ thuộc nên hiểu như sau:
+
+```text
+app -> features -> shared
+app -> store
+features -> lib
+features -> shared
+features -> store
+shared -> lib   (chỉ khi thật sự cần)
+```
+
+Nên tránh chiều ngược lại:
+
+- `shared` không nên phụ thuộc vào `features`
+- feature A không nên import trực tiếp page/component nội bộ của feature B nếu chưa có abstraction rõ ràng
+- route chỉ nên trỏ vào `pages`, không chứa business logic
+
+## Mapping package theo role
+
+### Public
+
+- `app/router/publicRoutes.jsx`
+- `app/layouts/PublicLayout.jsx`
+- `features/core/auth/*`
+
+### Staff
+
+- `app/router/staffRoutes.jsx`
+- `app/layouts/StaffLayout.jsx`
+- `features/core/dashboard/pages/StaffDashboardPage.jsx`
+- `features/core/booking-management/*`
+- `features/staff/bookings/*`
+
+### Receptionist
+
+- `app/router/receptionistRoutes.jsx`
+- `app/layouts/DashboardLayout.jsx`
+- `features/core/dashboard/pages/ReceptionistDashboardPage.jsx`
+- `features/receptionist/bookings/*`
+- `features/receptionist/payment/*`
+
+### Manager
+
+- `app/router/managerRoutes.jsx`
+- `app/layouts/ManagerLayout.jsx`
+- `features/core/dashboard/pages/ManagerDashboardPage.jsx`
+- `features/manager/bookings/*`
+- `features/manager/staff-artist-management/*`
+- `features/manager/customer-nail/*`
+
+### Admin
+
+- `app/router/adminRoutes.jsx`
+- `app/layouts/AdminLayout.jsx`
+- `features/core/dashboard/pages/AdminDashboardPage.jsx`
+- `features/admin/*`
+
+## Cấu trúc thư mục rút gọn
+
+```text
+src/
+├── app/
+│   ├── layouts/
+│   ├── providers/
+│   └── router/
+├── features/
+│   ├── admin/
+│   ├── core/
+│   ├── manager/
+│   ├── receptionist/
+│   └── staff/
+├── lib/
+├── shared/
+├── store/
+├── styles/
+├── App.jsx
+└── main.jsx
+```
+
+## Ghi chú hiện trạng
+
+- Dự án đang kết hợp cả `Redux Toolkit` và `TanStack Query`.
+- Một số service đã gọi API thật, ví dụ auth qua `axiosClient`.
+- Một số module vẫn đang dùng mock data/service, đặc biệt ở các luồng booking và management.
+- Có dấu hiệu dự án đang chuyển dần sang feature-based architecture, nhưng vẫn còn vài phần legacy song song trong cấu trúc.
+
+## Đề xuất quy ước khi mở rộng
+
+- Thêm màn hình mới: đặt ở `features/<role-or-domain>/<feature>/pages`
+- Thêm API call: đặt ở `services/` của feature
+- Thêm reusable UI: đặt ở `shared/components/ui`
+- Thêm helper dùng chung: đặt ở `shared/utils`
+- Thêm route mới: khai báo trong `shared/constants/routes.js` trước, sau đó gắn vào file route tương ứng trong `src/app/router`
+- Chỉ đưa vào `store/` khi state cần dùng liên feature hoặc cần giữ qua refresh
+
+## File quan trọng để đọc trước
+
+- `src/main.jsx`
+- `src/App.jsx`
+- `src/app/providers/AppProviders.jsx`
+- `src/app/router/AppRouter.jsx`
+- `src/shared/constants/routes.js`
+- `src/store/index.js`

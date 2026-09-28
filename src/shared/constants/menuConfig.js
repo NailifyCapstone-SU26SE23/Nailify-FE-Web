@@ -1,55 +1,7 @@
 import { ROUTES } from "./routes";
 import { ROLES } from "./roles";
-import { BOOKING_ROWS } from "../../features/core/booking-management/services/mockBookings";
-import { NAIL_DESIGN_ROWS } from "../../features/admin/nails-design-management/services/mockNailDesigns";
-import { SALON_BRANCHES } from "../../features/admin/salon-management/services/mockSalon";
-import { SERVICE_ROWS } from "../../features/admin/service-pricing-management/services/mockServicePricing";
-import { STAFF_TOP_PERFORMERS } from "../../features/admin/staff-management/services/mockStaff";
-import { USER_ROWS } from "../../features/admin/user-management/services/mockUsers";
-
-const STAFF_BOOKING_NAMES = new Set(["Ariana Vo", "Bao Tran", "Linh Pham"]);
-const MANAGER_BOOKING_BRANCHES = new Set(["District 1 Salon", "District 3 Salon"]);
-
-function getBookingCountByRole(role) {
-  if (role === ROLES.staff || role === ROLES.receptionist) {
-    return BOOKING_ROWS.filter((booking) =>
-      STAFF_BOOKING_NAMES.has(booking.staffName),
-    ).length;
-  }
-
-  if (role === ROLES.manager) {
-    return BOOKING_ROWS.filter((booking) =>
-      MANAGER_BOOKING_BRANCHES.has(booking.branch),
-    ).length;
-  }
-
-  return BOOKING_ROWS.length;
-}
-
-function getMenuBadge(itemKey, role) {
-  switch (itemKey) {
-    case "staff-bookings":
-    case "receptionist-bookings":
-    case "manager-bookings":
-    case "admin-bookings":
-      return String(getBookingCountByRole(role));
-    case "admin-users":
-      return String(USER_ROWS.length);
-    case "admin-service-pricing":
-      return String(SERVICE_ROWS.length);
-    case "admin-salons":
-      return String(SALON_BRANCHES.length);
-    case "admin-staff":
-      return String(STAFF_TOP_PERFORMERS.length);
-    case "admin-nail-designs":
-      return String(NAIL_DESIGN_ROWS.length);
-    default:
-      return null;
-  }
-}
 
 export const MENU_CONFIG = {
-
   //staff
   [ROLES.staff]: [
     {
@@ -68,25 +20,39 @@ export const MENU_CONFIG = {
       badge: "8",
     },
     {
+      key: "staff-tasks",
+      label: "Tasks",
+      to: ROUTES.staffTasks,
+      icon: "tasks",
+      section: "Main",
+    },
+    {
+      key: "staff-customer-nails",
+      label: "Custom Nails Reviews",
+      to: ROUTES.staffCustomerNails,
+      icon: "palette",
+      section: "Main",
+    },
+    {
       key: "staff-schedule",
       label: "Schedule",
+      to: ROUTES.staffSchedules,
       icon: "calendar",
       section: "Main",
-      disabled: true,
     },
     {
-      key: "staff-customers",
-      label: "Customers",
-      icon: "users",
-      section: "Support",
-      disabled: true,
+      key: "staff-breaks",
+      label: "Breaks",
+      to: ROUTES.staffBreaks,
+      icon: "clock",
+      section: "Main",
     },
     {
-      key: "staff-settings",
-      label: "Settings",
+      key: "staff-profile",
+      label: "Profile",
+      to: ROUTES.staffProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 
@@ -110,31 +76,30 @@ export const MENU_CONFIG = {
     {
       key: "receptionist-customers",
       label: "Customers",
+      to: ROUTES.receptionistCustomers,
       icon: "users",
       section: "Main",
-      disabled: true,
     },
     {
-      key: "receptionist-reviews",
-      label: "Reviews",
-      icon: "reviews",
-      section: "Analytics",
-      disabled: true,
+      key: "receptionist-breaks",
+      label: "Breaks",
+      to: ROUTES.receptionistBreaks,
+      icon: "clock",
+      section: "Main",
     },
     {
-      key: "receptionist-complaints",
-      label: "Complaints",
-      icon: "support",
-      section: "Support",
-      badge: "3",
-      disabled: true,
+      key: "receptionist-chairs",
+      label: "Chairs",
+      to: ROUTES.receptionistChairs,
+      icon: "armchair",
+      section: "Main",
     },
     {
-      key: "receptionist-settings",
-      label: "Settings",
+      key: "receptionist-profile",
+      label: "Profile",
+      to: ROUTES.receptionistProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
   //manager
@@ -155,6 +120,25 @@ export const MENU_CONFIG = {
       badge: "16",
     },
     {
+      key: "manager-chairs",
+      label: "Chairs",
+      to: ROUTES.managerChairs,
+      icon: "armchair",
+    },
+    {
+      key: "manager-salon",
+      label: "Salon Management",
+      to: ROUTES.managerSalon,
+      icon: "building",
+    },
+    {
+      key: "manager-reschedule",
+      label: "Reschedule",
+      to: ROUTES.managerReschedule,
+      icon: "clock",
+      section: "Main",
+    },
+    {
       key: "manager-customer-nails",
       label: "Customer Nails",
       to: ROUTES.managerCustomerNails,
@@ -164,9 +148,9 @@ export const MENU_CONFIG = {
     {
       key: "manager-schedules",
       label: "Schedules",
+      to: ROUTES.managerSchedules,
       icon: "calendar",
       section: "Main",
-      disabled: true,
     },
     {
       key: "manager-staff",
@@ -176,32 +160,32 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "manager-customers",
-      label: "Customers",
-      icon: "users",
+      key: "manager-breaks",
+      label: "Artist Breaks",
+      to: ROUTES.managerBreaks,
+      icon: "clock",
       section: "Main",
-      disabled: true,
     },
     {
-      key: "manager-reports",
-      label: "Analytics",
-      icon: "analytics",
-      section: "Analytics",
-      disabled: true,
+      key: "manager-transactions",
+      label: "Transactions",
+      to: ROUTES.managerTransactions,
+      icon: "wallet",
+      section: "Main",
     },
     {
       key: "manager-reviews",
       label: "Reviews",
+      to: ROUTES.managerBookingRatings,
       icon: "reviews",
       section: "Analytics",
-      disabled: true,
     },
     {
-      key: "manager-settings",
-      label: "Settings",
+      key: "manager-profile",
+      label: "Profile",
+      to: ROUTES.managerProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 
@@ -223,10 +207,38 @@ export const MENU_CONFIG = {
       badge: "24",
     },
     {
+      key: "admin-transactions",
+      label: "Transactions",
+      to: ROUTES.adminTransactions,
+      icon: "wallet",
+      section: "Main",
+    },
+    {
+      key: "admin-wallet-transactions",
+      label: "Wallet Transactions",
+      to: ROUTES.adminWalletTransactions,
+      icon: "wallet",
+      section: "Main",
+    },
+    {
+      key: "admin-withdraw-requests",
+      label: "Withdraw Requests",
+      to: ROUTES.adminWithdrawRequests,
+      icon: "banknote-arrow-up",
+      section: "Main",
+    },
+    {
       key: "admin-salons",
       label: "Salons",
       to: ROUTES.adminSalons,
       icon: "store",
+      section: "Main",
+    },
+    {
+      key: "admin-chairs",
+      label: "Chairs",
+      to: ROUTES.adminChairs,
+      icon: "armchair",
       section: "Main",
     },
     {
@@ -244,10 +256,24 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "admin-service-pricing",
-      label: "Services & Pricing",
-      to: ROUTES.adminServicePricing,
-      icon: "palette",
+      key: "admin-loyalty-tiers",
+      label: "Loyalty Tiers",
+      to: ROUTES.adminLoyaltyTiers,
+      icon: "award",
+      section: "Main",
+    },
+    {
+      key: "admin-loyalty-transactions",
+      label: "Loyalty Transactions",
+      to: ROUTES.adminLoyaltyTransactions,
+      icon: "award",
+      section: "Main",
+    },
+    {
+      key: "admin-quiz",
+      label: "Quiz",
+      to: ROUTES.adminQuiz,
+      icon: "quiz",
       section: "Main",
     },
     {
@@ -258,33 +284,82 @@ export const MENU_CONFIG = {
       section: "Main",
     },
     {
-      key: "admin-analytics",
-      label: "Analytics",
-      icon: "analytics",
-      section: "Analytics",
-      disabled: true,
+      key: "admin-service-pricing",
+      label: "Services",
+      to: ROUTES.adminServicePricing,
+      icon: "scissors",
+      section: "Main",
+    },
+    {
+      key: "admin-nail-shapes",
+      label: "Nail Shapes",
+      to: ROUTES.adminNailShapes,
+      icon: "shapes",
+      section: "Main",
+    },
+    {
+      key: "admin-nail-surfaces",
+      label: "Nail Surfaces",
+      to: ROUTES.adminNailSurfaces,
+      icon: "layers",
+      section: "Main",
+    },
+    {
+      key: "admin-components",
+      label: "Components",
+      to: ROUTES.adminComponents,
+      icon: "puzzle",
+      section: "Main",
+    },
+    {
+      key: "admin-procedures",
+      label: "Procedures",
+      to: ROUTES.adminProcedures,
+      icon: "clipboard-list",
+      section: "Main",
+    },
+    {
+      key: "admin-category-types",
+      label: "Category Types",
+      to: ROUTES.adminCategoryTypes,
+      icon: "tags",
+      section: "Main",
+    },
+    {
+      key: "admin-categories",
+      label: "Categories",
+      to: ROUTES.adminCategories,
+      icon: "folder-tree",
+      section: "Main",
+    },
+    {
+      key: "admin-skill-types",
+      label: "Skill Types",
+      to: ROUTES.adminSkillTypes,
+      icon: "wand2",
+      section: "Main",
+    },
+
+    {
+      key: "admin-promotions",
+      label: "Promotions",
+      to: ROUTES.adminPromotions,
+      icon: "gift",
+      section: "Main",
     },
     {
       key: "admin-reviews",
       label: "Reviews",
+      to: ROUTES.adminBookingRatings,
       icon: "reviews",
       section: "Analytics",
-      disabled: true,
     },
     {
-      key: "admin-complaints",
-      label: "Complaints",
-      icon: "support",
-      section: "Support",
-      badge: "7",
-      disabled: true,
-    },
-    {
-      key: "admin-settings",
-      label: "Settings",
+      key: "admin-profile",
+      label: "Profile",
+      to: ROUTES.adminProfile,
       icon: "settings",
       section: "Support",
-      disabled: true,
     },
   ],
 };
@@ -293,17 +368,8 @@ export function getMenuConfig(role) {
   const menus = MENU_CONFIG[role] ?? [];
 
   return menus.map((item) => {
-    const badge = getMenuBadge(item.key, role);
-
-    if (badge === null) {
-      const menuItem = { ...item };
-      delete menuItem.badge;
-      return menuItem;
-    }
-
-    return {
-      ...item,
-      badge,
-    };
+    const menuItem = { ...item };
+    delete menuItem.badge;
+    return menuItem;
   });
 }

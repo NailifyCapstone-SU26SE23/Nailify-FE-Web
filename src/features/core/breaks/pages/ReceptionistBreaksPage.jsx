@@ -1,0 +1,502 @@
+import { useEffect, useState, useCallback } from "react";
+import { DatePicker, Spin, Select, Table, ConfigProvider } from "antd";
+import viVN from "antd/locale/vi_VN";
+import enUS from "antd/locale/en_US";
+import dayjs from "dayjs";
+import toast from "react-hot-toast";
+import {
+  CalendarDays,
+  Clock3,
+  Trash2,
+  RefreshCw,
+  UserRound,
+  X,
+  Eye,
+  CircleCheck,
+  CircleX
+} from "lucide-react";
+import { Pagination } from "../../../../shared/components/common/Pagination";
+import { EmptyState } from "../../../../shared/components/common/EmptyState";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import {
+  fetchBreaks,
+  deleteBreakRequest,
+  fetchNailArtists
+} from "../services/breakService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+
+export function ReceptionistBreaksPage() {
+  const [breaks, setBreaks] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isArtistsLoading, setIsArtistsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [metaData, setMetaData] = useState(null);
+  const { language } = useLanguage();
+
+  // Filters and Pagination
+  const [filterArtistId, setFilterArtistId] = useState(undefined);
+  const [filterDate, setFilterDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Modals state
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedBreak, setSelectedBreak] = useState(null);
+
+  const loadArtists = async () => {
+    try {
+      setIsArtistsLoading(true);
+      const artistsList = await fetchNailArtists();
+      setArtists(artistsList || []);
+    } catch (error) {
+      console.error("Failed to load artists:", error);
+    } finally {
+      setIsArtistsLoading(false);
+    }
+  };
+
+  const loadBreaks = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetchBreaks({
+        pageNumber: currentPage,
+        pageSize,
+        artistId: filterArtistId || undefined,
+        date: filterDate ? dayjs(filterDate).format('YYYY-MM-DD') : undefined,
+      });
+
+      if (response) {
+        setBreaks(response.items || []);
+        setMetaData(response.metaData || null);
+      }
+    } catch (error) {
+      console.error("Failed to load breaks:", error);
+      toast.error(error.message || (language === "vi" ? "Không tải được danh sách nghỉ phép." : "Failed to load breaks list."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, filterArtistId, filterDate, language]);
+
+  useEffect(() => {
+    loadArtists();
+  }, []);
+
+  useEffect(() => {
+    loadBreaks();
+  }, [loadBreaks]);
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setIsActionLoading(true);
+      await deleteBreakRequest(selectedBreak.nailArtistBreakId);
+      toast.success(language === "vi" ? "Hủy yêu cầu xin nghỉ phép thành công." : "Break request cancelled successfully.");
+      setIsDeleteOpen(false);
+      setSelectedBreak(null);
+      loadBreaks();
+    } catch (error) {
+      toast.error(error.message || (language === "vi" ? "Không thể hủy yêu cầu nghỉ phép." : "Failed to cancel break request."));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const openDeleteModal = (item) => {
+    setSelectedBreak(item);
+    setIsDeleteOpen(true);
+  };
+
+  const getArtistName = (artistId) => {
+    const artist = artists.find(a => String(a.id) === String(artistId));
+    return artist ? artist.name : (language === "vi" ? "Thợ Nail" : "Staff Artist");
+  };
+
+  const getStatusBadge = (status) => {
+    const s = String(status || "Pending").trim().toLowerCase();
+    switch (s) {
+      case "approved":
+      case "đã duyệt":
+      case "đồng ý":
+      case "active":
+        return (
+          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
+            {language === "vi" ? "Đã duyệt" : "Approved"}
+          </span>
+        );
+      case "rejected":
+      case "từ chối":
+      case "không đồng ý":
+        return (
+          <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 border border-rose-100">
+            {language === "vi" ? "Từ chối" : "Rejected"}
+          </span>
+        );
+      case "pending":
+      case "chờ duyệt":
+      default:
+        return (
+          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600 border border-amber-100">
+            {language === "vi" ? "Chờ duyệt" : "Pending"}
+          </span>
+        );
+    }
+  };
+
+  const columns = [
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thợ nail" : "Staff Artist"}</span>,
+      key: "artist",
+      sorter: (a, b) => getArtistName(a.nailArtistId).localeCompare(getArtistName(b.nailArtistId)),
+      render: (_, item) => (
+        <div className="flex items-center gap-2 px-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff2f6] text-[#ea4f93]">
+            <UserRound size={14} />
+          </div>
+          <span className="font-semibold text-[#3f2b3f]">
+            {getArtistName(item.nailArtistId)}
+          </span>
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Ngày nghỉ" : "Break Date"}</span>,
+      key: "date",
+      sorter: (a, b) => dayjs(a.breakDate).unix() - dayjs(b.breakDate).unix(),
+      render: (_, item) => <span className="px-2">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thời gian" : "Time Window"}</span>,
+      key: "time",
+      sorter: (a, b) => {
+        const timeA = a.startTime ? a.startTime.substring(0, 5) : "";
+        const timeB = b.startTime ? b.startTime.substring(0, 5) : "";
+        return timeA.localeCompare(timeB);
+      },
+      render: (_, item) => (
+        <div className="flex items-center gap-1.5 text-slate-700 px-2">
+          <Clock3 size={14} className="text-[#a88a9d]" />
+          <span>{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Lý do" : "Reason"}</span>,
+      key: "reason",
+      sorter: (a, b) => (a.reason || "").localeCompare(b.reason || ""),
+      render: (_, item) => (
+        <div className="max-w-xs truncate text-[var(--color-muted)] px-2" title={item.reason}>
+          {item.reason}
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Trạng thái" : "Status"}</span>,
+      key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+      render: (_, item) => <div className="px-2">{getStatusBadge(item.status)}</div>
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Lý do từ chối" : "Reject Reason"}</span>,
+      key: "rejectReason",
+      sorter: (a, b) => (a.rejectReason || "").localeCompare(b.rejectReason || ""),
+      render: (_, item) => (
+        <div className="text-xs text-rose-500 italic max-w-xs truncate px-2" title={item.rejectReason}>
+          {item.rejectReason || "-"}
+        </div>
+      )
+    },
+    {
+      title: <span className="uppercase font-semibold text-xs">{language === "vi" ? "Thao tác" : "Action"}</span>,
+      key: "action",
+      align: 'center',
+      render: (_, item) => (
+        <div className="flex justify-end px-2">
+          <ActionButtons
+            onView={() => {
+              setSelectedBreak(item);
+              setIsDetailOpen(true);
+            }}
+          // onDelete={() => openDeleteModal(item)}
+          />
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header section */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-[#3f2b3f]">{language === "vi" ? "Danh Sách Xin Nghỉ Phép" : "Staff Break Requests"}</h1>
+        <p className="mt-1 text-sm text-[#a88a9d]">
+          {language === "vi" ? "Xem danh sách lịch xin nghỉ phép giữa ca của thợ nail và thực hiện hủy yêu cầu nếu cần." : "View break schedule requests of Staff Artists and cancel request if needed."}
+        </p>
+      </div>
+
+      {/* Filter panel */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#f1e7ed] bg-white p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Artist Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Thợ nail:" : "Artist:"}</span>
+            <Select
+              allowClear
+              placeholder={language === "vi" ? "Tất cả thợ nail" : "All Staff Artists"}
+              loading={isArtistsLoading}
+              value={filterArtistId}
+              onChange={(value) => {
+                setFilterArtistId(value);
+                setCurrentPage(1);
+              }}
+              style={{ width: 200 }}
+              className="rounded-xl"
+            >
+              {artists.map((artist) => (
+                <Select.Option key={artist.id} value={artist.id}>
+                  {artist.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Ngày:" : "Date:"}</span>
+            <ConfigProvider locale={language === "vi" ? viVN : enUS}>
+              <DatePicker
+                value={filterDate ? dayjs(filterDate) : null}
+                onChange={(date, dateString) => {
+                  setFilterDate(dateString || "");
+                  setCurrentPage(1);
+                }}
+                className="rounded-xl border-[#f4c1d8]"
+                format="YYYY-MM-DD"
+              />
+            </ConfigProvider>
+          </div>
+
+          {/* Clear Filters */}
+          {(filterArtistId || filterDate) && (
+            <button
+              onClick={() => {
+                setFilterArtistId(undefined);
+                setFilterDate("");
+                setCurrentPage(1);
+              }}
+              className="rounded-full bg-slate-100 hover:bg-slate-200 px-3 py-1 text-xs font-semibold text-[#69708a] transition cursor-pointer"
+            >
+              {language === "vi" ? "Xóa lọc" : "Clear filters"}
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={loadBreaks}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition cursor-pointer"
+          title={language === "vi" ? "Tải lại dữ liệu" : "Reload data"}
+        >
+          <RefreshCw size={15} />
+        </button>
+      </div>
+
+      {/* Content area */}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Spin size="large" />
+        </div>
+      ) : breaks.length === 0 ? (
+        <EmptyState
+          title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ phép nào" : "No break requests found"}
+          description={language === "vi" ? "Không có dữ liệu lịch xin nghỉ phép phù hợp với bộ lọc hiện tại." : "No break requests match the current filters."}
+        />
+      ) : (
+        <div className="space-y-4">
+          {/* Table for desktop */}
+          <div className="hidden md:block">
+            <ConfigProvider
+              theme={{
+                components: {
+                  Table: {
+                    headerBg: "#fff8f2",
+                    headerColor: "#b38769",
+                  },
+                },
+              }}
+            >
+              <Table
+                dataSource={breaks}
+                columns={columns}
+                rowKey="nailArtistBreakId"
+                pagination={false}
+                className="rounded-lg border border-[#f4e4d7] bg-white overflow-hidden"
+              />
+            </ConfigProvider>
+          </div>
+
+          {/* List for mobile */}
+          <div className="grid gap-4 md:hidden">
+            {breaks.map((item) => (
+              <div
+                key={item.nailArtistBreakId}
+                className="rounded-lg border border-[#f4e4d7] bg-white p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff2f6] text-[#ea4f93]">
+                      <UserRound size={12} />
+                    </div>
+                    <span className="font-bold text-[#3f2b3f]">
+                      {getArtistName(item.nailArtistId)}
+                    </span>
+                  </div>
+                  {getStatusBadge(item.status)}
+                </div>
+                <div className="text-sm text-slate-600 space-y-1.5 border-t border-[#f7ebdf] pt-2">
+                  <div className="flex justify-between">
+                    <span className="text-[#a88a9d]">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
+                    <span className="font-semibold text-slate-800">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#a88a9d]">{language === "vi" ? "Thời gian:" : "Time Window:"}</span>
+                    <span className="font-semibold text-slate-800">{item.startTime?.substring(0, 5)} - {item.endTime?.substring(0, 5)}</span>
+                  </div>
+                  <p className="text-[var(--color-muted)]"><span className="font-semibold text-slate-700">{language === "vi" ? "Lý do:" : "Reason:"}</span> {item.reason}</p>
+                  {item.rejectReason && (
+                    <p className="text-xs text-rose-500 italic"><span className="font-semibold">{language === "vi" ? "Từ chối:" : "Rejected:"}</span> {item.rejectReason}</p>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-[#f7ebdf] flex justify-end">
+                  <ActionButtons
+                    onView={() => {
+                      setSelectedBreak(item);
+                      setIsDetailOpen(true);
+                    }}
+                  // onDelete={() => openDeleteModal(item)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {metaData && metaData.totalPages > 1 && (
+            <div className="flex justify-end pt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={metaData.totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      <ActionConfirmModal
+        open={isDeleteOpen}
+        intent="danger"
+        title={language === "vi" ? "Hủy yêu cầu xin nghỉ?" : "Cancel Break Request?"}
+        description={language === "vi" ? "Hành động này sẽ hủy bỏ yêu cầu xin nghỉ của thợ nail này và xóa vĩnh viễn khỏi cơ sở dữ liệu." : "This action will cancel this staff's break request and remove it from the database."}
+        confirmText={language === "vi" ? "Hủy yêu cầu" : "Cancel request"}
+        cancelText={language === "vi" ? "Bỏ qua" : "Go back"}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setIsDeleteOpen(false);
+          setSelectedBreak(null);
+        }}
+        loading={isActionLoading}
+        details={[
+          {
+            label: language === "vi" ? "Thợ nail" : "Staff Artist",
+            value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : ""
+          },
+          {
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : ""
+          },
+          {
+            label: language === "vi" ? "Thời gian" : "Time Window",
+            value: selectedBreak ? `${selectedBreak.startTime?.substring(0, 5)} - ${selectedBreak.endTime?.substring(0, 5)}` : ""
+          }
+        ]}
+      />
+
+      {/* Detail Modal */}
+      {isDetailOpen && selectedBreak && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2f1c2e]/45 px-4 py-6 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-[#f1cddd] bg-white shadow-[0_24px_60px_rgba(63,43,63,0.24)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
+              <div>
+                <h3 className="text-lg font-bold text-[#3f2b3f]">{language === "vi" ? "Chi tiết nghỉ phép" : "Break Request Details"}</h3>
+                <p className="mt-1 text-sm text-[#a88a9d]">{language === "vi" ? "Thông tin chi tiết về yêu cầu nghỉ." : "Detailed information about the break request."}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f2bfd4] bg-white text-[#ea4f93] transition hover:bg-[#fff5f8]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-5">
+              <div className="rounded-2xl border border-[#f7dfeb] bg-[#fff9fc] p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-semibold text-[#69708a]">{language === "vi" ? "Trạng thái:" : "Status:"}</span>
+                  {getStatusBadge(selectedBreak.status)}
+                </div>
+
+                <div className="space-y-3 text-sm text-[#3f2b3f]">
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thợ nail:" : "Staff Artist:"}</span>
+                    <span className="font-semibold">{getArtistName(selectedBreak.nailArtistId)}</span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Ngày nghỉ:" : "Break Date:"}</span>
+                    <span className="font-semibold">{dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")}</span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Thời gian:" : "Time:"}</span>
+                    <span className="font-semibold">{selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-1 border-b border-[#f7dfeb] pb-2">
+                    <span className="text-[#a88a9d] font-medium">{language === "vi" ? "Lý do:" : "Reason:"}</span>
+                    <p className="font-semibold whitespace-pre-wrap">{selectedBreak.reason || "-"}</p>
+                  </div>
+
+                  {selectedBreak.rejectReason && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-rose-500 font-medium">{language === "vi" ? "Lý do từ chối:" : "Rejection Reason:"}</span>
+                      <p className="font-semibold text-rose-600 whitespace-pre-wrap">{selectedBreak.rejectReason}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#f7dfeb] p-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailOpen(false);
+                  setSelectedBreak(null);
+                }}
+                className="w-full inline-flex h-11 items-center justify-center rounded-2xl bg-[#fff9fc] border border-[#f2bfd4] text-sm font-bold text-[#ea4f93] hover:bg-[#fff5f8] transition"
+              >
+                {language === "vi" ? "Đóng" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -73,23 +73,58 @@ function extractPaginationMeta(data, fallbackPageSize) {
   };
 }
 
+const MAX_BOOKING_PAGE_SIZE = 10;
+
+function normalizePageNumber(value) {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? Math.floor(parsedValue) : 1;
+}
+
+function normalizeBookingPageSize(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return MAX_BOOKING_PAGE_SIZE;
+  }
+
+  return Math.min(Math.floor(parsedValue), MAX_BOOKING_PAGE_SIZE);
+}
+
 export async function fetchReceptionistBookings(optionsOrDate) {
   const salonId = getSalonId();
   const isLegacyDateArg = typeof optionsOrDate === "string";
   const options = isLegacyDateArg ? { date: optionsOrDate } : optionsOrDate ?? {};
   const {
     date,
+    startDate,
+    endDate,
     includePagination = false,
     pageNumber,
     pageSize,
   } = options;
+  const normalizedPageNumber = normalizePageNumber(pageNumber ?? 1);
+  const normalizedPageSize = normalizeBookingPageSize(pageSize ?? MAX_BOOKING_PAGE_SIZE);
+
+  const queryParams = {
+    pageNumber: normalizedPageNumber,
+    pageSize: normalizedPageSize,
+  };
+
+  if (startDate) {
+    queryParams.startDate = startDate;
+  } else if (date) {
+    queryParams.startDate = date;
+  }
+
+  if (endDate) {
+    queryParams.endDate = endDate;
+  } else if (date) {
+    queryParams.endDate = date;
+  }
+
   const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
     headers: getAuthHeaders(),
-    params: {
-      ...(date ? { date } : {}),
-      ...(pageNumber ? { pageNumber } : {}),
-      ...(pageSize ? { pageSize } : {}),
-    },
+    params: queryParams,
   });
 
   const data = unwrapResponse(response, "Failed to load salon bookings.");
@@ -98,7 +133,7 @@ export async function fetchReceptionistBookings(optionsOrDate) {
   if (includePagination) {
     return {
       items,
-      pagination: extractPaginationMeta(data, pageSize),
+      pagination: extractPaginationMeta(data, normalizedPageSize),
     };
   }
 
@@ -111,6 +146,65 @@ export async function fetchReceptionistBookingDetail(bookingId) {
   });
 
   return unwrapResponse(response, "Failed to load booking detail.");
+}
+
+export async function fetchReceptionistBookingProcedures(bookingItemId) {
+  const normalizedBookingItemId = String(bookingItemId || "").trim();
+
+  if (!normalizedBookingItemId) {
+    throw new Error("Booking item ID is required.");
+  }
+
+  const response = await axiosClient.get(`/BookingProcedures/booking-item/${normalizedBookingItemId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load booking procedures.");
+}
+
+export async function fetchReceptionistProcedureAvailableArtists(bookingProcedureId) {
+  const normalizedBookingProcedureId = String(bookingProcedureId || "").trim();
+
+  if (!normalizedBookingProcedureId) {
+    throw new Error("Booking procedure ID is required.");
+  }
+
+  const response = await axiosClient.get(
+    `/BookingProcedures/${normalizedBookingProcedureId}/available-artists`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return unwrapResponse(response, "Failed to load available artists for this procedure.");
+}
+
+export async function updateReceptionistProcedureArtist(bookingProcedureId, artistId) {
+  const normalizedBookingProcedureId = String(bookingProcedureId || "").trim();
+  const normalizedArtistId = String(artistId || "").trim();
+
+  if (!normalizedBookingProcedureId) {
+    throw new Error("Booking procedure ID is required.");
+  }
+
+  if (!normalizedArtistId) {
+    throw new Error("Artist ID is required.");
+  }
+
+  const response = await axiosClient.put(
+    `/BookingProcedures/${normalizedBookingProcedureId}/status`,
+    null,
+    {
+      headers: getAuthHeaders(),
+      params: {
+        artistId: normalizedArtistId,
+        // status: "InProgress", //Pending
+        status: "Pending",
+      },
+    },
+  );
+
+  return unwrapResponse(response, "Failed to assign artist to procedure.");
 }
 
 export async function verifyReceptionistQrToken(qrToken) {
@@ -198,4 +292,173 @@ export async function manualCheckInReceptionistBooking(bookingId) {
   });
 
   return unwrapResponse(response, "Failed to check in booking.");
+}
+
+export async function checkoutReceptionistBooking(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const formData = new FormData();
+  formData.append("BookingId", normalizedBookingId);
+
+  const response = await axiosClient.post("/Bookings/check-out", formData, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to check out booking.");
+}
+
+export async function fetchAvailableArtistsForReceptionist(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  const response = await axiosClient.get(
+    `/Bookings/${normalizedBookingId}/available-artists-for-receptionist`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return unwrapResponse(response, "Failed to load available artists.");
+}
+
+export async function assignReceptionistArtistToBooking(bookingId, staffArtistId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  const normalizedStaffArtistId = String(staffArtistId || "").trim();
+
+  if (!normalizedBookingId) {
+    throw new Error("Booking ID is required.");
+  }
+
+  if (!normalizedStaffArtistId) {
+    throw new Error("Staff artist ID is required.");
+  }
+
+  const response = await axiosClient.post(
+    `/Bookings/${normalizedBookingId}/receptionist-assign-artist`,
+    {
+      staffArtistId: normalizedStaffArtistId,
+    },
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+
+  return unwrapResponse(response, "Failed to assign artist to booking.");
+}
+
+export async function getBookingHistories(bookingId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+  
+  const response = await axiosClient.get(`/BookingHistories/booking/${normalizedBookingId}?pageNumber=1&pageSize=100`, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapResponse(response, "Failed to load booking history.");
+}
+
+export async function getUserById(userId) {
+  const normalizedUserId = String(userId || "").trim();
+  if (!normalizedUserId) throw new Error("User ID is required.");
+  
+  const response = await axiosClient.get(`/Users/${normalizedUserId}`, {
+    headers: getAuthHeaders(),
+  });
+  return unwrapResponse(response, "Failed to load user info.");
+}
+
+export async function fetchSalonChairs(salonId) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/chairs`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load salon chairs.");
+}
+
+export async function fetchAvailableSalonChairs(salonId, params = {}) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/Salons/${normalizedSalonId}/available-chairs`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+
+  return unwrapResponse(response, "Failed to load available salon chairs.");
+}
+
+export async function fetchChairsStatus(salonId, atDate, atTime) {
+  const normalizedSalonId = String(salonId || "").trim();
+  if (!normalizedSalonId) throw new Error("Salon ID is required.");
+
+  const response = await axiosClient.get(`/salons/${normalizedSalonId}/chairs-status`, {
+    headers: getAuthHeaders(),
+    params: { atDate, atTime },
+  });
+
+  return unwrapResponse(response, "Failed to load salon chairs status.");
+}
+
+
+export async function assignChairToBooking(bookingId, chairId) {
+  const normalizedBookingId = String(bookingId || "").trim();
+  const normalizedChairId = String(chairId || "").trim();
+
+  if (!normalizedBookingId) throw new Error("Booking ID is required.");
+  if (!normalizedChairId) throw new Error("Chair ID is required.");
+
+  const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/assign-chair/${normalizedChairId}`, null, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to assign chair to booking.");
+}
+
+export async function fetchBookingRating(bookingId) {
+  const normalizedId = String(bookingId || "").trim();
+  if (!normalizedId) return null;
+
+  try {
+    const response = await axiosClient.get(`/BookingRatings/by-booking/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data?.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function fetchCustomersList(pageNumber = 1, pageSize = 1000) {
+  const response = await axiosClient.get(`/Users/customers`, {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+    }
+  });
+
+  return unwrapResponse(response, "Failed to load customers list.");
+}
+
+export async function updateReceptionistBooking(bookingId, payload) {
+  const normalizedId = String(bookingId || "").trim();
+  if (!normalizedId) throw new Error("Booking ID is required.");
+  
+  const response = await axiosClient.put(`/Bookings/${normalizedId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  
+  return unwrapResponse(response, "Failed to update booking.");
 }

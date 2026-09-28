@@ -1,37 +1,39 @@
+import { Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/core/auth/hooks/useAuth";
 import { Header } from "../../shared/components/common/Header";
 import { Sidebar } from "../../shared/components/common/Sidebar";
 import { getMenuConfig } from "../../shared/constants/menuConfig";
+import { useLanguage } from "../../shared/hooks/useLanguage";
 
-function getRoleLabel(role) {
+function getRoleLabel(role, t) {
   switch (role) {
     case "admin":
-      return "Super Admin";
+      return t("superAdmin");
     case "manager":
-      return "Salon Manager";
+      return t("salonManager");
     case "receptionist":
-      return "Receptionist";
+      return t("roleReceptionist");
     case "staff":
-      return "Nail Artist";
+      return t("nailArtist");
     default:
-      return "Workspace";
+      return t("workspace") || "Workspace";
   }
 }
 
-function getPortalLabel(role) {
+function getPortalLabel(role, t) {
   switch (role) {
     case "admin":
-      return "Admin Console";
+      return t("adminConsole");
     case "manager":
-      return "Manager Portal";
+      return t("managerPortal");
     case "receptionist":
-      return "Reception Desk";
+      return t("receptionDesk");
     case "staff":
-      return "Staff Workspace";
+      return t("staffWorkspace");
     default:
-      return "Nailify Portal";
+      return t("nailifyPortal");
   }
 }
 
@@ -44,8 +46,8 @@ function getUserInitials(name) {
     .join("");
 }
 
-function getTodayLabel() {
-  return new Intl.DateTimeFormat("en-US", {
+function getTodayLabel(language) {
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -65,7 +67,7 @@ function groupMenusBySection(menus) {
   }, {});
 }
 
-function getHeaderContent(pathname, menus) {
+function getHeaderContent(pathname, menus, t, language) {
   const currentMenu =
     menus.find((item) => item.to === pathname) ??
     menus.find(
@@ -74,8 +76,8 @@ function getHeaderContent(pathname, menus) {
 
   if (!currentMenu) {
     return {
-      title: "Dashboard",
-      description: "Monitor internal operations across the Nailify workspace.",
+      title: t("header.dashboard.title"),
+      description: t("header.dashboard.desc"),
     };
   }
 
@@ -85,33 +87,63 @@ function getHeaderContent(pathname, menus) {
     case "staff-bookings":
     case "receptionist-bookings":
       return {
-        title: "Booking Management",
-        description: "Monitor bookings across all Nailify salon locations.",
+        title: t("header.bookings.title"),
+        description: t("header.bookings.desc"),
       };
     case "admin-salons":
       return {
-        title: "Salon Management",
-        description: "Manage salons, branches, capacity, and operational status.",
+        title: t("header.salons.title"),
+        description: t("header.salons.desc"),
       };
     case "admin-staff":
       return {
-        title: "Staff Management",
-        description: "Manage staff profiles, assignments, performance, and availability.",
+        title: t("header.staff.title"),
+        description: t("header.staff.desc"),
       };
     case "admin-users":
       return {
-        title: "Users",
-        description: "Manage customers, staff artists, and salon managers.",
+        title: t("header.users.title"),
+        description: t("header.users.desc"),
+      };
+    case "admin-loyalty-tiers":
+      return {
+        title: t("header.loyaltyTiers.title"),
+        description: t("header.loyaltyTiers.desc"),
+      };
+    case "admin-quiz":
+      return {
+        title: t("header.quiz.title"),
+        description: t("header.quiz.desc"),
+      };
+    case "admin-quiz-create":
+      return {
+        title: t("header.quizCreate.title"),
+        description: t("header.quizCreate.desc"),
       };
     case "admin-service-pricing":
       return {
-        title: "Service & Pricing Management",
-        description: "Manage services, add-ons, prices, and estimated durations.",
+        title: t("header.servicePricing.title"),
+        description: t("header.servicePricing.desc"),
+      };
+    case "staff-tasks":
+      return {
+        title: t("header.tasks.title"),
+        description: t("header.tasks.desc"),
+      };
+    case "staff-profile":
+    case "receptionist-profile":
+    case "manager-profile":
+    case "admin-profile":
+      return {
+        title: t("header.profile.title"),
+        description: t("header.profile.desc"),
       };
     default:
       return {
         title: currentMenu.label,
-        description: `Manage ${currentMenu.label.toLowerCase()} across the Nailify workspace.`,
+        description: language === "vi"
+          ? `Quản lý ${currentMenu.label.toLowerCase()} trên hệ thống Nailify.`
+          : `Manage ${currentMenu.label.toLowerCase()} across the Nailify workspace.`,
       };
   }
 }
@@ -121,16 +153,26 @@ export function DashboardLayout() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { language, t } = useLanguage();
+
   const menus = getMenuConfig(user?.role);
-  const menuGroups = groupMenusBySection(menus);
+  const translatedMenus = menus.map((item) => ({
+    ...item,
+    label: t(`menus.${item.key}`) || item.label,
+  }));
+
+  const menuGroups = groupMenusBySection(translatedMenus);
   const profileName = user?.fullName ?? "Nailify User";
-  const profileRole = getRoleLabel(user?.role);
-  const portalLabel = getPortalLabel(user?.role);
-  const headerContent = getHeaderContent(location.pathname, menus);
+  const profileRole = getRoleLabel(user?.role, t);
+  const portalLabel = getPortalLabel(user?.role, t);
+  const headerContent = getHeaderContent(location.pathname, translatedMenus, t, language);
   const sidebarWidth = collapsed ? 80 : 200;
 
   useEffect(() => {
-    setMobileMenuOpen(false);
+    const handle = requestAnimationFrame(() => {
+      setMobileMenuOpen(false);
+    });
+    return () => cancelAnimationFrame(handle);
   }, [location.pathname]);
 
   return (
@@ -149,14 +191,19 @@ export function DashboardLayout() {
 
         <div className="flex min-h-0 flex-col">
           <Header
+            backButtonFallbackTo="/"
             title={headerContent.title}
             description={headerContent.description}
-            todayLabel={getTodayLabel()}
+            todayLabel={getTodayLabel(language)}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
             onLogout={logout}
           />
 
-          <section className="flex-1 bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 lg:min-h-0 lg:overflow-auto">
+          <section
+            data-dashboard-scroll="desktop"
+            className="flex-1 bg-[#fff9fb]
+    bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)] p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)] md:p-5 min-h-0 overflow-auto"
+          >
             <div className="flex min-h-full flex-col">
               <Outlet />
             </div>
@@ -164,16 +211,17 @@ export function DashboardLayout() {
         </div>
       </div>
 
-      <div className="flex h-full min-h-0 flex-col md:hidden">
-        <Header
-          title={headerContent.title}
-          description={headerContent.description}
-          todayLabel={getTodayLabel()}
-          onOpenMobileMenu={() => setMobileMenuOpen(true)}
-          onLogout={logout}
-        />
+      <div className="relative flex h-full min-h-0 flex-col md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          title="Open menu"
+          className="absolute left-4 top-4 z-40 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#f8c8db] bg-white/95 text-[#eb5a99] shadow-[0_12px_24px_rgba(235,90,153,0.12)] transition hover:bg-[#fff0f7]"
+        >
+          <Menu size={20} />
+        </button>
 
-        <section className="flex-1 overflow-auto bg-white p-4 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
+        <section className="flex-1 overflow-auto bg-white p-4 pt-16 shadow-[0_18px_40px_rgba(94,76,62,0.08)]">
           <div className="flex min-h-full flex-col">
             <Outlet />
           </div>
@@ -195,7 +243,7 @@ export function DashboardLayout() {
               menuGroups={menuGroups}
               onCloseMobile={() => setMobileMenuOpen(false)}
               onLogout={logout}
-              onToggleCollapse={() => {}}
+              onToggleCollapse={() => { }}
               portalLabel={portalLabel}
               profileName={profileName}
               profileRole={profileRole}

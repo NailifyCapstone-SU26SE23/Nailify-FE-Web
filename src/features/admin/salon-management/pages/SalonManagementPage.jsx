@@ -1,26 +1,36 @@
 import {
   BriefcaseBusiness,
-  CalendarClock,
+  Calendar,
   Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Eye,
   MapPin,
+  Moon,
   Pencil,
   Phone,
   Plus,
   Search,
   Sparkles,
   Star,
+  Sun,
+  Sunrise,
   Trash2,
   TrendingUp,
   UserRound,
   X,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
-import { Modal, Spin, Alert } from "antd";
+import AssignManagerModal from "../components/AssignManagerModal";
+import HolidayClosureModal from "../components/HolidayClosureModal";
+import SetOperatingHoursModal from "../components/SetOperatingHoursModal";
+import { Modal, Spin, Alert, Form, Select, DatePicker, TimePicker, Input, Tooltip, Table, Popover } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import {
@@ -29,63 +39,65 @@ import {
   getAdminSalonUpdateRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import {
-  LOW_OCCUPANCY_SALON,
-  SALON_MODAL_STYLES,
-  SALON_STATUS_FILTERS,
-  TOP_PERFORMING_SALON,
-  matchesSalonStatusFilter,
-} from "../services/mockSalon";
-import { fetchSalons, deleteSalon } from "../services/salonsService";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { fetchSalonsPaginated, deleteSalon, fetchSalonRatings } from "../services/salonsService";
+import { fetchSalonStaffCount } from "../services/salonManagementService";
+import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { useDebounce } from "../../../../shared/hooks/useDebounce";
 
-const SUMMARY_ICON_MAP = {
-  briefcase: BriefcaseBusiness,
-  check: Check,
-  sparkles: Sparkles,
-  trendingUp: TrendingUp,
+const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
+)}`;
+
+const PINK_BUTTON_STYLE = { backgroundColor: "#ea4f93", borderColor: "#ea4f93" };
+
+function PremiumCard({ className = "", children, noHover = false }) {
+  return (
+    <article
+      className={`relative overflow-hidden rounded-lg border border-[#f5e2ec] bg-white p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_20px_45px_rgba(226,93,143,0.06)]" : ""} ${className}`}
+    >
+      {children}
+    </article>
+  );
+}
+
+PremiumCard.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.node,
+  noHover: PropTypes.bool,
 };
 
-function StatCard({ item }) {
-  const Icon = SUMMARY_ICON_MAP[item.icon] ?? BriefcaseBusiness;
-
+function SectionHeading({ title, subtitle }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br ${item.accent} p-4 shadow-[0_18px_35px_rgba(226,93,143,0.08)]`}
-    >
-      <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div
-        className={`mb-4 flex h-8 w-8 items-center justify-center rounded-lg ${item.iconBg}`}
-      >
-        <Icon size={16} strokeWidth={2.2} />
-      </div>
-      <p className="text-[30px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[12px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-semibold ${item.noteColor}`}>{item.note}</p>
+    <div>
+      <h2 className="text-2xl font-bold text-[#3f2034]">{title}</h2>
+      {subtitle ? <p className="mt-1 text-xs text-[#a6869a] leading-relaxed">{subtitle}</p> : null}
     </div>
   );
 }
 
-StatCard.propTypes = {
-  item: PropTypes.shape({
-    accent: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    iconBg: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteColor: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
+SectionHeading.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
 };
 
-function ProgressRow({ label, value, tone = "bg-rose-500" }) {
+
+
+function ProgressRow({ label, value, tone = "bg-[#ea4f93]" }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
         <span>{label}</span>
         <span className="text-[11px] text-slate-500">{value}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-rose-100">
-        <div className={`h-1.5 rounded-full ${tone}`} style={{ width: value }} />
+      <div className="h-2 w-full rounded-full bg-[#f5e2ec]">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: value }}
+          transition={{ delay: 0.3, duration: 1, ease: "easeOut" }}
+          className={`h-full rounded-full ${tone}`}
+        />
       </div>
     </div>
   );
@@ -97,35 +109,48 @@ ProgressRow.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function RightMetricCard({ title, branch, city, concern, values, buttonLabel }) {
+function RightMetricCard({ title, branch, city, concern, values, buttonLabel, index }) {
   return (
-    <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-      <div className="mb-3 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-        <Sparkles size={14} className="text-rose-500" />
-        <span>{title}</span>
-      </div>
-      <div className="mb-4 flex gap-3">
-        <img src={values.image} alt={branch} className="h-12 w-14 rounded-xl object-cover" />
-        <div className="space-y-0.5">
-          <p className="text-[12px] font-bold text-slate-800">{branch}</p>
-          <p className="text-[11px] font-semibold text-slate-400">{city}</p>
-          <p className={`text-[11px] font-bold ${concern.color}`}>{concern.text}</p>
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: (index || 0) * 0.15, type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ scale: 1.02, y: -2 }}
+    >
+      <PremiumCard className="p-4">
+        <div className="mb-3 flex items-center gap-2 text-[11px] font-bold text-[#2d1b35]">
+          <Sparkles size={14} className="text-[#ea4f93]" />
+          <span>{title}</span>
         </div>
-      </div>
-      <div className="space-y-3">
-        <ProgressRow label="Occupancy Rate" value={values.occupancy} tone="bg-rose-500" />
-        <ProgressRow label="Monthly Revenue" value={values.revenue} tone="bg-rose-500" />
-        <ProgressRow label="Staff Utilization" value={values.utilization} tone="bg-rose-500" />
-      </div>
-      {buttonLabel ? (
-        <button
-          type="button"
-          className="mt-4 w-full rounded-full border border-rose-200 px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-        >
-          {buttonLabel}
-        </button>
-      ) : null}
-    </div>
+        <div className="mb-4 flex gap-3">
+          <img
+            crossOrigin="anonymous"
+            src={values.image}
+            alt={branch}
+            className="h-12 w-14 shrink-0 rounded-[12px] object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="min-w-0 space-y-0.5">
+            <p className="truncate text-[13px] font-bold text-[#2d1b35]">{branch}</p>
+            <p className="truncate text-[11px] font-semibold text-[#a88a9f]">{city}</p>
+            <p className={`truncate text-[11px] font-bold ${concern.color}`}>{concern.text}</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <ProgressRow label="Occupancy Rate" value={values.occupancy} tone="bg-[#ea4f93]" />
+          <ProgressRow label="Monthly Revenue" value={values.revenue} tone="bg-[#ea4f93]" />
+          <ProgressRow label="Staff Utilization" value={values.utilization} tone="bg-[#ea4f93]" />
+        </div>
+        {buttonLabel ? (
+          <button
+            type="button"
+            className="mt-4 w-full rounded-full border border-[#f0b7cf] bg-white px-3 py-1.5 text-[11px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb]"
+          >
+            {buttonLabel}
+          </button>
+        ) : null}
+      </PremiumCard>
+    </motion.div>
   );
 }
 
@@ -144,59 +169,133 @@ RightMetricCard.propTypes = {
     revenue: PropTypes.string.isRequired,
     utilization: PropTypes.string.isRequired,
   }).isRequired,
+  index: PropTypes.number,
 };
 
 function BranchCard({ branch, onClick }) {
+  const { t, language } = useLanguage();
+  const [ratingData, setRatingData] = useState({ rating: branch.rating, reviews: branch.reviews });
+
+  useEffect(() => {
+    let isMounted = true;
+    const getRatings = async () => {
+      try {
+        const ratings = await fetchSalonRatings(branch.id);
+        if (isMounted) {
+          if (ratings && ratings.length > 0) {
+            const sum = ratings.reduce((acc, curr) => acc + curr.overallScore, 0);
+            const avg = (sum / ratings.length).toFixed(1);
+            setRatingData({ rating: avg, reviews: ratings.length });
+          } else {
+            setRatingData({ rating: "0.0", reviews: "0" });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load rating for branch:", branch.id);
+      }
+    };
+    getRatings();
+    return () => { isMounted = false; };
+  }, [branch.id]);
+
+  const displayStatus = branch.status.toLowerCase() === "open"
+    ? (language === "vi" ? "Mở cửa" : "Open")
+    : (language === "vi" ? "Đóng cửa" : "Closed");
+
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="overflow-hidden rounded-2xl border border-rose-100 bg-white text-left shadow-[0_18px_32px_rgba(226,93,143,0.08)] transition hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_24px_40px_rgba(226,93,143,0.14)]"
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="group relative flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-[#f5e2ec] bg-white text-left shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all"
     >
-      <img src={branch.image} alt={branch.name} className="h-36 w-full object-cover" />
-      <div className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[15px] font-bold text-slate-800">{branch.name}</p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
-              #{branch.id}
-            </p>
-          </div>
-          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${branch.statusTone}`}>
-            {branch.status}
+      <div className="relative h-44 w-full shrink-0">
+        <img
+          crossOrigin="anonymous"
+          src={branch.image}
+          alt={branch.name}
+          className="h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute right-4 top-4 z-10">
+          <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md ${branch.statusColor}`}>
+            {displayStatus}
           </span>
         </div>
-        <div className="space-y-1.5 text-[11px] text-slate-500">
-          <div className="flex items-center gap-2">
-            <MapPin size={12} className="text-rose-400" />
-            <span>{branch.address}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <UserRound size={12} className="text-rose-400" />
-            <span>Manager: {branch.manager}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone size={12} className="text-rose-400" />
-            <span>{branch.phone}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock3 size={12} className="text-rose-400" />
-            <span>{branch.schedule}</span>
+      </div>
+      <div className="flex flex-1 flex-col space-y-4 p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-[16px] font-bold text-[#2d1b35]">{branch.name}</p>
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-rose-50 pt-3">
-          <div className="flex items-center gap-1 text-amber-400">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Star key={`${branch.id}-${index}`} size={12} fill="currentColor" strokeWidth={0} />
-            ))}
+        <div className="space-y-3 text-[13px] text-[#5b4256]">
+          <div className="flex items-center gap-2">
+            <MapPin size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{t("adminSalonManagement.address1")} {branch.address}</span>
           </div>
-          <p className="text-[11px] font-semibold text-slate-400">
-            <span className="font-bold text-slate-700">{branch.rating}</span> ({branch.reviews}{" "}
-            reviews)
+          <div className="flex items-center gap-2">
+            <UserRound size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{t("adminSalonManagement.manager1")} {branch.manager}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone size={16} className="shrink-0 text-[#ea4f93]" />
+            <span className="truncate">{t("adminSalonManagement.phone")} {branch.phone}</span>
+          </div>
+          <Popover
+            content={
+              <div className="flex flex-col gap-1.5 text-xs w-48">
+                {branch.operatingHours && branch.operatingHours.length > 0 ? [...branch.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                  <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                    <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                    <span className="text-[#a88a9f]">
+                      {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                    </span>
+                  </div>
+                )) : (
+                  <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                )}
+              </div>
+            }
+            title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+            trigger="hover"
+            placement="bottomLeft"
+          >
+            <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+              <Clock size={16} className="shrink-0 text-[#ea4f93]" />
+              <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+              <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                {(() => {
+                  const today = new Date().getDay();
+                  const todayHours = branch.operatingHours?.find(h => h.dayOfWeek === today);
+                  if (todayHours) {
+                    return todayHours.isClosed
+                      ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                      : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                  }
+                  return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                })()}
+              </span>
+            </div>
+          </Popover>
+        </div>
+        <div className="mt-auto flex items-center justify-between border-t border-[#f5e2ec] pt-4">
+          <div className="flex items-center gap-1 text-[#f59e0b]">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const isFilled = i < Math.round(Number(ratingData.rating));
+              return (
+                <Star key={`${branch.id}-${i}`} size={16} fill={isFilled ? "currentColor" : "none"} strokeWidth={isFilled ? 0 : 1.5} color={isFilled ? "transparent" : "currentColor"} />
+              );
+            })}
+          </div>
+          <p className="text-[12px] font-semibold text-[#a88a9f]">
+            <span className="font-bold text-[#2d1b35]">{ratingData.rating}</span> ({ratingData.reviews} {language === "vi" ? "đánh giá" : "reviews"})
           </p>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -210,22 +309,24 @@ BranchCard.propTypes = {
     phone: PropTypes.string.isRequired,
     rating: PropTypes.string.isRequired,
     reviews: PropTypes.string.isRequired,
-    schedule: PropTypes.string.isRequired,
+    hours: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
-    statusTone: PropTypes.string.isRequired,
+    statusColor: PropTypes.string.isRequired,
   }).isRequired,
   onClick: PropTypes.func.isRequired,
 };
 
 function SmallActionButton({ children, className = "", onClick, type = "button" }) {
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
       type={type}
       onClick={onClick}
-      className={`inline-flex items-center justify-center rounded-full border border-rose-200 bg-white px-3 py-2 text-[9px] font-bold uppercase tracking-[0.08em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
+      className={`inline-flex items-center justify-center rounded-full border border-[#f0b7cf] bg-white px-4 py-2 text-[11px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] ${className}`.trim()}
     >
       {children}
-    </button>
+    </motion.button>
   );
 }
 
@@ -236,38 +337,46 @@ SmallActionButton.propTypes = {
   type: PropTypes.string,
 };
 
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
-      aria-label="Close modal"
-    >
-      <X size={14} />
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
-};
-
 function mapApiSalonToUiFormat(apiSalon) {
-  console.log("Mapping API salon:", apiSalon);
-  const status = apiSalon.status || "Active";
-  
+  // Map API status values to our internal statuses
+  const apiStatus = (apiSalon.status || "Open").toLowerCase();
+
+  let internalStatus = "Open";
+  let statusColor = "bg-[#e6fdf0] text-[#16975f]";
+  let statusTone = "bg-[#e6fdf0] text-[#16975f]";
+
+  if (apiStatus === "closed") {
+    internalStatus = "Closed";
+    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
+    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
+  } else if (apiStatus === "busy") {
+    internalStatus = "Open";
+  } else if (apiStatus === "open") {
+    internalStatus = "Open";
+  } else {
+    internalStatus = "Closed";
+    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
+    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
+  }
+
+
+  const uniqueOperatingHours = Array.isArray(apiSalon.operatingHours)
+    ? Array.from(new Map(apiSalon.operatingHours.map(h => [h.dayOfWeek, h])).values())
+    : [];
+
   return {
     id: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
     salonId: (apiSalon.salonId || apiSalon.id || "").toString().trim(),
-    name: apiSalon.salonName || apiSalon.name || "Unknown Salon",
-    address: apiSalon.address || "No address",
-    manager: apiSalon.managerName || apiSalon.manager || "Unassigned",
-    phone: apiSalon.phone || "No phone",
-    image: apiSalon.imageUrl || apiSalon.image || "https://placehold.co/400x200/eb5b92/ffffff?text=Salon",
-    status: status,
-    statusColor: "bg-[#e6fdf0] text-[#16975f]",
-    statusTone: "bg-[#e6fdf0] text-[#16975f]",
+    name: apiSalon.salonName || apiSalon.name,
+    address: apiSalon.address,
+    manager: apiSalon.managerName || apiSalon.manager,
+    phone: apiSalon.phone,
+    operatingHours: uniqueOperatingHours,
+    imageUrl: apiSalon.imageUrl || apiSalon.image || "",
+    image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
+    status: internalStatus,
+    statusColor: statusColor,
+    statusTone: statusTone,
     staff: apiSalon.staffAmount || 0,
     hours: "9AM - 9PM",
     schedule: "9AM - 9PM",
@@ -275,6 +384,36 @@ function mapApiSalonToUiFormat(apiSalon) {
     reviews: "128",
   };
 }
+
+// Time slot configuration
+const TIME_SLOTS = {
+  morning: {
+    label: "Morning",
+    icon: Sunrise,
+    slots: [
+      "07:00 - 07:30", "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00",
+      "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "10:30 - 11:00",
+      "11:00 - 11:30", "11:30 - 12:00"
+    ]
+  },
+  afternoon: {
+    label: "Afternoon",
+    icon: Sun,
+    slots: [
+      "12:00 - 12:30", "12:30 - 13:00", "13:00 - 13:30", "13:30 - 14:00",
+      "14:00 - 14:30", "14:30 - 15:00", "15:00 - 15:30", "15:30 - 16:00",
+      "16:00 - 16:30", "16:30 - 17:00"
+    ]
+  },
+  evening: {
+    label: "Evening",
+    icon: Moon,
+    slots: [
+      "17:00 - 17:30", "17:30 - 18:00", "18:00 - 18:30", "18:30 - 19:00",
+      "19:00 - 19:30", "19:30 - 20:00", "20:00 - 20:30", "20:30 - 21:00"
+    ]
+  }
+};
 
 export function SalonManagementPage() {
   const location = useLocation();
@@ -285,68 +424,184 @@ export function SalonManagementPage() {
   const [showSetHoursModal, setShowSetHoursModal] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState("All");
-  const [branchOverviewStart, setBranchOverviewStart] = useState(0);
+  const [pageIndex, setPageIndex] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadMore, setIsLoadMore] = useState(false);
+  const { t, language } = useLanguage();
   const [salonsRefreshKey, setSalonsRefreshKey] = useState(0);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
   const [salons, setSalons] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [selectedSlots, setSelectedSlots] = useState({
+    morning: TIME_SLOTS.morning.slots,
+    afternoon: TIME_SLOTS.afternoon.slots,
+    evening: TIME_SLOTS.evening.slots,
+  });
+  const [activePeriod, setActivePeriod] = useState(null);
+  const [selectedSalonId, setSelectedSalonId] = useState(null);
+  // Assign Manager Modal state
+  const [assignManagerForm, setAssignManagerForm] = useState({ salonId: "", managerId: "" });
+  const [managers, setManagers] = useState([]);
+  const [isManagersLoading, setIsManagersLoading] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  // Notification Modal state
+  const [notificationModal, setNotificationModal] = useState({ open: false, success: false, title: "", message: "" });
+  const CARD_WIDTH = 340;
+  const GAP = 24;
+  const SALONS_PER_PAGE = 3;
+  const BRANCH_CONTROLS_PER_PAGE = 5;
+  const loadSalons = async (page = 1, search = "", status = statusFilter) => {
+    if (page === 1) setIsLoading(true);
+    else setIsLoadMore(true);
+    setError("");
+
+    try {
+      const data = await fetchSalonsPaginated({
+        pageNumber: page,
+        pageSize: 6,
+        name: search.trim() || undefined,
+        status: status !== "All" ? status : undefined
+      });
+      console.log("data", data);
+      const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
+
+      if (page === 1) {
+        setSalons(newItems);
+      } else {
+        setSalons(prev => [...prev, ...newItems]);
+      }
+
+      setHasMore(data?.metaData?.hasNext || false);
+      setPageIndex(page);
+    } catch (err) {
+      console.error("Failed to load salons:", err);
+      toast.error(err.message || "Failed to load salons.");
+    } finally {
+      setIsLoading(false);
+      setIsLoadMore(false);
+    }
+  };
+
+  const enrichedSalons = useMemo(() => {
+    return salons.map(salon => {
+      const salonManagers = managers.filter(m => String(m.salonId || "").toLowerCase() === String(salon.salonId || "").toLowerCase());
+      const managerNames = salonManagers.map(m => `${m.lastName} ${m.firstName}`.trim()).join(", ");
+      
+      return {
+        ...salon,
+        manager: managerNames || salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
+      };
+    });
+  }, [salons, managers, language]);
 
   useEffect(() => {
-    const loadSalons = async () => {
-      setIsLoading(true);
-      setError("");
+    const loadInitialDeps = async () => {
       try {
-        const apiSalons = await fetchSalons();
-        const uiSalons = apiSalons.map(mapApiSalonToUiFormat);
-        setSalons(uiSalons);
+        const managersData = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
+        setManagers(managersData.items);
       } catch (err) {
-        console.error("Failed to load salons:", err);
-        setError(err.message || "Failed to load salons. Please try again.");
-      } finally {
-        setIsLoading(false);
+        console.error("Failed to load managers:", err);
       }
     };
-
-    loadSalons();
-  }, [salonsRefreshKey]);
+    loadInitialDeps();
+  }, []);
 
   useEffect(() => {
-    if (!location.state?.flashMessage) {
-      return;
+    loadSalons(1, debouncedSearchTerm, statusFilter);
+  }, [debouncedSearchTerm, statusFilter, salonsRefreshKey]);
+
+  useEffect(() => {
+    if (location.state?.flashMessage) {
+      toast.success(location.state.flashMessage, { id: "salon-flash-msg" });
+      navigate(location.pathname, { replace: true, state: {} });
     }
+  }, [location.pathname, location.state?.flashMessage, navigate]);
 
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
-
-  const filteredSalons = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    return salons.filter((salon) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        [salon.name, salon.address, salon.manager]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
-      const matchesStatus = matchesSalonStatusFilter(salon.status, statusFilter);
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [salons, searchTerm, statusFilter]);
-
-  const visibleBranchSalons = useMemo(
-    () => filteredSalons.slice(branchOverviewStart, branchOverviewStart + 3),
-    [branchOverviewStart, filteredSalons],
-  );
-
-  const canGoToPreviousBranchSet = branchOverviewStart > 0;
-  const canGoToNextBranchSet = branchOverviewStart + 3 < filteredSalons.length;
-
+  // Load managers when assign manager modal opens
   useEffect(() => {
-    setBranchOverviewStart(0);
-  }, [searchTerm, statusFilter]);
+    if (showAssignManagerModal) {
+      const loadManagers = async () => {
+        setIsManagersLoading(true);
+        try {
+          const result = await fetchAdminUsers({ role: "Manager", pageSize: 1000 });
+          setManagers(result.items);
+        } catch (err) {
+          console.error("Failed to load managers:", err);
+        } finally {
+          setIsManagersLoading(false);
+        }
+      };
+      loadManagers();
+    }
+  }, [showAssignManagerModal]);
+
+  // Handle opening assign manager
+  const handleAssignManager = async (formData) => {
+    const { managerId, salonId } = formData || assignManagerForm;
+    console.log("handleAssignManager called with:", { managerId, salonId });
+
+    // Find the selected salon and manager names for the notification
+    const selectedSalon = filteredSalons.find(s => s.id === salonId);
+    const selectedManager = managers.find(m => m.id === managerId);
+
+    setIsAssigning(true);
+    try {
+      // First fetch the current raw user data
+      const rawUser = await fetchRawAdminUserDetail(managerId);
+      console.log("Raw user data:", rawUser);
+
+      // Send all user data plus updated salonId
+      await updateAdminUser(managerId, {
+        ...rawUser,
+        salonId: salonId
+      });
+
+      // Show success notification
+      setNotificationModal({
+        open: true,
+        success: true,
+        title: "Manager Assigned Successfully",
+        message: `${selectedManager?.name || "Manager"} has been assigned to ${selectedSalon?.name || "Salon"} successfully!`
+      });
+
+      setSalonsRefreshKey(current => current + 1);
+      setShowAssignManagerModal(false);
+      setAssignManagerForm({ salonId: "", managerId: "" });
+    } catch (err) {
+      console.error("Failed to assign manager:", err);
+      // Try to get the actual error message from the API response
+      const apiErrorMessage = err?.response?.data?.message || err.message;
+
+      // Show error notification instead of just setting error state
+      setNotificationModal({
+        open: true,
+        success: false,
+        title: "Failed to Assign Manager",
+        message: apiErrorMessage
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("All");
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !isLoadMore) {
+      loadSalons(pageIndex + 1, debouncedSearchTerm, statusFilter);
+    }
+  };
 
   const handleViewSalon = (salon) => {
     navigate(getAdminSalonDetailRoute(salon.id));
@@ -359,6 +614,20 @@ export function SalonManagementPage() {
   const handleDeleteSalon = (salon) => {
     setSelectedSalon(salon);
     setShowDeleteModal(true);
+  };
+
+  const handleToggleSlot = (period, slot) => {
+    setSelectedSlots(prev => {
+      const currentSlots = prev[period];
+      const isSelected = currentSlots.includes(slot);
+
+      return {
+        ...prev,
+        [period]: isSelected
+          ? currentSlots.filter(s => s !== slot)
+          : [...currentSlots, slot]
+      };
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -377,314 +646,228 @@ export function SalonManagementPage() {
     }
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("All");
-    setBranchOverviewStart(0);
-  };
+
 
   const getSalonActionItems = (salon) => [
     {
       key: "view",
-      label: "View Salon",
+      label: t("adminSalonManagement.viewSalon"),
       icon: Eye,
       onSelect: () => handleViewSalon(salon),
     },
     {
       key: "edit",
-      label: "Edit Salon",
+      label: t("adminSalonManagement.editSalon"),
       icon: Pencil,
       onSelect: () => handleUpdateSalon(salon),
     },
-    {
-      key: "delete",
-      label: "Delete Salon",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () => handleDeleteSalon(salon),
-    },
+    ...(salon?.status === "Active"
+      ? [
+        {
+          key: "delete",
+          label: t("adminSalonManagement.deleteSalon"),
+          icon: Trash2,
+          className: "text-[#d14c84]",
+          onSelect: () => handleDeleteSalon(salon),
+        },
+      ]
+      : []),
   ];
 
+  const salonOptions = useMemo(
+    () => salons.map((salon) => ({ value: salon.id, label: salon.name })),
+    [salons],
+  );
+
+  const salonOptionsWithAddress = useMemo(
+    () => salons.map((salon) => ({ value: salon.id, label: `${salon.name} - ${salon.address}` })),
+    [salons],
+  );
+
   const salonSummary = useMemo(() => {
+    const isVi = language === "vi";
     return [
       {
-        accent: "from-[#fdf2f7] to-[#fff]",
-        icon: "briefcase",
-        iconBg: "bg-rose-100",
-        label: "Total Branches",
-        note: "+2 this quarter",
-        noteColor: "text-emerald-500",
-        title: salons.length.toString(),
+        label: t("adminDashboard.widgets.totalBranches") || "Total Branches",
+        value: salons.length.toString(),
+        unit: "",
+        note: isVi ? "+2 quý này" : "+2 this quarter",
+        icon: BriefcaseBusiness,
+        color: "#ea4f93",
       },
       {
-        accent: "from-[#fdf7f2] to-[#fff]",
-        icon: "check",
-        iconBg: "bg-amber-100",
-        label: "Active Salons",
+        label: isVi ? "Chi nhánh hoạt động" : "Open Salons",
+        value: salons.filter((s) => s.status === "Open").length.toString(),
+        unit: "",
         note: "98% uptime",
-        noteColor: "text-emerald-500",
-        title: salons.filter((s) => s.status === "Active").length.toString(),
+        icon: Check,
+        color: "#f59e0b",
       },
       {
-        accent: "from-[#f2fdf6] to-[#fff]",
-        icon: "sparkles",
-        iconBg: "bg-emerald-100",
-        label: "Avg. Rating",
-        note: "+0.2 vs last month",
-        noteColor: "text-emerald-500",
-        title: "4.8",
+        label: isVi ? "Đánh giá trung bình" : "Avg Rating",
+        value: "4.8",
+        unit: "/ 5.0",
+        note: isVi ? "+0.2 so với tháng trước" : "+0.2 vs last month",
+        icon: Sparkles,
+        color: "#10b981",
       },
       {
-        accent: "from-[#f5f2fd] to-[#fff]",
-        icon: "trendingUp",
-        iconBg: "bg-violet-100",
-        label: "Total Staff",
-        note: "+12 new hires",
-        noteColor: "text-emerald-500",
-        title: salons.reduce((sum, s) => sum + (parseInt(s.staff) || 0), 0).toString(),
+        label: isVi ? "Tổng số nhân viên" : "Total Staff",
+        value: salons.reduce((sum, s) => sum + (parseInt(s.staff) || 0), 0).toString(),
+        unit: "",
+        note: isVi ? "+12 tuyển mới" : "+12 new hires",
+        icon: TrendingUp,
+        color: "#6366f1",
       },
     ];
-  }, [salons]);
+  }, [salons, t, language]);
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      },
+    },
+  };
 
   return (
-    <section className="mx-auto max-w-[1300px] text-slate-700">
-      {flashMessage ? (
-        <div className="mb-4 rounded-[20px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f] sm:mb-5 sm:px-5 sm:py-4">
-          {flashMessage}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="mb-4">
-          <Alert
-            message="Error Loading Salons"
-            description={error}
-            type="error"
-            showIcon
-          />
-        </div>
-      ) : null}
+    <section className="w-full text-slate-700">
+      {/*  */}
 
       {isLoading ? (
-        <div className="mb-5 flex min-h-[200px] items-center justify-center">
+        <div className="mb-8 flex min-h-[200px] items-center justify-center">
           <Spin size="large" />
         </div>
       ) : (
-        <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {salonSummary.map((item) => (
-            <StatCard key={item.label} item={item} />
-          ))}
-        </section>
+        <div className="mb-8">
+          <TopMetricsRow metrics={salonSummary} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
+        </div>
       )}
 
       {!isLoading ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
-
-          {/* ── Left column ── */}
-          <div className="space-y-5">
-
-            {/* Branch Overview */}
-            <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-[16px] font-black text-slate-800">Branch Overview</h2>
-                  <p className="text-[11px] font-medium text-slate-400">
-                    Snapshot cards for the branches matching your current filters
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em]">
-                    {SALON_STATUS_FILTERS.map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setStatusFilter(tab)}
-                        className={`rounded-full px-3 py-1.5 ${
-                          statusFilter === tab
-                            ? "bg-rose-500 text-white"
-                            : "bg-[#fff2f6] text-slate-400 hover:bg-rose-100"
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-                  {filteredSalons.length > 3 ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBranchOverviewStart((current) => Math.max(current - 3, 0))
-                        }
-                        disabled={!canGoToPreviousBranchSet}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Previous salons"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBranchOverviewStart((current) =>
-                            Math.min(current + 3, Math.max(filteredSalons.length - 3, 0)),
-                          )
-                        }
-                        disabled={!canGoToNextBranchSet}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Next salons"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  ) : null}
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="space-y-6">
+          <PremiumCard className="p-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
+                <SectionHeading
+                  title={t("adminSalonManagement.branchOverview")}
+                  subtitle={t("adminSalonManagement.snapshotCardsForTheBranchesMat")}
+                />
+                <div className="flex items-center gap-3">
+                  <Link
+                    to={ROUTES.adminSalonsCreate}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] px-6 py-3 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition-all duration-300 hover:opacity-90"
+                  >
+                    <Plus size={20} />
+                    {t("adminSalonManagement.addSalon")}
+                  </Link>
                 </div>
               </div>
-              {filteredSalons.length > 0 ? (
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {visibleBranchSalons.map((branch) => (
-                    <BranchCard
-                      key={branch.id}
-                      branch={branch}
-                      onClick={() => handleViewSalon(branch)}
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between bg-slate-50/50 rounded-2xl p-4 border border-slate-100/60">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                  <Select
+                    value={statusFilter}
+                    onChange={(value) => {
+                      setStatusFilter(value);
+                    }}
+                    className="w-full sm:w-[150px] min-w-[150px] custom-select"
+                    style={{ height: "46px" }}
+                    options={[
+                      { value: "All", label: language === "vi" ? "Tất cả" : "All" },
+                      { value: "Open", label: language === "vi" ? "Mở cửa" : "Open" },
+                      { value: "Closed", label: language === "vi" ? "Đóng cửa" : "Closed" },
+                    ]}
+                  />
+                  <div className="flex flex-1 sm:flex-none items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-inner shadow-slate-50 sm:w-[340px] focus-within:border-[#ea4f93] focus-within:ring-2 focus-within:ring-[#ea4f93]/20 transition-all">
+                    <Search size={18} className="text-[#a88a9f]" />
+                    <input
+                      type="text"
+                      placeholder={t("adminSalonManagement.searchSalons")}
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className="w-full bg-transparent text-[13px] text-[#2d1b35] outline-none placeholder:text-[#a88a9f]"
                     />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-rose-200 bg-white px-6 py-10 text-center">
-                  <p className="text-[14px] font-bold text-slate-700">No branches matched your filters</p>
-                  <p className="mt-1 text-[11px] font-medium text-slate-400">
-                    Try a different keyword or switch the status tab.
-                  </p>
-                </div>
-              )}
-            </section>
-
-            {/* Branch Controls */}
-            <section className="rounded-[28px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-[16px] font-black text-slate-800">Branch Controls</h2>
-                  <p className="text-[11px] font-medium text-slate-400">
-                    Showing {filteredSalons.length} of {salons.length} salons
-                    {searchTerm ? ` • Search: "${searchTerm}"` : ""}
-                    {statusFilter !== "All" ? ` • Status: ${statusFilter}` : ""}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 xl:ml-auto xl:min-w-[620px] xl:items-end">
-                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                    <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 sm:w-full sm:max-w-[300px]">
-                      <Search size={14} className="text-rose-300" />
-                      <input
-                        type="text"
-                        placeholder="Search salons..."
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
-                      />
-                      {searchTerm || statusFilter !== "All" ? (
-                        <button
-                          type="button"
-                          onClick={clearFilters}
-                          className="rounded-full bg-rose-100 p-1 text-rose-500 hover:bg-rose-200"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link
-                        to={ROUTES.adminSalonsCreate}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+                    {searchTerm ? (
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        type="button"
+                        onClick={clearFilters}
+                        className="rounded-full bg-[#fde7ef] p-1.5 text-[#ea4f93] transition-all duration-300 hover:bg-[#f0b7cf]"
                       >
-                        <Plus size={20} />
-                        Add Salon
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
-                      Assign Manager
-                    </SmallActionButton>
-                    <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
-                      Holiday Closure
-                    </SmallActionButton>
-                    <SmallActionButton onClick={() => setShowSetHoursModal(true)}>
-                      Set Hours
-                    </SmallActionButton>
+                        <X size={12} strokeWidth={2.5} />
+                      </motion.button>
+                    ) : null}
                   </div>
                 </div>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-rose-100">
-                <div className="overflow-x-auto bg-white">
-                  <table className="min-w-full text-left">
-                    <thead className="bg-[#fff5f8]">
-                      <tr className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                        <th className="px-4 py-3">Salon Name</th>
-                        <th className="px-4 py-3">Address</th>
-                        <th className="px-4 py-3">Manager</th>
-                        <th className="px-4 py-3">Staff</th>
-                        <th className="px-4 py-3">Operating Hours</th>
-                        <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSalons.map((salon) => (
-                        <tr
-                          key={`${salon.name}-${salon.id}`}
-                          className="border-t border-rose-50 text-[12px] text-slate-500"
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={salon.image}
-                                alt={salon.name}
-                                className="h-10 w-10 rounded-xl object-cover"
-                              />
-                              <div>
-                                <p className="font-bold text-slate-700">{salon.name}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">{salon.address}</td>
-                          <td className="px-4 py-3">{salon.manager}</td>
-                          <td className="px-4 py-3">{salon.staff}</td>
-                          <td className="px-4 py-3">{salon.hours}</td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${salon.statusColor}`}
-                            >
-                              {salon.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <ActionDropdown
-                              label="Action"
-                              items={getSalonActionItems(salon)}
-                              buttonClassName="min-w-[108px] justify-between border-[#f1bfd5] bg-white px-4 text-[11px] shadow-sm"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0 pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-200/60 xl:border-l xl:pl-4">
+                  <SmallActionButton onClick={() => setShowAssignManagerModal(true)}>
+                    <UserRound size={14} className="mr-1.5 inline" />
+                    {t("adminSalonManagement.assignManager")}
+                  </SmallActionButton>
+                  <SmallActionButton onClick={() => setShowHolidayClosureModal(true)}>
+                    <Calendar size={14} className="mr-1.5 inline" />
+                    {t("adminSalonManagement.holidayClosure")}
+                  </SmallActionButton>
+                  <SmallActionButton onClick={() => {
+                    setActivePeriod(null);
+                    setSelectedSlots({
+                      morning: TIME_SLOTS.morning.slots,
+                      afternoon: TIME_SLOTS.afternoon.slots,
+                      evening: TIME_SLOTS.evening.slots
+                    });
+                    setSelectedSalonId(null);
+                    setShowSetHoursModal(true);
+                  }}>
+                    <Clock3 size={14} className="mr-1.5 inline" />
+                    {t("adminSalonManagement.setHours")}
+                  </SmallActionButton>
                 </div>
               </div>
-            </section>
+            </div>
+          </PremiumCard>
 
-          </div>
-          {/* ── End left column ── */}
+          {enrichedSalons.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrichedSalons.map((branch) => (
+                <BranchCard
+                  key={branch.id}
+                  branch={branch}
+                  onClick={() => handleViewSalon(branch)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[28px] border border-dashed border-[#f0b7cf] bg-white px-8 py-12 text-center">
+              <p className="text-[16px] font-bold text-[#2d1b35]">{t("adminSalonManagement.noBranchesMatchedYourFilters")}</p>
+              <p className="mt-2 text-[13px] font-medium text-[#a88a9f]">
+                {t("adminSalonManagement.tryADifferentKeywordOrSwitchTh")}
+              </p>
+            </div>
+          )}
 
-          {/* ── Right column aside ── */}
-          <aside className="space-y-5">
-            <RightMetricCard {...TOP_PERFORMING_SALON} />
-            <RightMetricCard {...LOW_OCCUPANCY_SALON} />
-          </aside>
-
-        </div>
+          {hasMore && (
+            <div className="flex justify-center mt-8 pb-8">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLoadMore}
+                disabled={isLoadMore}
+                className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-8 py-3 text-[15px] font-bold text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:opacity-50"
+              >
+                {isLoadMore ? <Spin size="small" /> : language === 'vi' ? "Hiện thêm" : "View more"}
+              </motion.button>
+            </div>
+          )}
+        </motion.div>
       ) : null}
 
       <ActionConfirmModal
@@ -702,11 +885,11 @@ export function SalonManagementPage() {
         item={
           selectedSalon
             ? {
-                image: selectedSalon.image,
-                title: selectedSalon.name,
-                meta: selectedSalon.address,
-                note: `Manager: ${selectedSalon.manager}`,
-              }
+              image: selectedSalon.image,
+              title: selectedSalon.name,
+              meta: selectedSalon.address,
+              note: `Manager: ${selectedSalon.manager}`,
+            }
             : null
         }
         warnings={[
@@ -716,224 +899,43 @@ export function SalonManagementPage() {
         ]}
       />
 
-      {/* ── Assign Manager Modal ── */}
-      <Modal
+      <AssignManagerModal
         open={showAssignManagerModal}
-        onCancel={() => setShowAssignManagerModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <UserRound size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Assign Manager</h3>
-                  <p className="text-[11px] text-white/70">Assign a new manager to a salon</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowAssignManagerModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name} - {salon.address}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select New Manager
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowAssignManagerModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAssignManagerModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Assign Manager
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Holiday Closure Modal ── */}
-      <Modal
+        onCancel={() => {
+          setShowAssignManagerModal(false);
+          setAssignManagerForm({ salonId: "", managerId: "" });
+        }}
+        onConfirm={handleAssignManager}
+        confirmLoading={isAssigning}
+        filteredSalons={salons}
+        isLoading={isLoading}
+        assignManagerForm={assignManagerForm}
+        setAssignManagerForm={setAssignManagerForm}
+      />
+      <HolidayClosureModal
         open={showHolidayClosureModal}
         onCancel={() => setShowHolidayClosureModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <CalendarClock size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Holiday Closure</h3>
-                  <p className="text-[11px] text-white/70">Schedule salon closure for holidays</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowHolidayClosureModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Closure Date
-              </label>
-              <input
-                type="date"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Reason
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Christmas Holiday"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowHolidayClosureModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowHolidayClosureModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Schedule Closure
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Set Hours Modal ── */}
-      <Modal
+        salonOptions={salonOptions}
+      />
+      <SetOperatingHoursModal
         open={showSetHoursModal}
         onCancel={() => setShowSetHoursModal(false)}
-        footer={null}
-        closable={false}
-        width={440}
-        styles={SALON_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <Clock3 size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Set Operating Hours</h3>
-                  <p className="text-[11px] text-white/70">Update salon opening and closing hours</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowSetHoursModal(false)} />
-            </div>
-          </div>
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Select Salon
-              </label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-                {salons.map((salon) => (
-                  <option key={salon.id} value={salon.id}>
-                    {salon.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Opening Time
-              </label>
-              <input
-                type="time"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Closing Time
-              </label>
-              <input
-                type="time"
-                className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 border-t border-rose-50 px-6 py-4">
-            <button
-              type="button"
-              onClick={() => setShowSetHoursModal(false)}
-              className="rounded-full border border-rose-200 bg-white px-5 py-2 text-[11px] font-bold text-rose-400 transition hover:bg-rose-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSetHoursModal(false)}
-              className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-5 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.25)] transition hover:opacity-95"
-            >
-              Update Hours
-            </button>
-          </div>
-        </div>
-      </Modal>
+        salonOptions={salonOptions}
+      />
+
+      <ActionConfirmModal
+        open={notificationModal.open}
+        intent={notificationModal.success ? "success" : "danger"}
+        title={notificationModal.title}
+        subtitle=""
+        description={notificationModal.message}
+        confirmText={notificationModal.success ? "Okay" : "Close"}
+        cancelText={notificationModal.success ? "" : "Cancel"}
+        onConfirm={() => setNotificationModal({ ...notificationModal, open: false })}
+        onCancel={() => setNotificationModal({ ...notificationModal, open: false })}
+        confirmIcon={notificationModal.success ? Check : AlertTriangle}
+        width={480}
+      />
     </section>
   );
 }

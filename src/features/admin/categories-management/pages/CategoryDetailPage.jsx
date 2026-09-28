@@ -1,0 +1,405 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ArrowLeft, FolderTree, Layers3, Pencil, Save, ShieldCheck, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ROUTES } from "../../../../shared/constants/routes";
+import {
+  CATEGORY_STATUS_OPTIONS,
+  deleteAdminCategory,
+  fetchAdminCategoryDetail,
+  fetchAdminCategoryTypeOptions,
+  updateAdminCategory,
+} from "../services/categoriesManagementService";
+
+function validateForm(formValues, t) {
+  if (!String(formValues.name || "").trim()) {
+    return t("adminCategories.nameRequired");
+  }
+
+  if (!Number.isInteger(Number(formValues.categoryTypeId)) || Number(formValues.categoryTypeId) <= 0) {
+    return t("adminCategories.typeRequired");
+  }
+
+  if (!String(formValues.status || "").trim()) {
+    return t("adminCategories.statusRequired");
+  }
+
+  return "";
+}
+
+export function CategoryDetailPage() {
+  const { t, language } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { categoryId } = useParams();
+  const [category, setCategory] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [categoryTypeOptions, setCategoryTypeOptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOptionsLoading, setIsOptionsLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [isEditing, setIsEditing] = useState(Boolean(location.state?.startInEdit));
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+
+  useEffect(() => {
+    if (!location.state?.flashMessage && !location.state?.startInEdit) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setIsLoading(true);
+      setIsOptionsLoading(true);
+      setError("");
+
+      try {
+        const [categoryResponse, categoryTypesResponse] = await Promise.all([
+          fetchAdminCategoryDetail(categoryId),
+          fetchAdminCategoryTypeOptions(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategory(categoryResponse);
+        setDraft({
+          name: categoryResponse.name,
+          categoryTypeId: String(categoryResponse.categoryTypeId),
+          status: categoryResponse.status,
+        });
+        setCategoryTypeOptions(categoryTypesResponse);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(loadError instanceof Error ? loadError.message : t("adminCategories.loadDetailFailed"));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsOptionsLoading(false);
+        }
+      }
+    };
+
+    void loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryId]);
+
+  const summaryItems = useMemo(() => {
+    if (!category || !draft) {
+      return [];
+    }
+
+    const selectedType = categoryTypeOptions.find((item) => String(item.value) === String(draft.categoryTypeId));
+
+    return [
+      [t("adminCategories.categoryIdLabel"), String(category.categoryId)],
+      [t("adminCategories.categoryType"), selectedType?.label || category.categoryTypeName],
+      [t("adminCategories.status"), draft.status],
+    ];
+  }, [category, categoryTypeOptions, draft]);
+
+  const handleFieldChange = (field, value) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!category) {
+      return;
+    }
+
+    setDraft({
+      name: category.name,
+      categoryTypeId: String(category.categoryTypeId),
+      status: category.status,
+    });
+    setError("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (!category) {
+      return;
+    }
+
+    setDraft({
+      name: category.name,
+      categoryTypeId: String(category.categoryTypeId),
+      status: category.status,
+    });
+    setError("");
+    setIsEditing(false);
+  };
+
+  const handleRequestSave = () => {
+    const validationError = validateForm(draft, t);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setShowSaveConfirm(true);
+  };
+
+  const handleSave = async () => {
+    if (!category || !draft) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const updatedCategory = await updateAdminCategory(category.categoryId, {
+        ...draft,
+        categoryTypeId: Number(draft.categoryTypeId),
+      });
+      setCategory(updatedCategory);
+      setDraft({
+        name: updatedCategory.name,
+        categoryTypeId: String(updatedCategory.categoryTypeId),
+        status: updatedCategory.status,
+      });
+      setIsEditing(false);
+      toast.success(t("adminCategories.updateSuccess", { name: updatedCategory.name }));
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : t("adminCategories.updateFailed");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+      setShowSaveConfirm(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!category) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteAdminCategory(category.categoryId);
+      toast.success(t("adminCategories.deleteSuccess", { name: category.name }));
+      navigate(ROUTES.adminCategories);
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : t("adminCategories.deleteFailed");
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  if (!isLoading && !category) {
+    return <Navigate to={ROUTES.adminCategories} replace />;
+  }
+
+  return (
+    <section className="mx-auto flex w-full max-w-[1300px] flex-col gap-4 text-slate-700">
+      <header className="flex flex-col gap-4 rounded-lg bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3">
+          <Link
+            to={ROUTES.adminCategories}
+            className="inline-flex shrink-0 rounded-xl border border-rose-100 bg-white p-2 text-rose-500 transition hover:bg-rose-50"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#cf3d74]">{t("adminCategories.categoryDetail")}</h1>
+            <p className="text-xs font-medium text-slate-400">{t("adminCategories.categoryDetailDesc")}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {category?.status === "Active" && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} />
+              {t("adminCategories.deleteCategory")}
+            </button>
+          )}
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+              >
+                <X size={14} />
+                {t("adminCategories.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestSave}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
+              >
+                <Save size={14} />
+                {t("adminCategories.saveChanges")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil size={14} />
+              {t("adminCategories.editCategory")}
+            </button>
+          )}
+        </div>
+      </header>
+
+
+
+      {isLoading ? (
+        <div className="flex min-h-[320px] items-center justify-center rounded-lg bg-white/80 p-8 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
+          <div className="text-center text-sm text-slate-600">{t("adminCategories.loadingDetails")}</div>
+        </div>
+      ) : (
+        <div className="grid gap-4 ">
+          <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
+            <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {t("adminCategories.categoryInformation")}
+            </h2>
+
+            <div className="grid gap-5">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.categoryName")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <FolderTree size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={draft?.name || ""}
+                    onChange={(event) => handleFieldChange("name", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.categoryType")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <Layers3 size={14} className="shrink-0 text-rose-300" />
+                  <select
+                    value={draft?.categoryTypeId || ""}
+                    onChange={(event) => handleFieldChange("categoryTypeId", event.target.value)}
+                    disabled={!isEditing || isOptionsLoading}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default disabled:opacity-70"
+                  >
+                    {categoryTypeOptions.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminCategories.status")}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
+                  <select
+                    value={draft?.status || CATEGORY_STATUS_OPTIONS[0]}
+                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  >
+                    {CATEGORY_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </label>
+            </div>
+          </section>
+
+        </div>
+      )}
+
+      <ActionConfirmModal
+        open={showSaveConfirm}
+        intent="success"
+        title={t("adminCategories.saveChangesTitle")}
+        subtitle={t("adminCategories.saveChangesSubtitle")}
+        description={t("adminCategories.saveChangesDesc")}
+        confirmText={t("adminCategories.saveChanges")}
+        cancelText={t("adminCategories.reviewAgain")}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleSave}
+        onCancel={() => !isSaving && setShowSaveConfirm(false)}
+        highlights={[draft?.name || category?.name || "Category"]}
+        details={[
+          { label: "Category Type", value: summaryItems[1]?.[1] },
+          { label: "Status", value: draft?.status },
+        ]}
+      />
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={t("adminCategories.deleteCategoryTitle")}
+        subtitle={t("adminCategories.deleteConfirmSubtitle")}
+        description={t("adminCategories.deleteConfirmDesc", { name: category?.name || "this category" })}
+        confirmText={t("adminCategories.deleteCategory")}
+        cancelText={t("adminCategories.keepCategory")}
+        confirmIcon={Trash2}
+        loading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => !isDeleting && setShowDeleteConfirm(false)}
+        item={
+          category
+            ? {
+              title: category.name,
+              meta: `${category.categoryTypeName} | ${category.status}`,
+              note: `Category ID: ${category.categoryId}`,
+            }
+            : null
+        }
+        warnings={[t("adminCategories.deleteWarning")]}
+      />
+    </section>
+  );
+}

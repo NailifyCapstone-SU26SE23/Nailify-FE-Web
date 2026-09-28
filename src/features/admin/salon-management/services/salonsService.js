@@ -7,8 +7,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -26,16 +26,35 @@ function unwrapResponse(response, fallbackMessage) {
   return payload.data;
 }
 
-export async function fetchSalons() {
-  console.log("Fetching salons...");
+export async function fetchSalons(params = {}) {
   try {
     const response = await axiosClient.get(`/Salons`, {
       headers: getAuthHeaders(),
+      params,
     });
 
     return unwrapResponse(response, "Failed to load salons.");
   } catch (error) {
     console.error("Error fetching salons:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to load salons.");
+  }
+}
+
+export async function fetchSalonsPaginated(params = {}) {
+  try {
+    const response = await axiosClient.get(`/Salons`, {
+      headers: getAuthHeaders(),
+      params,
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load salons.");
+    }
+    
+    return payload.data; // Returns { items, metaData }
+  } catch (error) {
+    console.error("Error fetching salons paginated:", error.response?.data || error);
     throw new Error(error.response?.data?.message || error.message || "Failed to load salons.");
   }
 }
@@ -47,7 +66,6 @@ export async function fetchSalonById(salonId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Fetching salon by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Salons/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -61,7 +79,6 @@ export async function fetchSalonById(salonId) {
 }
 
 export async function createSalon(formData, imageFile) {
-  console.log("Creating salon with data:", formData);
   try {
     const form = new FormData();
     form.append("name", formData.salonName);
@@ -69,6 +86,7 @@ export async function createSalon(formData, imageFile) {
     form.append("phone", formData.phone);
     form.append("latitude", "0");
     form.append("longitude", "0");
+    form.append("DepositConfig", formData.depositConfig ? Number(formData.depositConfig) / 100 : 0);
     if (imageFile) {
       form.append("image", imageFile);
     }
@@ -94,14 +112,15 @@ export async function updateSalon(salonId, formData, imageFile) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Updating salon with data:", formData);
   try {
     const form = new FormData();
     form.append("name", formData.salonName);
     form.append("address", formData.address);
     form.append("phone", formData.phone);
+    form.append("status", formData.status);
     form.append("latitude", "0");
     form.append("longitude", "0");
+    form.append("DepositConfig", formData.depositConfig ? Number(formData.depositConfig) / 100 : 0);
     if (imageFile) {
       form.append("image", imageFile);
     }
@@ -127,7 +146,6 @@ export async function deleteSalon(salonId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Deleting salon:", normalizedId);
   try {
     const response = await axiosClient.delete(`/Salons/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -151,7 +169,6 @@ export async function uploadSalonImage(salonId, imageFile) {
     throw new Error("Image file is required.");
   }
 
-  console.log("Uploading image for salon:", normalizedId);
   try {
     const formData = new FormData();
     formData.append("file", imageFile);
@@ -169,3 +186,51 @@ export async function uploadSalonImage(salonId, imageFile) {
     throw new Error(error.response?.data?.message || error.message || "Failed to upload salon image.");
   }
 }
+
+export async function updateSalonOperatingHours(salonId, operatingHoursData) {
+  const normalizedId = String(salonId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.put(`/Salons/${normalizedId}/operating-hours`, operatingHoursData, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to update salon operating hours.");
+  } catch (error) {
+    console.error("Error updating operating hours:", error.response?.data || error);
+    throw new Error(error.response?.data?.message || error.message || "Failed to update salon operating hours.");
+  }
+}
+
+export async function fetchSalonRatings(salonId) {
+  const normalizedId = String(salonId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Salon ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.get(`/BookingRatings/by-salon/${normalizedId}`, {
+      headers: getAuthHeaders(),
+      params: {
+        pageNumber: 1,
+        pageSize: 100, // Fetch a large enough page to calculate the average
+      }
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load salon ratings.");
+    }
+    
+    return payload.data?.items || [];
+  } catch (error) {
+    console.error("Error fetching salon ratings:", error.response?.data || error);
+    return []; // Return empty array on failure instead of crashing the UI
+  }
+}
+

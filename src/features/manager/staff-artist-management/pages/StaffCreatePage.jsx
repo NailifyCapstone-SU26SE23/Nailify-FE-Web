@@ -1,206 +1,48 @@
-import { Modal } from "antd";
 import {
-  ArrowLeft,
-  BriefcaseBusiness,
+  CalendarDays,
+  Lock,
   Mail,
   Phone,
   Save,
-  ShieldCheck,
-  Sparkles,
+  Upload,
   User,
-  Users,
   X,
+  Camera,
+  Building2,
+  CheckCircle2,
+  Clock,
+  Sparkles,
   Star,
+  ShieldCheck,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  STAFF_ROLE_OPTIONS,
-  STAFF_SPECIALTIES,
-  createEmptyStaffForm,
-  getStaffInitials,
-  submitMockStaffCreate,
-  STAFF_STATUS_STYLES,
-} from "../services/mockStaffArtists";
+  createNailArtist,
+  fetchSkillTypes,
+  createUser,
+  assignNailArtistSkills,
+} from "../services/nailArtistsService";
+import { loadAuthSession } from "../../../core/auth/model/authStorage";
+import { StaffSkillAssessmentSection } from "../../../admin/staff-management/components/StaffSkillAssessmentSection";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal.jsx";
+import { normalizeAdminSkillType } from "../../../admin/skill-types-management/services/skillTypesManagementService";
 
+// ── Design tokens (from admin page) ─────────────────────────────────────────────────────
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3";
+  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-pink-200";
-const selectClassName =
-  "w-full rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none";
+  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
 
-// ── Skill categories (Artist-specific) ───────────────────────────────────────
-const SKILL_CATEGORIES = [
-  {
-    key: "precision",
-    label: "Precision",
-    sublabel: "Độ chính xác",
-    levels: [
-      "Sơn lem, viền không đều",
-      "Ít lem nhưng vẫn sai form nhỏ",
-      "Sơn khá gọn, viền tương đối chuẩn",
-      "Gần như không lỗi, đường nét sắc",
-      "Hoàn hảo, chi tiết cực nhỏ vẫn chuẩn",
-    ],
-  },
-  {
-    key: "color",
-    label: "Color",
-    sublabel: "Màu sắc",
-    levels: [
-      "Chọn màu chưa hợp, dễ lệch tone",
-      "Biết phối màu cơ bản",
-      "Phối màu ổn, làm được ombre đơn giản",
-      "Blend màu mượt, hiểu tone da",
-      "Master phối màu, tạo style riêng",
-    ],
-  },
-  {
-    key: "form",
-    label: "Form",
-    sublabel: "Form móng",
-    levels: [
-      "Form lệch, không cân đối",
-      "Form lệch, không cân đối (cải thiện)",
-      "Form ổn (square, oval…)",
-      "Form đẹp, có apex, C-curve",
-      "Form chuẩn salon cao cấp",
-    ],
-  },
-  {
-    key: "material",
-    label: "Material",
-    sublabel: "Vật liệu",
-    levels: [
-      "Không kiểm soát được gel/bột",
-      "Làm được nhưng hay lỗi (bong, bọt khí)",
-      "Kiểm soát vật liệu ổn",
-      "Xử lý tốt nhiều loại vật liệu",
-      "Master vật liệu, xử lý mọi tình huống",
-    ],
-  },
-  {
-    key: "design",
-    label: "Design",
-    sublabel: "Thẩm mỹ",
-    levels: [
-      "Làm theo mẫu, không sáng tạo",
-      "Copy mẫu đơn giản",
-      "Có gu thẩm mỹ cơ bản",
-      "Thiết kế đẹp, hợp trend",
-      "Sáng tạo cao, có style riêng",
-    ],
-  },
-  {
-    key: "speed",
-    label: "Speed",
-    sublabel: "Tốc độ",
-    levels: [
-      ">120 phút – Rất chậm",
-      "90–120 phút – Chậm",
-      "60–90 phút – Trung bình",
-      "40–60 phút – Nhanh",
-      "<40 phút – Rất nhanh",
-    ],
-  },
-];
-
-// Pink-themed level colors (replaces rose from file 2)
-const LEVEL_COLORS = [
-  { bar: "bg-pink-200", text: "text-pink-400", badge: "bg-pink-50 text-pink-400" },
-  { bar: "bg-pink-300", text: "text-pink-400", badge: "bg-pink-100 text-pink-500" },
-  { bar: "bg-pink-400", text: "text-pink-500", badge: "bg-pink-100 text-pink-600" },
-  { bar: "bg-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-pink-100 text-[#ea4f93]" },
-  { bar: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white" },
-];
-
-const RANK_THRESHOLDS = [
-  { label: "Beginner", minAvg: 0, color: "bg-slate-100 text-slate-500 border-slate-200" },
-  { label: "Intermediate", minAvg: 2, color: "bg-amber-50 text-amber-600 border-amber-200" },
-  { label: "Advanced", minAvg: 3, color: "bg-pink-50 text-pink-600 border-pink-200" },
-  { label: "Pro Artist", minAvg: 4, color: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white border-0" },
-];
-
-function getRank(skills) {
-  const values = Object.values(skills);
-  if (values.length === 0) return RANK_THRESHOLDS[0];
-  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-  return [...RANK_THRESHOLDS].reverse().find((r) => avg >= r.minAvg) ?? RANK_THRESHOLDS[0];
-}
-
-// ── SkillRatingRow component ──────────────────────────────────────────────────
-function SkillRatingRow({ category, value, onChange }) {
-  const color = LEVEL_COLORS[(value ?? 1) - 1];
-  const description = category.levels[(value ?? 1) - 1];
-
+function InfoChip({ icon: Icon, title, value, tone = "text-rose-500" }) {
   return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_4px_12px_rgba(236,72,153,0.05)]">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[12px] font-black text-slate-700">{category.label}</span>
-          <span className="ml-1.5 text-[10px] font-semibold text-slate-400">{category.sublabel}</span>
-        </div>
-        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${color.badge}`}>
-          Level {value ?? 1}
-        </span>
-      </div>
-
-      {/* Level bars */}
-      <div className="mb-2 flex items-center gap-2">
-        {[1, 2, 3, 4, 5].map((level) => {
-          const active = (value ?? 1) >= level;
-          const levelColor = LEVEL_COLORS[level - 1];
-          return (
-            <button
-              key={level}
-              type="button"
-              onClick={() => onChange(level)}
-              className="group flex flex-1 flex-col items-center gap-1 transition"
-            >
-              <div
-                className={`h-2 w-full rounded-full transition-all ${
-                  active ? levelColor.bar : "bg-pink-100"
-                }`}
-              />
-              <span
-                className={`text-[9px] font-bold transition ${
-                  active ? levelColor.text : "text-slate-300"
-                }`}
-              >
-                {level}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Description */}
-      <p className={`text-[11px] font-semibold ${color.text}`}>{description}</p>
-    </div>
-  );
-}
-
-SkillRatingRow.propTypes = {
-  category: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    sublabel: PropTypes.string.isRequired,
-    levels: PropTypes.arrayOf(PropTypes.string).isRequired,
-  }).isRequired,
-  value: PropTypes.number,
-  onChange: PropTypes.func.isRequired,
-};
-
-// ── InfoChip ──────────────────────────────────────────────────────────────────
-function InfoChip({ icon: Icon, title, value, tone = "text-pink-500" }) {
-  return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(236,72,153,0.06)]">
+    <div className="rounded-2xl border border-rose-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
       <div className="flex items-center gap-3">
-        <div className={`rounded-xl bg-[#fff3f8] p-2 ${tone}`}>
+        <div className={`rounded-xl bg-[#fff2f7] p-2 ${tone}`}>
           <Icon size={14} />
         </div>
         <div>
@@ -219,31 +61,98 @@ InfoChip.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+function getStaffInitials(fullName) {
+  return fullName
+    ?.split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "NA";
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffCreatePage() {
+  const { t, language } = useLanguage();
+  const isVi = language === "vi";
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-  const [formData, setFormData] = useState(() => ({
-    ...createEmptyStaffForm(),
-    skillRatings: { precision: 1, color: 1, form: 1, material: 1, design: 1, speed: 1 },
-  }));
 
-  const rank = useMemo(() => getRank(formData.skillRatings ?? {}), [formData.skillRatings]);
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    avatarUrl: "",
+    imageFile: null,
+    skillRatings: {},
+  });
+
+  // Load skill types from API
+  useEffect(() => {
+    let mounted = true;
+    fetchSkillTypes({ pageNumber: 1, pageSize: 100 })
+      .then((data) => {
+        if (!mounted) return;
+        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        const normalizedItems = items.map(normalizeAdminSkillType);
+        setSkillTypes(normalizedItems);
+        const defaultRatings = {};
+        normalizedItems.forEach((s) => { defaultRatings[s.id] = 0; });
+        setFormData((prev) => ({ ...prev, skillRatings: defaultRatings }));
+      })
+      .catch(() => {
+        if (mounted) setSkillTypes([]);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  // Get specialties from skill ratings using skill types
+  const specialties = useMemo(() => {
+    return skillTypes
+      .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) >= 3)
+      .map(skill => skill.name || skill.title);
+  }, [skillTypes, formData.skillRatings]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, imageFile: file }));
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImagePreview(ev.target.result);
+        handleInputChange("avatarUrl", ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, imageFile: null, avatarUrl: "" }));
+    setImagePreview(null);
+  };
 
   const handleInputChange = (field, value) => {
-    setFormData((current) => ({
-      ...current,
+    setFormData((prev) => ({
+      ...prev,
       [field]: value,
     }));
   };
 
-  const handleSkillChange = (key, level) => {
-    setFormData((current) => ({
-      ...current,
-      skillRatings: { ...current.skillRatings, [key]: level },
+  const handleSkillRatingChange = (skillKey, rating) => {
+    setFormData((prev) => ({
+      ...prev,
+      skillRatings: {
+        ...prev.skillRatings,
+        [skillKey]: rating,
+      },
     }));
   };
 
@@ -254,14 +163,62 @@ export function StaffCreatePage() {
 
   const handleConfirmSave = async () => {
     setIsSaving(true);
-    const result = await submitMockStaffCreate(formData);
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
-  };
+    try {
+      const session = loadAuthSession();
+      const salonId = session?.user?.salonId || session?.salonId || "";
 
-  const handleCloseResultModal = () => {
-    setSaveResult(null);
+      // 1. Create user account
+      const createdUser = await createUser({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        avatarUrl: formData.avatarUrl,
+        role: "Staff_Artist",
+        salonId,
+        imageFile: formData.imageFile,
+      });
+
+      // 2. Create Staff Artist profile
+      let nailArtistId = createdUser?.staffId;
+      if (!nailArtistId) {
+        const nailArtist = await createNailArtist({
+          userId: createdUser?.userId || createdUser?.id,
+          salonId,
+        });
+        nailArtistId = nailArtist?.staffId || nailArtist?.nailArtistId || nailArtist?.id;
+      }
+
+      // 3. Assign skills
+      if (nailArtistId) {
+        const skills = skillTypes
+          .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) > 0)
+          .map(skill => ({
+            skillTypeId: skill.id,
+            level: Math.floor(Number(formData.skillRatings[skill.id] ?? 0)),
+          }));
+
+        if (skills.length > 0) {
+          await assignNailArtistSkills(nailArtistId, skills);
+        }
+      }
+
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: true,
+        message: `${formData.firstName} ${formData.lastName} has been added successfully.`,
+      });
+    } catch (err) {
+      console.error("Error creating artist:", err);
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: false,
+        message: err?.response?.data?.message || err?.message || "Failed to create staff artist.",
+      });
+    }
   };
 
   const handleSuccessComplete = useCallback(() => {
@@ -284,283 +241,310 @@ export function StaffCreatePage() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(236,72,153,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
-          <Link
-            to={ROUTES.managerStaffArtists}
-            className="inline-flex shrink-0 rounded-xl border border-pink-100 bg-white p-2 text-pink-500 transition hover:bg-pink-50"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-[28px] font-black tracking-tight text-[#ea4f93]">Add New Artist</h1>
-            <p className="text-[12px] font-medium text-slate-400">
-              Create a new staff artist profile, assign role, and skills
-            </p>
-          </div>
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5  lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
+            {isVi ? "Thêm nhân viên làm móng mới" : "Add New Artist"}
+          </h1>
+          <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
+            {isVi ? "Tạo hồ sơ nhân viên làm móng mới và gán đánh giá kỹ năng" : "Create a new Staff Artist profile and assign skill ratings"}
+          </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-center">
           <button
             type="button"
             onClick={handleCancel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-[11px] font-bold text-pink-500 transition hover:bg-pink-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {isVi ? "Hủy" : "Cancel"}
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.32)] transition hover:opacity-95"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Artist
+            {isVi ? "Lưu nhân viên" : "Save Staff"}
           </button>
         </div>
       </header>
 
-      {/* Info chips */}
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoChip icon={Users} title="Total Artists" value="18 Active" />
-        <InfoChip
-          icon={BriefcaseBusiness}
-          title="Role"
-          value={formData.role}
-          tone="text-sky-500"
-        />
-        <InfoChip
-          icon={ShieldCheck}
-          title="Status"
-          value={formData.status}
-          tone="text-violet-500"
-        />
-        <InfoChip
-          icon={Star}
-          title="Rating"
-          value="New Artist"
-          tone="text-amber-500"
-        />
-      </div>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+        {/* Left column — main form */}
+        <div className="space-y-4 lg:col-span-2 lg:space-y-5">
+          {/* Staff Details */}
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {isVi ? "Thông tin nhân viên làm móng" : "Staff Artist Details"}
+            </h2>
 
-      {/* Body */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Basic Information */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                  <User size={18} />
-                </div>
-                <h2 className="text-lg font-bold text-slate-800">Basic Information</h2>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Full Name
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mia Chen"
-                      className={inputClassName}
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Professional Role
-                  </label>
-                  <select
-                    className={selectClassName}
-                    value={formData.role}
-                    onChange={(e) => handleInputChange("role", e.target.value)}
-                  >
-                    {STAFF_ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Email Address
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Mail size={14} className="text-pink-300" />
-                    <input
-                      type="email"
-                      placeholder="email@example.com"
-                      className={inputClassName}
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Phone Number
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Phone size={14} className="text-pink-300" />
-                    <input
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      className={inputClassName}
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Skills & Specialties — skill rating Level 1–5 */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                    <Sparkles size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Skills & Specialties</h2>
-                    <p className="text-[11px] font-medium text-slate-400">
-                      Đánh giá kỹ năng theo từng hạng mục (Level 1–5)
-                    </p>
-                  </div>
-                </div>
-                {/* Rank badge */}
-                <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-black ${rank.color}`}>
-                  {rank.label}
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Tên nghệ sĩ" : "Artist Name"} <span className="text-rose-500">*</span>
                 </span>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {SKILL_CATEGORIES.map((cat) => (
-                  <SkillRatingRow
-                    key={cat.key}
-                    category={cat}
-                    value={formData.skillRatings?.[cat.key] ?? 1}
-                    onChange={(level) => handleSkillChange(cat.key, level)}
+                <div className={inputWrapperClassName}>
+                  <User size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                    placeholder={isVi ? "Tên" : "First Name"}
+                    className={inputClassName}
+                    required
                   />
-                ))}
-              </div>
-            </div>
-          </form>
-        </div>
+                </div>
+              </label>
 
-        {/* Sidebar */}
-        <div className="flex flex-col gap-5">
-          {/* Profile Preview */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <h2 className="mb-5 text-lg font-bold text-slate-800">Profile Preview</h2>
-            <div className="flex flex-col items-center py-4 text-center">
-              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-pink-100 to-pink-200 text-2xl font-black text-pink-500">
-                {getStaffInitials(formData.name) || "?"}
-              </div>
-              <h3 className="text-xl font-bold text-slate-800">{formData.name || "Artist Name"}</h3>
-              <p className="text-sm font-medium text-slate-400">{formData.role}</p>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Họ" : "Last Name"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <User size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                    placeholder={isVi ? "Họ" : "Last Name"}
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </label>
 
-              {/* Rank badge */}
-              <span className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-black ${rank.color}`}>
-                {rank.label}
-              </span>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  Email <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Mail size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    placeholder={"Email"}
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </label>
 
-              {/* Skill mini bars */}
-              <div className="mt-4 w-full space-y-1.5">
-                {SKILL_CATEGORIES.map((cat) => {
-                  const level = formData.skillRatings?.[cat.key] ?? 1;
-                  return (
-                    <div key={cat.key} className="flex items-center gap-2">
-                      <span className="w-16 text-left text-[9px] font-bold text-slate-400">
-                        {cat.label}
-                      </span>
-                      <div className="flex flex-1 gap-0.5">
-                        {[1, 2, 3, 4, 5].map((l) => (
-                          <div
-                            key={l}
-                            className={`h-1.5 flex-1 rounded-full ${
-                              level >= l
-                                ? "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]"
-                                : "bg-pink-100"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="w-4 text-right text-[9px] font-bold text-pink-400">
-                        {level}
-                      </span>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Số điện thoại" : "Phone Number"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Phone size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    placeholder="+84 *** *** ***"
+                    className={inputClassName}
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Mật khẩu" : "Password"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Lock size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    placeholder={isVi ? "Ít nhất 6 ký tự" : "Min. 6 characters"}
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Vai trò" : "Job Title / Role"}
+                </span>
+                <div className={inputWrapperClassName}>
+                  <input
+                    type="text"
+                    value="Staff_Artist"
+                    readOnly
+                    className={inputClassName}
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {isVi ? "Ảnh đại diện" : "Avatar"}
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8 cursor-pointer transition-all duration-300 hover:border-rose-300 hover:bg-gradient-to-br hover:from-[#fff8fb] hover:to-[#fff1f6] hover:shadow-[0_8px_24px_rgba(226,93,143,0.12)]">
+                  {imagePreview ? (
+                    <div className="relative w-full flex items-center justify-center">
+                      <img crossOrigin="anonymous"
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-0 right-1/4 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                      >
+                        <X size={16} />
+                      </button>
                     </div>
-                  );
-                })}
+                  ) : (
+                    <label className="flex flex-col items-center gap-3 cursor-pointer">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg transition-transform duration-200 hover:scale-105">
+                        <Upload size={28} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold text-slate-700">{isVi ? "Nhấn để tải ảnh lên" : "Click to upload staff avatar"}</p>
+                        <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Skills & Specialties */}
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <StaffSkillAssessmentSection
+              ratings={formData.skillRatings}
+              specialties={specialties}
+              onRatingChange={handleSkillRatingChange}
+              skillTypes={skillTypes}
+            />
+          </div>
+        </div>
+
+        {/* Right sidebar */}
+        <aside className="space-y-4 lg:space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {isVi ? "Xem trước thông tin" : "Profile Preview"}
+            </h2>
+
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full overflow-hidden border-4 border-rose-100 shadow-lg mb-4">
+                    {imagePreview ? (
+                      <img crossOrigin="anonymous"
+                        src={imagePreview}
+                        alt="Profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-bold text-white">
+                        {getStaffInitials(formData.firstName + " " + formData.lastName || "New Artist")}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-[15px] font-bold text-slate-800 mb-1">
+                    {formData.firstName + " " + formData.lastName || "New Artist"}
+                  </h3>
+                  <p className="text-xs text-slate-400 mb-2">
+                    {isVi ? "Nhân viên làm móng" : "Staff Artist"}
+                  </p>
+
+                  {(formData.email || formData.phone) && (
+                    <div className="flex flex-col items-center gap-1.5 mb-4 text-slate-500 w-full px-2">
+                      {formData.email && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Mail size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.email}</span>
+                        </div>
+                      )}
+                      {formData.phone && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Phone size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+                    {specialties.slice(0, 3).map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-500"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </aside>
+      </form>
 
-          {/* Status */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Status</h2>
-              <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${STAFF_STATUS_STYLES[formData.status]}`}>
-                {formData.status}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Set the initial availability for the artist. This can be changed later from the dashboard.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Cancel Modal */}
-      <Modal
-        title="Cancel Changes?"
+      {/* Modals */}
+      <ActionConfirmModal
         open={showCancelModal}
-        onOk={handleConfirmCancel}
+        intent="warning"
+        title={isVi ? "Hủy tạo nghệ sĩ" : "Cancel Artist Creation"}
+        subtitle={isVi ? "Bạn đang rời khỏi biểu mẫu nghệ sĩ mà không lưu." : "You are leaving this artist form without saving."}
+        description={isVi ? "Hồ sơ nghệ sĩ mới chưa được lưu. Chỉ rời khỏi trang này nếu bạn muốn loại bỏ bản nháp." : "The new artist profile has not been saved yet. Leave this page only if you want to discard the draft."}
+        confirmText={isVi ? "Rời khỏi trang" : "Leave Page"}
+        cancelText={isVi ? "Tiếp tục chỉnh sửa" : "Keep Editing"}
+        confirmIcon={X}
+        onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
-        okText="Yes, Cancel"
-        cancelText="Keep Editing"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Are you sure you want to cancel? All unsaved information will be lost.
-        </p>
-      </Modal>
+        details={[
+          { label: isVi ? "Trạng thái bản nháp" : "Draft Status", value: isVi ? "Chưa lưu" : "Not saved yet" },
+          { label: isVi ? "Bước tiếp theo" : "Next Step", value: isVi ? "Quay lại danh sách nghệ sĩ" : "Return to artist list" },
+        ]}
+        warnings={[
+          isVi ? "Thông tin nghệ sĩ và chuyên môn đã nhập sẽ bị mất." : "Artist details and specialties entered here will be lost.",
+          isVi ? "Bạn sẽ cần tạo lại hồ sơ nếu mở lại màn hình tạo." : "You will need to re-create the profile if you open the create screen again.",
+        ]}
+      />
 
-      {/* Save Modal */}
-      <Modal
-        title="Save New Artist?"
+      <ActionConfirmModal
         open={showSaveModal}
-        onOk={handleConfirmSave}
-        onCancel={() => setShowSaveModal(false)}
-        confirmLoading={isSaving}
-        okText="Save Artist"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Ready to add <span className="font-bold text-pink-500">{formData.name}</span> to the team?
-        </p>
-      </Modal>
+        intent="success"
+        title={isVi ? "Lưu nghệ sĩ mới" : "Save New Artist"}
+        subtitle={isVi ? "Đây sẽ tạo hồ sơ và lưu vào cơ sở dữ liệu." : "This will create the profile and save to database."}
+        description={isVi ? "Xác nhận để tạo hồ sơ nghệ sĩ này." : "Confirm to create this artist profile."}
+        confirmText={isVi ? "Lưu nghệ sĩ" : "Save Artist"}
+        cancelText={isVi ? "Xem lại" : "Review Again"}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleConfirmSave}
+        onCancel={() => !isSaving && setShowSaveModal(false)}
+        highlights={[formData.firstName + " " + formData.lastName || isVi ? "Nghệ sĩ mới" : "New Artist", isVi ? "Nghệ sĩ làm móng" : "Staff Artist"]}
+      />
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Artist Created!"
-        failureTitle="Creation Failed"
-        successDescription="New artist profile has been successfully added."
-        failureDescription="There was an error creating the artist profile."
-        onFailureClose={handleCloseResultModal}
+        successTitle={isVi ? "Tạo thành công" : "Create Successful"}
+        failureTitle={isVi ? "Tạo thất bại" : "Create Failed"}
+        successDescription={isVi ? "Hồ sơ nghệ sĩ đã được tạo thành công." : "The artist has been created successfully."}
+        failureDescription={isVi ? "Không thể tạo hồ sơ nghệ sĩ." : "Unable to create the artist."}
+        onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={isVi ? "Đang chuyển hướng đến danh sách nghệ sĩ..." : "Redirecting to artist list..."}
       />
     </section>
   );

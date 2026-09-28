@@ -1,0 +1,459 @@
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  FolderTree,
+  Layers3,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import toast from "react-hot-toast";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Table, Tooltip } from "antd";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { ROUTES, getAdminCategoryDetailRoute } from "../../../../shared/constants/routes";
+import {
+  deleteAdminCategory,
+  fetchAdminCategories,
+  fetchAdminCategoryTypeOptions,
+} from "../services/categoriesManagementService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+
+function CategoryStatusBadge({ status }) {
+  const { t } = useLanguage();
+  const normalizedStatus = String(status || "").toLowerCase();
+  const isStatusActive = normalizedStatus === "active";
+  const className = isStatusActive
+    ? "bg-[#e7fbf4] text-[#159669]"
+    : "bg-[#fff1f5] text-[#d14c84]";
+
+  const displayLabel = isStatusActive ? t("adminCategories.active") : t("adminCategories.inactive");
+
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
+}
+
+export function CategoriesManagementPage() {
+  const { t, language } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [categoryTypeFilter, setCategoryTypeFilter] = useState("");
+  const [categoryTypes, setCategoryTypes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [metaData, setMetaData] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalItems: 0,
+    hasPrevious: false,
+    hasNext: false,
+    firstRowOnPage: 0,
+    lastRowOnPage: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFilterLoading, setIsFilterLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setMetaData((current) => ({
+        ...current,
+        currentPage: 1,
+      }));
+    }, 350);
+
+    return () => window.clearTimeout(timerId);
+  }, [query]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategoryTypes = async () => {
+      setIsFilterLoading(true);
+
+      try {
+        const response = await fetchAdminCategoryTypeOptions();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategoryTypes(response);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setCategoryTypes([]);
+      } finally {
+        if (isMounted) {
+          setIsFilterLoading(false);
+        }
+      }
+    };
+
+    void loadCategoryTypes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategories = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await fetchAdminCategories({
+          pageNumber: metaData.currentPage,
+          pageSize: metaData.pageSize,
+          name: debouncedQuery,
+          categoryTypeId: categoryTypeFilter ? Number(categoryTypeFilter) : undefined,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategories(response.items);
+        setMetaData(response.metaData);
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setCategories([]);
+        setError(loadError instanceof Error ? loadError.message : t("adminCategories.loadFailed"));
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryTypeFilter, debouncedQuery, metaData.currentPage, metaData.pageSize]);
+
+  const summaryCards = useMemo(() => {
+    const activeCount = categories.filter((item) => String(item.status).toLowerCase() === "active").length;
+    const visibleTypes = new Set(categories.map((item) => item.categoryTypeName).filter(Boolean)).size;
+
+    return [
+      {
+        label: t("adminCategories.totalCategories"),
+        value: metaData.totalItems.toLocaleString(),
+        note: `${metaData.totalPages} pages`,
+        icon: FolderTree,
+        color: "#ea4f93",
+      },
+      {
+        label: t("adminCategories.activeItems"),
+        value: activeCount.toLocaleString(),
+        note: "Current page",
+        icon: Sparkles,
+        color: "#20ab77",
+      },
+      {
+        label: t("adminCategories.visibleTypes"),
+        value: visibleTypes.toLocaleString(),
+        note: categoryTypeFilter ? "Filtered type" : "Current page",
+        icon: Layers3,
+        color: "#d9871c",
+      },
+      {
+        label: t("adminCategories.pageItems"),
+        value: categories.length.toLocaleString(),
+        note: debouncedQuery || "Current page",
+        icon: FolderTree,
+        color: "#8b5cf6",
+      },
+    ];
+  }, [categories, categoryTypeFilter, debouncedQuery, metaData.totalItems, metaData.totalPages]);
+
+  const paginationItems = useMemo(() => {
+    const currentPage = metaData.currentPage;
+    const totalPages = metaData.totalPages;
+
+    if (totalPages <= 1) {
+      return [1];
+    }
+
+    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    const normalizedPages = [...pages]
+      .filter((page) => page >= 1 && page <= totalPages)
+      .sort((left, right) => left - right);
+
+    const result = [];
+
+    normalizedPages.forEach((page, index) => {
+      result.push(page);
+
+      const nextPage = normalizedPages[index + 1];
+      if (nextPage && nextPage - page > 1) {
+        result.push("...");
+      }
+    });
+
+    return result;
+  }, [metaData.currentPage, metaData.totalPages]);
+
+  const columns = useMemo(
+    () => [
+      {
+        title: t("adminCategories.category"),
+        key: "category",
+        sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+        render: (_, category) => (
+          <div className="flex items-center gap-3">
+
+            <div>
+              <p className="text-sm font-bold text-[#432744]">{category.name}</p>
+
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: t("adminCategories.categoryType"),
+        dataIndex: "categoryTypeName",
+        key: "categoryTypeName",
+        sorter: (a, b) => (a.categoryTypeName || "").localeCompare(b.categoryTypeName || ""),
+        render: (value) => <span className="text-sm font-semibold text-[#432744]">{value}</span>,
+      },
+      {
+        title: t("adminCategories.status"),
+        dataIndex: "status",
+        key: "status",
+        sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+        render: (value) => <CategoryStatusBadge status={value} />,
+      },
+      {
+        title: t("adminCategories.actions"),
+        key: "actions",
+        align: "center",
+        render: (_, category) => (
+          <ActionButtons
+            onView={() => navigate(getAdminCategoryDetailRoute(category.categoryId))}
+            onEdit={() => navigate(getAdminCategoryDetailRoute(category.categoryId), { state: { startInEdit: true } })}
+            onDelete={() => setDeleteTarget(category)}
+          />
+        ),
+      },
+    ], [navigate, t],
+  );
+
+  const handleDeleteCategory = async () => {
+    if (!deleteTarget || isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await deleteAdminCategory(deleteTarget.categoryId);
+      setDeleteTarget(null);
+      toast.success(t("adminCategories.deleteSuccess", { name: deleteTarget.name }));
+
+      const shouldMoveBack = categories.length === 1 && metaData.currentPage > 1;
+      const targetPage = shouldMoveBack ? Math.max(metaData.currentPage - 1, 1) : metaData.currentPage;
+
+      const response = await fetchAdminCategories({
+        pageNumber: targetPage,
+        pageSize: metaData.pageSize,
+        name: debouncedQuery,
+        categoryTypeId: categoryTypeFilter ? Number(categoryTypeFilter) : undefined,
+      });
+      setCategories(response.items);
+      setMetaData(response.metaData);
+    } catch (deleteError) {
+      toast.error(deleteError instanceof Error ? deleteError.message : t("adminCategories.deleteFailed"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <>
+      <section className="flex min-h-full flex-col gap-4">
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="relative flex-1">
+                <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("adminCategories.searchPlaceholder")}
+                  className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: 1,
+                  }))
+                }
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              >
+                <Search size={14} className="mr-2 shrink-0" />
+                {t("adminCategories.search")}
+              </button>
+            </div>
+
+            <select
+              value={categoryTypeFilter}
+              onChange={(event) => {
+                setCategoryTypeFilter(event.target.value);
+                setMetaData((current) => ({
+                  ...current,
+                  currentPage: 1,
+                }));
+              }}
+              disabled={isFilterLoading}
+              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93] disabled:opacity-70"
+            >
+              <option value="">{language === "vi" ? "Tất cả loại danh mục" : "All Category Types"}</option>
+              {categoryTypes.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Link
+            to={ROUTES.adminCategoriesCreate}
+            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+          >
+            <Plus size={13} className="mr-1.5 shrink-0" />
+            {t("adminCategories.addCategory")}
+          </Link>
+        </div>
+
+        <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+          <Table
+            rowKey="categoryId"
+            columns={columns}
+            dataSource={categories}
+            loading={{
+              spinning: isLoading,
+              indicator: <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />,
+            }}
+            pagination={false}
+            scroll={{ x: 980 }}
+            locale={{ emptyText: error || t("adminCategories.noCategoriesFound") }}
+            className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
+          />
+
+          <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-[#c694ad]">
+              {t("adminCategories.showingCategories", { first: metaData.firstRowOnPage, last: metaData.lastRowOnPage, total: metaData.totalItems })}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={!metaData.hasPrevious || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.max(current.currentPage - 1, 1),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              {paginationItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  disabled={item === "..." || item === metaData.currentPage || isLoading}
+                  onClick={() => {
+                    if (typeof item !== "number") {
+                      return;
+                    }
+
+                    setMetaData((current) => ({ ...current, currentPage: item }));
+                  }}
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
+                    ? "bg-[#ea4f93] font-bold text-white"
+                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
+                    } disabled:cursor-default disabled:opacity-100`}
+                >
+                  {item}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={!metaData.hasNext || isLoading}
+                onClick={() =>
+                  setMetaData((current) => ({
+                    ...current,
+                    currentPage: Math.min(current.currentPage + 1, current.totalPages),
+                  }))
+                }
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      {deleteTarget ? (
+        <ActionConfirmModal
+          open
+          intent="danger"
+          title={t("adminCategories.deleteCategoryTitle")}
+          subtitle={t("adminCategories.deleteConfirmSubtitle")}
+          description={t("adminCategories.deleteConfirmDesc", { name: deleteTarget.name })}
+          confirmText={t("adminCategories.deleteCategory")}
+          cancelText={t("adminCategories.keepCategory")}
+          confirmIcon={Trash2}
+          loading={isDeleting}
+          onConfirm={handleDeleteCategory}
+          onCancel={() => !isDeleting && setDeleteTarget(null)}
+          item={{
+            title: deleteTarget.name,
+            meta: `${deleteTarget.categoryTypeName} | ${deleteTarget.status}`,
+            note: `Category ID: ${deleteTarget.categoryId}`,
+          }}
+          warnings={[t("adminCategories.deleteWarning")]}
+        />
+      ) : null}
+    </>
+  );
+}

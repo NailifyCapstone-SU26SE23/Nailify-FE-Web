@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { PropTypes } from "../../utils/propTypes";
+import { useLanguage } from "../../hooks/useLanguage";
 
 const INTENT_STYLES = {
   danger: {
@@ -89,9 +90,62 @@ export function ActionConfirmModal({
   warnings = [],
   item = null,
   width = 480,
+  compact = false,
+  zIndex = 1000,
 }) {
   const palette = INTENT_STYLES[intent] ?? INTENT_STYLES.info;
   const HeaderIcon = ICON_BY_TONE[intent] ?? ICON_BY_TONE.info;
+  const { t, language } = useLanguage();
+  const useCompactLayout = compact || intent === "danger";
+  const modalWidth = useCompactLayout ? Math.min(width, 420) : width;
+  const isVi = language === "vi";
+
+  if (useCompactLayout) {
+    return (
+      <Modal
+        open={open}
+        centered
+        onCancel={loading ? undefined : onCancel}
+        footer={null}
+        closable={false}
+        mask={{ closable: !loading }}
+        keyboard={!loading}
+        width={modalWidth}
+        styles={MODAL_STYLES}
+        zIndex={zIndex}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${palette.panelIconClassName}`}>
+            <HeaderIcon size={20} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className={`inline-flex items-center justify-center rounded-full border px-4 py-2 font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 font-bold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+          >
+            {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
+            {loading ? (isVi ? "Đang xử lý..." : "Processing...") : confirmText}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -102,8 +156,9 @@ export function ActionConfirmModal({
       closable={false}
       mask={{ closable: !loading }}
       keyboard={!loading}
-      width={width}
+      width={modalWidth}
       styles={MODAL_STYLES}
+      zIndex={zIndex}
     >
       <div>
         <div className={`px-6 py-5 text-white ${palette.headerClassName}`}>
@@ -113,10 +168,10 @@ export function ActionConfirmModal({
                 <HeaderIcon size={20} />
               </div>
               <div>
-                <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
-                  Confirm Action
+                <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${palette.badgeClassName}`}>
+                  {language === "vi" ? "Xác nhận hành động" : "Confirm Action"}
                 </span>
-                <h3 className="mt-3 text-lg font-black">{title}</h3>
+                <h3 className="mt-3 text-lg font-bold">{title}</h3>
                 {subtitle ? <p className="mt-1 text-sm text-white/78">{subtitle}</p> : null}
               </div>
             </div>
@@ -133,7 +188,7 @@ export function ActionConfirmModal({
         </div>
 
         <div className="space-y-4 px-6 py-5">
-          <div className={`rounded-[22px] border p-4 ${palette.panelClassName}`}>
+          <div className={`rounded-lg border p-4 ${palette.panelClassName}`}>
             <div className="flex items-start gap-3">
               <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${palette.panelIconClassName}`}>
                 <Info size={16} />
@@ -157,10 +212,10 @@ export function ActionConfirmModal({
           </div>
 
           {item ? (
-            <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
               <div className="flex items-center gap-3">
                 {item.image ? (
-                  <img
+                  <img crossOrigin="anonymous"
                     src={item.image}
                     alt={item.title}
                     className="h-14 w-14 rounded-2xl object-cover shadow-sm"
@@ -171,7 +226,7 @@ export function ActionConfirmModal({
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-extrabold text-slate-800">{item.title}</p>
+                  <p className="truncate text-[13px] font-bold text-slate-800">{item.title}</p>
                   {item.meta ? <p className="mt-1 text-[11px] text-slate-500">{item.meta}</p> : null}
                   {item.note ? <p className="mt-1 text-[11px] text-slate-400">{item.note}</p> : null}
                 </div>
@@ -180,7 +235,7 @@ export function ActionConfirmModal({
           ) : null}
 
           {details.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={`grid gap-3 ${details.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"}`}>
               {details.map((detail) => (
                 <div key={detail.label} className="rounded-[18px] border border-slate-200 bg-white p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
@@ -193,10 +248,12 @@ export function ActionConfirmModal({
           ) : null}
 
           {warnings.length > 0 ? (
-            <div className={`rounded-[22px] border p-4 ${palette.warningClassName}`}>
+            <div className={`rounded-lg border p-4 ${palette.warningClassName}`}>
               <div className="mb-3 flex items-center gap-2">
                 <AlertTriangle size={15} />
-                <p className="text-[12px] font-extrabold uppercase tracking-[0.08em]">Please Note</p>
+                <p className="text-[12px] font-bold uppercase tracking-[0.08em]">
+                  {language === "vi" ? "Xin lưu ý" : "Please Note"}
+                </p>
               </div>
               <ul className="space-y-2">
                 {warnings.map((warning) => (
@@ -215,7 +272,7 @@ export function ActionConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
+            className={`inline-flex items-center justify-center rounded-full border px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-not-allowed disabled:opacity-60 ${palette.cancelClassName}`}
           >
             {cancelText}
           </button>
@@ -223,10 +280,10 @@ export function ActionConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:cursor-wait disabled:opacity-70 ${palette.confirmClassName}`}
           >
             {ConfirmIcon ? <ConfirmIcon size={14} /> : null}
-            {loading ? "Processing..." : confirmText}
+            {loading ? language === "vi" ? "Đang xử lý..." : "Processing..." : confirmText}
           </button>
         </div>
       </div>
@@ -261,6 +318,7 @@ ActionConfirmModal.propTypes = {
   title: PropTypes.string.isRequired,
   warnings: PropTypes.arrayOf(PropTypes.string),
   width: PropTypes.number,
+  compact: PropTypes.bool,
 };
 
 ActionConfirmModal.defaultProps = {
@@ -274,4 +332,6 @@ ActionConfirmModal.defaultProps = {
   subtitle: "",
   warnings: [],
   width: 480,
+  compact: false,
 };
+

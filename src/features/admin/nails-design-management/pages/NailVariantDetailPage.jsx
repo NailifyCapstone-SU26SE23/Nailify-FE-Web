@@ -1,0 +1,1752 @@
+import {
+  ArrowLeft,
+  Camera,
+  Eye,
+  Image,
+  LoaderCircle,
+  PencilLine,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  Upload,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Sliders,
+  X,
+  Clock,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  GripVertical,
+  ChevronDown
+} from "lucide-react";
+import manHandImg from "../../../../shared/assets/images/manHand.png";
+import womanHandImg from "../../../../shared/assets/images/womanHand.png";
+import toast from "react-hot-toast";
+import { Modal } from "antd";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import {
+  getAdminNailDesignDetailRoute,
+  getAdminNailVariantDetailRoute,
+  getAdminNailVariantTryOnRoute,
+  ROUTES,
+} from "../../../../shared/constants/routes";
+import {
+  assignProceduresToVariant,
+  deleteAdminNailVariant,
+  fetchAdminNailVariantDetail,
+  fetchProceduresByVariant,
+  fetchAdminNailVariantReferences,
+  fetchAdminNailVariantSummary,
+  updateAdminNailVariant,
+} from "../services/nailDesignManagementService";
+import {
+  buildColorJsonFromTryOn,
+  createVariantNailComponents,
+  findShapeId,
+  findSurfaceId,
+} from "../utils/variantTryOnUtils";
+import { fetchAdminProcedures } from "../../procedures-management/services/proceduresManagementService";
+import { Canvas } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
+import * as THREE from "three";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseShaderParam(shaderParam) {
+  const rawValue = String(shaderParam || "").trim();
+  if (!rawValue) return {};
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return {};
+  }
+}
+
+function NailSurface3DLayer({ surface, handType = "tips" }) {
+  if (!surface) return null;
+  const config = parseShaderParam(surface.shaderParam);
+
+  const textureType = String(config?.texture?.type || "").toLowerCase();
+  const isMatte = textureType.includes("matte") || config?.shine?.enabled === false;
+  const hasChrome = Boolean(config?.metalness?.enabled || config?.mirrorEffect?.enabled);
+  const hasRainbow = Boolean(config?.iridescence?.enabled || config?.holographic?.enabled);
+
+  const roughness = clamp(Number(config?.texture?.roughness ?? (isMatte ? 0.8 : 0.05)), 0, 1);
+  const metalness = hasChrome ? clamp(Number(config?.metalness?.intensity || 0.9), 0, 1) : 0;
+  const clearcoat = isMatte ? 0 : clamp(Number(config?.shine?.opacity || 1.2), 0, 1.5);
+  const iridescence = hasRainbow ? clamp(Number(config?.iridescence?.intensity || 0.8), 0, 1) : 0;
+
+  return (
+    <div className="absolute inset-0 h-full w-full pointer-events-none mix-blend-screen">
+      <Canvas
+        key={handType}
+        camera={{ position: [0, 0, 5], fov: 40 }}
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        gl={{ alpha: true, antialias: true }}
+      >
+        <ambientLight intensity={isMatte ? 0.6 : 0.3} />
+        <directionalLight position={[0, 0, 8]} intensity={2.2} />
+        <directionalLight position={[5, 10, 5]} intensity={1.5} />
+        <directionalLight position={[-5, -10, 5]} intensity={0.5} />
+        <Environment preset="studio" />
+
+        <mesh scale={[1.4, 2.8, 0.6]}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshPhysicalMaterial
+            color={new THREE.Color(0x000000)}
+            roughness={roughness}
+            metalness={metalness}
+            clearcoat={clearcoat}
+            iridescence={iridescence}
+            transparent={true}
+            depthWrite={false}
+          />
+        </mesh>
+      </Canvas>
+    </div>
+  );
+}
+
+function isHexColor(value) {
+  return /^#(?:[0-9a-f]{3}){1,2}$/i.test(String(value || "").trim());
+}
+
+function extractVariantColors(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+  const parsedColors = [];
+
+  const collectColors = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(collectColors);
+      return;
+    }
+    if (value && typeof value === "object") {
+      Object.values(value).forEach(collectColors);
+      return;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim();
+      if (isHexColor(normalized)) {
+        parsedColors.push(normalized);
+      }
+    }
+  };
+
+  try {
+    collectColors(JSON.parse(rawValue));
+  } catch {
+    collectColors(rawValue);
+  }
+
+  return [...new Set(parsedColors)];
+}
+
+function Pill({ children, tone = "default" }) {
+  const toneMap = {
+    default: "border-[#f4c6da] bg-white text-[#8c7085]",
+    pink: "border-[#ffd1e3] bg-[#fff0f7] text-[#ea4f93]",
+    purple: "border-[#ead8ff] bg-[#f5ecff] text-[#8b5cf6]",
+    blue: "border-[#dce7ff] bg-[#eef4ff] text-[#4a72d8]",
+    yellow: "border-[#f8e3b3] bg-[#fff4df] text-[#d9871c]",
+  };
+
+  return (
+    <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold ${toneMap[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function DetailCard({ title, children }) {
+  return (
+    <article className="rounded-lg border border-[#f7d7e5] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)]">
+      <h2 className="font-bold text-[#432744]">{title}</h2>
+      <div className="mt-4">{children}</div>
+    </article>
+  );
+}
+
+function parseVariantColorConfig(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+  if (!rawValue) return null;
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return rawValue;
+  }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) return [];
+  if (Array.isArray(colorConfig)) return colorConfig;
+  if (Array.isArray(colorConfig.gradient)) return colorConfig.gradient;
+  if (Array.isArray(colorConfig.gradient?.stops)) return colorConfig.gradient.stops;
+  if (Array.isArray(colorConfig.gradientStops)) return colorConfig.gradientStops;
+  return [];
+}
+
+function buildFingerColorStyle(colorConfig, fingerIndex) {
+  if (!colorConfig) return { backgroundColor: "#f9c2d8" };
+  if (typeof colorConfig === "string") return { backgroundColor: colorConfig };
+
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f9c2d8").trim();
+    return { backgroundColor: color || "#f9c2d8" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
+  }
+
+  if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
+    const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
+    if (finger) {
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
+      }
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
+      }
+    }
+  }
+
+  if (colorConfig.mode === "gradient" && colorConfig.primaryColor && colorConfig.secondaryColor) {
+    return { background: `linear-gradient(to bottom, ${colorConfig.primaryColor}, ${colorConfig.secondaryColor})` };
+  }
+  if (colorConfig.color) return { backgroundColor: colorConfig.color };
+  if (colorConfig.primaryColor) return { backgroundColor: colorConfig.primaryColor };
+
+  return { backgroundColor: "#f9c2d8" };
+}
+
+function getBuilderCanvasLayout(canvasW = 320, canvasH = 420, length = 1.0) {
+  const fingerLength = Math.min(canvasW * 0.36, canvasH * 0.32);
+  const nailWidth = fingerLength * 2.0;
+  const nailHeight = fingerLength * 1.2 * length;
+  const nailBottom = fingerLength * 0.75;
+  const totalHeight = nailHeight * 1.5;
+  const originX = canvasW / 2;
+  const originY = canvasH / 2 + canvasH * 0.16;
+  return {
+    destX: originX - nailWidth / 2,
+    destY: originY + nailBottom - totalHeight,
+    destW: nailWidth,
+    destH: totalHeight,
+    canvasW,
+    canvasH,
+  };
+}
+
+function componentStyleFromDecoration(posX, posY, scale, rotation) {
+  const layout = getBuilderCanvasLayout();
+  const { destX, destY, destW, destH, canvasW, canvasH } = layout;
+  const cx = destX + destW / 2;
+  const cy = destY + destH / 2;
+  const decCX = cx + Number(posX || 0) * destW;
+  const decCY = cy + Number(posY || 0) * destH;
+  const leftPct = (decCX / canvasW) * 100;
+  const topPct = (decCY / canvasH) * 100;
+  const widthPct = (destW * Number(scale || 0.2)) / canvasW * 100;
+  const heightPct = (destH * Number(scale || 0.2)) / canvasH * 100;
+  return { leftPct, topPct, widthPct, heightPct };
+}
+
+function parseComponentConfig(configJson) {
+  if (!configJson) return {};
+  try {
+    return typeof configJson === "string" ? JSON.parse(configJson) : configJson;
+  } catch {
+    return {};
+  }
+}
+
+function getFingerAlignmentClass(fingerName) {
+  switch (fingerName) {
+    case "Thumb": return "translate-y-8 -rotate-[14deg] md:translate-y-10";
+    case "Index": return "translate-y-2 -rotate-[4deg]";
+    case "Middle": return "-translate-y-3";
+    case "Ring": return "rotate-[2deg]";
+    case "Pinky": return "translate-y-6 rotate-[10deg] md:translate-y-8";
+    default: return "";
+  }
+}
+
+const DEFAULT_COORDINATES = {
+  "woman": {
+    "1": { "left": 14.27, "top": 44.34, "width": 7.4, "height": 17.5, "rotation": -54 },
+    "2": { "left": 27.65, "top": 12.58, "width": 9.8, "height": 24.3, "rotation": -19 },
+    "3": { "left": 46.52, "top": 5.84, "width": 10.1, "height": 23.4, "rotation": -2 },
+    "4": { "left": 63.27, "top": 12.34, "width": 10.4, "height": 22.5, "rotation": 4 },
+    "5": { "left": 74.52, "top": 25.59, "width": 8, "height": 17.4, "rotation": 4 }
+  },
+  "man": {
+    "1": { "left": 14.37, "top": 45.02, "width": 7.4, "height": 17.5, "rotation": -54 },
+    "2": { "left": 27.65, "top": 12.63, "width": 9.8, "height": 24.3, "rotation": -19 },
+    "3": { "left": 46.62, "top": 5.91, "width": 10.1, "height": 23.4, "rotation": -2 },
+    "4": { "left": 63.12, "top": 12.91, "width": 10.4, "height": 22.5, "rotation": 4 },
+    "5": { "left": 74.87, "top": 24.7, "width": 8, "height": 17.4, "rotation": 4 }
+  }
+};
+
+const HAND_VIEW_FRAME = { width: 400, height: 400 };
+const HAND_VIEW_NAIL_SCALE = 1;
+
+const EMPTY_SUMMARY = {
+  totalBookings: 0,
+  totalFavorites: 0,
+  averageRating: 0,
+  ratingCount: 0,
+};
+
+function NailVariantHandPreview({ variantDetail }) {
+  const { t, language } = useLanguage();
+  const [viewMode, setViewMode] = useState("tips");
+  const [handType, setHandType] = useState("woman");
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [coords, setCoords] = useState(DEFAULT_COORDINATES);
+  const [draggingFinger, setDraggingFinger] = useState(null);
+  const [selectedFinger, setSelectedFinger] = useState(1);
+  const [showCalibration, setShowCalibration] = useState(false);
+  const [clickToPlace, setClickToPlace] = useState(false);
+  const handContainerRef = useRef(null);
+  const handImgRef = useRef(null);
+
+  const colorConfig = useMemo(
+    () => parseVariantColorConfig(variantDetail?.colorJson),
+    [variantDetail?.colorJson],
+  );
+
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
+
+  const fingerDefinitions = [
+    { fingerIndex: 1, label: "Thumb" },
+    { fingerIndex: 2, label: "Index" },
+    { fingerIndex: 3, label: "Middle" },
+    { fingerIndex: 4, label: "Ring" },
+    { fingerIndex: 5, label: "Pinky" },
+  ];
+
+  const shapeMaskStyle = variantDetail?.nailShape?.imageUrl
+    ? {
+      maskImage: `url(${variantDetail.nailShape.imageUrl})`,
+      WebkitMaskImage: `url(${variantDetail.nailShape.imageUrl})`,
+      maskSize: "cover",
+      WebkitMaskSize: "cover",
+      maskRepeat: "no-repeat",
+      WebkitMaskRepeat: "no-repeat",
+      maskPosition: "center",
+      WebkitMaskPosition: "center",
+    }
+    : {};
+
+  const handleMouseDown = (e) => {
+    if (viewMode !== "hand") return;
+    if (clickToPlace) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  };
+
+  const handleHandClick = (e) => {
+    if (!clickToPlace || !handImgRef.current) return;
+    e.stopPropagation();
+    const rect = handImgRef.current.getBoundingClientRect();
+    const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+    setCoords(prev => ({
+      ...prev,
+      [handType]: {
+        ...prev[handType],
+        [selectedFinger]: {
+          ...prev[handType][selectedFinger],
+          left: parseFloat(xPct.toFixed(2)),
+          top: parseFloat(yPct.toFixed(2)),
+        }
+      }
+    }));
+    if (selectedFinger < 5) setSelectedFinger(f => f + 1);
+  };
+
+  const handleMouseMove = (e) => {
+    if (draggingFinger && handImgRef.current) {
+      const rect = handImgRef.current.getBoundingClientRect();
+      const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const yPct = ((e.clientY - rect.top) / rect.height) * 100;
+      setCoords(prev => ({
+        ...prev,
+        [handType]: {
+          ...prev[handType],
+          [draggingFinger]: {
+            ...prev[handType][draggingFinger],
+            left: parseFloat(xPct.toFixed(2)),
+            top: parseFloat(yPct.toFixed(2)),
+          }
+        }
+      }));
+      return;
+    }
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDraggingFinger(null);
+  };
+
+  const handleZoom = (direction) => {
+    setZoom(prev => {
+      const next = direction === "in" ? prev + 0.15 : prev - 0.15;
+      return Math.min(3, Math.max(0.5, next));
+    });
+  };
+
+  const handleReset = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const currentHandImg = handType === "woman" ? womanHandImg : manHandImg;
+  const handDimensions = HAND_VIEW_FRAME;
+
+  return (
+    <div className="rounded-lg border border-[#f7d7e5] bg-[radial-gradient(circle_at_top,#fffdfd_0%,#fff6fb_58%,#fff2f8_100%)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#fce6f3] pb-4">
+        <div className="flex rounded-full bg-[#ffeef5]/60 p-1 border border-[#fce6f3]">
+          <button
+            onClick={() => setViewMode("tips")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 ${viewMode === "tips" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
+          >
+            {t("handPreview.individualNails")}
+          </button>
+          <button
+            onClick={() => setViewMode("hand")}
+            className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${viewMode === "hand" ? "bg-[#ea4f93] text-white shadow-sm" : "text-[#ea4f93] hover:text-[#d14c84]"}`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {t("handPreview.viewOnHand")}
+          </button>
+        </div>
+
+        {viewMode === "hand" && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex rounded-full bg-white p-1 border border-[#fcd5e6]">
+              <button
+                onClick={() => setHandType("woman")}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${handType === "woman" ? "bg-[#ea4f93] text-white" : "text-[#c694ad] hover:text-[#ea4f93]"}`}
+              >
+                {t("handPreview.woman")}
+              </button>
+              <button
+                onClick={() => setHandType("man")}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${handType === "man" ? "bg-[#ea4f93] text-white" : "text-[#c694ad] hover:text-[#ea4f93]"}`}
+              >
+                {t("handPreview.man")}
+              </button>
+            </div>
+
+            <div className="flex rounded-full bg-white border border-[#fcd5e6] overflow-hidden">
+              <button
+                onClick={() => handleZoom("in")}
+                title={t("handPreview.zoomIn")}
+                className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition border-r border-[#fcd5e6]"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleZoom("out")}
+                title={t("handPreview.zoomOut")}
+                className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition border-r border-[#fcd5e6]"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleReset}
+                title={t("handPreview.resetZoomPan")}
+                className="px-2.5 py-1 text-[#ea4f93] hover:bg-[#ffeef5] transition"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowCalibration(!showCalibration)}
+              title={t("handPreview.calibrationSliders")}
+              className={`p-1.5 rounded-full border transition ${showCalibration ? "bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm" : "bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]"}`}
+            >
+              <Sliders className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {viewMode === "tips" ? (
+        <div className="flex min-h-[300px] flex-wrap items-center justify-center gap-5 lg:gap-6">
+          {fingerDefinitions.map((finger) => {
+            const colorStyle = buildFingerColorStyle(colorConfig, finger.fingerIndex);
+
+            return (
+              <div
+                key={finger.label}
+                className={`flex flex-col items-center gap-3.5 transition-all duration-500 ease-out ${getFingerAlignmentClass(finger.label)}`}
+              >
+                <div className="relative group">
+                  <div className="absolute -inset-1 rounded-t-[36px] rounded-b-[18px] bg-gradient-to-t from-[#ea4f93]/15 to-[#ffb8d9]/5 opacity-30 blur-md transition duration-500 group-hover:opacity-60 group-hover:blur-lg" />
+
+                  <div className="relative h-48 w-24 overflow-hidden rounded-t-[32px] rounded-b-[14px] border-2 border-[#fcd5e6] bg-gradient-to-b from-[#fff6f9] to-[#ffeef5] shadow-[0_12px_28px_rgba(236,72,153,0.06)] transition-all duration-300 group-hover:scale-105 group-hover:border-[#ea4f93]">
+                    <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
+                      <div className="absolute inset-0 h-full w-full" style={colorStyle} />
+
+                      {(variantDetail?.nailComponents || []).filter((item) => {
+                        const componentFingerIndex = Number(item?.fingerIndex);
+                        return componentFingerIndex === -1 || componentFingerIndex === finger.fingerIndex;
+                      }).map((componentItem, index) => {
+                        const component = componentItem?.component;
+                        if (!component?.imageUrl) return null;
+
+                        const config = parseComponentConfig(componentItem.configJson);
+                        const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
+                        const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+                        const displaySizePercent = scale * 2.5 * 100;
+
+                        return (
+                          <img
+                            key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}`}
+                            crossOrigin="anonymous"
+                            src={component.imageUrl}
+                            alt={component.name || "component"}
+                            className="pointer-events-none absolute object-contain drop-shadow-[0_6px_10px_rgba(234,79,147,0.18)]"
+                            referrerPolicy="no-referrer"
+                            style={{
+                              left: `${50 + Number(componentItem?.posX || 0) * 100}%`,
+                              top: `${50 + Number(componentItem?.posY || 0) * 100}%`,
+                              width: `${displaySizePercent}%`,
+                              height: `${displaySizePercent}%`,
+                              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                            }}
+                          />
+                        );
+                      })}
+
+                      <NailSurface3DLayer surface={variantDetail?.nailSurface} />
+                    </div>
+
+                    {variantDetail?.nailShape?.imageUrl ? (
+                      <img
+                        crossOrigin="anonymous"
+                        src={variantDetail.nailShape.imageUrl}
+                        alt="shape mask"
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+
+                <span className="rounded-full border border-[#fce6f3] bg-white/90 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)]">
+                  {fingerLabels[finger.fingerIndex - 1]}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div
+            ref={handContainerRef}
+            className={`relative h-[520px] w-full overflow-hidden rounded-lg border border-[#fcd5e6] flex items-center justify-center ${clickToPlace ? 'cursor-crosshair bg-[#ffeef5]/60' : (draggingFinger ? 'cursor-grabbing' : 'cursor-grab bg-[#ffeef5]/35')}`}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onClick={handleHandClick}
+          >
+            <div
+              ref={handImgRef}
+              className="relative select-none origin-center"
+              style={{
+                width: `${handDimensions.width}px`,
+                height: `${handDimensions.height}px`,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                cursor: isDragging ? 'grabbing' : 'grab',
+                transition: isDragging ? 'none' : 'transform 0.15s ease-out'
+              }}
+            >
+              <img
+                src={currentHandImg}
+                alt="Hand preview"
+                draggable="false"
+                className="w-full h-full object-contain select-none pointer-events-none"
+              />
+
+              {clickToPlace && (() => {
+                const coord = coords[handType][selectedFinger];
+                const fingerLabel = fingerLabels[selectedFinger - 1];
+                return (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{ left: `${coord.left}%`, top: `${coord.top}%`, transform: 'translate(-50%,-50%)' }}
+                  >
+                    <div className="w-6 h-6 border-2 border-[#ea4f93] rounded-full bg-[#ea4f93]/20 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-[#ea4f93] rounded-full" />
+                    </div>
+                    <span className="absolute left-1/2 -translate-x-1/2 top-7 whitespace-nowrap rounded-full bg-[#ea4f93] px-2 py-0.5 text-[9px] font-bold text-white">
+                      {fingerLabel}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {fingerDefinitions.map((finger) => {
+                const coord = coords[handType][finger.fingerIndex];
+                const colorStyle = buildFingerColorStyle(colorConfig, finger.fingerIndex);
+
+                return (
+                  <div
+                    key={finger.label}
+                    className={`absolute transition-none ${showCalibration ? (draggingFinger === finger.fingerIndex ? "cursor-grabbing z-20" : "cursor-grab z-10") : ""}`}
+                    style={{
+                      left: `${coord.left}%`,
+                      top: `${coord.top}%`,
+                      width: `${coord.width * HAND_VIEW_NAIL_SCALE}%`,
+                      height: `${coord.height * HAND_VIEW_NAIL_SCALE}%`,
+                      transform: `translate(-50%, -50%) rotate(${coord.rotation}deg)`,
+                    }}
+                    onMouseDown={(e) => {
+                      if (showCalibration && !clickToPlace) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDraggingFinger(finger.fingerIndex);
+                        setSelectedFinger(finger.fingerIndex);
+                      }
+                    }}
+                  >
+                    <div className="relative w-full h-full overflow-hidden">
+                      <div className="absolute inset-0 h-full w-full" style={shapeMaskStyle}>
+                        <div className="absolute inset-0 h-full w-full" style={colorStyle} />
+
+                        {(variantDetail?.nailComponents || []).filter((item) => {
+                          const componentFingerIndex = Number(item?.fingerIndex);
+                          return componentFingerIndex === -1 || componentFingerIndex === finger.fingerIndex;
+                        }).map((componentItem, index) => {
+                          const component = componentItem?.component;
+                          if (!component?.imageUrl) return null;
+
+                          const config = parseComponentConfig(componentItem.configJson);
+                          const scale = Number.isFinite(Number(config?.scale)) ? Number(config.scale) : 0.2;
+                          const rotation = Number.isFinite(Number(config?.rotation)) ? Number(config.rotation) : 0;
+                          const displaySizePercent = scale * 2.5 * 100;
+
+                          return (
+                            <img
+                              key={`${componentItem?.nailComponentId || index}-${finger.fingerIndex}-hand`}
+                              crossOrigin="anonymous"
+                              src={component.imageUrl}
+                              alt={component.name || "component"}
+                              className="pointer-events-none absolute object-contain"
+                              referrerPolicy="no-referrer"
+                              style={{
+                                left: `${50 + Number(componentItem?.posX || 0) * 100}%`,
+                                top: `${50 + Number(componentItem?.posY || 0) * 100}%`,
+                                width: `${displaySizePercent}%`,
+                                height: `${displaySizePercent}%`,
+                                transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                              }}
+                            />
+                          );
+                        })}
+
+                        <NailSurface3DLayer surface={variantDetail?.nailSurface} handType={handType} />
+                      </div>
+
+                      {variantDetail?.nailShape?.imageUrl ? (
+                        <img
+                          crossOrigin="anonymous"
+                          src={variantDetail.nailShape.imageUrl}
+                          alt="shape mask"
+                          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {showCalibration && (
+            <div className="rounded-lg border border-[#f7d7e5] bg-white p-5 space-y-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold uppercase tracking-[0.08em] text-[#ea4f93]">
+                    {t("handPreview.calibratePositions")}
+                  </h4>
+                  <p className="text-[10px] text-[#c694ad]">
+                    {clickToPlace
+                      ? t("handPreview.clickInstructions")
+                        .replace("{finger}", fingerLabels[selectedFinger - 1])
+                        .replace("{current}", String(selectedFinger))
+                      : t("handPreview.dragInstructions")}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      setClickToPlace(v => !v);
+                      if (!clickToPlace) setSelectedFinger(1);
+                    }}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-bold border transition ${clickToPlace ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'}`}
+                  >
+                    {clickToPlace ? t("handPreview.clickToPlaceOn") : t("handPreview.clickToPlace")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(coords, null, 2));
+                      toast.success(t("handPreview.coordinatesCopied"));
+                    }}
+                    className="rounded-full bg-[#432744] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#2e1a30] transition"
+                  >
+                    {t("handPreview.copyConfig")}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 flex-wrap border-t border-[#fce6f3] pt-3">
+                {fingerDefinitions.map(fd => (
+                  <button
+                    key={fd.fingerIndex}
+                    onClick={() => setSelectedFinger(fd.fingerIndex)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${selectedFinger === fd.fingerIndex ? 'bg-[#ea4f93] border-[#ea4f93] text-white shadow-sm' : 'bg-white border-[#fcd5e6] text-[#ea4f93] hover:bg-[#ffeef5]'}`}
+                  >
+                    {fingerLabels[fd.fingerIndex - 1]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 border-t border-[#fce6f3] pt-4">
+                {["left", "top", "width", "height", "rotation"].map(prop => {
+                  const min = prop === "rotation" ? -90 : 0;
+                  const max = prop === "rotation" ? 100 : 100;
+                  const step = prop === "rotation" ? 1 : 0.1;
+                  const value = coords[handType][selectedFinger][prop];
+                  return (
+                    <div key={prop} className="flex flex-col gap-1.5 rounded-[12px] bg-[#fffafb] p-3 border border-[#fdf0f5]">
+                      <span className="text-[10px] font-bold text-[#c694ad] uppercase flex justify-between">
+                        <span>{prop}</span>
+                        <span className="text-[#ea4f93] font-bold">{value}{prop === "rotation" ? "°" : "%"}</span>
+                      </span>
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        step={step}
+                        value={value}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setCoords(prev => ({
+                            ...prev,
+                            [handType]: {
+                              ...prev[handType],
+                              [selectedFinger]: {
+                                ...prev[handType][selectedFinger],
+                                [prop]: val
+                              }
+                            }
+                          }));
+                        }}
+                        className="w-full h-1 bg-[#fcd5e6] rounded-lg appearance-none cursor-pointer accent-[#ea4f93]"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomProcedureSelect({ value, onChange, availableProcedures, t, language }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedProc = availableProcedures.find(p => p.id === value || p.procedureId === value);
+  const commonProcs = availableProcedures.filter(p => p?.procedureType === "Common" || String(p?.procedureType).includes("Common"));
+  const specificProcs = availableProcedures.filter(p => p?.procedureType !== "Common" && !String(p?.procedureType).includes("Common"));
+
+  return (
+    <div className="relative w-full" ref={selectRef}>
+      <div
+        className={`w-full cursor-pointer flex items-center justify-between rounded-2xl border-2 ${isOpen ? 'border-[#ea4f93] bg-white ring-4 ring-[#ea4f93]/10' : 'border-[#f4d4e2] bg-[#fffafb]'} px-5 py-3 text-sm font-bold text-[#432744] outline-none transition hover:bg-white`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate mr-2 text-left">{selectedProc ? selectedProc.name : t("adminNailsDesignManagement.selectAProcedure")}</span>
+        <ChevronDown size={18} className={`flex-shrink-0 text-[#ea4f93] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full max-h-[300px] overflow-y-auto rounded-2xl border border-[#f4d4e2] bg-white py-2 shadow-[0_8px_30px_rgba(236,72,153,0.15)] animate-in fade-in slide-in-from-top-2">
+          {commonProcs.length > 0 && (
+            <div className="mb-2">
+              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
+                {language === "vi" ? "Quy trình chung (Common)" : "Common Procedures"}
+              </div>
+              {commonProcs.map(proc => (
+                <div
+                  key={proc.id || proc.procedureId}
+                  className={`cursor-pointer px-5 py-2.5 text-sm font-semibold transition hover:bg-[#fff0f7] hover:text-[#ea4f93] ${value === (proc.id || proc.procedureId) ? "bg-[#fff0f7] text-[#ea4f93]" : "text-[#432744]"}`}
+                  onClick={() => {
+                    onChange(proc.id || proc.procedureId);
+                    setIsOpen(false);
+                  }}
+                >
+                  {proc.name}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {specificProcs.length > 0 && (
+            <div className="mb-2">
+              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#b2879f] bg-[#fffafb] sticky top-0 z-10 backdrop-blur-sm bg-white/90 border-b border-[#fdf0f5]">
+                {language === "vi" ? "Quy trình riêng (ModelSpecific)" : "ModelSpecific Procedures"}
+              </div>
+              {specificProcs.map(proc => (
+                <div
+                  key={proc.id || proc.procedureId}
+                  className={`cursor-pointer px-5 py-2.5 text-sm font-semibold transition hover:bg-[#fff0f7] hover:text-[#ea4f93] ${value === (proc.id || proc.procedureId) ? "bg-[#fff0f7] text-[#ea4f93]" : "text-[#432744]"}`}
+                  onClick={() => {
+                    onChange(proc.id || proc.procedureId);
+                    setIsOpen(false);
+                  }}
+                >
+                  {proc.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function NailVariantDetailPage() {
+  const { designId, variantId } = useParams();
+  const navigate = useNavigate();
+  const { t, language } = useLanguage();
+  const location = useLocation();
+  const [variant, setVariant] = useState(null);
+  const [procedures, setProcedures] = useState([]);
+  const [availableProcedures, setAvailableProcedures] = useState([]);
+  const [editingProcedureIndex, setEditingProcedureIndex] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingProcedures, setIsSavingProcedures] = useState(false);
+  const [isSavingTryOn, setIsSavingTryOn] = useState(false);
+  const [isSavingVariant, setIsSavingVariant] = useState(false);
+  const [isDeletingVariant, setIsDeletingVariant] = useState(false);
+  const [showEditVariantModal, setShowEditVariantModal] = useState(false);
+  const [showDeleteVariantConfirm, setShowDeleteVariantConfirm] = useState(false);
+  const [variantDraft, setVariantDraft] = useState({ name: "", image: null });
+  const [variantDraftImagePreviewUrl, setVariantDraftImagePreviewUrl] = useState("");
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [isNotFound, setIsNotFound] = useState(false);
+  const colors = extractVariantColors(variant?.colorJson);
+
+  const pendingTryOnConfig = location.state?.tryOnConfig;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVariant = async () => {
+      setIsLoading(true);
+      setError("");
+      setIsNotFound(false);
+
+      try {
+        const [detail, loadedProcedures, availableProcsResp, summaryResponse] = await Promise.all([
+          fetchAdminNailVariantDetail(variantId),
+          fetchProceduresByVariant(variantId),
+          fetchAdminProcedures({ pageSize: 100 }),
+          fetchAdminNailVariantSummary(variantId).catch(() => EMPTY_SUMMARY),
+        ]);
+
+        if (isMounted) {
+          setVariant(detail);
+          setVariantDraft({
+            name: detail.name || "",
+            image: null,
+          });
+          setProcedures(loadedProcedures);
+          setAvailableProcedures(availableProcsResp?.items || []);
+          setSummary(summaryResponse);
+          setError("");
+        }
+      } catch (loadError) {
+        if (!isMounted) return;
+
+        const statusCode = loadError && typeof loadError === "object" ? loadError.response?.status : undefined;
+        if (statusCode === 404) {
+          setIsNotFound(true);
+        } else {
+          setError(loadError instanceof Error ? loadError.message : (t("adminNailsDesignManagement.failedToLoadNailVariantDetail")));
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadVariant();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [variantId]);
+
+  useEffect(() => {
+    if (!variantDraft.image) {
+      setVariantDraftImagePreviewUrl("");
+      return undefined;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(variantDraft.image);
+    setVariantDraftImagePreviewUrl(nextPreviewUrl);
+
+    return () => URL.revokeObjectURL(nextPreviewUrl);
+  }, [variantDraft.image]);
+
+  const updateProcedureDraft = (index, field, value) => {
+    setProcedures((current) =>
+      current.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        if (field === "procedureId") {
+          const selectedProc = availableProcedures.find((p) => p.id === value || p.procedureId === value);
+          if (selectedProc) {
+            return {
+              ...item,
+              procedureId: selectedProc.id || selectedProc.procedureId,
+              name: selectedProc.name,
+              description: selectedProc.description,
+              durationLabel: selectedProc.durationLabel || selectedProc.duration,
+              status: selectedProc.status,
+              isRequired: selectedProc.isRequired,
+            };
+          }
+          return { ...item, procedureId: value };
+        }
+
+        return { ...item, [field]: value };
+      }),
+    );
+  };
+
+  const addProcedureDraft = () => {
+    setProcedures((current) => {
+      const newIndex = current.length;
+      setEditingProcedureIndex(newIndex);
+      return [
+        ...current,
+        {
+          procedureId: "",
+          name: "",
+          description: "",
+          duration: 0,
+          durationLabel: "--",
+          status: "--",
+          isRequired: false,
+          stepOrder: current.length + 1,
+        },
+      ];
+    });
+  };
+
+  const saveProcedureSteps = async (draftToSave = procedures) => {
+    if (!variant?.nailVariantId) return;
+
+    setIsSavingProcedures(true);
+    setError("");
+
+    try {
+      await assignProceduresToVariant(
+        variant.nailVariantId,
+        draftToSave.map((item, index) => ({
+          procedureId: item.procedureId,
+          stepOrder: Number(item.stepOrder || index + 1),
+        })),
+      );
+      setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
+      setEditingProcedureIndex(null);
+      toast.success(language === 'vi' ? `Lưu bước quy trình thành công` : `Save procedure steps successfully`);
+    } catch (saveError) {
+      setProcedures(await fetchProceduresByVariant(variant.nailVariantId));
+      setEditingProcedureIndex(null);
+      setError(saveError instanceof Error ? saveError.message : (language === 'vi' ? `Không thể lưu bước quy trình` : `Failed to save procedure steps`));
+    } finally {
+      setIsSavingProcedures(false);
+    }
+  };
+
+  const removeProcedureDraft = async (index) => {
+    const newDraft = procedures.filter((_, itemIndex) => itemIndex !== index);
+    setProcedures(newDraft);
+    if (editingProcedureIndex === index) {
+      setEditingProcedureIndex(null);
+    } else if (editingProcedureIndex > index) {
+      setEditingProcedureIndex(editingProcedureIndex - 1);
+    }
+    await saveProcedureSteps(newDraft);
+  };
+
+  const openTryOn = (mode) => {
+    navigate(getAdminNailVariantTryOnRoute(designId, variantId, mode), {
+      state: {
+        returnTo: getAdminNailVariantDetailRoute(designId, variantId),
+      },
+    });
+  };
+
+  const openEditVariantModal = () => {
+    setVariantDraft({
+      name: variant?.name || "",
+      image: null,
+    });
+    setShowEditVariantModal(true);
+  };
+
+  const closeEditVariantModal = () => {
+    if (isSavingVariant) return;
+    setShowEditVariantModal(false);
+    setVariantDraft({ name: variant?.name || "", image: null });
+  };
+
+  const updateVariantDraft = (field) => (event) => {
+    const value = field === "image" ? event.target.files?.[0] ?? null : event.target.value;
+    setVariantDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const saveVariantDetails = async () => {
+    const normalizedName = String(variantDraft.name || "").trim();
+
+    if (!normalizedName) {
+      setError(language === "vi" ? "Ten bien the la bat buoc." : "Variant name is required.");
+      return;
+    }
+
+    setIsSavingVariant(true);
+    setError("");
+
+    try {
+      await updateAdminNailVariant(variantId, {
+        name: normalizedName,
+        nailShapeId: variant.nailShapeId,
+        nailSurfaceId: variant.nailSurfaceId,
+        nailDesignId: variant.nailDesignId || Number(designId || 0),
+        imageUrl: variant.imageUrl,
+        image: variantDraft.image,
+        colorJson: variant.colorJson,
+      });
+
+      const [detail, loadedProcedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variantId),
+        fetchProceduresByVariant(variantId),
+      ]);
+
+      setVariant(detail);
+      setVariantDraft({
+        name: detail.name || "",
+        image: null,
+      });
+      setProcedures(loadedProcedures);
+      setShowEditVariantModal(false);
+      toast.success(language === "vi" ? "Da cap nhat bien the." : "Updated variant details.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Failed to update nail variant.");
+    } finally {
+      setIsSavingVariant(false);
+    }
+  };
+
+  const handleDeleteVariant = async () => {
+    if (!variant?.nailVariantId) return;
+
+    setIsDeletingVariant(true);
+    setError("");
+
+    try {
+      await deleteAdminNailVariant(variant.nailVariantId);
+      toast.success(language === "vi" ? `Đã xóa biến thể "${variant.name}".` : `Deleted variant "${variant.name}".`);
+      navigate(getAdminNailDesignDetailRoute(designId));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete nail variant.");
+    } finally {
+      setIsDeletingVariant(false);
+      setShowDeleteVariantConfirm(false);
+    }
+  };
+
+  const handleSaveTryOn = async () => {
+    if (!pendingTryOnConfig) return;
+    setIsSavingTryOn(true);
+    setError("");
+
+    try {
+      const references = await fetchAdminNailVariantReferences();
+      const nailShapeId = findShapeId(references.shapes, pendingTryOnConfig);
+      const nailSurfaceId = findSurfaceId(references.surfaces, pendingTryOnConfig);
+
+      if (!nailShapeId || !nailSurfaceId) {
+        throw new Error(t("adminNailsDesignManagement.nailShapeAndSurfaceReferencesA"));
+      }
+
+      await updateAdminNailVariant(variantId, {
+        name: variant.name,
+        nailShapeId,
+        nailSurfaceId,
+        nailDesignId: variant.nailDesignId || Number(designId || 0),
+        imageUrl: variant.imageUrl,
+        colorJson: buildColorJsonFromTryOn(pendingTryOnConfig),
+      });
+
+      await createVariantNailComponents(variantId, pendingTryOnConfig);
+
+      navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true });
+
+      const [detail, loadedProcedures] = await Promise.all([
+        fetchAdminNailVariantDetail(variantId),
+        fetchProceduresByVariant(variantId),
+      ]);
+      setVariant(detail);
+      setProcedures(loadedProcedures);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save Try-On setup");
+    } finally {
+      setIsSavingTryOn(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
+        <div className="flex items-center gap-3 rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm text-[#b38a9f]">
+          <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
+          {t("adminNailsDesignManagement.loadingNailVariantDetail")}
+        </div>
+      </section>
+    );
+  }
+
+  if (isNotFound) {
+    return <Navigate to={ROUTES.adminNailDesigns} replace />;
+  }
+
+  if (!variant) {
+    return (
+      <section className="flex min-h-full items-center justify-center bg-[#fff7fb] px-4 py-10">
+        <div className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 text-sm font-medium text-[#d14c84]">
+          {error || (t("adminNailsDesignManagement.failedToLoadNailVariantDetail"))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex min-h-full flex-col gap-4 ">
+      <div className="rounded-[18px] border border-[#f8d8e6] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.06)]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[16px] border border-[#f7d7e5] bg-[#fff0f7]">
+              {variant.imageUrl ? (
+                <img
+                  crossOrigin="anonymous"
+                  src={variant.imageUrl}
+                  alt={variant.name}
+                  className="h-full w-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-[#ea4f93]">
+                  <Image size={22} />
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-[#c694ad]">
+                {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
+              </p>
+              <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openEditVariantModal}
+              className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
+            >
+              <PencilLine size={14} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.editNailVariant")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteVariantConfirm(true)}
+              disabled={isDeletingVariant}
+              className="rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 size={14} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.deleteVariant")}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(getAdminNailDesignDetailRoute(designId))}
+              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#8c7085]"
+            >
+              <ArrowLeft size={14} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.backToDesign")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <DetailCard title={t("adminNailsDesignManagement.summary")}>
+        <div className="mt-5 grid grid-cols-4 gap-3">
+          {[
+            [t("adminNailsDesignManagement.totalBookings"), summary.totalBookings],
+            [t("adminNailsDesignManagement.favorites"), summary.totalFavorites],
+            [t("adminNailsDesignManagement.avgRating"), `${summary.averageRating.toFixed(2)}★`],
+            [t("adminNailsDesignManagement.ratingCount"), summary.ratingCount],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-[18px] bg-[#fff3f8] px-4 py-4">
+              <p className="text-xs font-semibold text-[#c694af]">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-[#ea4f93]">{value}</p>
+            </div>
+          ))}
+        </div>
+      </DetailCard>
+
+      <DetailCard title={t("adminNailsDesignManagement.tryon")}>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            [t("adminNailsDesignManagement.setUpTryOn"), t("adminNailsDesignManagement.tuneNailShapeColorFinishAndLay"), undefined, Eye],
+            [t("adminNailsDesignManagement.photoTryOn"), t("adminNailsDesignManagement.applyThisVariantOnAnUploadedHa"), "image", Image],
+            [t("adminNailsDesignManagement.liveTryOn"), t("adminNailsDesignManagement.applyThisVariantUsingTheCamera"), "live", Camera],
+          ].map(([label, note, mode, Icon]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => openTryOn(mode)}
+              className="flex w-full items-center gap-3 rounded-[16px] border border-[#f4c6da] bg-[#fffafb] p-4 text-left transition hover:border-[#ea4f93]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff0f7] text-[#ea4f93]">
+                <Icon size={18} />
+              </span>
+              <span>
+                <span className="block text-sm font-bold text-[#432744]">{label}</span>
+                <span className="mt-1 block text-xs text-[#8c7085]">{note}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </DetailCard>
+
+      <DetailCard title={t("adminNailsDesignManagement.colorPreview")}>
+        {colors.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {colors.length > 1 ? (
+              <div className="w-full rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
+                <div
+                  className="h-16 rounded-[14px] border border-white shadow-inner"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${colors.join(", ")})` }}
+                />
+                <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{t("adminNailsDesignManagement.gradientMix")}</p>
+              </div>
+            ) : null}
+            {colors.map((color) => (
+              <div key={color} className="w-[110px] rounded-[18px] border border-[#f4d4e2] bg-[#fffafb] p-3">
+                <div className="h-16 rounded-[14px] border border-white shadow-inner" style={{ backgroundColor: color }} />
+                <p className="mt-3 text-center text-[11px] font-bold text-[#6d5669]">{color}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <pre className="overflow-x-auto rounded-[16px] bg-[#fffafb] p-4 text-xs leading-6 text-[#6d5669]">
+            {variant.colorJson}
+          </pre>
+        )}
+      </DetailCard>
+
+      {pendingTryOnConfig && !error ? (
+        <div className="flex items-center justify-between rounded-[18px] border border-[#f4bfd2] bg-[#fff1f6] px-5 py-3">
+          <p className="text-sm font-semibold text-green-700 px-4 py-2 border border-green-400 rounded-full bg-green-100">
+            {t("adminNailsDesignManagement.youHaveUnsavedTryonChanges")}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate(getAdminNailVariantDetailRoute(designId, variantId), { replace: true })}
+              disabled={isSavingTryOn}
+              className="rounded-full border border-[#f4bfd2] bg-white px-4 py-2 text-xs font-bold text-[#d14c84]"
+            >
+              {t("adminNailsDesignManagement.cancel")}
+            </button>
+            <button
+              onClick={handleSaveTryOn}
+              disabled={isSavingTryOn}
+              className="rounded-full bg-[#d14c84] px-4 py-2 text-xs font-bold text-white shadow"
+            >
+              {isSavingTryOn ? (t("adminNailsDesignManagement.saving")) : (t("adminNailsDesignManagement.saveChanges"))}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="space-y-4">
+        <DetailCard title={t("adminNailsDesignManagement.variantOverview")}>
+          <div className="space-y-5">
+            <NailVariantHandPreview variantDetail={variant} />
+
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                [t("adminNailsDesignManagement.price"), variant.priceLabel],
+                [t("adminNailsDesignManagement.duration"), variant.durationLabel],
+                [t("adminNailsDesignManagement.nailShape"), variant.nailShape?.name],
+                [t("adminNailsDesignManagement.nailSurface"), variant.nailSurface?.name],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-[#f7d7e5] bg-[#fffafb] p-4 flex flex-col justify-between">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#c694ad]">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-sm font-bold text-[#432744]">
+                    {value || "-"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DetailCard>
+
+        <DetailCard>
+          <div className="flex flex-row items-center justify-between gap-3 -mt-4">
+            <h1 className="text-xl font-bold text-[#432744]">
+              {t("adminNailsDesignManagement.procedureSteps")}
+            </h1>
+            <button
+              type="button"
+              onClick={addProcedureDraft}
+              disabled={isSavingProcedures || editingProcedureIndex !== null}
+              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] disabled:opacity-50"
+            >
+              <Plus size={13} className="mr-1.5 inline" />
+              {t("adminNailsDesignManagement.addStep")}
+            </button>
+          </div>
+
+          {procedures.length ? (
+            <div className="mt-4 space-y-3">
+              {(() => {
+                const procList = procedures.map((item, index) => ({ item, index }));
+                procList.sort((a, b) => (a.item.stepOrder || a.index + 1) - (b.item.stepOrder || b.index + 1));
+
+                const renderProcedureCard = ({ item, index }) => {
+                  const isEditing = editingProcedureIndex === index;
+
+                  return (
+                    <div key={`${item.procedureId || "draft"}-${index}`} className="group relative overflow-visible rounded-lg border border-[#f4d4e2] bg-white p-5 shadow-[0_4px_20px_rgba(236,72,153,0.03)] transition-all hover:shadow-[0_8px_30px_rgba(236,72,153,0.08)] hover:border-[#fcd5e6]">
+                      {isEditing ? (
+                        <div className="grid gap-5 md:grid-cols-[80px_minmax(0,1fr)]">
+                          <label className="space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c694ad]">
+                              {t("adminNailsDesignManagement.order")}
+                            </span>
+                            <input
+                              value={String(item.stepOrder || index + 1)}
+                              onChange={(event) => updateProcedureDraft(index, "stepOrder", event.target.value)}
+                              className="w-full rounded-2xl border-2 border-[#f4d4e2] bg-[#fffafb] px-4 py-3 text-center text-lg font-black text-[#ea4f93] outline-none transition focus:border-[#ea4f93] focus:bg-white focus:ring-4 focus:ring-[#ea4f93]/10"
+                            />
+                          </label>
+                          <div className="flex flex-col gap-4">
+                            <label className="space-y-2 relative block">
+                              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#c694ad] block">
+                                {t("adminNailsDesignManagement.procedure")}
+                              </span>
+                              <CustomProcedureSelect
+                                value={item.procedureId || ""}
+                                onChange={(val) => updateProcedureDraft(index, "procedureId", val)}
+                                availableProcedures={availableProcedures}
+                                t={t}
+                                language={language}
+                              />
+                            </label>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#f8f9fa] px-3 py-1.5 text-xs font-semibold text-[#6d5669]">
+                                <Clock size={14} className="text-[#a1909e]" />
+                                {item.durationLabel || item.duration}
+                              </div>
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-3 py-1.5 text-xs font-semibold text-[#4a72d8]">
+                                <Activity size={14} className="text-[#84a3f3]" />
+                                {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
+                              </div>
+                              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${item.isRequired ? 'bg-[#fff0f7] text-[#ea4f93]' : 'bg-[#f3f4f6] text-[#9ca3af]'}`}>
+                                {item.isRequired ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                {item.isRequired ? t("adminNailsDesignManagement.yes") : t("adminNailsDesignManagement.no")}
+                              </div>
+                              <div className="flex items-center gap-1.5 rounded-full bg-[#fdf2f7] px-3 py-1.5 text-xs font-semibold text-[#c694ad]">
+                                {(() => {
+                                  const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
+                                  const isCommon = type === "Common" || String(type).includes("Common");
+                                  return language === "vi" ? (isCommon ? "Quy trình chung" : "Quy trình riêng") : (isCommon ? "Common Procedure" : "Model Specific");
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-2 flex flex-wrap gap-3 justify-end mt-2 border-t border-[#fce6f3] pt-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!item.procedureId) {
+                                  const newDraft = procedures.filter((_, itemIndex) => itemIndex !== index);
+                                  setProcedures(newDraft);
+                                  setEditingProcedureIndex(null);
+                                } else {
+                                  fetchProceduresByVariant(variant.nailVariantId).then(res => {
+                                    setProcedures(res);
+                                    setEditingProcedureIndex(null);
+                                  });
+                                }
+                              }}
+                              className="rounded-full border border-[#f4c6da] bg-white px-5 py-2.5 text-xs font-bold text-[#8c7085] hover:bg-[#fff0f7] hover:text-[#ea4f93] transition"
+                            >
+                              {t("adminNailsDesignManagement.cancel")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void saveProcedureSteps()}
+                              disabled={isSavingProcedures || !item.procedureId}
+                              className="flex items-center gap-2 rounded-full bg-[image:var(--gradient-accent)] px-6 py-2.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(236,72,153,0.3)] hover:shadow-[0_10px_25px_rgba(236,72,153,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
+                            >
+                              {isSavingProcedures ? <LoaderCircle size={14} className="animate-spin" /> : <Save size={14} />}
+                              {t("adminNailsDesignManagement.saveStep")}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+                          <div className="flex gap-4 items-start">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#fff0f7] to-[#ffe3ef] shadow-[inset_0_2px_4px_rgba(255,255,255,0.8)] border border-[#ffcce1]">
+                                <span className="text-xl font-black text-[#ea4f93]">{item.stepOrder || index + 1}</span>
+                              </div>
+                              <GripVertical size={16} className="text-[#f4c6da] mt-1 cursor-grab" />
+                            </div>
+
+                            <div className="flex flex-col mt-0.5">
+                              <span className="font-bold text-[#432744] text-lg mb-2">
+                                {item.name || t("adminNailsDesignManagement.unnamedStep")}
+                              </span>
+                              <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#f8f9fa] px-2.5 py-1 text-[#6d5669]">
+                                  <Clock size={12} className="text-[#a1909e]" />
+                                  {item.durationLabel || item.duration}
+                                </span>
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#eef4ff] px-2.5 py-1 text-[#4a72d8]">
+                                  <Activity size={12} className="text-[#84a3f3]" />
+                                  {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
+                                </span>
+                                {item.isRequired && (
+                                  <span className="flex items-center gap-1.5 rounded-lg bg-[#fff0f7] px-2.5 py-1 text-[#ea4f93]">
+                                    <CheckCircle2 size={12} />
+                                    {language === 'vi' ? 'Bắt buộc' : 'Required'}
+                                  </span>
+                                )}
+                                <span className="flex items-center gap-1.5 rounded-lg bg-[#fdf2f7] px-2.5 py-1 text-[#c694ad]">
+                                  {(() => {
+                                    const type = item.procedureType || availableProcedures.find(p => p.id === item.procedureId || p.procedureId === item.procedureId)?.procedureType;
+                                    const isCommon = type === "Common" || String(type).includes("Common");
+                                    return language === "vi" ? (isCommon ? "Quy trình chung" : "Quy trình riêng") : (isCommon ? "Common Procedure" : "Model Specific");
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 self-end sm:self-start">
+                            <button
+                              type="button"
+                              onClick={() => setEditingProcedureIndex(index)}
+                              disabled={isSavingProcedures || editingProcedureIndex !== null}
+                              className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#f4d4e2] text-[#ea4f93] shadow-sm hover:bg-[#ea4f93] hover:text-white hover:border-[#ea4f93] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t("adminNailsDesignManagement.editStep")}
+                            >
+                              <PencilLine size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void removeProcedureDraft(index)}
+                              disabled={isSavingProcedures || editingProcedureIndex !== null}
+                              className="flex items-center justify-center h-9 w-9 rounded-full bg-white border border-[#fecdd3] text-rose-500 shadow-sm hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={t("adminNailsDesignManagement.removeStep")}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {isEditing && item.description ? <p className="mt-3 text-sm leading-6 text-[#6d5669]">{item.description}</p> : null}
+                    </div>
+                  );
+                };
+
+                const handleDragEnd = async (result) => {
+                  if (!result.destination) return;
+                  const sourceIndex = result.source.index;
+                  const destinationIndex = result.destination.index;
+                  if (sourceIndex === destinationIndex) return;
+                  if (editingProcedureIndex !== null) return;
+
+                  const newProcList = [...procList].map(p => p.item);
+                  const [reorderedItem] = newProcList.splice(sourceIndex, 1);
+                  newProcList.splice(destinationIndex, 0, reorderedItem);
+
+                  const newProcedures = newProcList.map((p, idx) => ({
+                    ...p,
+                    stepOrder: idx + 1
+                  }));
+
+                  setProcedures(newProcedures);
+                  await saveProcedureSteps(newProcedures);
+                };
+
+                return (
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="allProceduresDroppable">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-3"
+                        >
+                          {procList.map((data, idx) => {
+                            const draggableId = `${data.item.procedureId || "draft"}-${data.index}`;
+                            return (
+                              <Draggable key={draggableId} draggableId={draggableId} index={idx} isDragDisabled={editingProcedureIndex !== null}>
+                                {(providedDrag, snapshot) => (
+                                  <div
+                                    ref={providedDrag.innerRef}
+                                    {...providedDrag.draggableProps}
+                                    {...providedDrag.dragHandleProps}
+                                    style={{
+                                      ...providedDrag.draggableProps.style,
+                                      ...(snapshot.isDragging ? { zIndex: 50 } : {})
+                                    }}
+                                  >
+                                    {renderProcedureCard(data)}
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-[16px] border border-dashed border-[#f3c9dd] bg-[#fffafb] px-4 py-4 text-sm text-[#8c7085]">
+              {t("adminNailsDesignManagement.noProceduresConfiguredForThisV1")}
+            </div>
+          )}
+        </DetailCard>
+      </div>
+
+      <Modal
+        open={showEditVariantModal}
+        onCancel={closeEditVariantModal}
+        footer={null}
+        centered
+        width={560}
+        styles={{
+          body: { padding: 0 },
+          content: { borderRadius: '32px', overflow: 'hidden' },
+        }}
+        maskClosable={!isSavingVariant}
+        keyboard={!isSavingVariant}
+        closable={false}
+      >
+        <div className="bg-[linear-gradient(135deg,#fff0f6_0%,#fff8e9_100%)] px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#b25784]">
+                {t("adminNailsDesignManagement.variantDetail")}
+              </p>
+              <h2 className="mt-2 text-lg font-bold text-[#432744]">
+                {t("adminNailsDesignManagement.editVariant")}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={closeEditVariantModal}
+              disabled={isSavingVariant}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f3c9dd] bg-white/80 text-[#a35d84] transition disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Close edit variant modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-[#5c4559]">
+              {t("adminNailsDesignManagement.variantName")} <span className="text-[#ea4f93]">*</span>
+            </span>
+            <input
+              value={variantDraft.name}
+              onChange={updateVariantDraft("name")}
+              disabled={isSavingVariant}
+              className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5]"
+            />
+          </label>
+
+          <div className="rounded-[18px] border border-dashed border-[#f4bfd6] bg-[#fffafb] px-4 py-4 mt-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] border border-[#f7d7e5] bg-white">
+                  {variantDraftImagePreviewUrl || variant.imageUrl ? (
+                    <img
+                      crossOrigin="anonymous"
+                      src={variantDraftImagePreviewUrl || variant.imageUrl}
+                      alt={variant.name}
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[#ea4f93]">
+                      <Image size={18} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#432744]">{t("adminNailsDesignManagement.variantImage")}</p>
+                  <p className="mt-1 text-xs text-[#b2879f]">
+                    {variantDraft.image ? variantDraft.image.name : t("adminNailsDesignManagement.noVariantImageSelected")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => document.getElementById("variant-detail-image-input")?.click()}
+                disabled={isSavingVariant}
+                className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93] whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Upload size={13} className="mr-1.5 inline" />
+                {t("adminNailsDesignManagement.uploadVariantImage")}
+              </button>
+              <input
+                id="variant-detail-image-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={updateVariantDraft("image")}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={closeEditVariantModal}
+              disabled={isSavingVariant}
+              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#7e6075] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {t("adminNailsDesignManagement.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveVariantDetails()}
+              disabled={isSavingVariant}
+              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.2)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={13} className="mr-1.5 inline" />
+              {isSavingVariant ? t("adminNailsDesignManagement.saving") : t("adminNailsDesignManagement.saveChanges")}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <ActionConfirmModal
+        open={showDeleteVariantConfirm}
+        intent="danger"
+        title={t("adminNailsDesignManagement.deleteVariant")}
+        description={
+          language === "vi"
+            ? `Bạn có chắc muốn xóa biến thể "${variant?.name || ""}" không?`
+            : `Are you sure you want to delete "${variant?.name || "this variant"}"?`
+        }
+        confirmText={t("adminNailsDesignManagement.deleteVariant")}
+        cancelText={t("adminNailsDesignManagement.keepVariant")}
+        confirmIcon={Trash2}
+        loading={isDeletingVariant}
+        onConfirm={handleDeleteVariant}
+        onCancel={() => !isDeletingVariant && setShowDeleteVariantConfirm(false)}
+      />
+    </section >
+  );
+}

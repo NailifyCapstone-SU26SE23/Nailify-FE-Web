@@ -6,110 +6,80 @@ import {
   Search,
   Sparkles,
   Star,
-  Tag,
-  Upload,
+  Tag, ListFilter, ArrowUpDown,
   WandSparkles,
+  Trash2,
+  Eye,
+  Pen,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Dropdown, Tooltip } from "antd";
+import toast from "react-hot-toast";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getAdminNailDesignCategoriesRoute,
   getAdminNailDesignDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import { fetchAdminNailDesigns } from "../services/nailDesignManagementService";
+import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
+// import { LoadingSpinner } from "../../../../shared/components/ui/LoadingSpinner";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 const DESIGN_CARD_PRESETS = [
   {
     title: "Nude Minimalist",
     tags: ["Minimalist", "Everyday", "Clean"],
     tones: ["Nude"],
-    price: "28,000 VND",
-    status: "No Try-On",
-    accent: "bg-[#fff0f5] text-[#eb5a99]",
   },
   {
     title: "French Ombré Bliss",
     tags: ["Ombré", "Bridal", "Elegant"],
     tones: ["Pastel"],
-    price: "48,000 VND",
-    status: "Try-On Ready",
-    accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
   {
     title: "Chrome Glitter Storm",
     tags: ["Glitter", "Party", "Bold"],
     tones: ["Chrome"],
-    price: "65,000 VND",
-    status: "Try-On Ready",
-    accent: "bg-[#e7fbf4] text-[#23b68b]",
   },
-];
-
-const TRENDING_DESIGNS = [
-  ["French Ombré Bliss", "4,821 saves · 2.3k views"],
-  ["Rose Petal Garden", "3,854 saves · 1.9k views"],
-  ["Pastel Rainbow Swirl", "2,987 saves · 7.4k views"],
-  ["Chrome Glitter Storm", "2,438 saves · 6.1k views"],
-];
-
-const MISSING_TRY_ON = [
-  "Nude Minimalist",
-  "Velvet Noir",
-  "Sakura Dream",
-  "Midnight Marble",
-  "Coral Sunset",
-];
-
-const POPULAR_TAGS = [
-  ["Bridal", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Elegant", "bg-[#eef2ff] text-[#566ce8]"],
-  ["Spring", "bg-[#eaf9ee] text-[#2fa25f]"],
-  ["Summer", "bg-[#fff4df] text-[#d9871c]"],
-  ["Bold", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Minimalist", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Pastel", "bg-[#f5ecff] text-[#8b5cf6]"],
-  ["Everyday", "bg-[#eaf9ee] text-[#2fa25f]"],
-  ["Glam", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["Autumn", "bg-[#fff4df] text-[#d9871c]"],
-  ["Chrome", "bg-[#f5ecff] text-[#8b5cf6]"],
-  ["Romantic", "bg-[#ffe7ef] text-[#ea4f93]"],
-  ["3D Art", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Party", "bg-[#fff4df] text-[#d9871c]"],
-];
-
-const SEASONAL_SUGGESTIONS = [
-  ["Cherry Blossom", "Spring Collection", "Trending", "bg-[#e7fbf4] text-[#23b68b]"],
-  ["Tropical Brights", "Summer Collection", "Upcoming", "bg-[#fff4df] text-[#d9871c]"],
-  ["Harvest Warmth", "Autumn Collection", "Plan Now", "bg-[#ffe7ef] text-[#ea4f93]"],
 ];
 
 function getPreviewMeta(index) {
   return DESIGN_CARD_PRESETS[index % DESIGN_CARD_PRESETS.length];
 }
 
-function formatPriceVnd(value) {
+function formatPriceVND(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")} VND`;
 }
 
-function normalizeDesign(design, index) {
+function getDesignEstimatedPrice(design) {
+  const variants = Array.isArray(design?.nailVariants) ? design.nailVariants : [];
+  const firstPricedVariant = variants.find((variant) => variant?.estimatedPrice ?? variant?.price);
+  return Number(firstPricedVariant?.estimatedPrice ?? firstPricedVariant?.price ?? 0);
+}
+
+function normalizeDesign(design, index, t) {
   const preview = getPreviewMeta(index);
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
-  const price =
-    design.minPrice && design.maxPrice && design.minPrice !== design.maxPrice
-      ? `${formatPriceVnd(design.minPrice)} - ${formatPriceVnd(design.maxPrice)}`
-      : formatPriceVnd(design.maxPrice || design.minPrice || 0);
+  const estimatedPrice = getDesignEstimatedPrice(design);
 
   return {
     ...design,
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
-    uiTones: [design.status || "Inactive"],
-    uiPrice: price,
-    uiStatus: hasTryOnAsset ? "Try-On Ready" : "No Try-On",
-    uiStatusTone: hasTryOnAsset ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
+    uiTones: hasTryOnAsset
+      ? [(t("adminNailsDesignManagement.tryonReady"))]
+      : [],
+    uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
+    uiEstimatedPrice: estimatedPrice,
+    uiStatus: design.status === "Active"
+      ? (t("adminNailsDesignManagement.active"))
+      : (t("adminNailsDesignManagement.inactive")),
+    uiStatusTone: design.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -121,34 +91,7 @@ function normalizeDesign(design, index) {
   };
 }
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8d7e5] bg-white p-4 shadow-[0_10px_24px_rgba(236,72,153,0.06)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${item.iconClassName}`}>
-        <Icon size={16} />
-      </div>
-      <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-[#cd98b1]">
-        {item.label}
-      </p>
-      <p className="mt-1 text-[1.9rem] font-extrabold leading-none text-[#3f2741]">
-        {item.value}
-      </p>
-      <p className="mt-2 text-xs font-medium text-[#21b07b]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function SmallTag({ children, className = "" }) {
   return (
@@ -164,11 +107,13 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
+  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
-      {design.previewImage ? (
+      {design.imageUrl ? (
         <img
-          src={design.previewImage}
+          crossOrigin="anonymous"
+          src={design.imageUrl}
           alt={design.uiTitle}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -176,7 +121,7 @@ function DesignPreview({ design }) {
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[radial-gradient(circle_at_top,#fff6fb_0%,#f9e6ef_45%,#f3d7e6_100%)] text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/75 text-lg font-extrabold text-[#d85b96] shadow-[0_12px_24px_rgba(216,91,150,0.16)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/75 text-lg font-bold text-[#d85b96] shadow-[0_12px_24px_rgba(216,91,150,0.16)]">
             {design.initials || "ND"}
           </div>
           <p className="px-4 text-xs font-semibold text-[#a76f8c]">No preview image</p>
@@ -195,29 +140,123 @@ DesignPreview.propTypes = {
 };
 
 export function NailDesignManagementPage() {
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [designs, setDesigns] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
-    pageSize: 9,
-    totalItems: 0,
-    hasPrevious: false,
-    hasNext: false,
-    firstRowOnPage: 0,
-    lastRowOnPage: 0,
+    pageSize: 8,
   });
+  const [allFetchedDesigns, setAllFetchedDesigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [globalMetrics, setGlobalMetrics] = useState({
+    activeDesigns: 0,
+    tryOnReady: 0,
+  });
+
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [pendingDeleteDesign, setPendingDeleteDesign] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!pendingDeleteDesign) return;
+    setIsDeleting(true);
+    try {
+      await deleteAdminNailDesign(pendingDeleteDesign.id);
+      toast.success(language === "vi" ? `Đã xóa thiết kế "${pendingDeleteDesign.name}"` : `Deleted design "${pendingDeleteDesign.name}" successfully.`);
+      setRefreshKey(prev => prev + 1);
+      setMetaData(prev => ({ ...prev, currentPage: 1 }));
+      setDebouncedQuery(query.trim() + " ");
+      setTimeout(() => setDebouncedQuery(query.trim()), 0);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (language === "vi" ? "Lỗi khi xóa" : "Failed to delete design"));
+    } finally {
+      setIsDeleting(false);
+      setPendingDeleteDesign(null);
+    }
+  };
 
   useEffect(() => {
-    if (!location.state?.flashMessage) {
+    let isMounted = true;
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await fetchAdminNailDesigns({
+          pageNumber: 1,
+          pageSize: 10000,
+          name: "",
+          categoryIds: [],
+        });
+
+        if (!isMounted) return;
+
+        const allItems = response.items || [];
+        setAllFetchedDesigns(allItems);
+        setGlobalMetrics({
+          activeDesigns: allItems.filter(d => d.status === "Active").length,
+          tryOnReady: allItems.filter(d => !!d.previewImage).length,
+        });
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : "Failed to load nail designs.");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    void fetchAllData();
+    return () => { isMounted = false; };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadCategories = async () => {
+      try {
+        const response = await fetchAdminCategories({ pageNumber: 1, pageSize: 100 });
+        if (isMounted && response?.items) {
+          setCategoriesList(response.items);
+        }
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+      }
+    };
+    void loadCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleFilterOpenChange = (nextOpen, info) => {
+    if (info && info.source === "menu") {
       return;
     }
+    setFilterDropdownOpen(nextOpen);
+  };
+
+  const flashMessageShownRef = useRef(false);
+
+  useEffect(() => {
+    if (!location.state?.flashMessage || flashMessageShownRef.current) {
+      return;
+    }
+
+    toast.success(location.state.flashMessage);
+    flashMessageShownRef.current = true;
 
     navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
@@ -231,237 +270,332 @@ export function NailDesignManagementPage() {
     return () => window.clearTimeout(timerId);
   }, [query]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const filteredAndSortedAllDesigns = useMemo(() => {
+    let result = allFetchedDesigns;
 
-    const loadDesigns = async () => {
-      setIsLoading(true);
-      setError("");
+    // Filter by query
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      result = result.filter(d => (d.name || "").toLowerCase().includes(q) || (d.description || "").toLowerCase().includes(q));
+    }
 
-      try {
-        const response = await fetchAdminNailDesigns({
-          pageNumber: metaData.currentPage,
-          pageSize: metaData.pageSize,
-          name: debouncedQuery,
-        });
+    // Filter by categories (OR Logic)
+    if (selectedCategoryIds.length > 0) {
+      result = result.filter(d => {
+        const catIds = d.categoryIds || [];
+        return selectedCategoryIds.some(selectedId => catIds.includes(selectedId));
+      });
+    }
 
-        if (!isMounted) {
-          return;
-        }
+    // Sort
+    if (sortBy === "name-asc") {
+      result = [...result].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (sortBy === "name-desc") {
+      result = [...result].sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+    }
 
-        setDesigns(response.items);
-        setMetaData(response.metaData);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
+    return result;
+  }, [allFetchedDesigns, debouncedQuery, selectedCategoryIds, sortBy]);
 
-        setDesigns([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail designs.");
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadDesigns();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize]);
+  const visibleDesigns = useMemo(() => {
+    return filteredAndSortedAllDesigns.slice(0, metaData.currentPage * metaData.pageSize);
+  }, [filteredAndSortedAllDesigns, metaData.currentPage, metaData.pageSize]);
 
   const normalizedDesigns = useMemo(
-    () => designs.map((design, index) => normalizeDesign(design, index)),
-    [designs],
+    () => visibleDesigns.map((design, index) => normalizeDesign(design, index, t)),
+    [visibleDesigns, t],
   );
+
+  const totalItemsCount = filteredAndSortedAllDesigns.length;
+  const totalPagesCount = Math.max(1, Math.ceil(totalItemsCount / metaData.pageSize));
+  const hasNextPage = (metaData.currentPage * metaData.pageSize) < totalItemsCount;
 
   const summaryCards = useMemo(
     () => [
       {
-        label: "Total Designs",
-        value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} pages`,
+        label: t("adminNailsDesignManagement.totalDesigns"),
+        value: totalItemsCount.toLocaleString(),
+        note: `${totalPagesCount} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
-        iconClassName: "bg-[#ffe8f2] text-[#ea4f93]",
+        color: "#ea4f93",
       },
       {
-        label: "Active Designs",
-        value: normalizedDesigns.filter((design) => design.status === "Active").length.toLocaleString(),
-        note: "On current page",
+        label: t("adminNailsDesignManagement.activeDesigns"),
+        value: globalMetrics.activeDesigns.toLocaleString(),
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: WandSparkles,
-        iconClassName: "bg-[#f3ebff] text-[#8b5cf6]",
+        color: "#8b5cf6",
       },
       {
-        label: "Try-On Ready",
-        value: normalizedDesigns.filter((design) => design.previewImage).length.toLocaleString(),
-        note: "Has preview image",
+        label: t("adminNailsDesignManagement.tryonReady"),
+        value: globalMetrics.tryOnReady.toLocaleString(),
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: Sparkles,
-        iconClassName: "bg-[#e7fbf4] text-[#23b68b]",
+        color: "#23b68b",
       },
       {
-        label: "Most Popular Style",
-        value: normalizedDesigns[0]?.uiTitle || "--",
-        note: "Current page highlight",
+        label: t("adminNailsDesignManagement.mostPopularStyle"),
+        value: normalizedDesigns[0]?.uiTitle || "N/A",
+        note: language === "vi" ? "Tất cả các trang" : "All pages",
         icon: Star,
-        iconClassName: "bg-[#fff4df] text-[#f5a623]",
+        color: "#f5a623",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns],
+    [totalItemsCount, totalPagesCount, normalizedDesigns, globalMetrics, language, t],
   );
 
-  const paginationItems = useMemo(() => {
-    const currentPage = metaData.currentPage;
-    const totalPages = metaData.totalPages;
+  const filterItems = useMemo(() => {
+    const allItem = {
+      key: "all",
+      label: language === "vi" ? "Tất cả danh mục" : "All Categories",
+    };
+    const catItems = categoriesList.map((cat) => ({
+      key: String(cat.categoryId),
+      label: cat.name,
+    }));
+    return [allItem, ...catItems];
+  }, [categoriesList, language]);
 
-    if (totalPages <= 1) {
-      return [1];
-    }
-
-    const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
-    const normalizedPages = [...pages]
-      .filter((page) => page >= 1 && page <= totalPages)
-      .sort((left, right) => left - right);
-
-    const result = [];
-
-    normalizedPages.forEach((page, index) => {
-      result.push(page);
-
-      const nextPage = normalizedPages[index + 1];
-      if (nextPage && nextPage - page > 1) {
-        result.push("...");
+  const filterMenu = {
+    items: filterItems,
+    selectable: true,
+    multiple: true,
+    selectedKeys: selectedCategoryIds.length > 0 ? selectedCategoryIds.map(String) : ["all"],
+    onClick: ({ key }) => {
+      if (key === "all") {
+        setSelectedCategoryIds([]);
+      } else {
+        const id = Number(key);
+        setSelectedCategoryIds((prev) =>
+          prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
       }
-    });
+      setMetaData((current) => ({ ...current, currentPage: 1 }));
+    },
+    style: {
+      maxHeight: "250px",
+      overflowY: "auto",
+    },
+  };
 
-    return result;
-  }, [metaData.currentPage, metaData.totalPages]);
+  const sortItems = [
+    {
+      key: "name-asc",
+      label: language === "vi" ? "Tên (A - Z)" : "Name (A - Z)",
+    },
+    {
+      key: "name-desc",
+      label: language === "vi" ? "Tên (Z - A)" : "Name (Z - A)",
+    }
+  ];
 
-  const toolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]";
-  const primaryToolbarButtonClassName =
-    "inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]";
+  const sortMenu = {
+    items: sortItems,
+    selectable: true,
+    selectedKeys: [sortBy],
+    onClick: ({ key }) => setSortBy(key),
+  };
 
   return (
-    <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff6fb_100%)]">
+    <section className="flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-[18px] bg-white/70 p-1 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Tag size={13} className="mr-1.5 shrink-0" />
-            Manage Tags
-          </button>
-          <Link
-            to={getAdminNailDesignCategoriesRoute()}
-            className={toolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Category
-          </Link>
-          <button
-            type="button"
-            className={toolbarButtonClassName}
-          >
-            <Upload size={13} className="mr-1.5 shrink-0" />
-            Upload Try-On Asset
-          </button>
-          <Link
-            to={ROUTES.adminNailDesignsCreate}
-            className={primaryToolbarButtonClassName}
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            Add Design
-          </Link>
-        </div>
+
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((item) => (
-          <MetricCard key={item.label} item={item} />
-        ))}
+      <div className="mb-4">
+        <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.72fr)_290px]">
+      <div className="grid gap-4">
         <div>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-extrabold text-[#432744]">Design Gallery</h3>
-              <p className="mt-1 text-[11px] text-[#c694ad]">
-                Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+          <div className="flex flex-col gap-3 border-b border-[#f1dce7] p-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search */}
+            <label className="relative block w-full sm:min-w-0 sm:flex-1">
+              <Search
+                size={15}
+                strokeWidth={2}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b58da3]"
+              />
+
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t(
+                  "adminNailsDesignManagement.searchDesignsCategoriesTags"
+                )}
+                className="
+        h-10
+        w-full
+        rounded-full
+        border
+        border-[#f1dce7]
+        bg-[#fff9fc]
+        pl-10
+        pr-4
+        text-xs
+        font-medium
+        text-[#432744]
+        outline-none
+        transition-all
+        duration-200
+        placeholder:text-[#c39caf]
+        hover:border-[#ea4f93]/40
+        focus:border-[#ea4f93]
+        focus:bg-white
+        focus:ring-2
+        focus:ring-[#ea4f93]/10
+      "
+              />
+            </label>
+
+            {/* Toolbar Actions */}
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              {/* Filter */}
+              <Dropdown
+                menu={filterMenu}
+                trigger={["click"]}
+                open={filterDropdownOpen}
+                onOpenChange={handleFilterOpenChange}
               >
-                Filter
-              </button>
-              <button
-                type="button"
-                className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
+                <button
+                  type="button"
+                  className={`
+                    w-[150px]
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${selectedCategoryIds.length > 0
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93] shadow-[0_3px_10px_rgba(234,79,147,0.08)]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
+                >
+                  <ListFilter size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {selectedCategoryIds.length > 0
+                      ? selectedCategoryIds.length === 1
+                        ? categoriesList.find(
+                          (c) => c.categoryId === selectedCategoryIds[0]
+                        )?.name || t("adminNailsDesignManagement.filter")
+                        : language === "vi"
+                          ? `${selectedCategoryIds.length} danh mục`
+                          : `${selectedCategoryIds.length} categories`
+                      : t("adminNailsDesignManagement.filter")}
+                  </span>
+
+                  {selectedCategoryIds.length > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ea4f93] px-1.5 text-[10px] font-bold text-white">
+                      {selectedCategoryIds.length}
+                    </span>
+                  )}
+                </button>
+              </Dropdown>
+
+              {/* Sort */}
+              <Dropdown menu={sortMenu} trigger={["click"]}>
+                <button
+                  type="button"
+                  className={`
+          inline-flex
+          h-10
+          items-center
+          gap-2
+          rounded-full
+          border
+          px-3.5
+          text-xs
+          font-semibold
+          transition-all
+          duration-200
+          ${sortBy
+                      ? "border-[#ea4f93]/40 bg-[#fff0f7] text-[#ea4f93]"
+                      : "border-[#f1dce7] bg-white text-[#7f6478] hover:border-[#ea4f93]/40 hover:bg-[#fff9fc] hover:text-[#ea4f93]"
+                    }
+        `}
+                >
+                  <ArrowUpDown size={15} strokeWidth={2.2} />
+
+                  <span>
+                    {sortBy
+                      ? sortItems.find((s) => s.key === sortBy)?.label ||
+                      t("adminNailsDesignManagement.sort")
+                      : t("adminNailsDesignManagement.sort")}
+                  </span>
+                </button>
+              </Dropdown>
+
+              {/* Add Design */}
+              <Link
+                to={ROUTES.adminNailDesignsCreate}
+                className="
+        inline-flex
+        h-10
+        items-center
+        gap-2
+        rounded-full
+        bg-gradient-to-r
+        from-[#ea4f93]
+        to-[#ff8ebb]
+        px-4
+        text-xs
+        font-semibold
+        text-white
+        shadow-[0_5px_14px_rgba(234,79,147,0.20)]
+        transition-all
+        duration-200
+        hover:-translate-y-0.5
+        hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
+      "
               >
-                Sort
-              </button>
+                <Plus size={15} strokeWidth={2.5} />
+                <span>{t("adminNailsDesignManagement.addDesign")}</span>
+              </Link>
             </div>
           </div>
 
-          {flashMessage ? (
-            <div className="mb-4 rounded-[16px] bg-[#edfdf4] px-4 py-3 text-sm font-medium text-[#16975f]">
-              {flashMessage}
-            </div>
-          ) : null}
 
-          {error ? (
-            <div className="mb-4 rounded-[16px] bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d14c84]">
-              {error}
-            </div>
-          ) : null}
 
-          <label className="relative mb-4 block max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search designs, categories, tags..."
-              className="h-10 w-full rounded-full border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-            />
-          </label>
 
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+
+          <div className="grid gap-5 sm:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
               <div className="col-span-full rounded-[18px] border border-[#f8dce8] bg-[#fffafb] px-5 py-10">
                 <div className="flex items-center justify-center gap-3 text-sm text-[#b38a9f]">
                   <LoaderCircle size={18} className="animate-spin text-[#ea4f93]" />
-                  Loading nail designs...
+                  {t("adminNailsDesignManagement.loadingNailDesigns")}
                 </div>
               </div>
             ) : (
               normalizedDesigns.map((design) => (
                 <article
                   key={design.id}
-                  className="overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
+                  className="relative flex h-full flex-col overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
                 >
+                  <SmallTag className={`absolute top-3 right-3 z-10 shadow-sm ${design.uiStatusTone}`}>
+                    {design.uiStatus}
+                  </SmallTag>
                   <Link to={getAdminNailDesignDetailRoute(design.id)} className="block">
                     <DesignPreview design={design} />
                   </Link>
-                  <div className="p-4">
+                  <div className="flex flex-1 flex-col p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <Link
                           to={getAdminNailDesignDetailRoute(design.id)}
-                          className="font-extrabold text-[#432744] transition hover:text-[#ea4f93]"
+                          className="font-bold text-[#432744] transition hover:text-[#ea4f93]"
                         >
                           {design.uiTitle}
                         </Link>
                       </div>
-                      <p className="text-sm font-extrabold text-[#432744]">{design.uiPrice}</p>
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -486,21 +620,24 @@ export function NailDesignManagementPage() {
                       ))}
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <SmallTag className={design.uiStatusTone}>{design.uiStatus}</SmallTag>
-                      <div className="flex gap-2">
-                        <Link
-                          to={getAdminNailDesignDetailRoute(design.id)}
-                          className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8c7085]"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          to={getAdminNailDesignDetailRoute(design.id)}
-                          className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                        >
-                          Edit
-                        </Link>
+                    <div className="mt-auto flex items-center justify-center gap-3 border-t border-[#fdf2f7] pt-4">
+                      <div className="flex gap-3">
+                        <ActionButtons
+                          onView={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id));
+                          }}
+                          onEdit={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id)); // The original code goes to the same detail page for edit
+                          }}
+                          onDelete={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPendingDeleteDesign(design);
+                          }}
+                          showDelete={design?.status === "Active"}
+                        />
                       </div>
                     </div>
                   </div>
@@ -511,126 +648,63 @@ export function NailDesignManagementPage() {
 
           {!isLoading && normalizedDesigns.length === 0 ? (
             <div className="mt-4 rounded-[16px] border border-[#f8dce8] bg-[#fffafb] px-5 py-8 text-center text-sm text-[#8a7082]">
-              No nail designs matched the current search.
+              {t("adminNailsDesignManagement.noNailDesignsMatchedTheCurrent")}
             </div>
           ) : null}
 
-          <div className="mt-4 flex flex-col gap-3 rounded-[16px] border border-[#f8dce8] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] text-[#c694ad]">
-              Showing {metaData.firstRowOnPage}-{metaData.lastRowOnPage} of {metaData.totalItems} designs
+          <div className="mt-4 flex flex-col items-center justify-center pt-2">
+            <p className="text-[11px] text-[#c694ad] mb-3">
+              {language === "vi"
+                ? `Hiển thị ${normalizedDesigns.length} trong số ${totalItemsCount} thiết kế`
+                : `Showing ${normalizedDesigns.length} of ${totalItemsCount} designs`
+              }
             </p>
-            <div className="flex items-center gap-1">
+            {hasNextPage && (
               <button
                 type="button"
-                disabled={!metaData.hasPrevious || isLoading}
+                disabled={isLoading}
                 onClick={() =>
                   setMetaData((current) => ({
                     ...current,
-                    currentPage: Math.max(current.currentPage - 1, 1),
+                    currentPage: current.currentPage + 1,
                   }))
                 }
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full bg-[#fff0f6] px-6 py-2 text-xs font-bold text-[#ea4f93] hover:bg-[#ffe1ee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ChevronLeft size={12} />
+                {isLoading ? <LoaderCircle size={14} className="animate-spin mr-2" /> : null}
+                {language === "vi" ? "Xem thêm" : "Load more"}
               </button>
-              {paginationItems.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  disabled={item === "..." || item === metaData.currentPage || isLoading}
-                  onClick={() => {
-                    if (typeof item !== "number") {
-                      return;
-                    }
-
-                    setMetaData((current) => ({ ...current, currentPage: item }));
-                  }}
-                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md px-2 text-[11px] ${item === metaData.currentPage
-                    ? "bg-[#ea4f93] font-bold text-white"
-                    : "border border-[#f3cade] bg-white font-medium text-[#b9849f]"
-                    } disabled:cursor-default disabled:opacity-100`}
-                >
-                  {item}
-                </button>
-              ))}
-              <button
-                type="button"
-                disabled={!metaData.hasNext || isLoading}
-                onClick={() =>
-                  setMetaData((current) => ({
-                    ...current,
-                    currentPage: Math.min(current.currentPage + 1, current.totalPages),
-                  }))
-                }
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronRight size={12} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
-
-        <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Trending Designs</h3>
-            <div className="mt-4 space-y-4">
-              {TRENDING_DESIGNS.map(([name, meta], index) => (
-                <div key={name} className="flex gap-3">
-                  <span className="w-4 text-xs font-extrabold text-[#ea4f93]">{index + 1}</span>
-                  <div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                    <p className="mt-1 text-[11px] text-[#c694ad]">{meta}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Missing Try-On Assets</h3>
-            <div className="mt-4 space-y-3">
-              {MISSING_TRY_ON.map((name) => (
-                <div key={name} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-[#6b5668]">{name}</span>
-                  <SmallTag className="bg-[#ffe7ef] text-[#ea4f93]">Upload Needed</SmallTag>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-[image:var(--gradient-accent)] px-4 py-2.5 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
-            >
-              Bulk Upload Assets
-            </button>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Popular Tags</h3>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {POPULAR_TAGS.map(([tag, tone]) => (
-                <SmallTag key={tag} className={tone}>
-                  {tag}
-                </SmallTag>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.08)]">
-            <h3 className="text-sm font-extrabold text-[#432744]">Seasonal Suggestions</h3>
-            <div className="mt-4 space-y-4">
-              {SEASONAL_SUGGESTIONS.map(([name, collection, badge, tone]) => (
-                <div key={name} className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-[#432744]">{name}</p>
-                    <p className="mt-1 text-[11px] text-[#c694ad]">{collection}</p>
-                  </div>
-                  <SmallTag className={tone}>{badge}</SmallTag>
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
       </div>
+
+      <ActionConfirmModal
+        open={Boolean(pendingDeleteDesign)}
+        loading={isDeleting}
+        intent="danger"
+        title={language === "vi" ? "Xóa Mẫu Móng" : "Delete Nail Design"}
+        description={language === "vi" ? `Bạn sắp xóa thiết kế ${pendingDeleteDesign?.name ?? ""}.` : `You are about to delete ${pendingDeleteDesign?.name ?? "this design"}.`}
+        confirmText={language === "vi" ? "Xóa Thiết Kế" : "Delete Design"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDeleteDesign(null)}
+        item={
+          pendingDeleteDesign
+            ? {
+              title: pendingDeleteDesign.name,
+              image: pendingDeleteDesign.imageUrl || undefined,
+              meta: pendingDeleteDesign.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive"),
+              note: pendingDeleteDesign.description || "Nail design",
+            }
+            : undefined
+        }
+        warnings={[
+          language === "vi"
+            ? "Hành động này không thể hoàn tác. Mọi dữ liệu liên quan sẽ bị xóa vĩnh viễn khỏi hệ thống."
+            : "This action cannot be undone. Any related data will be permanently deleted from the system."
+        ]}
+      />
     </section>
   );
 }

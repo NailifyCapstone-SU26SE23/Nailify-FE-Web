@@ -1,4 +1,5 @@
 import {
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -10,15 +11,17 @@ import {
   Sparkles,
   Trash2,
   X,
+  Eye,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Table } from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import toast from "react-hot-toast";
+
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import {
-  ADD_ON_TYPE_TONES,
-  ADD_ON_TYPES,
   HIGHEST_REVENUE_SERVICES,
   MOST_BOOKED_SERVICES,
   PRICING_ALERTS,
@@ -27,41 +30,15 @@ import {
   STATUS_OPTIONS,
   buildCategoryBreakdown,
   buildServicePricingSummary,
-  createEmptyAddOn,
   createEmptyService,
-  createMockAddOn,
   formatVndCurrency,
-  getAddOnRowsWithUpdates,
-  removeMockAddOnById,
-  updateMockAddOn,
 } from "../services/mockServicePricing";
-import { fetchAdminServices } from "../services/servicePricingService";
+import { fetchAdminServices, createAdminService, updateAdminService, deleteAdminService } from "../services/servicePricingService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
 
-function MetricCard({ item }) {
-  const Icon = item.icon;
 
-  return (
-    <article className="rounded-[18px] border border-[#f8dce8] bg-white px-5 py-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${item.iconClassName}`}>
-        <Icon size={18} />
-      </div>
-      <p className="mt-4 text-[1.9rem] font-extrabold leading-none text-[#432744]">{item.value}</p>
-      <p className="mt-1 text-xs font-medium text-[#a98097]">{item.label}</p>
-      <p className="mt-2 text-[11px] font-bold text-[#20ab77]">{item.note}</p>
-    </article>
-  );
-}
-
-MetricCard.propTypes = {
-  item: PropTypes.shape({
-    icon: PropTypes.func.isRequired,
-    iconClassName: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
-  }).isRequired,
-};
 
 function Pill({ children, active = false, className = "" }) {
   return (
@@ -84,6 +61,7 @@ Pill.propTypes = {
 };
 
 function StatusBadge({ status }) {
+  const { language } = useLanguage();
   const isActive = status === "Active";
 
   return (
@@ -99,7 +77,7 @@ function StatusBadge({ status }) {
           isActive ? "bg-[#20ab77]" : "bg-[#b8bec8]",
         ].join(" ")}
       />
-      {status}
+      {language === "vi" ? (isActive ? "Hoạt động" : "Ngừng hoạt động") : status}
     </span>
   );
 }
@@ -131,7 +109,7 @@ TogglePill.propTypes = {
 function SidePanel({ title, children }) {
   return (
     <section className="rounded-[18px] border border-[#f8dce8] bg-white p-4 shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-      <h3 className="text-sm font-extrabold text-[#432744]">{title}</h3>
+      <h3 className="text-sm font-bold text-[#432744]">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -161,10 +139,10 @@ FormField.propTypes = {
 function ModalShell({ title, subtitle, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#311422]/35 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-2xl rounded-[24px] border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
+      <div className="w-full max-w-2xl rounded-lg border border-[#f6d8e6] bg-white shadow-[0_28px_80px_rgba(93,28,63,0.18)]">
         <div className="flex items-start justify-between gap-3 border-b border-[#f6dbe7] px-6 py-5">
           <div>
-            <h3 className="text-lg font-extrabold text-[#432744]">{title}</h3>
+            <h3 className="text-lg font-bold text-[#432744]">{title}</h3>
             <p className="mt-1 text-sm text-[#b1859d]">{subtitle}</p>
           </div>
           <button
@@ -189,10 +167,11 @@ ModalShell.propTypes = {
 };
 
 function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessage }) {
+  const { language } = useLanguage();
   return (
     <ModalShell
-      title={mode === "create" ? "Create Service" : "Edit Service"}
-      subtitle="Manage mock service pricing, duration, and availability."
+      title={mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service"}
+      subtitle={language === "vi" ? "Quản lý giá, thời lượng và tình trạng khả dụng của các dịch vụ giả lập." : "Manage mock service pricing, duration, and availability."}
       onClose={onClose}
     >
       <form
@@ -203,14 +182,21 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
         }}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Service Name">
+          <FormField label={language === "vi" ? "Tên dịch vụ" : "Service Name"}>
             <input
               value={draft.name}
               onChange={(event) => onChange("name", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Category">
+          <FormField label={language === "vi" ? "Mô tả" : "Description"}>
+            <input
+              value={draft.description || ""}
+              onChange={(event) => onChange("description", event.target.value)}
+              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            />
+          </FormField>
+          <FormField label={language === "vi" ? "Danh mục" : "Category"}>
             <select
               value={draft.category}
               onChange={(event) => onChange("category", event.target.value)}
@@ -223,7 +209,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               ))}
             </select>
           </FormField>
-          <FormField label="Base Price">
+          <FormField label={language === "vi" ? "Giá cơ bản" : "Base Price"}>
             <input
               type="number"
               min="0"
@@ -233,7 +219,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Duration (Min)">
+          <FormField label={language === "vi" ? "Thời lượng (phút)" : "Duration (Min)"}>
             <input
               type="number"
               min="5"
@@ -243,7 +229,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             />
           </FormField>
-          <FormField label="Status">
+          <FormField label={language === "vi" ? "Trạng thái" : "Status"}>
             <select
               value={draft.status}
               onChange={(event) => onChange("status", event.target.value)}
@@ -251,20 +237,10 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : status}
                 </option>
               ))}
             </select>
-          </FormField>
-          <FormField label="Add-on Support">
-            <button
-              type="button"
-              onClick={() => onChange("hasAddOn", !draft.hasAddOn)}
-              className="flex h-11 w-full items-center justify-between rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658]"
-            >
-              <span>{draft.hasAddOn ? "Enabled" : "Disabled"}</span>
-              <TogglePill enabled={draft.hasAddOn} />
-            </button>
           </FormField>
         </div>
 
@@ -280,13 +256,13 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             onClick={onClose}
             className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
           >
-            Cancel
+            {language === "vi" ? "Hủy" : "Cancel"}
           </button>
           <button
             type="submit"
             className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white"
           >
-            {mode === "create" ? "Create Service" : "Save Changes"}
+            {mode === "create" ? language === "vi" ? "Thêm dịch vụ" : "Create Service" : language === "vi" ? "Lưu thay đổi" : "Save Changes"}
           </button>
         </div>
       </form>
@@ -303,138 +279,108 @@ ServiceFormModal.propTypes = {
   onSubmit: PropTypes.func.isRequired,
 };
 
-function AddOnFormModal({ draft, mode, onChange, onClose, onSubmit, serviceOptions, errorMessage }) {
+function ServiceDetailModal({ service, onClose }) {
+  const { language } = useLanguage();
+  if (!service) return null;
+
   return (
     <ModalShell
-      title={mode === "create" ? "Create Add-on" : "Edit Add-on"}
-      subtitle="Manage mock add-on pricing and service assignment."
+      title={language === "vi" ? "Chi tiết dịch vụ" : "Service Details"}
+      subtitle={language === "vi" ? "Thông tin chi tiết về dịch vụ cấu hình giá và thời gian." : "Detailed service specifications, pricing, and timing configurations."}
       onClose={onClose}
     >
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit();
-        }}
-      >
+      <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Add-on Name">
-            <input
-              value={draft.name}
-              onChange={(event) => onChange("name", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            />
-          </FormField>
-          <FormField label="Type">
-            <select
-              value={draft.type}
-              onChange={(event) => onChange("type", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Tên dịch vụ" : "Service Name"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#432744]">{service.name}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Danh mục" : "Category"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#432744]">{service.category}</p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Giá cơ bản" : "Base Price"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#2fa06c]">
+              {Number(service.price).toLocaleString("vi-VN")} VND
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Thời lượng" : "Duration"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-[#8b5cf6]">
+              {formatDurationMinutes(service.duration, language)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[#f4d7e5] bg-[#fffafc] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#a88ea0]">
+              {language === "vi" ? "Trạng thái" : "Status"}
+            </p>
+            <span
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
+                }`}
             >
-              {ADD_ON_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Price">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={draft.price}
-              onChange={(event) => onChange("price", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            />
-          </FormField>
-          <FormField label="Status">
-            <select
-              value={draft.status}
-              onChange={(event) => onChange("status", event.target.value)}
-              className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              {STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </FormField>
+              {language === "vi" 
+                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
+                : service.status}
+            </span>
+          </div>
         </div>
 
-        <FormField label="Applied To">
-          <select
-            value={draft.appliedTo}
-            onChange={(event) => onChange("appliedTo", event.target.value)}
-            className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-          >
-            <option value="All Services">All Services</option>
-            {serviceOptions.map((service) => (
-              <option key={service.id} value={service.category}>
-                {service.category}
-              </option>
-            ))}
-          </select>
-        </FormField>
-
-        {errorMessage ? (
-          <div className="rounded-2xl bg-[#fff1f5] px-4 py-3 text-sm font-medium text-[#d33b6e]">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[#f4d5e3] px-4 py-2 text-sm font-bold text-[#8a7082]"
+            className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white shadow-sm hover:opacity-90"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-sm font-bold text-white"
-          >
-            {mode === "create" ? "Create Add-on" : "Save Changes"}
+            {language === "vi" ? "Đóng" : "Close"}
           </button>
         </div>
-      </form>
+      </div>
     </ModalShell>
   );
 }
 
-AddOnFormModal.propTypes = {
-  draft: PropTypes.shape({}).isRequired,
-  errorMessage: PropTypes.string,
-  mode: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
+ServiceDetailModal.propTypes = {
+  service: PropTypes.shape({
+    name: PropTypes.string,
+    category: PropTypes.string,
+    price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    duration: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    status: PropTypes.string,
+  }),
   onClose: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  serviceOptions: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 };
 
 function ConfirmModal({ title, body, label, recordType, onCancel, onConfirm }) {
+  const { language } = useLanguage();
   return (
     <ActionConfirmModal
       open
       intent="danger"
       title={title}
-      subtitle="This will update the current mock pricing state."
+      subtitle={language === "vi" ? "Hành động này sẽ xóa dịch vụ khỏi hệ thống." : "This will remove the service from the system."}
       description={body}
-      confirmText="Delete"
-      cancelText="Keep Record"
+      confirmText={language === "vi" ? "Xóa" : "Delete"}
+      cancelText={language === "vi" ? "Giữ dịch vụ" : "Keep Service"}
       confirmIcon={Trash2}
       onConfirm={onConfirm}
       onCancel={onCancel}
       item={{
         title: label,
-        meta: `Pricing record • ${recordType}`,
-        note: "This entry will be removed from the current admin UI state.",
+        meta: language === "vi" ? `Dịch vụ • ${recordType}` : `Service • ${recordType}`,
+        note: language === "vi" ? "Dịch vụ này sẽ bị xóa khỏi danh sách quản lý." : "This service will be removed from the admin list.",
       }}
       warnings={[
-        "This delete is mock-only and affects the current UI state.",
-        "Any screens depending on this record should be reviewed after deletion.",
+        language === "vi" ? "Hành động này không thể hoàn tác từ màn hình này." : "This action cannot be undone from this screen.",
+        language === "vi" ? "Các màn hình phụ thuộc vào dịch vụ này nên được kiểm tra sau khi xóa." : "Any screens depending on this service should be reviewed after deletion.",
       ]}
     />
   );
@@ -462,26 +408,19 @@ function getAlertTone(tone) {
   }
 }
 
-function refreshAddOns() {
-  const addOns = getAddOnRowsWithUpdates();
-
-  return addOns;
-}
 
 export function ServicePricingManagementPage() {
+  const { t, language } = useLanguage();
   const [services, setServices] = useState([]);
-  const [addOns, setAddOns] = useState(refreshAddOns);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [flashMessage, setFlashMessage] = useState("");
   const [serviceModal, setServiceModal] = useState({ open: false, mode: "create", recordId: null });
-  const [addOnModal, setAddOnModal] = useState({ open: false, mode: "create", recordId: null });
   const [deleteState, setDeleteState] = useState(null);
   const [serviceDraft, setServiceDraft] = useState(createEmptyService);
-  const [addOnDraft, setAddOnDraft] = useState(createEmptyAddOn);
   const [serviceError, setServiceError] = useState("");
-  const [addOnError, setAddOnError] = useState("");
+  const [detailService, setDetailService] = useState(null);
   const [serviceMetaData, setServiceMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -494,6 +433,7 @@ export function ServicePricingManagementPage() {
   });
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceLoadError, setServiceLoadError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -545,7 +485,7 @@ export function ServicePricingManagementPage() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize]);
+  }, [debouncedQuery, serviceMetaData.currentPage, serviceMetaData.pageSize, refreshKey]);
 
   const serviceCategories = useMemo(() => {
     const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
@@ -560,28 +500,34 @@ export function ServicePricingManagementPage() {
   }, [activeCategory, services]);
 
   const summaryCards = useMemo(
-    () => buildServicePricingSummary(services, addOns),
-    [services, addOns],
+    () => {
+      const originalSummary = buildServicePricingSummary(services, []).filter((item) => item.label !== "Add-ons Available");
+      return originalSummary.map((item) => {
+        let label = item.label;
+        if (label === "Active Services") {
+          label = t("servicePricing.metric.activeServices");
+        } else if (label === "Most Booked Service") {
+          label = t("servicePricing.metric.mostBooked");
+        } else if (label === "Highest Revenue Service") {
+          label = t("servicePricing.metric.highestRevenue");
+        } else if (label === "Total Services") {
+          label = language === "vi" ? "Tổng số dịch vụ" : "Total Services";
+        } else if (label === "Avg Service Price") {
+          label = language === "vi" ? "Giá dịch vụ trung bình" : "Avg Service Price";
+        }
+        return { ...item, label };
+      });
+    },
+    [services, t, language],
   );
 
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
 
-  const addOnAppliedToOptions = useMemo(
-    () =>
-      Array.from(
-        new Map(services.map((service) => [service.category, service])).values(),
-      ),
-    [services],
-  );
-
-  const syncAddOns = (message = "") => {
-    setAddOns(refreshAddOns());
-    setFlashMessage(message);
-  };
-
   useEffect(() => {
     if (!serviceCategories.includes(activeCategory)) {
-      setActiveCategory("All");
+      requestAnimationFrame(() => {
+        setActiveCategory("All");
+      });
     }
   }, [activeCategory, serviceCategories]);
 
@@ -612,15 +558,16 @@ export function ServicePricingManagementPage() {
     return result;
   }, [serviceMetaData.currentPage, serviceMetaData.totalPages]);
 
-  const openCreateService = () => {
+  const openCreateService = useCallback(() => {
     setServiceDraft(createEmptyService());
     setServiceError("");
     setServiceModal({ open: true, mode: "create", recordId: null });
-  };
+  }, []);
 
-  const openEditService = (service) => {
+  const openEditService = useCallback((service) => {
     setServiceDraft({
       name: service.name,
+      description: service.description || "",
       category: service.category,
       price: String(service.price),
       duration: String(service.duration),
@@ -629,109 +576,48 @@ export function ServicePricingManagementPage() {
     });
     setServiceError("");
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
-  };
+  }, []);
 
-  const openCreateAddOn = () => {
-    setAddOnDraft(createEmptyAddOn());
-    setAddOnError("");
-    setAddOnModal({ open: true, mode: "create", recordId: null });
-  };
+  // Removed getServiceActionItems
 
-  const openEditAddOn = (addOn) => {
-    setAddOnDraft({
-      name: addOn.name,
-      type: addOn.type,
-      price: String(addOn.price),
-      appliedTo: addOn.appliedTo,
-      status: addOn.status,
-    });
-    setAddOnError("");
-    setAddOnModal({ open: true, mode: "edit", recordId: addOn.id });
-  };
-
-  const getServiceActionItems = (service) => [
-    {
-      key: "edit-service",
-      label: "Edit Service",
-      icon: Pencil,
-      onSelect: () => openEditService(service),
-    },
-    {
-      key: "edit-duration",
-      label: "Edit Duration",
-      icon: CircleAlert,
-      onSelect: () => openEditService(service),
-    },
-    {
-      key: "delete-service",
-      label: "Delete Service",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () =>
-        setDeleteState({
-          type: "service",
-          recordId: service.id,
-          label: service.name,
-        }),
-    },
-  ];
-
-  const getAddOnActionItems = (item) => [
-    {
-      key: "edit-addon",
-      label: "Edit Add-on",
-      icon: Pencil,
-      onSelect: () => openEditAddOn(item),
-    },
-    {
-      key: "remove-addon",
-      label: "Remove Add-on",
-      icon: Trash2,
-      className: "text-[#d14c84]",
-      onSelect: () =>
-        setDeleteState({
-          type: "addon",
-          recordId: item.id,
-          label: item.name,
-        }),
-    },
-  ];
-
-  const submitServiceForm = () => {
-    setServiceError("Service create/update API is not connected yet.");
-  };
-
-  const submitAddOnForm = () => {
-    const result =
-      addOnModal.mode === "create"
-        ? createMockAddOn(addOnDraft)
-        : updateMockAddOn(addOnModal.recordId, addOnDraft);
-
-    if (!result.success) {
-      setAddOnError(result.message);
-      return;
+  const submitServiceForm = async () => {
+    setServiceError("");
+    try {
+      if (serviceModal.mode === "create") {
+        await createAdminService(serviceDraft);
+        setFlashMessage(language === "vi" ? "Thêm dịch vụ thành công!" : "Service created successfully!");
+      } else {
+        await updateAdminService(serviceModal.recordId, serviceDraft);
+        setFlashMessage(language === "vi" ? "Cập nhật dịch vụ thành công!" : "Service updated successfully!");
+      }
+      setServiceModal({ open: false, mode: "create", recordId: null });
+      setRefreshKey(k => k + 1);
+    } catch (error) {
+      const errorMsg = getErrorMessage(error, language === "vi" ? "Không thể lưu dịch vụ." : "Failed to save service.");
+      setServiceError(errorMsg);
+      toast.error(errorMsg);
     }
-
-    setAddOnModal({ open: false, mode: "create", recordId: null });
-    setAddOnError("");
-    syncAddOns(result.message);
-  };
-
-  const handleToggleServiceAddOn = (service) => {
-    setFlashMessage(`Service ${service.name} is loaded from API. Add-on toggle is not connected yet.`);
   };
 
   const serviceColumns = useMemo(() => ([
     {
-      title: "Service Name",
+      title: t("servicePricing.table.service"),
       dataIndex: "name",
       key: "name",
-      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
+      sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
+      render: (value) => (
+        <Tooltip title={value} placement="topLeft">
+          <div className="max-w-[200px] truncate text-sm font-bold text-[#432744]">
+            {value}
+          </div>
+        </Tooltip>
+      ),
     },
     {
-      title: "Category",
+      title: t("servicePricing.table.category"),
       dataIndex: "category",
       key: "category",
+      sorter: (a, b) => (a.category || "").localeCompare(b.category || ""),
       render: (value) => (
         <Pill
           className={SERVICE_CATEGORY_TONES[value] ?? "border border-[#f4d5e3] bg-white text-[#8a7082]"}
@@ -741,145 +627,123 @@ export function ServicePricingManagementPage() {
       ),
     },
     {
-      title: "Base Price",
+      title: t("servicePricing.table.price"),
       dataIndex: "price",
       key: "price",
+      sorter: (a, b) => Number(a.price || 0) - Number(b.price || 0),
       render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
     },
     {
-      title: "Est. Duration",
+      title: t("servicePricing.table.duration"),
       dataIndex: "duration",
       key: "duration",
-      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value)}</span>,
+      sorter: (a, b) => Number(a.duration || 0) - Number(b.duration || 0),
+      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatDurationMinutes(value, language)}</span>,
     },
     {
-      title: "Add-on",
-      key: "hasAddOn",
+      title: t("servicePricing.table.status"),
+      dataIndex: "status",
+      key: "status",
+      sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
+      render: (value) => <StatusBadge status={value} />,
+    },
+    {
+      title: t("userManagement.table.actions"),
+      key: "actions",
       render: (_, service) => (
-        <TogglePill
-          enabled={service.hasAddOn}
-          onClick={() => handleToggleServiceAddOn(service)}
+        <ActionButtons
+          onView={() => setDetailService(service)}
+          onEdit={() => openEditService(service)}
+          onDelete={() =>
+            setDeleteState({
+              type: "service",
+              recordId: service.id,
+              label: service.name,
+            })
+          }
+          showDelete={service?.status === "Active"}
         />
       ),
     },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (value) => <StatusBadge status={value} />,
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, service) => <ActionDropdown items={getServiceActionItems(service)} />,
-    },
-  ]), [getServiceActionItems]);
-
-  const addOnColumns = useMemo(() => ([
-    {
-      title: "Add-on Name",
-      dataIndex: "name",
-      key: "name",
-      render: (value) => <span className="text-sm font-bold text-[#432744]">{value}</span>,
-    },
-    {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      render: (value) => <Pill className={ADD_ON_TYPE_TONES[value]}>{value}</Pill>,
-    },
-    {
-      title: "Price",
-      dataIndex: "price",
-      key: "price",
-      render: (value) => <span className="text-sm text-[#5f4b5d]">{formatVndCurrency(value)}</span>,
-    },
-    {
-      title: "Applied To",
-      dataIndex: "appliedTo",
-      key: "appliedTo",
-      render: (value) => <Pill>{value}</Pill>,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (value) => <StatusBadge status={value} />,
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, item) => <ActionDropdown items={getAddOnActionItems(item)} />,
-    },
-  ]), [getAddOnActionItems]);
+  ]), [t, language]);
 
   return (
     <>
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff4fa_100%)]">
-        <div className="flex flex-col gap-3 rounded-[20px] border border-[#f8deea] bg-white/70 p-4 shadow-[0_12px_26px_rgba(236,72,153,0.05)] lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative w-full max-w-md">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]"
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search services or pricing..."
-              className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
-            />
-          </label>
+      <section className="flex min-h-full flex-col gap-4">
+
+
+        <div className="mb-4">
+          <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="relative flex-1">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]"
+                />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("servicePricing.filter.searchPlaceholder")}
+                  className="h-10 w-full rounded-full border border-[#f4d7e5] bg-[#fffafc] pl-11 pr-4 text-sm text-[#5b4658] outline-none placeholder:text-[#d4a1b8] focus:border-[#ea4f93]"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setServiceMetaData((current) => ({
+                    ...current,
+                    currentPage: 1,
+                  }))
+                }
+                className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              >
+                <Search size={14} className="mr-2 shrink-0" />
+                {t("userManagement.table.actions") === "Thao tác" ? "Tìm kiếm" : "Search"}
+              </button>
+            </div>
+
+            <select
+              value={activeCategory}
+              onChange={(event) => setActiveCategory(event.target.value)}
+              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+            >
+              {serviceCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category === "All" ? t("servicePricing.filter.allCategories") : category}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={openCreateAddOn}
-              className="rounded-full border border-[#f4c6da] bg-white px-4 py-2 text-xs font-bold text-[#ea4f93]"
-            >
-              <Plus size={13} className="mr-1.5 inline" />
-              Add Add-on
-            </button>
-            <button
-              type="button"
               onClick={openCreateService}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              className="whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
               <Plus size={13} className="mr-1.5 inline" />
-              Add Service
+              {t("userManagement.table.actions") === "Thao tác" ? "Thêm dịch vụ" : "Add Service"}
             </button>
           </div>
         </div>
 
-        {flashMessage ? (
-          <div className="rounded-[18px] border border-[#d8f5e7] bg-[#eefcf5] px-4 py-3 text-sm font-medium text-[#16975f]">
-            {flashMessage}
-          </div>
-        ) : null}
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {summaryCards.map((item) => (
-            <MetricCard key={item.label} item={item} />
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {serviceCategories.map((category) => (
-            <button key={category} type="button" onClick={() => setActiveCategory(category)}>
-              <Pill active={category === activeCategory}>{category}</Pill>
-            </button>
-          ))}
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_310px]">
+        <div className="grid gap-4">
           <div className="space-y-4">
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="border-b border-[#f6dbe7] px-5 py-4">
-                <h2 className="text-sm font-extrabold text-[#432744]">Services</h2>
+            <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
+              {/* <div className="border-b border-[#f6dbe7] px-5 py-4">
+                <h2 className="text-sm font-bold text-[#432744]">{t("menus.admin-service-pricing")}</h2>
                 <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
-                  {serviceMetaData.totalItems} services
+                  {t("userManagement.table.actions") === "Thao tác"
+                    ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`
+                    : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`
+                  }
                 </p>
-              </div>
+              </div> */}
 
               <Table
                 rowKey="id"
@@ -887,14 +751,15 @@ export function ServicePricingManagementPage() {
                 dataSource={filteredServices}
                 loading={isLoadingServices}
                 pagination={false}
-                scroll={{ x: 1080 }}
+                scroll={{ x: 800 }}
                 locale={{ emptyText: serviceLoadError || "No services found." }}
+                className="custom-admin-table [&_.ant-table]:!bg-transparent [&_.ant-table-thead_th]:!bg-[#fff9fb] [&_.ant-table-thead_th]:!text-[10px] [&_.ant-table-thead_th]:!uppercase [&_.ant-table-thead_th]:!tracking-[0.14em] [&_.ant-table-thead_th]:!text-[#a88a9f] [&_.ant-table-thead_th]:!font-bold [&_.ant-table-thead_th]:!border-b [&_.ant-table-thead_th]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row>td]:!border-b [&_.ant-table-tbody_.ant-table-row>td]:!border-[#f5e2ec] [&_.ant-table-tbody_.ant-table-row]:hover>td:!bg-[#fff9fb] [&_.ant-table-tbody_.ant-table-row>td]:!py-4 [&_.ant-table-tbody_.ant-table-row>td]:!text-[12px] [&_.ant-table-tbody_.ant-table-row>td]:!text-[#5b4256]"
               />
 
               <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[11px] text-[#c694ad]">
-                  Showing {serviceMetaData.firstRowOnPage}-{serviceMetaData.lastRowOnPage} of{" "}
-                  {serviceMetaData.totalItems} services
+                  {language === "vi" ? `Hiển thị ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} trong số ${serviceMetaData.totalItems} dịch vụ`
+                    : `Showing ${serviceMetaData.firstRowOnPage}-${serviceMetaData.lastRowOnPage} of ${serviceMetaData.totalItems} services`}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
@@ -946,120 +811,8 @@ export function ServicePricingManagementPage() {
                 </div>
               </div>
             </section>
-
-            <section className="overflow-hidden rounded-[20px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
-              <div className="flex items-center justify-between gap-3 border-b border-[#f6dbe7] px-5 py-4">
-                <div>
-                  <h2 className="text-sm font-extrabold text-[#432744]">Add-ons</h2>
-                  <p className="mt-1 text-[11px] font-medium text-[#c694ad]">
-                    {addOns.length} mock add-ons configured
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={openCreateAddOn}
-                  className="rounded-full border border-[#f4c6da] bg-white px-3 py-1.5 text-[10px] font-bold text-[#ea4f93]"
-                >
-                  <Plus size={12} className="mr-1 inline" />
-                  Add Add-on
-                </button>
-              </div>
-
-              <Table
-                rowKey="id"
-                columns={addOnColumns}
-                dataSource={addOns}
-                pagination={false}
-                scroll={{ x: 940 }}
-                locale={{ emptyText: "No add-ons found." }}
-              />
-            </section>
           </div>
 
-          <aside className="space-y-4">
-            <SidePanel title="Insights">
-              <div className="space-y-4">
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Most Booked Services</p>
-                  <div className="mt-3 space-y-3">
-                    {MOST_BOOKED_SERVICES.map(([name, value], index) => (
-                      <div key={name} className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#ffe7ef] text-[10px] font-extrabold text-[#ea4f93]">
-                            {index + 1}
-                          </span>
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                        </div>
-                        <span className="text-[11px] font-bold text-[#ea4f93]">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Highest Revenue Services</p>
-                  <div className="mt-3 space-y-3">
-                    {HIGHEST_REVENUE_SERVICES.map(([name, value, progress]) => (
-                      <div key={name}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                          <span className="text-[11px] font-bold text-[#ea4f93]">{value}</span>
-                        </div>
-                        <div className="mt-2 h-1.5 rounded-full bg-[#f8dce8]">
-                          <div
-                            className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f38cba_100%)]"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Pricing Alerts</p>
-                  <div className="mt-3 space-y-3">
-                    {PRICING_ALERTS.map((alert) => {
-                      const tone = getAlertTone(alert.tone);
-                      const Icon = tone.icon;
-
-                      return (
-                        <div key={alert.title} className="flex items-start gap-3">
-                          <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tone.badge}`}>
-                            <Icon size={14} />
-                          </span>
-                          <div>
-                            <p className="text-xs font-bold text-[#432744]">{alert.title}</p>
-                            <p className="mt-1 text-[11px] leading-5 text-[#8a7082]">{alert.body}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-[#f8dce8] bg-[#fff8fb] p-4">
-                  <p className="text-xs font-extrabold text-[#432744]">Category Breakdown</p>
-                  <div className="mt-3 space-y-3">
-                    {categoryBreakdown.map(([name, count]) => (
-                      <div key={name}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-xs font-medium text-[#5d4c5c]">{name}</span>
-                          <span className="text-[11px] font-bold text-[#ea4f93]">{count}</span>
-                        </div>
-                        <div className="mt-2 h-1.5 rounded-full bg-[#f8dce8]">
-                          <div
-                            className="h-full rounded-full bg-[linear-gradient(90deg,#ea4f93_0%,#f38cba_100%)]"
-                            style={{ width: `${Math.min(count * 12, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </SidePanel>
-          </aside>
         </div>
       </section>
 
@@ -1074,31 +827,33 @@ export function ServicePricingManagementPage() {
         />
       ) : null}
 
-      {addOnModal.open ? (
-        <AddOnFormModal
-          mode={addOnModal.mode}
-          draft={addOnDraft}
-          errorMessage={addOnError}
-          serviceOptions={addOnAppliedToOptions}
-          onClose={() => setAddOnModal({ open: false, mode: "create", recordId: null })}
-          onChange={(field, value) => setAddOnDraft((current) => ({ ...current, [field]: value }))}
-          onSubmit={submitAddOnForm}
+      {detailService ? (
+        <ServiceDetailModal
+          service={detailService}
+          onClose={() => setDetailService(null)}
         />
       ) : null}
 
       {deleteState ? (
         <ConfirmModal
-          title={deleteState.type === "service" ? "Delete Service" : "Delete Add-on"}
-          body={`Are you sure you want to delete ${deleteState.label}? This mock record will be removed from the current admin UI state.`}
+          title={language === "vi" ? "Xóa dịch vụ" : "Delete Service"}
+          body={
+            language === "vi"
+              ? `Bạn có chắc muốn xóa dịch vụ ${deleteState.label}? Dịch vụ này sẽ bị xóa khỏi danh sách quản lý.`
+              : `Are you sure you want to delete ${deleteState.label}? This service will be removed from the admin list.`
+          }
           label={deleteState.label}
-          recordType={deleteState.type === "service" ? "Service" : "Add-on"}
+          recordType={language === "vi" ? "Dịch vụ" : "Service"}
           onCancel={() => setDeleteState(null)}
-          onConfirm={() => {
-            if (deleteState.type === "service") {
-              setFlashMessage("Service delete API is not connected yet.");
-            } else {
-              removeMockAddOnById(deleteState.recordId);
-              syncAddOns(`${deleteState.label} deleted successfully.`);
+          onConfirm={async () => {
+            try {
+              await deleteAdminService(deleteState.recordId);
+              setFlashMessage(language === "vi" ? "Xóa dịch vụ thành công!" : "Service deleted successfully!");
+              setRefreshKey(k => k + 1);
+            } catch (error) {
+              const errorMsg = getErrorMessage(error, language === "vi" ? "Không thể xóa dịch vụ." : "Failed to delete service.");
+              setFlashMessage(errorMsg);
+              toast.error(errorMsg);
             }
             setDeleteState(null);
           }}

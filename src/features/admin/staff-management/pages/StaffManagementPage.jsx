@@ -1,935 +1,1254 @@
+import toast from 'react-hot-toast';
+import { Modal, Spin, Alert, Select, Drawer, Calendar as AntCalendar, Badge } from "antd";
+import dayjs from "dayjs";
 import {
-  ArrowRightLeft,
-  BarChart3,
-  BriefcaseBusiness,
-  CalendarClock,
-  Clock3,
-  Download,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  TriangleAlert,
   Users,
+  Clock3,
+  CheckCircle2,
+  Star,
+  Plus,
+  Download,
+  Search,
+  Building2,
   X,
+  User,
+  Edit3,
+  CalendarDays,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Store,
+  MapPin,
+  ArrowLeft,
+  ChevronDown,
 } from "lucide-react";
-import { Modal } from "antd";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
-import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
-import {
-  STAFF_FILTER_OPTIONS,
-  STAFF_LEAVE_LIST,
-  STAFF_LOW_RATING_ALERTS,
-  STAFF_MODAL_STYLES,
-  STAFF_QUICK_ACTIONS,
-  STAFF_SUMMARY,
-  STAFF_TOP_PERFORMERS,
-  getStaffListWithUpdates,
-  getStaffInitials,
-  matchesStaffFilter,
-} from "../services/mockStaff";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { ROUTES, getAdminStaffUpdateRoute } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { Pagination } from "../../../../shared/components/common/Pagination";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { fetchSalonStaff, fetchArtistSchedule, fetchTodaySchedules, fetchArtistBreaks } from "../services/staffManagementService";
+import { fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchNailArtistSkills, deleteNailArtist, fetchNailArtistById } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { deleteAdminUser } from "../../user-management/services/userManagementService";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
-const SUMMARY_ICON_MAP = {
-  briefcase: BriefcaseBusiness,
-  calendarClock: CalendarClock,
-  shieldCheck: ShieldCheck,
-  sparkles: Sparkles,
-  users: Users,
-};
+const ALL_ROLES_VALUE = "__all__";
 
-const QUICK_ACTION_ICON_MAP = {
-  arrowRightLeft: ArrowRightLeft,
-  barChart: BarChart3,
-  briefcase: BriefcaseBusiness,
-  calendarClock: CalendarClock,
-  clock: Clock3,
-  plus: Plus,
-};
-
-function StatCard({ item }) {
-  const Icon = SUMMARY_ICON_MAP[item.icon] ?? Users;
-
+function Card({ className = "", children }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br ${item.accent} p-4 shadow-[0_18px_35px_rgba(226,93,143,0.08)]`}
+    <article
+      className={`rounded-lg border border-[#f0d9e8] shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-shadow duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)] ${className}`}
     >
-      <div className="absolute right-[-12px] top-[-12px] h-12 w-12 rounded-full bg-white/45" />
-      <div className={`mb-4 flex h-8 w-8 items-center justify-center rounded-lg ${item.iconBg}`}>
-        <Icon size={16} strokeWidth={2.2} />
-      </div>
-      <p className="text-[30px] font-bold leading-none text-slate-800">{item.title}</p>
-      <p className="mt-2 text-[12px] font-semibold text-slate-500">{item.label}</p>
-      <p className={`mt-1 text-[11px] font-semibold ${item.noteColor}`}>{item.note}</p>
+      {children}
+    </article>
+  );
+}
+
+Card.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.node,
+};
+
+function SectionHeading({ title, subtitle }) {
+  return (
+    <div>
+      <h3 className="text-base font-bold text-[#2d1b35]">{title}</h3>
+      {subtitle ? <p className="mt-1.5 text-xs text-[#a88a9f]">{subtitle}</p> : null}
     </div>
   );
 }
 
-StatCard.propTypes = {
-  item: PropTypes.shape({
-    accent: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    iconBg: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    note: PropTypes.string.isRequired,
-    noteColor: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
+SectionHeading.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
 };
 
-function AvatarBadge({ member }) {
-  if (member.image) {
+
+
+function InfoItem({ label, children }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#a88a9f]">{label}</p>
+      <div className="mt-2 text-sm font-medium text-[#2d1b35] break-all">{children}</div>
+    </div>
+  );
+}
+
+InfoItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node,
+};
+function getLocalizedRole(role, language) {
+  if (!role) return '-';
+  const roleStr = String(role).toUpperCase();
+  if (language === 'vi') {
+    switch (roleStr) {
+      case 'STAFF_ARTIST':
+      case 'NAIL_ARTIST':
+        return 'Nhân viên làm móng';
+      case 'MANAGER':
+        return 'Quản lý';
+      case 'ADMIN':
+        return 'Quản trị viên';
+      case 'RECEPTIONIST':
+        return 'Lễ tân';
+      case 'CUSTOMER':
+        return 'Khách hàng';
+      case 'STAFF':
+        return 'Nhân viên';
+      default:
+        return String(role).replace(/_/g, ' ');
+    }
+  } else {
+    switch (roleStr) {
+      case 'STAFF_ARTIST':
+      case 'NAIL_ARTIST':
+        return 'Staff Artist';
+      case 'MANAGER':
+        return 'Manager';
+      case 'ADMIN':
+        return 'Admin';
+      case 'RECEPTIONIST':
+        return 'Receptionist';
+      case 'CUSTOMER':
+        return 'Customer';
+      case 'STAFF':
+        return 'Staff';
+      default:
+        return String(role).replace(/_/g, ' ');
+    }
+  }
+}
+
+function StaffAvatar({ staff, className, fallbackClassName = "" }) {
+  const [hasImageError, setHasImageError] = useState(false);
+  const avatarUrl = typeof staff.avatarUrl === "string" ? staff.avatarUrl.trim() : "";
+
+  if (avatarUrl && !hasImageError) {
     return (
       <img
-        src={member.image}
-        alt={member.name}
-        className="h-14 w-14 rounded-full object-cover shadow-sm"
+        crossOrigin="anonymous"
+        src={avatarUrl}
+        alt={staff.name}
+        className={className}
+        referrerPolicy="no-referrer"
+        onError={() => setHasImageError(true)}
       />
     );
   }
 
-  return (
-    <div
-      className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${member.avatarTone} text-[18px] font-black text-white shadow-sm`}
-    >
-      {member.initials}
-    </div>
-  );
+  return <div className={fallbackClassName}>{staff.initials}</div>;
 }
 
-AvatarBadge.propTypes = {
-  member: PropTypes.shape({
-    avatarTone: PropTypes.string,
-    image: PropTypes.string,
-    initials: PropTypes.string,
+StaffAvatar.propTypes = {
+  className: PropTypes.string,
+  fallbackClassName: PropTypes.string,
+  staff: PropTypes.shape({
+    avatarUrl: PropTypes.string,
+    initials: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
   }).isRequired,
 };
 
-function StaffProfileCard({ member, onEdit, onTransfer }) {
+function StaffCard({ staff, onClick }) {
+  const { t, language } = useLanguage();
   return (
-    <div className="rounded-[20px] border border-rose-100/80 bg-white p-4 shadow-[0_12px_28px_rgba(226,93,143,0.07)]">
-      <div className="flex flex-col items-center text-center">
-        <AvatarBadge member={member} />
-        <h3 className="mt-3 text-[15px] font-black text-slate-800">{member.name}</h3>
-        <p className="text-[10px] font-semibold text-slate-400">
-          {member.role} · #{member.id}
-        </p>
+    <div
+      onClick={onClick}
+      className="group cursor-pointer relative overflow-hidden rounded-2xl border border-[#f0d9e8] bg-white p-5 shadow-[0_4px_16px_rgba(236,72,153,0.08)] transition-all duration-200 hover:shadow-[0_6px_24px_rgba(236,72,153,0.12)]"
+    >
+      <div className="flex items-start gap-3">
+        <StaffAvatar
+          staff={staff}
+          className="h-12 w-12 shrink-0 rounded-full object-cover"
+          fallbackClassName={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${staff.avatarTone} text-xs font-bold text-white`}
+        />
+        <div className="min-w-0 flex-1 pr-24">
+          <p className="font-bold text-[#2d1b35] truncate">{staff.name}</p>
+          <p className="text-xs text-[#a88a9f] truncate">{staff.role ? getLocalizedRole(staff.role, language) : ''}</p>
+          {staff.phone && <p className="mt-1 text-xs text-[#8b7382] truncate">{staff.phone}</p>}
+        </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-        {member.tags.map((tag) => (
-          <span
-            key={`${member.id}-${tag.label}`}
-            className={`rounded-full px-2 py-1 text-[9px] font-bold ${tag.tone}`}
-          >
-            {tag.label}
+      {staff.isOnLeaveToday ? (
+        <div className="absolute top-4 right-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f8] border border-[#f0d9e8] px-2 py-1 text-[9px] uppercase tracking-wide font-bold text-[#ea4f93]">
+            <span className="h-1 w-1 rounded-full bg-[#ea4f93] shadow-[0_0_8px_rgba(234,79,147,0.5)]"></span>
+            {language === 'vi' ? 'Nghỉ phép' : 'On Leave'}
           </span>
+        </div>
+      ) : staff.hasScheduleToday ? (
+        <div className="absolute top-4 right-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/50 px-2 py-1 text-[9px] uppercase tracking-wide font-bold text-emerald-600">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+            {t("adminStaffManagement.workingToday")}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+StaffCard.propTypes = {
+  staff: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    role: PropTypes.string.isRequired,
+    initials: PropTypes.string.isRequired,
+    avatarTone: PropTypes.string.isRequired,
+    avatarUrl: PropTypes.string,
+    phone: PropTypes.string,
+    hasScheduleToday: PropTypes.bool,
+    isOnLeaveToday: PropTypes.bool,
+  }).isRequired,
+  onClick: PropTypes.func,
+};
+
+function pickField(entry, keys) {
+  for (const key of keys) {
+    if (entry?.[key] !== undefined && entry[key] !== null && entry[key] !== "") {
+      return entry[key];
+    }
+  }
+  return null;
+}
+
+function ScheduleEntryRow({ entry }) {
+  const date = pickField(entry, ["date", "workDate", "scheduleDate", "day"]);
+  const start = pickField(entry, ["startTime", "start", "from", "checkIn"]);
+  const end = pickField(entry, ["endTime", "end", "to", "checkOut"]);
+  const status = pickField(entry, ["status", "scheduleStatus"]);
+
+  // Format date nicely
+  const { t, language } = useLanguage();
+  const formattedDate = useMemo(() => {
+    if (!date) return "—";
+    try {
+      const d = new Date(date);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+    return date;
+  }, [date, language]);
+
+  const getStatusColor = () => {
+    const lowerStatus = status?.toLowerCase() || "";
+    if (lowerStatus.includes("active") || lowerStatus.includes("working")) {
+      return "bg-[#eaf9ee] text-[#2fa25f] border-[#b8e6c7]";
+    }
+    if (lowerStatus.includes("leave") || lowerStatus.includes("off")) {
+      return "bg-[#fff0f8] text-[#ea4f93] border-[#f0d9e8]";
+    }
+    return "bg-[#fff0f8] text-[#8b7382] border-[#f0d9e8]";
+  };
+
+  const getStatusIcon = () => {
+    const lowerStatus = status?.toLowerCase() || "";
+    if (lowerStatus.includes("active") || lowerStatus.includes("working")) {
+      return <CheckCircle size={12} />;
+    }
+    if (lowerStatus.includes("leave") || lowerStatus.includes("off")) {
+      return <XCircle size={12} />;
+    }
+    return <Clock size={12} />;
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-[#f0d9e8] bg-white p-4 shadow-sm transition-all duration-200 hover:border-[#ea4f93] hover:shadow-md">
+      <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[#ff8ebb] to-[#ea4f93]"></div>
+      <div className="ml-2 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#fff0f8] to-[#fff5f9] text-[#ea4f93]">
+            <Calendar size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#2d1b35] truncate">{formattedDate}</p>
+            {(start || end) && (
+              <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#a88a9f]">
+                <Clock size={12} />
+                <span>{start || "?"} - {end || "?"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        {status && (
+          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold ${getStatusColor()}`}>
+            {getStatusIcon()}
+            {(status.toLowerCase().includes("active") || status.toLowerCase().includes("working") ? t("adminStaffManagement.workingToday") : (status.toLowerCase().includes("leave") || status.toLowerCase().includes("off") ? t("adminStaffManagement.onLeave") : status))
+            }
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ScheduleEntryRow.propTypes = {
+  entry: PropTypes.object.isRequired,
+};
+
+const CustomScheduleCalendar = ({ schedule }) => {
+  const { language } = useLanguage();
+  const [currentMonth, setCurrentMonth] = useState(dayjs());
+
+  const daysInMonth = currentMonth.daysInMonth();
+  const firstDayOfMonth = currentMonth.startOf('month').day(); // 0 is Sunday, 1 is Monday
+
+  // Adjust for Monday start
+  const startOffset = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+  const prevMonthDays = currentMonth.subtract(1, 'month').daysInMonth();
+
+  const cells = [];
+
+  // Previous month trailing days
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells.push({
+      date: currentMonth.subtract(1, 'month').date(prevMonthDays - i),
+      isCurrentMonth: false
+    });
+  }
+
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({
+      date: currentMonth.date(i),
+      isCurrentMonth: true
+    });
+  }
+
+  // Next month leading days (to complete 42 cells grid)
+  const remainingCells = 42 - cells.length;
+  for (let i = 1; i <= remainingCells; i++) {
+    cells.push({
+      date: currentMonth.add(1, 'month').date(i),
+      isCurrentMonth: false
+    });
+  }
+
+  const weekdaysVi = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "C.Nhật"];
+  const weekdaysEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekdays = language === 'vi' ? weekdaysVi : weekdaysEn;
+
+  return (
+    <div className="w-full rounded-[14px] overflow-hidden border border-[#ea4f93]/30 bg-white shadow-sm font-sans mt-2">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-[#ea4f93] px-4 py-3 text-white">
+        <button onClick={() => setCurrentMonth(prev => prev.subtract(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+        </button>
+        <h4 className="font-bold text-sm uppercase tracking-wider text-white m-0">
+          {language === 'vi' ? `Lịch làm việc - Tháng ${currentMonth.format('M/YYYY')}` : `Working Schedule - ${currentMonth.format('MMMM YYYY')}`}
+        </h4>
+        <button onClick={() => setCurrentMonth(prev => prev.add(1, 'month'))} className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer active:scale-95">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+      </div>
+
+      {/* Weekdays */}
+      <div className="grid grid-cols-7 bg-[#fff5f9] border-b border-[#f0d9e8]">
+        {weekdays.map((day, idx) => (
+          <div key={idx} className="py-2.5 text-center text-xs font-bold text-[#ea4f93] border-r border-[#f0d9e8] last:border-0">
+            {day}
+          </div>
         ))}
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-[#fff7fa] px-3 py-3 text-center">
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.rating}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Rating
-          </p>
-        </div>
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.bookings}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Bookings
-          </p>
-        </div>
-        <div>
-          <p className="text-[16px] font-black text-slate-800">{member.retention}</p>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Retention
-          </p>
-        </div>
-      </div>
+      {/* Grid */}
+      <div className="grid grid-cols-7 bg-white">
+        {cells.map((cell, idx) => {
+          const dateString = cell.date.format("YYYY-MM-DD");
+          const sched = schedule.find(s => {
+            const sd = s.date || s.workDate || s.scheduleDate || s.day;
+            return sd && dayjs(sd).format("YYYY-MM-DD") === dateString;
+          });
 
-      <p className="mt-4 text-center text-[10px] font-semibold text-slate-400">
-        Current Salon: <span className="text-rose-400">{member.salon}</span>
-      </p>
+          const isToday = dateString === dayjs().format("YYYY-MM-DD");
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => onEdit(member)}
-          className="rounded-xl border border-rose-100 bg-[#fafafa] px-3 py-2.5 text-[10px] font-bold text-slate-600 transition hover:bg-rose-50"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          onClick={() => onTransfer(member)}
-          className="rounded-xl border border-rose-100 bg-[#fafafa] px-3 py-2.5 text-[10px] font-bold text-slate-600 transition hover:bg-rose-50"
-        >
-          Transfer
-        </button>
+          let bgClass = "bg-white";
+          if (!cell.isCurrentMonth) bgClass = "bg-[#fcf9fb] opacity-60";
+          if (isToday) bgClass = "bg-[#fff0f8]";
+
+          return (
+            <div key={idx} className={`min-h-[85px] border-b border-r border-[#f0d9e8] p-2 flex flex-col transition-colors hover:bg-[#fff9fc] ${bgClass} ${idx % 7 === 6 ? 'border-r-0' : ''} ${idx >= 35 ? 'border-b-0' : ''}`}>
+              <div className="flex justify-between items-start">
+                <span className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#ea4f93] text-white' : cell.isCurrentMonth ? 'text-[#2d1b35]' : 'text-[#a88a9f]'}`}>
+                  {cell.date.date()}
+                </span>
+                {sched && (
+                  <div className={`w-2 h-2 rounded-full mt-1.5 ${((sched.status || sched.scheduleStatus || "").toLowerCase().includes("active") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("working"))
+                    ? "bg-[#2fa25f]"
+                    : ((sched.status || sched.scheduleStatus || "").toLowerCase().includes("leave") || (sched.status || sched.scheduleStatus || "").toLowerCase().includes("off"))
+                      ? "bg-[#ea4f93]"
+                      : "bg-[#8b7382]"
+                    }`} />
+                )}
+              </div>
+
+              <div className="mt-auto pt-2 flex flex-col gap-1 w-full">
+                {sched && (
+                  (() => {
+                    const status = (sched.status || sched.scheduleStatus || "").toLowerCase();
+                    const start = sched.startTime || sched.start || sched.from || sched.checkIn;
+
+                    if (status.includes("active") || status.includes("working")) {
+                      return (
+                        <div className="bg-[#eaf9ee] border border-[#b8e6c7] text-[#2fa25f] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
+                          {start ? start : (language === 'vi' ? 'Làm việc' : 'Working')}
+                        </div>
+                      );
+                    } else if (status.includes("leave") || status.includes("off")) {
+                      return (
+                        <div className="bg-[#fff0f8] border border-[#f0d9e8] text-[#ea4f93] text-[10px] font-bold px-1.5 py-1 rounded-md text-center truncate shadow-xs w-full">
+                          {language === 'vi' ? 'Nghỉ phép' : 'On Leave'}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <button
-        type="button"
-        className="mt-2 w-full rounded-xl bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-3 py-2.5 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(155,111,212,0.28)] transition hover:opacity-95"
-      >
-        Performance
-      </button>
     </div>
   );
-}
-
-StaffProfileCard.propTypes = {
-  member: PropTypes.shape({
-    bookings: PropTypes.string.isRequired,
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    rating: PropTypes.string.isRequired,
-    retention: PropTypes.string.isRequired,
-    role: PropTypes.string.isRequired,
-    salon: PropTypes.string.isRequired,
-    tags: PropTypes.arrayOf(
-      PropTypes.shape({
-        label: PropTypes.string.isRequired,
-        tone: PropTypes.string.isRequired,
-      }),
-    ).isRequired,
-  }).isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onTransfer: PropTypes.func.isRequired,
 };
 
-function QuickActionButton({ item, onClick, to }) {
-  const Icon = QUICK_ACTION_ICON_MAP[item.icon] ?? Plus;
-
-  const content = (
-    <>
-      <div
-        className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg} ${item.text} transition group-hover:scale-110`}
-      >
-        <Icon size={16} strokeWidth={2} />
-      </div>
-      <div>
-        <p className="text-[11px] font-bold text-slate-700">{item.label}</p>
-        <p className="text-[9px] font-medium text-slate-400">{item.desc}</p>
-      </div>
-    </>
-  );
-
-  if (to) {
-    return (
-      <Link
-        to={to}
-        className="group flex flex-col items-center gap-2 rounded-2xl border border-rose-50 bg-white px-3 py-4 text-center transition hover:border-rose-100 hover:shadow-[0_8px_20px_rgba(226,93,143,0.10)]"
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex flex-col items-center gap-2 rounded-2xl border border-rose-50 bg-white px-3 py-4 text-center transition hover:border-rose-100 hover:shadow-[0_8px_20px_rgba(226,93,143,0.10)]"
-    >
-      {content}
-    </button>
-  );
-}
-
-QuickActionButton.propTypes = {
-  item: PropTypes.shape({
-    bg: PropTypes.string.isRequired,
-    desc: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    text: PropTypes.string.isRequired,
-  }).isRequired,
-  onClick: PropTypes.func,
-  to: PropTypes.string,
-};
-
-function SmallActionButton({ children, className = "", type = "button" }) {
-  return (
-    <button
-      type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50 ${className}`.trim()}
-    >
-      {children}
-    </button>
-  );
-}
-
-SmallActionButton.propTypes = {
-  children: PropTypes.node.isRequired,
-  className: PropTypes.string,
-  type: PropTypes.string,
-};
-
-function CloseIconButton({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-white/20 p-1.5 text-white transition hover:bg-white/30"
-      aria-label="Close modal"
-    >
-      <X size={14} />
-    </button>
-  );
-}
-
-CloseIconButton.propTypes = {
-  onClick: PropTypes.func.isRequired,
-};
-
-function PerformerAvatar({ person }) {
-  if (person.image) {
-    return (
-      <img
-        src={person.image}
-        alt={person.name}
-        className="h-8 w-8 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${person.avatarTone} text-[9px] font-black text-white`}
-    >
-      {person.initials}
-    </div>
-  );
-}
-
-PerformerAvatar.propTypes = {
-  person: PropTypes.shape({
-    avatarTone: PropTypes.string,
-    image: PropTypes.string,
-    initials: PropTypes.string,
-    name: PropTypes.string.isRequired,
-  }).isRequired,
+CustomScheduleCalendar.propTypes = {
+  schedule: PropTypes.array.isRequired
 };
 
 export function StaffManagementPage() {
-  const location = useLocation();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [staffList, setStaffList] = useState(getStaffListWithUpdates);
-  const [flashMessage] = useState(location.state?.flashMessage ?? "");
+  const [loadingSalons, setLoadingSalons] = useState(true);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [salons, setSalons] = useState([]);
+  const location = useLocation();
+  const [selectedSalonId, setSelectedSalonId] = useState(location.state?.selectedSalonId || null);
+  const [staffList, setStaffList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [salonPage, setSalonPage] = useState(1);
+  const [hasMoreSalons, setHasMoreSalons] = useState(false);
+  const [isLoadingMoreSalons, setIsLoadingMoreSalons] = useState(false);
+
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { id: "error-msg" });
+    }
+  }, [error]);
+
+  const [selectedRole, setSelectedRole] = useState(ALL_ROLES_VALUE);
+
+  // Drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [showAssignSalonModal, setShowAssignSalonModal] = useState(false);
-  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [isLoadingDrawer, setIsLoadingDrawer] = useState(false);
+  const [staffSkills, setStaffSkills] = useState([]);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false);
+  const [staffSchedule, setStaffSchedule] = useState([]);
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(false);
 
-  const quickActionHandlers = {
-    Transfer: () => setShowTransferModal(true),
-    "Assign Salon": () => setShowAssignSalonModal(true),
-    Performance: () => setShowPerformanceModal(true),
-    Schedule: () => setShowScheduleModal(true),
-  };
+  const [todaySchedules, setTodaySchedules] = useState([]);
+  const [loadingTodaySchedules, setLoadingTodaySchedules] = useState(false);
 
-  useEffect(() => {
-    setStaffList(getStaffListWithUpdates());
-  }, [location.pathname]);
+  const [todayBreaks, setTodayBreaks] = useState([]);
+
+  // Delete confirm state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
 
   useEffect(() => {
-    if (!location.state?.flashMessage) {
+    const fetchBreaksForSalon = async () => {
+      if (!selectedSalonId) {
+        setTodayBreaks([]);
+        return;
+      }
+      const todayStr = dayjs().format("YYYY-MM-DD");
+      const breaks = await fetchArtistBreaks(null, {
+        salonId: selectedSalonId,
+        date: todayStr,
+        status: "Approved"
+      });
+      setTodayBreaks(breaks || []);
+    };
+    fetchBreaksForSalon();
+  }, [selectedSalonId]);
+
+  const todayArtistLeaves = useMemo(() => {
+    const leaves = new Set();
+    const todayStr = dayjs().format("YYYY-MM-DD");
+    todayBreaks.forEach(b => {
+      if (b.breakDate && dayjs(b.breakDate).format("YYYY-MM-DD") === todayStr) {
+        leaves.add(b.nailArtistId);
+      }
+    });
+    return leaves;
+  }, [todayBreaks]);
+
+  const todayArtistIds = useMemo(() => {
+    return new Set(todaySchedules.map(s => s.nailArtistId));
+  }, [todaySchedules]);
+
+  const availableTodayCount = useMemo(() => {
+    return staffList.filter(staff =>
+      staff.role === "Staff_Artist" &&
+      todayArtistIds.has(staff.staffId) &&
+      !todayArtistLeaves.has(staff.staffId)
+    ).length;
+  }, [staffList, todayArtistIds, todayArtistLeaves]);
+
+  // Handle opening staff detail drawer
+  const handleOpenDrawer = useCallback(async (userId) => {
+    setIsDrawerOpen(true);
+    setIsLoadingDrawer(true);
+    setIsLoadingSkills(true);
+    setIsLoadingSchedule(true);
+    setStaffSkills([]);
+    setStaffSchedule([]);
+    try {
+      const staffData = await fetchUserById(userId);
+
+      const isNailArtist = staffData.role === 'Staff_Artist' || staffData.role === 'NAIL_ARTIST';
+
+      // Fetch skills + schedule song song nếu staff là Staff Artist và có staffId
+      // (staffId ở đây là nailArtistId, không phải userId)
+      if (isNailArtist && staffData.staffId) {
+        const [skillsResult, scheduleResult, breaksResult] = await Promise.allSettled([
+          fetchNailArtistSkills(staffData.staffId),
+          fetchArtistSchedule(staffData.staffId),
+          fetchArtistBreaks(staffData.staffId, { status: "Approved" }),
+        ]);
+
+        if (skillsResult.status === "fulfilled") {
+          setStaffSkills(skillsResult.value || []);
+        } else {
+          console.warn("Failed to load staff skills:", skillsResult.reason);
+          setStaffSkills([]);
+        }
+
+        let combinedSchedule = [];
+        if (scheduleResult.status === "fulfilled") {
+          combinedSchedule = [...(scheduleResult.value || [])];
+        } else {
+          console.warn("Failed to load staff schedule:", scheduleResult.reason);
+        }
+
+        if (breaksResult.status === "fulfilled") {
+          const breaks = (breaksResult.value || []).map(b => ({
+            ...b,
+            date: b.breakDate,
+            status: "leave",
+          }));
+          combinedSchedule = [...breaks, ...combinedSchedule];
+        } else {
+          console.warn("Failed to load staff breaks:", breaksResult.reason);
+        }
+
+        setStaffSchedule(combinedSchedule);
+      } else {
+        setStaffSkills([]);
+        setStaffSchedule([]);
+      }
+
+      setSelectedStaff(staffData);
+    } catch (err) {
+      console.error("Failed to load staff details:", err);
+    } finally {
+      setIsLoadingDrawer(false);
+      setIsLoadingSkills(false);
+      setIsLoadingSchedule(false);
+    }
+  }, []);
+
+  const itemsPerPage = 9;
+
+  const roleOptions = [
+    { value: ALL_ROLES_VALUE, label: t("adminStaffManagement.allRoles") },
+    { value: "Staff_Artist", label: t("adminStaffManagement.staffArtist") },
+    { value: "Manager", label: t("adminStaffManagement.manager") },
+    { value: "Receptionist", label: t("adminStaffManagement.receptionist") },
+  ];
+
+  const loadSalons = useCallback(async (page = 1) => {
+    try {
+      if (page === 1) {
+        setLoadingSalons(true);
+      } else {
+        setIsLoadingMoreSalons(true);
+      }
+      setError(null);
+      const result = await fetchAdminSalons({ pageIndex: page, pageSize: 6 });
+
+      if (page === 1) {
+        setSalons(result.items || []);
+      } else {
+        setSalons(prev => [...prev, ...(result.items || [])]);
+      }
+      setHasMoreSalons(result.metaData?.hasNext || false);
+      setSalonPage(page);
+    } catch (err) {
+      console.error("Failed to load salons:", err);
+      setError(err.message || "Failed to load salons.");
+    } finally {
+      setLoadingSalons(false);
+      setIsLoadingMoreSalons(false);
+    }
+  }, []);
+
+  const loadStaffForSalon = useCallback(async (salonId) => {
+    if (!salonId) {
+      setStaffList([]);
       return;
     }
 
-    navigate(location.pathname, { replace: true, state: null });
-  }, [location.pathname, location.state, navigate]);
+    try {
+      setLoadingStaff(true);
+      const result = await fetchSalonStaff(salonId, {
+        pageIndex: currentPage,
+        pageSize: itemsPerPage,
+        role: selectedRole === ALL_ROLES_VALUE ? null : selectedRole,
+      });
+      setStaffList(result.items || []);
+      setTotalPages(result.metaData?.totalPages || 1);
+    } catch (err) {
+      console.error("Failed to load staff:", err);
+      setStaffList([]);
+    } finally {
+      setLoadingStaff(false);
+    }
+  }, [currentPage, selectedRole]);
+
+  const handleDeleteStaff = (staffId) => {
+    setStaffToDelete(staffId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    try {
+      await deleteAdminUser(staffToDelete);
+      toast.success(language === "vi" ? "Đã xóa nhân viên thành công" : "Staff deleted successfully");
+      setIsDrawerOpen(false);
+      setSelectedStaff(null);
+      loadStaffForSalon(selectedSalonId);
+    } catch (err) {
+      console.error(err);
+      toast.error(language === "vi" ? "Không thể xóa nhân viên" : "Failed to delete staff");
+    } finally {
+      setShowDeleteConfirm(false);
+      setStaffToDelete(null);
+    }
+  };
+
+  useEffect(() => {
+    Promise.resolve().then(() => loadSalons());
+  }, [loadSalons]);
+
+  useEffect(() => {
+    if (selectedSalonId) {
+      loadStaffForSalon(selectedSalonId);
+    }
+  }, [selectedSalonId, selectedRole, loadStaffForSalon]);
 
   const filteredStaff = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    if (!searchQuery.trim()) {
+      return staffList;
+    }
+    const lowerQuery = searchQuery.toLowerCase();
+    return staffList.filter(staff =>
+      staff.name.toLowerCase().includes(lowerQuery) ||
+      (staff.role && staff.role.toLowerCase().includes(lowerQuery))
+    );
+  }, [staffList, searchQuery]);
 
-    return staffList.filter((member) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        [member.name, member.role, member.salon, member.id]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
 
-      return matchesSearch && matchesStaffFilter(member, activeFilter);
-    });
-  }, [activeFilter, searchTerm, staffList]);
+  const stats = useMemo(() => {
+    const selectedSalon = salons.find(s => s.id === selectedSalonId);
+    const isVi = language === "vi";
+    return [
+      {
+        label: isVi ? "Tổng số nhân viên" : "Total Staff",
+        value: staffList.length.toString(),
+        icon: Users,
+        color: "#ea4f93",
+        note: selectedSalon?.name || (isVi ? "Tất cả chi nhánh" : "All Salons"),
+      },
+      {
+        label: isVi ? "Sẵn sàng hôm nay" : "Available Today",
+        value: availableTodayCount,
+        icon: CheckCircle2,
+        color: "#10b981",
+        note: isVi ? "Trạng thái hiện tại" : "Current status",
+      },
+      // {
+      //   label: isVi ? "Đánh giá trung bình" : "Average Rating",
+      //   value: selectedSalon?.avgRating?.toFixed(2) || 0,
+      //   icon: Star,
+      //   color: "#f59e0b",
+      //   note: isVi ? "Sự hài lòng khách hàng" : "Customer satisfaction",
+      // },
+      {
+        label: isVi ? "Đang nghỉ phép" : "On Leave",
+        value: selectedSalon?.onLeaveStaffCount || 0,
+        icon: Clock3,
+        color: "#6366f1",
+        note: isVi ? "Nhân viên nghỉ phép" : "Staff on leave",
+      },
+    ];
+  }, [salons, selectedSalonId, staffList, availableTodayCount, language]);
 
-  const handleEditStaff = (member) => {
-    navigate(getAdminStaffUpdateRoute(member.id));
-  };
+  const loadTodaySchedules = useCallback(async () => {
+    try {
+      setLoadingTodaySchedules(true);
 
-  const handleTransferStaff = (member) => {
-    setSelectedStaff(member);
-    setShowTransferModal(true);
-  };
+      const schedules = await fetchTodaySchedules();
+      setTodaySchedules(schedules);
+    } catch (err) {
+      console.error(err);
+      setTodaySchedules([]);
+    } finally {
+      setLoadingTodaySchedules(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTodaySchedules();
+  }, [loadTodaySchedules]);
+
 
   return (
-    <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
-      {flashMessage ? (
-        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] font-semibold text-emerald-700">
-          {flashMessage}
+    <section className="flex min-h-full flex-col gap-4">
+      {error && (
+        <Alert
+          message="Error Loading Data"
+          description={error}
+          type="error"
+          showIcon
+        />
+      )}
+
+      {selectedSalonId && (
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-4">
+          <button
+            onClick={() => setSelectedSalonId(null)}
+            className="flex self-start md:self-auto items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4.5 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:border-[#ea4f93]/30 transition-all duration-300 active:scale-[0.98]"
+          >
+            <ArrowLeft size={13} />
+            {language === "vi" ? "Trở về danh sách chi nhánh" : "Back to Salons"}
+          </button>
         </div>
-      ) : null}
+      )}
 
-      <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {STAFF_SUMMARY.map((item) => (
-          <StatCard key={item.label} item={item} />
-        ))}
-      </section>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_290px]">
-        <div className="space-y-4">
-          <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-[16px] font-black text-slate-800">Roster Filters</h2>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Narrow the active team view before reviewing profiles and side panels
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-slate-400">
-                {filteredStaff.length} profiles matched
-              </span>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {STAFF_FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setActiveFilter(option.key)}
-                  className={`rounded-full px-4 py-2 text-[11px] font-semibold transition ${activeFilter === option.key
-                    ? "bg-rose-500 text-white shadow-[0_6px_14px_rgba(226,93,143,0.28)]"
-                    : "bg-white text-slate-500 hover:bg-rose-50"
-                    }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[24px] bg-white/65 p-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)]">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-[16px] font-black text-slate-800">Featured Staff Profiles</h2>
-                <p className="text-[11px] font-medium text-slate-400">
-                  Top performers, managers, and active team members
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 items-end">
-                <div className="flex flex-col gap-3 xl:min-w-[620px] xl:flex-row xl:items-center xl:justify-end">
-                  <div className="flex items-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 shadow-inner shadow-rose-50 xl:min-w-[260px]">
-                    <Search size={14} className="text-rose-300" />
-                    <input
-                      type="text"
-                      placeholder="Search staff..."
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      className="w-full bg-transparent text-[12px] text-slate-500 outline-none placeholder:text-rose-200"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to={ROUTES.adminStaffCreate}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[15px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
-                    >
-                      <Plus size={20} />
-                      Add Staff
-                    </Link>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="shrink-0 text-[11px] font-bold text-rose-400 transition hover:text-rose-500"
-                  >
-                    View All Profiles
-                  </button>
-
-                  <SmallActionButton>
-                    <Download size={13} />
-                    Export
-                  </SmallActionButton>
-                </div>
-              </div>
-            </div>
-
-            {filteredStaff.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {filteredStaff.map((member) => (
-                  <StaffProfileCard
-                    key={member.id}
-                    member={member}
-                    onEdit={handleEditStaff}
-                    onTransfer={handleTransferStaff}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-rose-200 bg-white px-6 py-10 text-center">
-                <p className="text-[14px] font-bold text-slate-700">No staff matched your filters</p>
-                <p className="mt-1 text-[11px] font-medium text-slate-400">
-                  Try another keyword or switch the active tab.
-                </p>
-              </div>
-            )}
-          </section>
-        </div>
-
-        <aside className="space-y-5">
-          <div className="rounded-[28px] border border-rose-100 bg-gradient-to-b from-[#f7e7fb] to-[#fff7fa] p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[13px] font-black text-slate-800">Quick Actions</h3>
-              <span className="rounded-full border border-rose-100 bg-white px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-400">
-                6 actions
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {STAFF_QUICK_ACTIONS.map((item) => (
-                <QuickActionButton
-                  key={item.label}
-                  item={item}
-                  onClick={quickActionHandlers[item.label]}
-                  to={item.label === "Add Staff" ? ROUTES.adminStaffCreate : undefined}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[12px] font-bold text-slate-700">
-                <Sparkles size={14} className="text-rose-500" />
-                <span>Top Performing Staff</span>
-              </div>
-              <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-500">
-                This Month
-              </span>
-            </div>
-            <div className="space-y-3">
-              {STAFF_TOP_PERFORMERS.map((person) => (
-                <div
-                  key={person.name}
-                  className="flex items-center gap-2.5 rounded-2xl border border-rose-50 px-3 py-2.5"
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${person.color}`}
-                  >
-                    {person.rank}
-                  </div>
-                  <PerformerAvatar person={person} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-bold text-slate-700">{person.name}</p>
-                    <p className="truncate text-[10px] font-medium text-slate-400">{person.meta}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1 text-[10px] font-bold text-amber-500">
-                    <Star size={11} fill="currentColor" strokeWidth={0} />
-                    {person.rating}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-              <Clock3 size={14} className="text-rose-500" />
-              <span>Staff On Leave</span>
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600">
-                12 staff
-              </span>
-            </div>
-            <div className="space-y-3">
-              {STAFF_LEAVE_LIST.map((person) => (
-                <div
-                  key={person.name}
-                  className="flex items-center gap-3 rounded-2xl border border-rose-50 px-3 py-2.5"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3f8] text-[10px] font-black text-rose-500">
-                    {getStaffInitials(person.name)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-bold text-slate-700">{person.name}</p>
-                    <p className="truncate text-[10px] font-medium text-slate-400">{person.note}</p>
-                  </div>
-                  <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${person.tone}`}>
-                    {person.tag}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full border border-rose-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50"
-            >
-              View All On Leave
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-rose-100 bg-white p-4 shadow-[0_18px_32px_rgba(226,93,143,0.08)]">
-            <div className="mb-4 flex items-center gap-2 text-[12px] font-bold text-slate-700">
-              <TriangleAlert size={14} className="text-rose-500" />
-              <span>Low Rating Alert</span>
-              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9px] font-bold text-rose-500">
-                2 staff
-              </span>
-            </div>
-            <div className="space-y-3">
-              {STAFF_LOW_RATING_ALERTS.map((person) => (
-                <div key={person.name} className="rounded-2xl border border-rose-50 px-3 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-teal-400 text-[10px] font-black text-white">
-                        {getStaffInitials(person.name)}
+      {!selectedSalonId ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {salons.map((salon) => (
+              <div
+                key={salon.id}
+                onClick={() => setSelectedSalonId(salon.id)}
+                className="group bg-white/80 backdrop-blur-md rounded-lg border border-[#f1e7ed]/60 p-6 shadow-[0_12px_32px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(234,79,147,0.06)] hover:border-[#ea4f93]/20 cursor-pointer transition-all duration-300 flex flex-col justify-between"
+              >
+                <div className="space-y-4">
+                  <div className="relative h-44 w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/50">
+                    {salon.image ? (
+                      <img
+                        src={salon.image}
+                        alt={salon.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ea4f93]/5 to-[#ffa26f]/5 text-[#ea4f93] font-bold text-2xl">
+                        {salon.name?.[0]?.toUpperCase() || "S"}
                       </div>
-                      <div>
-                        <p className="text-[11px] font-bold text-slate-700">{person.name}</p>
-                        <p className="text-[10px] font-medium text-slate-400">{person.detail}</p>
+                    )}
+                    <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : salon.status === "Busy"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-slate-50 text-slate-600 border-slate-200"
+                      }`}>
+                      {language === "vi"
+                        ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
+                        : (salon.status)
+                      }
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    <h3 className="text-base font-bold text-[#2d1b35] group-hover:text-[#ea4f93] transition-colors leading-tight">
+                      {salon.name}
+                    </h3>
+                    <div className="space-y-1.5 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">{salon.address}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {language === "vi" ? "Nhân viên: " : "Staff: "}
+                          <span className="font-semibold text-slate-600">{salon.staffCount || 0}</span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User size={12} className="shrink-0 text-slate-400" />
+                        <span className="truncate">
+                          {language === "vi" ? "Quản lý: " : "Manager: "}
+                          <span className="font-semibold text-slate-600">
+                            {!salon.manager || salon.manager === "Unassigned"
+                              ? (language === "vi" ? "Chưa có" : "Unassigned")
+                              : salon.manager}
+                          </span>
+                        </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="rounded-full border border-rose-200 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-rose-500 transition hover:bg-rose-50"
-                    >
-                      {person.action}
-                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-full bg-gradient-to-r from-[#f6a7bf] to-[#eb5b92] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-[0_10px_18px_rgba(226,93,143,0.2)] transition hover:opacity-95"
-            >
-              Send Performance Notice
-            </button>
-          </div>
-        </aside>
-      </div>
-
-      <Modal
-        open={showTransferModal}
-        onCancel={() => setShowTransferModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <ArrowRightLeft size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Transfer Staff</h3>
-                  <p className="text-[11px] text-white/70">Move to another salon branch</p>
-                </div>
               </div>
-              <CloseIconButton onClick={() => setShowTransferModal(false)} />
-            </div>
+            ))}
           </div>
 
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Target Salon</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-400">
-                <option>Choose a salon...</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
+          {hasMoreSalons && (
+            <div className="mt-8 flex justify-center">
               <button
-                type="button"
-                onClick={() => setShowTransferModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
+                onClick={() => loadSalons(salonPage + 1)}
+                disabled={isLoadingMoreSalons}
+                className="inline-flex items-center gap-2 rounded-full border border-[#f0d9e8] bg-white px-6 py-2.5 text-sm font-semibold text-[#ea4f93] shadow-sm hover:bg-[#fff0f8] hover:border-[#ea4f93]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowTransferModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#b57edc] to-[#9b6fd4] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(155,111,212,0.22)] transition hover:opacity-95"
-              >
-                Continue Transfer
+                {isLoadingMoreSalons ? (
+                  <Spin size="small" />
+                ) : (
+                  <ChevronDown size={16} />
+                )}
+                {language === "vi" ? "Xem thêm" : "View More"}
               </button>
             </div>
-          </div>
+          )}
         </div>
-      </Modal>
+      ) : (
+        <>
 
-      {/* ── Assign Salon Modal ── */}
-      <Modal
-        open={showAssignSalonModal}
-        onCancel={() => setShowAssignSalonModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <BriefcaseBusiness size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Assign Salon</h3>
-                  <p className="text-[11px] text-white/70">Assign staff to a salon branch</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowAssignSalonModal(false)} />
-            </div>
-          </div>
 
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Salon</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a salon...</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowAssignSalonModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAssignSalonModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Assign Salon
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
+          {!loadingSalons && (
+            <TopMetricsRow metrics={stats} className="grid gap-4 sm:grid-cols-3 xl:grid-cols-3" />
+          )}
 
-      {/* ── Performance Modal ── */}
-      <Modal
-        open={showPerformanceModal}
-        onCancel={() => setShowPerformanceModal(false)}
-        footer={null}
-        closable={false}
-        width={500}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <BarChart3 size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Staff Performance</h3>
-                  <p className="text-[11px] text-white/70">View staff performance metrics</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowPerformanceModal(false)} />
-            </div>
-          </div>
+          <div className="grid gap-4">
+            <Card >
+              <div className="rounded-2xl border border-[#f1dce7] bg-white/90 shadow-[0_6px_24px_rgba(45,27,53,0.05)] backdrop-blur-sm">
+                {/* Header */}
+                <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  {/* Title */}
+                  <SectionHeading
+                    title={t("adminStaffManagement.salonStaff")}
+                    subtitle={
+                      filteredStaff.length === 1
+                        ? t("adminStaffManagement.staffCountSingle", { count: 1 })
+                        : t("adminStaffManagement.staffCount", {
+                          count: filteredStaff.length,
+                        })
+                    }
+                  />
 
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
+                  {/* Controls */}
+                  <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+                    {/* Role */}
+                    <Select
+                      value={selectedRole}
+                      onChange={setSelectedRole}
+                      placeholder={t("adminStaffManagement.selectRole")}
+                      options={roleOptions.map((option) => ({
+                        ...option,
+                        value: option.value ?? ALL_ROLES_VALUE,
+                      }))}
+                      disabled={loadingStaff}
+                      className="
+          w-full
+          xl:w-[170px]
+          [&_.ant-select-selector]:!h-10
+          [&_.ant-select-selector]:!rounded-full
+          [&_.ant-select-selector]:!border-[#f1dce7]
+          [&_.ant-select-selector]:!bg-[#fff9fc]
+          [&_.ant-select-selection-item]:!text-[#432744]
+          [&_.ant-select-selection-item]:!font-semibold
+          [&_.ant-select-selection-placeholder]:!text-[#a88a9f]
+          [&_.ant-select-arrow]:!text-[#a88a9f]
+          hover:[&_.ant-select-selector]:!border-[#ea4f93]/40
+        "
+                      popupClassName="select-premium-dropdown"
+                    />
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">145</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Bookings</p>
-              </div>
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">4.8</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Rating</p>
-              </div>
-              <div className="rounded-xl border border-rose-100 bg-[#fff8fb] p-3 text-center">
-                <p className="text-[22px] font-black text-slate-800">$3.2k</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400">Revenue</p>
-              </div>
-            </div>
+                    {/* Search */}
+                    <label className="relative block w-full xl:w-[220px]">
+                      <Search
+                        size={15}
+                        strokeWidth={2}
+                        className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-[#a88a9f]"
+                      />
 
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowPerformanceModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Export Report
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
+                      <input
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder={t("adminStaffManagement.searchStaffPlaceholder")}
+                        className="
+            h-10
+            w-full
+            rounded-full
+            border
+            border-[#f1dce7]
+            bg-[#fff9fc]
+            pl-10
+            pr-4
+            text-xs
+            font-medium
+            text-[#432744]
+            outline-none
+            transition-all
+            duration-200
+            placeholder:text-[#b99aaa]
+            hover:border-[#ea4f93]/40
+            focus:border-[#ea4f93]
+            focus:bg-white
+            focus:ring-2
+            focus:ring-[#ea4f93]/10
+          "
+                      />
+                    </label>
 
-      {/* ── Schedule Modal ── */}
-      <Modal
-        open={showScheduleModal}
-        onCancel={() => setShowScheduleModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <CalendarClock size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Manage Schedule</h3>
-                  <p className="text-[11px] text-white/70">Set staff working hours</p>
-                </div>
-              </div>
-              <CloseIconButton onClick={() => setShowScheduleModal(false)} />
-            </div>
-          </div>
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      {/* Export */}
+                      <button
+                        type="button"
+                        className="
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            gap-2
+            rounded-full
+            border
+            border-[#f1dce7]
+            bg-white
+            px-4
+            text-xs
+            font-semibold
+            text-[#7f6478]
+            shadow-[0_2px_8px_rgba(45,27,53,0.04)]
+            transition-all
+            duration-200
+            hover:border-[#ea4f93]/40
+            hover:bg-[#fff8fb]
+            hover:text-[#ea4f93]
+            hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]
+          "
+                      >
+                        <Download size={15} strokeWidth={2.2} />
+                        <span>{t("adminStaffManagement.export")}</span>
+                      </button>
 
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift Start</label>
-              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Shift End</label>
-              <input type="time" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowScheduleModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowScheduleModal(false)}
-                className="rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(226,93,143,0.22)] transition hover:opacity-95"
-              >
-                Save Schedule
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Deactivate Modal ── */}
-      <Modal
-        open={showDeactivateModal}
-        onCancel={() => setShowDeactivateModal(false)}
-        footer={null}
-        closable={false}
-        width={420}
-        styles={STAFF_MODAL_STYLES}
-      >
-        <div>
-          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-white/20 p-2">
-                  <ShieldCheck size={16} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-[15px] font-black text-white">Deactivate Staff</h3>
-                  <p className="text-[11px] text-white/70">Suspend staff access temporarily</p>
+                      {/* Add Staff */}
+                      <Link
+                        to={ROUTES.adminStaffCreate}
+                        state={{ selectedSalonId }}
+                        className="
+            inline-flex
+            h-10
+            items-center
+            justify-center
+            gap-2
+            rounded-full
+            bg-gradient-to-r
+            from-[#ea4f93]
+            to-[#ff8ebb]
+            px-4
+            text-xs
+            font-semibold
+            text-white
+            shadow-[0_5px_14px_rgba(234,79,147,0.20)]
+            transition-all
+            duration-200
+            hover:-translate-y-0.5
+            hover:shadow-[0_8px_18px_rgba(234,79,147,0.25)]
+          "
+                      >
+                        <Plus size={15} strokeWidth={2.5} />
+                        <span>{t("adminStaffManagement.addStaff")}</span>
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <CloseIconButton onClick={() => setShowDeactivateModal(false)} />
-            </div>
-          </div>
 
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Select Staff</label>
-              <select className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400">
-                <option>Choose a staff member...</option>
-                {staffList.map((staff) => (
-                  <option key={staff.id} value={staff.id}>{staff.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 block mb-2">Reason</label>
-              <input type="text" placeholder="e.g., Leave of absence" className="w-full rounded-xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5 text-[12px] text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-400" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(false)}
-                className="rounded-full border border-rose-200 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowDeactivateModal(false)}
-                className="rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-4 py-2 text-[11px] font-bold text-white shadow-[0_10px_20px_rgba(239,68,68,0.22)] transition hover:opacity-95"
-              >
-                Deactivate
-              </button>
-            </div>
+              <div className="p-6">
+                {loadingSalons ? (
+                  <div className="flex justify-center py-10">
+                    <Spin size="large" />
+                  </div>
+                ) : loadingStaff ? (
+                  <div className="flex justify-center py-10">
+                    <Spin size="large" />
+                  </div>
+                ) : filteredStaff.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#fff0f8]">
+                      <Users size={32} className="text-[#ea4f93]" />
+                    </div>
+                    <p className="text-sm text-[#8b7382]">
+                      {selectedSalonId
+                        ? (t("adminStaffManagement.noStaffFound"))
+                        : (t("adminStaffManagement.selectSalonToView"))}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+
+                      {filteredStaff.map((staff) => (
+                        <StaffCard
+                          key={staff.id}
+                          staff={{
+                            ...staff,
+                            hasScheduleToday: todayArtistIds.has(staff.staffId),
+                            isOnLeaveToday: todayArtistLeaves.has(staff.staffId),
+                          }}
+                          onClick={() => handleOpenDrawer(staff.userId || staff.id)}
+                        />
+                      ))}
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="flex justify-end pt-6 border-t border-[#f0d9e8] bg-gradient-to-b from-[#fffafb] to-white">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </Card>
           </div>
-        </div>
-      </Modal>
+        </>
+      )}
+
+      {/* Staff Detail Drawer */}
+      {selectedSalonId && (
+        <Drawer
+          title={null}
+          open={isDrawerOpen}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            setSelectedStaff(null);
+          }}
+          size="large"
+          styles={{
+            body: { padding: 0 },
+            section: { background: "#fafafa" }
+          }}
+          placement="right"
+          mask={true}
+          maskClosable={true}
+          destroyOnClose
+          closable={false}
+        >
+          {isLoadingDrawer ? (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <Spin size="large" />
+            </div>
+          ) : selectedStaff ? (
+            <div className="bg-[#fafafa] h-full flex flex-col">
+              {/* Drawer Header */}
+              <div className="sticky top-0 z-10 bg-gradient-to-r from-[#ea4f93] via-[#ff7ba4] to-[#ffaab6] shadow-md p-6 rounded-b-3xl">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <StaffAvatar
+                      staff={{
+                        ...selectedStaff,
+                        name: `${selectedStaff.firstName || ""} ${selectedStaff.lastName || ""}`.trim() || "Avatar",
+                        initials: `${(selectedStaff.firstName || "S")[0]}${(selectedStaff.lastName || "")[0]}`.toUpperCase(),
+                      }}
+                      className="h-14 w-14 rounded-full object-cover border-2 border-white/30 flex-shrink-0"
+                      fallbackClassName="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white text-2xl font-bold border-2 border-white/30 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-white/85">
+                        {t("adminStaffManagement.staffDetails")}
+                      </p>
+                      <h2 className="text-xl font-bold text-white mt-1 truncate">
+                        {selectedStaff.firstName || ''} {selectedStaff.lastName || ''}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                      setSelectedStaff(null);
+                    }}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 flex-shrink-0"
+                  >
+                    <X size={20} color="#ffffff" />
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {selectedStaff.role && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
+                      {getLocalizedRole(selectedStaff.role, language)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Personal Information */}
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                    {t("adminStaffManagement.personalInfo")}
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
+                      <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                      <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                  <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                    {t("adminStaffManagement.accountInfo")}
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? getLocalizedRole(selectedStaff.role, language) : '-'}</InfoItem>
+                    <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
+                        {selectedStaff.status === 'Active' || !selectedStaff.status ? (language === "vi" ? "Hoạt động" : "Active") : selectedStaff.status}
+                      </span>
+                    </InfoItem>
+                  </div>
+                </div>
+
+                {/* Skills Section (for Staff Artists) */}
+                {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                    <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                      {t("adminStaffManagement.skillsSpecialties")}
+                    </h3>
+                    {isLoadingSkills ? (
+                      <div className="flex justify-center py-4">
+                        <Spin size="small" />
+                      </div>
+                    ) : staffSkills.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {staffSkills.map((skill, index) => (
+                          <span
+                            key={skill.id || index}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#fff0f8] to-[#fff5f9] px-3 py-1.5 text-xs font-semibold text-[#ea4f93] border border-[#f0d9e8]"
+                          >
+                            {skill.skillTypeName || skill.name || 'Skill'}
+                            {skill.level ? (
+                              <span className="text-[10px] text-[#c07f9e]">
+                                (Level {skill.level})
+                              </span>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#a88a9f]">
+                        {t("adminStaffManagement.noSkillsAssigned")}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Working Schedule Section (for Staff Artists) */}
+                {(selectedStaff.role === 'Staff_Artist' || selectedStaff.role === 'NAIL_ARTIST') && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8] mb-4">
+                    <div className="mb-4 flex items-center gap-2">
+                      <CalendarDays size={16} className="text-[#ea4f93]" />
+                      <h3 className="text-sm font-bold text-[#2d1b35]">
+                        {t("adminStaffManagement.workingSchedule")}
+                      </h3>
+                    </div>
+                    {isLoadingSchedule ? (
+                      <div className="flex justify-center py-4">
+                        <Spin size="small" />
+                      </div>
+                    ) : (
+                      <CustomScheduleCalendar schedule={staffSchedule} />
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="pt-4 border-t border-[#f0d9e8] flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteStaff(selectedStaff.userId || selectedStaff.accountId || selectedStaff.id)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-rose-500 bg-white px-4 py-3 text-xs font-bold text-rose-600 shadow-lg transition-all hover:bg-rose-50 hover:border-rose-600 hover:scale-[1.02]"
+                  >
+                    <Trash2 size={14} />
+                    {language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+                  </button>
+                  <Link
+                    to={getAdminStaffUpdateRoute(selectedStaff.id || selectedStaff.userId)}
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-violet-500 bg-white px-4 py-3 text-xs font-bold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:border-violet-600 hover:scale-[1.02]"
+                  >
+                    <Edit3 size={14} />
+                    {t("adminStaffManagement.updateProfile")}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </Drawer>
+      )}
+
+      <ActionConfirmModal
+        open={showDeleteConfirm}
+        intent="danger"
+        title={language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+        subtitle={language === "vi" ? "Bạn có chắc chắn muốn xóa nhân viên này?" : "Are you sure you want to delete this staff?"}
+        description={language === "vi" ? "Tài khoản nhân viên sẽ chuyển sang trạng thái ngừng hoạt động." : "The staff account will be deactivated."}
+        confirmText={language === "vi" ? "Xóa nhân viên" : "Delete Staff"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        onConfirm={confirmDeleteStaff}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setStaffToDelete(null);
+        }}
+      />
     </section>
   );
 }

@@ -3,41 +3,73 @@ export const ROUTES = {
   // Public routes
   root: "/",
   login: "/login",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  paymentStatus: "/payment-status",
+  paymentSuccess: "/payment/success",
+  paymentCancel: "/payment/cancel",
 
   // Staff routes
   staffRoot: "/staff",
   receptionistRoot: "/receptionist",
   staffDashboard: "/staff/dashboard",
+  staffProfile: "/staff/profile",
   receptionistDashboard: "/receptionist/dashboard",
+  receptionistProfile: "/receptionist/profile",
   staffBookings: "/staff/bookings",
+  staffSchedules: "/staff/schedules",
+  staffTasks: "/staff/tasks",
   staffBookingsCreate: "/staff/bookings/create",
   staffBookingDetail: "/staff/bookings/:bookingId",
   staffBookingDesignStudio: "/staff/bookings/:bookingId/design-studio",
   staffBookingDesignUpdate: "/staff/bookings/:bookingId/update-booking-design",
   staffBookingServiceSession: "/staff/bookings/:bookingId/service-session",
+  staffCustomerNails: "/staff/customer-nails",
+  staffCustomerNailDetail: "/staff/customer-nails/:customerNailId",
+  staffWaitting: "/staff/waitting",
+  staffBreaks: "/staff/breaks",
   receptionistBookings: "/receptionist/bookings",
   receptionistBookingsCreate: "/receptionist/bookings/create",
   receptionistBookingDetail: "/receptionist/bookings/:bookingId",
+  receptionistBookingCheckout: "/receptionist/bookings/:bookingId/checkout",
+  receptionistCustomers: "/receptionist/customers",
+  receptionistCustomersCreate: "/receptionist/customers/create",
+  receptionistCustomerDetail: "/receptionist/customers/:id",
+  receptionistBreaks: "/receptionist/breaks",
+  receptionistChairs: "/receptionist/chairs",
 
   // Manager routes
   managerRoot: "/manager",
   managerDashboard: "/manager/dashboard",
+  managerProfile: "/manager/profile",
   managerBookings: "/manager/bookings",
-  managerBookingsCreate: "/manager/bookings/create",
+  managerReschedule: "/manager/reschedule",
   managerBookingDetail: "/manager/bookings/:bookingId",
   managerStaffArtists: "/manager/staff-artists",
   managerStaffArtistsCreate: "/manager/staff-artists/create",
   managerStaffArtistUpdate: "/manager/staff-artists/:staffId",
   managerCustomerNails: "/manager/customer-nails",
   managerCustomerNailDetail: "/manager/customer-nails/:customerNailId",
+  managerSchedules: "/manager/schedules",
+  managerTransactions: "/manager/transactions",
+  managerBookingRatings: "/manager/bookings/ratings",
+  managerWaitlist: "/manager/waitlist",
+  managerQueue: "/manager/queue",
+  managerBreaks: "/manager/breaks",
+  managerChairs: "/manager/chairs",
+  managerSalon: "/manager/salon",
+  receptionistQueue: "/receptionist/queue",
+  receptionistWaitlist: "/receptionist/waitlist",
 
   // Admin routes
   adminRoot: "/admin",
   adminDashboard: "/admin/dashboard",
+  adminProfile: "/admin/profile",
   adminBookings: "/admin/bookings",
   adminBookingsCreate: "/admin/bookings/create",
-  adminBookingDetail: "/admin/bookings/:bookingId",
+  adminBookingDetail: "/admin/bookings/detail/:bookingId",
   adminSalons: "/admin/salons",
+  adminChairs: "/admin/chairs",
   adminSalonsCreate: "/admin/salons/create",
   adminSalonDetail: "/admin/salons/:salonId",
   adminSalonUpdate: "/admin/salons/:salonId/edit",
@@ -47,11 +79,50 @@ export const ROUTES = {
   adminUsers: "/admin/users",
   adminUsersCreate: "/admin/users/create",
   adminUserDetail: "/admin/users/:userId",
-  adminServicePricing: "/admin/service-pricing",
+  adminLoyaltyTiers: "/admin/loyalty-tiers",
+  adminLoyaltyTransactions: "/admin/loyalty-transactions",
+  adminWalletTransactions: "/admin/wallet-transactions",
+  adminWithdrawRequests: "/admin/withdraw-requests",
+  adminWithdrawRequestDetail: "/admin/withdraw-requests/:requestId",
+  adminServicePricing: "/admin/services",
+  adminQuiz: "/admin/quiz",
+  adminQuizCreate: "/admin/quiz/create",
+  adminNailShapes: "/admin/nail-shapes",
+  adminNailShapesCreate: "/admin/nail-shapes/create",
+  adminNailShapeDetail: "/admin/nail-shapes/:shapeId",
+  adminNailSurfaces: "/admin/nail-surfaces",
+  adminNailSurfacesCreate: "/admin/nail-surfaces/create",
+  adminNailSurfaceDetail: "/admin/nail-surfaces/:surfaceId",
+  adminComponents: "/admin/components",
+  adminComponentsCreate: "/admin/components/create",
+  adminComponentDetail: "/admin/components/:componentId",
+  adminProcedures: "/admin/procedures",
+  adminProceduresCreate: "/admin/procedures/create",
+  adminProcedureDetail: "/admin/procedures/:procedureId",
+  adminCategoryTypes: "/admin/category-types",
+  adminCategoryTypesCreate: "/admin/category-types/create",
+  adminCategoryTypeDetail: "/admin/category-types/:categoryTypeId",
+  adminSkillTypes: "/admin/skill-types",
+  adminSkillTypesCreate: "/admin/skill-types/create",
+  adminSkillTypeDetail: "/admin/skill-types/:skillTypeId",
+  adminCategories: "/admin/categories",
+  adminCategoriesCreate: "/admin/categories/create",
+  adminCategoryDetail: "/admin/categories/:categoryId",
+  adminPromotions: "/admin/promotions",
+  adminPromotionsCreate: "/admin/promotions/create",
+  adminPromotionDetail: "/admin/promotions/:promotionId",
   adminNailDesigns: "/admin/nail-designs",
   adminNailDesignCategories: "/admin/nail-designs/categories",
   adminNailDesignsCreate: "/admin/nail-designs/create",
   adminNailDesignDetail: "/admin/nail-designs/:designId",
+  adminNailVariantCreate: "/admin/nail-designs/:designId/variants/create",
+  adminNailVariantCreateTryOn: "/admin/nail-designs/:designId/variants/create/try-on",
+  adminNailVariantDetail: "/admin/nail-designs/:designId/variants/:variantId",
+  adminNailVariantTryOn: "/admin/nail-designs/:designId/variants/:variantId/try-on",
+  adminSalonBookings: "/admin/bookings",
+  adminSalonBookingDetail: "/admin/bookings/:salonId",
+  adminTransactions: "/admin/transactions",
+  adminBookingRatings: "/admin/bookings/ratings",
 };
 
 export const getStaffBookingDetailRoute = (bookingId) =>
@@ -62,19 +133,67 @@ export const getStaffBookingDesignUpdateRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/update-booking-design`;
 export const getStaffBookingServiceSessionRoute = (bookingId) =>
   `/staff/bookings/${bookingId}/service-session`;
+
 export const getReceptionistBookingDetailRoute = (bookingId) =>
   `/receptionist/bookings/${bookingId}`;
+export const getReceptionistBookingCheckoutRoute = (bookingId) =>
+  `/receptionist/bookings/${bookingId}/checkout`;
+
 export const getManagerBookingDetailRoute = (bookingId) =>
   `/manager/bookings/${bookingId}`;
 export const getManagerStaffUpdateRoute = (staffId) =>
   `/manager/staff-artists/${staffId}`;
+
 export const getAdminBookingDetailRoute = (bookingId) =>
-  `/admin/bookings/${bookingId}`;
-export const getAdminSalonDetailRoute = (salonId) => `/admin/salons/${salonId}`;
-export const getAdminSalonUpdateRoute = (salonId) => `/admin/salons/${salonId}/edit`;
-export const getAdminStaffUpdateRoute = (staffId) => `/admin/staff/${staffId}`;
-export const getAdminUserDetailRoute = (userId) => `/admin/users/${userId}`;
-export const getAdminServicePricingRoute = () => "/admin/service-pricing";
-export const getAdminNailDesignCategoriesRoute = () => "/admin/nail-designs/categories";
+  `/admin/bookings/detail/${bookingId}`;
+export const getAdminSalonDetailRoute = (salonId) =>
+  `/admin/salons/${salonId}`;
+export const getAdminSalonUpdateRoute = (salonId) =>
+  `/admin/salons/${salonId}/edit`;
+export const getAdminStaffUpdateRoute = (staffId) =>
+  `/admin/staff/${staffId}`;
+export const getAdminUserDetailRoute = (userId) =>
+  `/admin/users/${userId}`;
+export const getAdminWithdrawRequestDetailRoute = (requestId) =>
+  `/admin/withdraw-requests/${requestId}`;
+export const getAdminLoyaltyTiersRoute = () =>
+  "/admin/loyalty-tiers";
+export const getAdminServicePricingRoute = () =>
+  "/admin/services";
+export const getAdminQuizRoute = () =>
+  "/admin/quiz";
+export const getAdminQuizCreateRoute = () =>
+  "/admin/quiz/create";
+export const getAdminNailShapeDetailRoute = (shapeId) =>
+  `/admin/nail-shapes/${shapeId}`;
+export const getAdminNailSurfaceDetailRoute = (surfaceId) =>
+  `/admin/nail-surfaces/${surfaceId}`;
+export const getAdminComponentDetailRoute = (componentId) =>
+  `/admin/components/${componentId}`;
+export const getAdminProcedureDetailRoute = (procedureId) =>
+  `/admin/procedures/${procedureId}`;
+export const getAdminCategoryTypeDetailRoute = (categoryTypeId) =>
+  `/admin/category-types/${categoryTypeId}`;
+export const getAdminSkillTypeDetailRoute = (skillTypeId) =>
+  `/admin/skill-types/${skillTypeId}`;
+export const getAdminCategoryDetailRoute = (categoryId) =>
+  `/admin/categories/${categoryId}`;
+export const getAdminPromotionDetailRoute = (promotionId) =>
+  `/admin/promotions/${promotionId}`;
+export const getAdminNailDesignCategoriesRoute = () =>
+  "/admin/nail-designs/categories";
 export const getAdminNailDesignDetailRoute = (designId) =>
   `/admin/nail-designs/${designId}`;
+export const getAdminNailVariantDetailRoute = (designId, variantId) =>
+  `/admin/nail-designs/${designId}/variants/${variantId}`;
+export const getAdminNailVariantCreateRoute = (designId) =>
+  `/admin/nail-designs/${designId}/variants/create`;
+export const getAdminNailVariantCreateTryOnRoute = (designId) =>
+  `/admin/nail-designs/${designId}/variants/create/try-on`;
+export const getAdminNailVariantTryOnRoute = (designId, variantId, mode) => {
+  const basePath = `/admin/nail-designs/${designId}/variants/${variantId}/try-on`;
+
+  return mode ? `${basePath}?mode=${mode}&nailVariantId=${variantId}` : `${basePath}?nailVariantId=${variantId}`;
+};
+export const getAdminSalonBookingDetailRoute = (salonId) =>
+  `/admin/bookings/${salonId}`;

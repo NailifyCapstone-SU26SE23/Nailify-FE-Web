@@ -1,14 +1,54 @@
+import React, { useState, useEffect } from "react";
+import { Camera, User } from "lucide-react";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   USER_BRANCH_OPTIONS,
   USER_ROLE_OPTIONS,
   USER_STATUS_FILTERS,
 } from "../services/mockUsers";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 
-const FORM_STATUS_OPTIONS = USER_STATUS_FILTERS.filter((item) => item !== "All");
+const isSalonRole = (role) => {
+  const normalized = String(role || "").trim().toLowerCase();
+  return ["staff", "staff_artist", "receptionist", "manager"].includes(normalized);
+};
+
+const FORM_STATUS_OPTIONS = ["Active", "Inactive"];
 const INPUT_CLASSNAME =
-  "w-full rounded-2xl border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4]";
-const DISABLED_INPUT_CLASSNAME = "cursor-not-allowed bg-[#f9f1ea] text-[#8f7c6d]";
+  "w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3 text-[14px] text-slate-800 outline-none transition-all duration-300 placeholder:text-rose-300 font-medium hover:border-rose-200 hover:bg-[#fff5f9] focus:border-rose-400 focus:bg-white focus:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
+const DISABLED_INPUT_CLASSNAME = "cursor-not-allowed bg-[#f9f1ea]/50 text-slate-400 border-rose-100/50 hover:border-rose-100/50 hover:bg-[#f9f1ea]/50";
+
+const getRoleLabel = (role, t) => {
+  switch (String(role).trim().toLowerCase()) {
+    case "admin":
+      return t("superAdmin");
+    case "manager":
+      return t("salonManager");
+    case "receptionist":
+      return t("roleReceptionist");
+    case "staff":
+    case "staff_artist":
+      return t("nailArtist");
+    default:
+      return role;
+  }
+};
+
+const getStatusLabel = (status, t) => {
+  switch (status) {
+    case "Active":
+      return t("userManagement.detail.statusActive");
+    case "Inactive":
+      return t("userManagement.detail.statusInactive");
+    case "Pending":
+      return t("userManagement.detail.statusPending");
+    case "Suspended":
+      return t("userManagement.detail.statusSuspended");
+    default:
+      return status;
+  }
+};
 
 export function UserManagementFormFields({
   formValues,
@@ -18,78 +58,119 @@ export function UserManagementFormFields({
   createApiFieldsOnly = false,
   updateApiFieldsOnly = false,
 }) {
+  const { t, language } = useLanguage();
+  const [salons, setSalons] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadSalons = async () => {
+      try {
+        const response = await fetchAdminSalons({ pageSize: 100 });
+        if (isMounted) {
+          setSalons(response.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to load salons in form fields:", error);
+      }
+    };
+    void loadSalons();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   if (createApiFieldsOnly) {
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.firstName")}</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter first name"
+            placeholder={t("userManagement.detail.enterFirstName")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.lastName")}</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter last name"
+            placeholder={t("userManagement.detail.enterLastName")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
+            autoComplete="off"
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter work email"
+            placeholder={t("userManagement.detail.enterEmail")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.password")}</span>
           <input
             type="password"
             value={formValues.password}
             onChange={onFieldChange("password")}
             disabled={disabled}
+            autoComplete="new-password"
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter account password"
+            placeholder={t("userManagement.detail.enterPassword")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter phone number"
+            placeholder={t("userManagement.detail.enterPhone")}
           />
+        </label>
+
+        <label className="md:col-span-2 flex flex-col items-center justify-center space-y-3 pb-4 pt-2">
+          <div className="relative group cursor-pointer">
+            <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-[0_8px_20px_rgba(234,79,147,0.15)] bg-[#fff0f6] flex items-center justify-center transition-transform group-hover:scale-105">
+              {formValues.imageFile ? (
+                <img src={URL.createObjectURL(formValues.imageFile)} alt="Avatar Preview" className="h-full w-full object-cover" />
+              ) : (
+                <User size={48} className="text-[#ea4f93] opacity-60" />
+              )}
+            </div>
+            <div className="absolute bottom-1 right-1 rounded-full bg-[#ea4f93] p-2 text-white shadow-md transition-transform group-hover:scale-110">
+              <Camera size={16} />
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file) {
+                  onFieldChange("imageFile")({ target: { value: file } });
+                }
+              }}
+              disabled={disabled}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
+          <span className="text-[14px] font-bold text-slate-700">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
-          <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
-            disabled={disabled}
-            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter avatar image URL"
-          />
-        </label>
-
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <select
             value={formValues.role}
             onChange={onFieldChange("role")}
@@ -98,11 +179,34 @@ export function UserManagementFormFields({
           >
             {USER_ROLE_OPTIONS.map((role) => (
               <option key={role} value={role}>
-                {role}
+                {getRoleLabel(role, t)}
               </option>
             ))}
           </select>
         </label>
+
+        {isSalonRole(formValues.role) && (
+          <label className="space-y-2">
+            <span className="text-[13px] font-bold text-slate-700">
+              {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+            </span>
+            <select
+              value={formValues.salonId || ""}
+              onChange={onFieldChange("salonId")}
+              disabled={disabled}
+              className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            >
+              <option value="">
+                {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
+              </option>
+              {salons.map((salon) => (
+                <option key={salon.id} value={salon.id}>
+                  {salon.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </>
     );
   }
@@ -111,51 +215,51 @@ export function UserManagementFormFields({
     return (
       <>
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">First name</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.firstName")}</span>
           <input
             value={formValues.firstName}
             onChange={onFieldChange("firstName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter first name"
+            placeholder={t("userManagement.detail.enterFirstName")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Last name</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.lastName")}</span>
           <input
             value={formValues.lastName}
             onChange={onFieldChange("lastName")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter last name"
+            placeholder={t("userManagement.detail.enterLastName")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
           <input
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter work email"
+            placeholder={t("userManagement.detail.enterEmail")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
           <input
             value={formValues.phone}
             onChange={onFieldChange("phone")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter phone number"
+            placeholder={t("userManagement.detail.enterPhone")}
           />
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Status</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.statusLabel")}</span>
           <select
             value={formValues.status}
             onChange={onFieldChange("status")}
@@ -164,31 +268,44 @@ export function UserManagementFormFields({
           >
             {FORM_STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {getStatusLabel(status, t)}
               </option>
             ))}
           </select>
         </label>
 
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <input
-            value={formValues.role}
+            value={getRoleLabel(formValues.role, t)}
             disabled
             className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
-            placeholder="Role"
+            placeholder={t("userManagement.detail.role")}
           />
         </label>
 
-        <label className="space-y-2 md:col-span-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
-          <input
-            value={formValues.avatarUrl}
-            disabled
-            className={`${INPUT_CLASSNAME} ${DISABLED_INPUT_CLASSNAME}`}
-            placeholder="Avatar URL"
-          />
-        </label>
+        {isSalonRole(formValues.role) && (
+          <label className="space-y-2">
+            <span className="text-[13px] font-bold text-slate-700">
+              {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+            </span>
+            <select
+              value={formValues.salonId || ""}
+              onChange={onFieldChange("salonId")}
+              disabled={disabled}
+              className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+            >
+              <option value="">
+                {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
+              </option>
+              {salons.map((salon) => (
+                <option key={salon.id} value={salon.id}>
+                  {salon.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </>
     );
   }
@@ -196,70 +313,75 @@ export function UserManagementFormFields({
   return (
     <>
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
-          Full name
+        <span className="text-[13px] font-bold text-slate-700">
+          {t("userManagement.detail.fullName")}
         </span>
         <input
           value={formValues.name}
           onChange={onFieldChange("name")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Enter full name"
+          placeholder={t("userManagement.detail.enterFullName")}
         />
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Email</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.email")}</span>
         <input
           value={formValues.email}
           onChange={onFieldChange("email")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Enter work email"
+          placeholder={t("userManagement.detail.enterEmail")}
         />
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Phone</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.phoneLabel")}</span>
         <input
           value={formValues.phone}
           onChange={onFieldChange("phone")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Enter phone number"
+          placeholder={t("userManagement.detail.enterPhone")}
         />
       </label>
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Password</span>
+          <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.password")}</span>
           <input
             type="password"
             value={formValues.password}
             onChange={onFieldChange("password")}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter account password"
+            placeholder={t("userManagement.detail.enterPassword")}
           />
         </label>
       ) : null}
 
       {showAccountFields ? (
         <label className="space-y-2">
-          <span className="text-sm font-medium text-[var(--color-ink)]">Avatar URL</span>
+          <span className="text-[13px] font-bold text-slate-700">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
           <input
-            value={formValues.avatarUrl}
-            onChange={onFieldChange("avatarUrl")}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              onFieldChange("imageFile")({ target: { value: file } });
+            }}
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder="Enter avatar image URL"
           />
         </label>
       ) : null}
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
-          Joined date
+        <span className="text-[13px] font-bold text-slate-700">
+          {t("userManagement.detail.joinedDate")}
         </span>
         <input
           type="date"
@@ -271,7 +393,7 @@ export function UserManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Role</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
         <select
           value={formValues.role}
           onChange={onFieldChange("role")}
@@ -280,30 +402,37 @@ export function UserManagementFormFields({
         >
           {USER_ROLE_OPTIONS.map((role) => (
             <option key={role} value={role}>
-              {role}
+              {getRoleLabel(role, t)}
             </option>
           ))}
         </select>
       </label>
 
-      <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Branch</span>
-        <select
-          value={formValues.branch}
-          onChange={onFieldChange("branch")}
-          disabled={disabled}
-          className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-        >
-          {USER_BRANCH_OPTIONS.map((branch) => (
-            <option key={branch} value={branch}>
-              {branch}
+      {isSalonRole(formValues.role) && (
+        <label className="space-y-2">
+          <span className="text-[13px] font-bold text-slate-700">
+            {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
+          </span>
+          <select
+            value={formValues.salonId || ""}
+            onChange={onFieldChange("salonId")}
+            disabled={disabled}
+            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          >
+            <option value="">
+              {language === "vi" ? "Chọn Salon..." : "Select Salon..."}
             </option>
-          ))}
-        </select>
-      </label>
+            {salons.map((salon) => (
+              <option key={salon.id} value={salon.id}>
+                {salon.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Status</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.statusLabel")}</span>
         <select
           value={formValues.status}
           onChange={onFieldChange("status")}
@@ -312,34 +441,34 @@ export function UserManagementFormFields({
         >
           {FORM_STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
-              {status}
+              {getStatusLabel(status, t)}
             </option>
           ))}
         </select>
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
-          Last active
+        <span className="text-[13px] font-bold text-slate-700">
+          {t("userManagement.detail.lastActive")}
         </span>
         <input
           value={formValues.lastActive}
           onChange={onFieldChange("lastActive")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Example: 10 min ago"
+          placeholder={t("userManagement.detail.enterLastActive")}
         />
       </label>
 
       <label className="space-y-2 md:col-span-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Notes</span>
+        <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.notes")}</span>
         <textarea
           value={formValues.notes}
           onChange={onFieldChange("notes")}
           rows={5}
           disabled={disabled}
-          className={`w-full rounded-[22px] border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Add internal notes for this user"
+          className={`${INPUT_CLASSNAME} rounded-lg resize-y ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+          placeholder={t("userManagement.detail.addInternalNotes")}
         />
       </label>
     </>
@@ -361,6 +490,7 @@ UserManagementFormFields.propTypes = {
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
     status: PropTypes.string.isRequired,
+    salonId: PropTypes.string,
   }).isRequired,
   onFieldChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,

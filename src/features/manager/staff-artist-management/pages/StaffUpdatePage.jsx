@@ -1,195 +1,38 @@
-import { Modal } from "antd";
 import {
-  ArrowLeft,
-  BriefcaseBusiness,
   Mail,
   Phone,
   Save,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  Trash2,
+  Upload,
   User,
-  Users,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useNavigate, useParams } from "react-router-dom";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  STAFF_ROLE_OPTIONS,
-  STAFF_STATUS_STYLES,
-  getStaffById,
-  getStaffInitials,
-  submitMockStaffUpdate,
-} from "../services/mockStaffArtists";
+  fetchNailArtistById,
+  fetchNailArtistSkills,
+  fetchSkillTypes,
+} from "../services/nailArtistsService";
+import { updateUser, assignNailArtistSkills } from "../../../admin/staff-management/services/staffManagementService";
+import { fetchUserById } from "../../bookings/services/bookingsService";
+import { StaffSkillAssessmentSection } from "../../../admin/staff-management/components/StaffSkillAssessmentSection";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal.jsx";
+import { normalizeAdminSkillType } from "../../../admin/skill-types-management/services/skillTypesManagementService";
 
+// ── Design tokens (from StaffCreatePage) ─────────────────────────────────────────────────────
 const inputWrapperClassName =
-  "flex items-center gap-2 rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3";
+  "flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5 transition-all duration-300 hover:border-rose-200 hover:bg-[#fff5f9] focus-within:border-rose-400 focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(234,79,147,0.15)]";
 const inputClassName =
-  "w-full min-w-0 bg-transparent text-[13px] text-slate-700 outline-none placeholder:text-pink-200";
-const selectClassName =
-  "w-full rounded-xl border border-pink-100 bg-[#fff6f9] px-4 py-3 text-[13px] text-slate-700 outline-none";
+  "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
 
-// ── Skill categories (same as StaffCreatePage) ────────────────────────────────
-const SKILL_CATEGORIES = [
-  {
-    key: "precision",
-    label: "Precision",
-    sublabel: "Độ chính xác",
-    levels: [
-      "Sơn lem, viền không đều",
-      "Ít lem nhưng vẫn sai form nhỏ",
-      "Sơn khá gọn, viền tương đối chuẩn",
-      "Gần như không lỗi, đường nét sắc",
-      "Hoàn hảo, chi tiết cực nhỏ vẫn chuẩn",
-    ],
-  },
-  {
-    key: "color",
-    label: "Color",
-    sublabel: "Màu sắc",
-    levels: [
-      "Chọn màu chưa hợp, dễ lệch tone",
-      "Biết phối màu cơ bản",
-      "Phối màu ổn, làm được ombre đơn giản",
-      "Blend màu mượt, hiểu tone da",
-      "Master phối màu, tạo style riêng",
-    ],
-  },
-  {
-    key: "form",
-    label: "Form",
-    sublabel: "Form móng",
-    levels: [
-      "Form lệch, không cân đối",
-      "Form lệch, không cân đối (cải thiện)",
-      "Form ổn (square, oval…)",
-      "Form đẹp, có apex, C-curve",
-      "Form chuẩn salon cao cấp",
-    ],
-  },
-  {
-    key: "material",
-    label: "Material",
-    sublabel: "Vật liệu",
-    levels: [
-      "Không kiểm soát được gel/bột",
-      "Làm được nhưng hay lỗi (bong, bọt khí)",
-      "Kiểm soát vật liệu ổn",
-      "Xử lý tốt nhiều loại vật liệu",
-      "Master vật liệu, xử lý mọi tình huống",
-    ],
-  },
-  {
-    key: "design",
-    label: "Design",
-    sublabel: "Thẩm mỹ",
-    levels: [
-      "Làm theo mẫu, không sáng tạo",
-      "Copy mẫu đơn giản",
-      "Có gu thẩm mỹ cơ bản",
-      "Thiết kế đẹp, hợp trend",
-      "Sáng tạo cao, có style riêng",
-    ],
-  },
-  {
-    key: "speed",
-    label: "Speed",
-    sublabel: "Tốc độ",
-    levels: [
-      ">120 phút – Rất chậm",
-      "90–120 phút – Chậm",
-      "60–90 phút – Trung bình",
-      "40–60 phút – Nhanh",
-      "<40 phút – Rất nhanh",
-    ],
-  },
-];
-
-const LEVEL_COLORS = [
-  { bar: "bg-pink-200", text: "text-pink-400", badge: "bg-pink-50 text-pink-400" },
-  { bar: "bg-pink-300", text: "text-pink-400", badge: "bg-pink-100 text-pink-500" },
-  { bar: "bg-pink-400", text: "text-pink-500", badge: "bg-pink-100 text-pink-600" },
-  { bar: "bg-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-pink-100 text-[#ea4f93]" },
-  { bar: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]", text: "text-[#ea4f93]", badge: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white" },
-];
-
-const RANK_THRESHOLDS = [
-  { label: "Beginner",     minAvg: 0, color: "bg-slate-100 text-slate-500 border-slate-200" },
-  { label: "Intermediate", minAvg: 2, color: "bg-amber-50 text-amber-600 border-amber-200" },
-  { label: "Advanced",     minAvg: 3, color: "bg-pink-50 text-pink-600 border-pink-200" },
-  { label: "Pro Artist",   minAvg: 4, color: "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] text-white border-0" },
-];
-
-function getRank(skills) {
-  const values = Object.values(skills);
-  if (values.length === 0) return RANK_THRESHOLDS[0];
-  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-  return [...RANK_THRESHOLDS].reverse().find((r) => avg >= r.minAvg) ?? RANK_THRESHOLDS[0];
-}
-
-// ── SkillRatingRow ────────────────────────────────────────────────────────────
-function SkillRatingRow({ category, value, onChange }) {
-  const color = LEVEL_COLORS[(value ?? 1) - 1];
-  const description = category.levels[(value ?? 1) - 1];
-
+function InfoChip({ icon: Icon, title, value, tone = "text-rose-500" }) {
   return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_4px_12px_rgba(236,72,153,0.05)]">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div>
-          <span className="text-[12px] font-black text-slate-700">{category.label}</span>
-          <span className="ml-1.5 text-[10px] font-semibold text-slate-400">{category.sublabel}</span>
-        </div>
-        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${color.badge}`}>
-          Level {value ?? 1}
-        </span>
-      </div>
-
-      <div className="mb-2 flex items-center gap-2">
-        {[1, 2, 3, 4, 5].map((level) => {
-          const active = (value ?? 1) >= level;
-          const levelColor = LEVEL_COLORS[level - 1];
-          return (
-            <button
-              key={level}
-              type="button"
-              onClick={() => onChange(level)}
-              className="group flex flex-1 flex-col items-center gap-1 transition"
-            >
-              <div className={`h-2 w-full rounded-full transition-all ${active ? levelColor.bar : "bg-pink-100"}`} />
-              <span className={`text-[9px] font-bold transition ${active ? levelColor.text : "text-slate-300"}`}>
-                {level}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      <p className={`text-[11px] font-semibold ${color.text}`}>{description}</p>
-    </div>
-  );
-}
-
-SkillRatingRow.propTypes = {
-  category: PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    sublabel: PropTypes.string.isRequired,
-    levels: PropTypes.arrayOf(PropTypes.string).isRequired,
-  }).isRequired,
-  value: PropTypes.number,
-  onChange: PropTypes.func.isRequired,
-};
-
-// ── InfoChip ──────────────────────────────────────────────────────────────────
-function InfoChip({ icon: Icon, title, value, tone = "text-pink-500" }) {
-  return (
-    <div className="rounded-2xl border border-pink-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(236,72,153,0.06)]">
+    <div className="rounded-2xl border border-rose-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
       <div className="flex items-center gap-3">
-        <div className={`rounded-xl bg-[#fff3f8] p-2 ${tone}`}>
+        <div className={`rounded-xl bg-[#fff2f7] p-2 ${tone}`}>
           <Icon size={14} />
         </div>
         <div>
@@ -201,59 +44,219 @@ function InfoChip({ icon: Icon, title, value, tone = "text-pink-500" }) {
   );
 }
 
-InfoChip.propTypes = {
-  icon: PropTypes.func.isRequired,
-  title: PropTypes.string.isRequired,
-  tone: PropTypes.string,
-  value: PropTypes.string.isRequired,
-};
+function getStaffInitials(fullName) {
+  return fullName
+    ?.split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "NA";
+}
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page ──────────────────────────────────────────────────────────────────
 export function StaffUpdatePage() {
+  const { t, language } = useLanguage();
   const { staffId } = useParams();
   const navigate = useNavigate();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
-  const staff = getStaffById(staffId);
-  const [formData, setFormData] = useState(
-    staff
-      ? {
-          ...staff,
-          email: `${staff.name.toLowerCase().replace(" ", ".")}@nailify.com`,
-          phone: "+1 (555) 000-0000",
-          // seed existing skill ratings from staff data if available, else default to 3
-          skillRatings: staff.skillRatings ?? {
-            precision: 3,
-            color: 3,
-            form: 3,
-            material: 3,
-            design: 3,
-            speed: 3,
-          },
-        }
-      : null
-  );
+  const [isLoading, setIsLoading] = useState(true);
 
+  const [skillTypes, setSkillTypes] = useState([]);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  const [formData, setFormData] = useState({
+    userId: "",
+    nailArtistId: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    status: "Active",
+    salonId: "",
+    avatarUrl: "",
+    imageFile: null,
+    skillRatings: {},
+  });
+
+  // Load user data + skill types + existing skills
   useEffect(() => {
-    const staff = getStaffById(staffId);
-    if (!staff) {
-      navigate(ROUTES.managerStaffArtists);
+    let mounted = true;
+
+    async function load() {
+      setIsLoading(true);
+      try {
+        const isMockId = !staffId || staffId.startsWith("artist-") || staffId.startsWith("staff-") || !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(staffId);
+        if (isMockId) {
+          // Mock data for testing
+          const mockData = {
+            id: staffId,
+            name: "Artist " + staffId.slice(-4),
+            role: "Staff Artist",
+            status: "Active",
+            skillRatings: {},
+          };
+          const mockSkillTypes = await fetchSkillTypes({ pageNumber: 1, pageSize: 100 });
+          const normalizedItems = Array.isArray(mockSkillTypes?.items) ? mockSkillTypes.items : Array.isArray(mockSkillTypes) ? mockSkillTypes : [];
+          const normalizedSkills = normalizedItems.map(normalizeAdminSkillType);
+          const defaultRatings = {};
+          normalizedSkills.forEach((s) => { defaultRatings[s.id] = 3; });
+
+          setFormData({
+            userId: mockData.id,
+            nailArtistId: mockData.id,
+            firstName: mockData.name.split(" ")[0] || "Artist",
+            lastName: mockData.name.split(" ").slice(1).join(" ") || "",
+            email: `${mockData.name.toLowerCase().replace(" ", ".")}@nailify.com`,
+            phone: "+84 912 345 678",
+            status: mockData.status || "Active",
+            salonId: "",
+            avatarUrl: "",
+            imageFile: null,
+            skillRatings: defaultRatings,
+          });
+          setSkillTypes(normalizedSkills);
+          setIsLoading(false);
+          return;
+        }
+
+        // 1. staffId (from the URL) belongs to the NailArtist/Staff table.
+        const artistData = await fetchNailArtistById(staffId);
+
+        if (!mounted) return;
+
+        if (!artistData) {
+          throw new Error("Không tìm thấy thông tin nhân viên.");
+        }
+
+        // 2. Resolve the real Users-table id from the Staff Artist record.
+        const realUserId =
+          artistData.userId ||
+          artistData.userID ||
+          artistData.accountId ||
+          artistData.user?.id;
+
+        if (!realUserId) {
+          throw new Error("Không tìm thấy userId tương ứng với nhân viên này.");
+        }
+
+        // 3. Now fetch the actual user profile + skill types in parallel.
+        const [userData, skillTypesData] = await Promise.all([
+          fetchUserById(realUserId),
+          fetchSkillTypes({ pageNumber: 1, pageSize: 100 }),
+        ]);
+
+        if (!mounted) return;
+
+        const items = Array.isArray(skillTypesData?.items)
+          ? skillTypesData.items
+          : Array.isArray(skillTypesData)
+            ? skillTypesData
+            : [];
+        const normalizedItems = items.map(normalizeAdminSkillType);
+        setSkillTypes(normalizedItems);
+
+        // Initialize all skill ratings to 0
+        const skillRatings = {};
+        normalizedItems.forEach((s) => { skillRatings[s.id] = 0; });
+
+        // Get the real nailArtistId from the fetched artist data
+        const nailArtistId = artistData?.nailArtistId || artistData?.staffId || artistData?.id || staffId;
+        console.log("Manager StaffUpdatePage: using nailArtistId:", nailArtistId);
+
+        // Load existing skills for this Staff Artist
+        try {
+          const existingSkills = await fetchNailArtistSkills(nailArtistId);
+          const skillArr = Array.isArray(existingSkills?.items)
+            ? existingSkills.items
+            : Array.isArray(existingSkills)
+              ? existingSkills
+              : [];
+          skillArr.forEach((s) => {
+            const skillTypeId = s.skillTypeId || s.SkillTypeId;
+            if (skillTypeId) skillRatings[skillTypeId] = s.level ?? 0;
+          });
+        } catch (e) {
+          console.warn("Failed to load existing skills:", e);
+        }
+
+        if (!mounted) return;
+
+        const avatarUrl = userData?.avatarUrl || artistData?.avatarUrl || "";
+        if (avatarUrl) {
+          setImagePreview(avatarUrl);
+        }
+
+        const salonId = userData?.salonId || artistData?.salonId || "";
+
+        setFormData({
+          userId: userData?.userId || userData?.id || realUserId,
+          nailArtistId,
+          firstName: userData?.firstName || "",
+          lastName: userData?.lastName || "",
+          email: userData?.email || "",
+          phone: userData?.phone || "",
+          status: userData?.status || artistData?.status || "Active",
+          salonId,
+          avatarUrl,
+          imageFile: null,
+          skillRatings,
+        });
+
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Failed to load staff data:", err);
+        if (!mounted) return;
+        setIsLoading(false);
+      }
     }
-  }, [staffId, navigate]);
 
-  const rank = useMemo(() => getRank(formData?.skillRatings ?? {}), [formData?.skillRatings]);
+    load();
+    return () => { mounted = false; };
+  }, [staffId]);
 
-  const handleInputChange = (field, value) => {
-    setFormData((current) => ({ ...current, [field]: value }));
+  // Get specialties from skill ratings using skill types
+  const specialties = useMemo(() => {
+    return skillTypes
+      .filter(skill => Number(formData.skillRatings[skill.id] ?? 0) >= 3)
+      .map(skill => skill.name || skill.title);
+  }, [skillTypes, formData.skillRatings]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, imageFile: file }));
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImagePreview(ev.target.result);
+        handleInputChange("avatarUrl", ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleSkillChange = (key, level) => {
-    setFormData((current) => ({
-      ...current,
-      skillRatings: { ...current.skillRatings, [key]: level },
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, imageFile: null, avatarUrl: "" }));
+    setImagePreview(null);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSkillRatingChange = (skillKey, rating) => {
+    setFormData((prev) => ({
+      ...prev,
+      skillRatings: {
+        ...prev.skillRatings,
+        [skillKey]: rating,
+      },
     }));
   };
 
@@ -264,345 +267,388 @@ export function StaffUpdatePage() {
 
   const handleConfirmSave = async () => {
     setIsSaving(true);
-    const result = await submitMockStaffUpdate(staffId, formData);
-    setIsSaving(false);
-    setShowSaveModal(false);
-    setSaveResult(result);
-  };
+    try {
+      // 1. Update user profile
+      const updatePayload = {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        status: formData.status,
+        salonId: formData.salonId,
+      };
 
-  const handleCloseResultModal = () => setSaveResult(null);
+      // Only include imageFile if there is one
+      if (formData.imageFile) {
+        updatePayload.imageFile = formData.imageFile;
+      }
+
+      console.log("Updating user with data:", updatePayload, "userId:", formData.userId);
+      await updateUser(formData.userId, updatePayload);
+
+      // 2. Update skill assignments if Staff Artist ID available
+      if (formData.nailArtistId) {
+        const skills = skillTypes
+          .map((s) => ({
+            skillTypeId: s.id,
+            level: Math.floor(Number(formData.skillRatings[s.id] ?? 0)),
+          }));
+
+        console.log("Updating skills for Staff Artist (nailArtistId):", formData.nailArtistId);
+        console.log("Skills payload:", skills);
+
+        if (skills.length > 0) {
+          const skillResult = await assignNailArtistSkills(formData.nailArtistId, skills);
+          if (!skillResult.success) {
+            throw new Error(skillResult.error || "Failed to update staff skills.");
+          }
+        } else {
+          console.log("No skills to update (all ratings are 0)");
+        }
+      }
+
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: true,
+        message: `${[formData.firstName, formData.lastName].filter(Boolean).join(" ")} has been updated successfully.`,
+      });
+    } catch (err) {
+      console.error("Error updating artist:", err);
+      console.error("Error details:", err.response?.data);
+      setIsSaving(false);
+      setShowSaveModal(false);
+      setSaveResult({
+        success: false,
+        message: err?.response?.data?.message || err?.message || "Failed to update staff artist.",
+      });
+    }
+  };
 
   const handleSuccessComplete = useCallback(() => {
     navigate(ROUTES.managerStaffArtists, {
-      state: { flashMessage: saveResult?.message },
+      state: {
+        flashMessage: saveResult?.message,
+      },
     });
   }, [navigate, saveResult?.message]);
 
-  const handleCancel = () => setShowCancelModal(true);
+  const handleCancel = () => {
+    setShowCancelModal(true);
+  };
+
   const handleConfirmCancel = () => {
     setShowCancelModal(false);
     navigate(ROUTES.managerStaffArtists);
   };
 
-  if (!formData) return null;
+  if (isLoading) {
+    return (
+      <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
+        <div className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5  lg:flex-row lg:items-center lg:justify-between">
+          <div className="h-8 w-48 rounded-full bg-rose-100 animate-pulse" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+          <div className="space-y-4 lg:col-span-2 lg:space-y-5">
+            <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+              <div className="h-6 w-48 rounded-full bg-rose-100 mb-5 animate-pulse" />
+              <div className="grid gap-5 md:grid-cols-2">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-16 rounded-2xl bg-rose-50 animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-4 lg:space-y-5">
+            <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+              <div className="h-6 w-48 rounded-full bg-rose-100 mb-5 animate-pulse" />
+              <div className="h-48 rounded-2xl bg-rose-50 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
-      <header className="mb-5 flex flex-col gap-4 rounded-[28px] bg-white/70 px-5 py-4 shadow-[0_20px_45px_rgba(236,72,153,0.06)] backdrop-blur md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
-          <Link
-            to={ROUTES.managerStaffArtists}
-            className="inline-flex shrink-0 rounded-xl border border-pink-100 bg-white p-2 text-pink-500 transition hover:bg-pink-50"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-[28px] font-black tracking-tight text-[#ea4f93]">Update Artist</h1>
-            <p className="text-[12px] font-medium text-slate-400">
-              Edit profile information, role, and skills for {formData.name}
-            </p>
-          </div>
+      <header className="mb-4 flex flex-col gap-4 rounded-lg bg-white/70 px-4 py-4 shadow-[0_20px_45px_rgba(226,93,143,0.06)] backdrop-blur sm:mb-5  sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-[#cf3d74] sm:text-2xl lg:text-[28px]">
+            {language === "vi" ? "Cập nhật thông tin nhân viên" : "Update Artist"}
+          </h1>
+          <p className="text-[11px] font-medium text-slate-400 sm:text-[12px]">
+            {language === "vi" ? "Cập nhật thông tin cá nhân và đánh giá kỹ năng cho" : "Update Staff Artist profile and skill ratings for"}{" "}
+            <span className="font-bold text-[#eb5b92]">
+              {[formData.firstName, formData.lastName].filter(Boolean).join(" ")}
+            </span>
+          </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => setShowDeleteModal(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-100 bg-white px-4 py-2 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
-          >
-            <Trash2 size={14} />
-            Remove
-          </button>
+        <div className="grid grid-cols-2 gap-3 lg:flex lg:items-center">
           <button
             type="button"
             onClick={handleCancel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-[11px] font-bold text-pink-500 transition hover:bg-pink-50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2.5 text-[11px] font-bold text-rose-500 transition hover:bg-rose-50"
           >
             <X size={14} />
-            Cancel
+            {t("manager.common.cancel")}
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93] px-4 py-2 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.32)] transition hover:opacity-95"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] px-4 py-2.5 text-[11px] font-bold text-white shadow-[0_12px_24px_rgba(226,93,143,0.32)] transition hover:opacity-95"
           >
             <Save size={14} />
-            Save Changes
+            {t("manager.common.save") || "Save Artist"}
           </button>
         </div>
       </header>
 
-      {/* Info chips */}
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoChip icon={Users} title="Current Role" value={formData.role} />
-        <InfoChip
-          icon={Star}
-          title="Rating"
-          value={`${formData.rating.toFixed(1)} / 5.0`}
-          tone="text-amber-500"
-        />
-        <InfoChip
-          icon={ShieldCheck}
-          title="Current Status"
-          value={formData.status}
-          tone="text-violet-500"
-        />
-        <InfoChip
-          icon={BriefcaseBusiness}
-          title="Revenue (MTD)"
-          value={formData.stats.revenue}
-          tone="text-emerald-500"
-        />
-      </div>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+        {/* Left column — main form */}
+        <div className="space-y-4 lg:col-span-2 lg:space-y-5">
+          {/* Staff Details */}
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {language === "vi" ? "Thông tin chi tiết nghệ sĩ" : "Artist Details"}
+            </h2>
 
-      {/* Body */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Basic Information */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-6 flex items-center gap-3">
-                <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                  <User size={18} />
-                </div>
-                <h2 className="text-lg font-bold text-slate-800">Basic Information</h2>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Full Name
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <input
-                      type="text"
-                      placeholder="e.g. Mia Chen"
-                      className={inputClassName}
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Professional Role
-                  </label>
-                  <select
-                    className={selectClassName}
-                    value={formData.role}
-                    onChange={(e) => handleInputChange("role", e.target.value)}
-                  >
-                    {STAFF_ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Email Address
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Mail size={14} className="text-pink-300" />
-                    <input
-                      type="email"
-                      placeholder="email@example.com"
-                      className={inputClassName}
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Phone Number
-                  </label>
-                  <div className={inputWrapperClassName}>
-                    <Phone size={14} className="text-pink-300" />
-                    <input
-                      type="tel"
-                      placeholder="+1 (555) 000-0000"
-                      className={inputClassName}
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Skills & Specialties — skill rating Level 1–5 */}
-            <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-[#fff3f8] p-2 text-pink-500">
-                    <Sparkles size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Skills & Specialties</h2>
-                    <p className="text-[11px] font-medium text-slate-400">
-                      Đánh giá kỹ năng theo từng hạng mục (Level 1–5)
-                    </p>
-                  </div>
-                </div>
-                <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-black ${rank.color}`}>
-                  {rank.label}
+            <div className="grid gap-5 md:grid-cols-2">
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Tên" : "First Name"} <span className="text-rose-500">*</span>
                 </span>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                {SKILL_CATEGORIES.map((cat) => (
-                  <SkillRatingRow
-                    key={cat.key}
-                    category={cat}
-                    value={formData.skillRatings?.[cat.key] ?? 1}
-                    onChange={(level) => handleSkillChange(cat.key, level)}
+                <div className={inputWrapperClassName}>
+                  <User size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                    placeholder={language === "vi" ? "Nhập tên" : "Enter first name"}
+                    className={inputClassName}
+                    required
                   />
-                ))}
-              </div>
-            </div>
-          </form>
-        </div>
+                </div>
+              </label>
 
-        {/* Sidebar */}
-        <div className="flex flex-col gap-5">
-          {/* Profile Preview */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <h2 className="mb-5 text-lg font-bold text-slate-800">Profile Preview</h2>
-            <div className="flex flex-col items-center py-4 text-center">
-              <div
-                className={`mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${formData.avatarTone} text-2xl font-black text-white`}
-              >
-                {getStaffInitials(formData.name)}
-              </div>
-              <h3 className="text-xl font-bold text-slate-800">{formData.name}</h3>
-              <p className="text-sm font-medium text-slate-400">{formData.role}</p>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Họ" : "Last Name"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <User size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                    placeholder={language === "vi" ? "Nhập họ" : "Enter last name"}
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </label>
 
-              <div className="mt-1 flex items-center justify-center gap-1 text-[#fbbf24]">
-                <Star size={14} fill="currentColor" />
-                <span className="text-sm font-bold text-[#ea4f93]">{formData.rating.toFixed(1)}</span>
-              </div>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  Email <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Mail size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    placeholder={language === "vi" ? "Nhập email" : "Enter email"}
+                    className={inputClassName}
+                    required
+                  />
+                </div>
+              </label>
 
-              {/* Rank badge */}
-              <span className={`mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-black ${rank.color}`}>
-                {rank.label}
-              </span>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Số điện thoại" : "Phone"}
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Phone size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    placeholder={language === "vi" ? "Nhập số điện thoại" : "Enter phone number"}
+                    className={inputClassName}
+                  />
+                </div>
+              </label>
 
-              {/* Skill mini bars */}
-              <div className="mt-4 w-full space-y-1.5">
-                {SKILL_CATEGORIES.map((cat) => {
-                  const level = formData.skillRatings?.[cat.key] ?? 1;
-                  return (
-                    <div key={cat.key} className="flex items-center gap-2">
-                      <span className="w-16 text-left text-[9px] font-bold text-slate-400">
-                        {cat.label}
-                      </span>
-                      <div className="flex flex-1 gap-0.5">
-                        {[1, 2, 3, 4, 5].map((l) => (
-                          <div
-                            key={l}
-                            className={`h-1.5 flex-1 rounded-full ${
-                              level >= l
-                                ? "bg-gradient-to-r from-[#ff8ebb] to-[#ea4f93]"
-                                : "bg-pink-100"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="w-4 text-right text-[9px] font-bold text-pink-400">
-                        {level}
-                      </span>
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Chức vụ / Vai trò" : "Job Title / Role"}
+                </span>
+                <div className={inputWrapperClassName}>
+                  <input
+                    type="text"
+                    value="Staff Artist"
+                    readOnly
+                    className={inputClassName}
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Ảnh đại diện" : "Avatar"}
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff5f9] px-6 py-8">
+                  {imagePreview ? (
+                    <div className="relative w-full flex items-center justify-center">
+                      <img crossOrigin="anonymous"
+                        src={imagePreview}
+                        alt="Preview"
+                        className="h-40 w-40 object-cover rounded-full shadow-lg border-4 border-rose-100"
+                      />
                     </div>
-                  );
-                })}
+                  ) : (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74] text-white shadow-lg text-xl font-bold">
+                        {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-slate-500">{language === "vi" ? "Chưa có ảnh đại diện" : "No avatar provided"}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Skills & Specialties */}
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <StaffSkillAssessmentSection
+              ratings={formData.skillRatings}
+              specialties={specialties}
+              onRatingChange={handleSkillRatingChange}
+              skillTypes={skillTypes}
+            />
+          </div>
+        </div>
+
+        {/* Right sidebar */}
+        <aside className="space-y-4 lg:space-y-5 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-lg bg-white/80 p-5 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur sm:p-6 lg:p-7 border border-rose-50">
+            <h2 className="mb-5 text-[18px] font-bold text-slate-800 sm:text-[20px] flex items-center gap-2">
+              <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
+              {language === "vi" ? "Xem trước hồ sơ" : "Profile Preview"}
+            </h2>
+
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-5 shadow-[0_2px_12px_rgba(226,93,143,0.05)]">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full overflow-hidden border-4 border-rose-100 shadow-lg mb-4">
+                    {imagePreview ? (
+                      <img crossOrigin="anonymous"
+                        src={imagePreview}
+                        alt="Profile"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-rose-300 text-[28px] font-bold text-white">
+                        {getStaffInitials(formData.firstName + " " + formData.lastName || "Artist")}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-[15px] font-bold text-slate-800 mb-1">
+                    {[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist"}
+                  </h3>
+                  <p className="text-xs text-slate-400 mb-2">
+                    {language === "vi" ? "Nhân viên làm móng" : "Staff Artist"}
+                  </p>
+
+                  {(formData.email || formData.phone) && (
+                    <div className="flex flex-col items-center gap-1.5 mb-4 text-slate-500 w-full px-2">
+                      {formData.email && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Mail size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.email}</span>
+                        </div>
+                      )}
+                      {formData.phone && (
+                        <div className="flex items-center gap-2 text-[11px] bg-white px-3 py-1.5 rounded-full w-full border border-rose-50 shadow-sm">
+                          <Phone size={12} className="text-rose-400 shrink-0" />
+                          <span className="truncate">{formData.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap justify-center gap-1.5 mb-3">
+                    {specialties.slice(0, 3).map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-500"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </aside>
+      </form>
 
-          {/* Status */}
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_20px_45px_rgba(236,72,153,0.04)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-800">Status</h2>
-              <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${STAFF_STATUS_STYLES[formData.status]}`}>
-                {formData.status}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Artist status is updated automatically based on bookings and schedule.
-              You can manually override this in the management dashboard.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Cancel Modal */}
-      <Modal
-        title="Cancel Changes?"
+      {/* Modals */}
+      <ActionConfirmModal
         open={showCancelModal}
-        onOk={handleConfirmCancel}
+        intent="warning"
+        title={language === "vi" ? "Hủy cập nhật nghệ sĩ" : "Cancel Artist Update"}
+        subtitle={language === "vi" ? "Bạn đang rời khỏi biểu mẫu nghệ sĩ mà không lưu thay đổi." : "You are leaving this artist form without saving changes."}
+        description={language === "vi" ? "Các thay đổi trong hồ sơ nghệ sĩ chưa được lưu. Chỉ rời khỏi trang này nếu bạn muốn hủy các thay đổi." : "The artist profile updates have not been saved yet. Leave this page only if you want to discard the changes."}
+        confirmText={language === "vi" ? "Rời khỏi trang" : "Leave Page"}
+        cancelText={language === "vi" ? "Tiếp tục chỉnh sửa" : "Keep Editing"}
+        confirmIcon={X}
+        onConfirm={handleConfirmCancel}
         onCancel={() => setShowCancelModal(false)}
-        okText="Yes, Cancel"
-        cancelText="Keep Editing"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Are you sure you want to cancel? All unsaved changes for{" "}
-          <span className="font-bold">{formData.name}</span> will be lost.
-        </p>
-      </Modal>
+        details={[
+          { label: "Draft Status", value: "Not saved yet" },
+          { label: "Next Step", value: "Return to artist list" },
+        ]}
+        warnings={[
+          "Artist details and specialties changes here will be lost.",
+          "You will need to re-apply the changes if you open the update screen again.",
+        ]}
+      />
 
-      {/* Save Modal */}
-      <Modal
-        title="Save Changes?"
+      <ActionConfirmModal
         open={showSaveModal}
-        onOk={handleConfirmSave}
-        onCancel={() => setShowSaveModal(false)}
-        confirmLoading={isSaving}
-        okText="Save Changes"
-        okButtonProps={{ className: "bg-pink-500 hover:bg-pink-600 text-white border-pink-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Ready to save the updated profile for{" "}
-          <span className="font-bold text-pink-500">{formData.name}</span>?
-        </p>
-      </Modal>
-
-      {/* Delete Modal */}
-      <Modal
-        title="Remove Artist?"
-        open={showDeleteModal}
-        onOk={() => {
-          setShowDeleteModal(false);
-          navigate(ROUTES.managerStaffArtists);
-        }}
-        onCancel={() => setShowDeleteModal(false)}
-        okText="Remove Artist"
-        okType="danger"
-        okButtonProps={{ className: "bg-rose-500 hover:bg-rose-600 text-white border-rose-500" }}
-      >
-        <p className="py-4 text-slate-600">
-          Are you sure you want to remove{" "}
-          <span className="font-bold text-rose-500">{formData.name}</span> from the system? This
-          action cannot be undone.
-        </p>
-      </Modal>
+        intent="success"
+        title={language === "vi" ? "Lưu thay đổi nghệ sĩ" : "Save Artist Changes"}
+        subtitle={language === "vi" ? "Điều này sẽ cập nhật hồ sơ và lưu vào cơ sở dữ liệu." : "This will update the profile and save to database."}
+        description={language === "vi" ? "Xác nhận để cập nhật hồ sơ nghệ sĩ này." : "Confirm to update this artist profile."}
+        confirmText={language === "vi" ? "Lưu nghệ sĩ" : "Save Artist"}
+        cancelText={language === "vi" ? "Xem lại" : "Review Again"}
+        confirmIcon={Save}
+        loading={isSaving}
+        onConfirm={handleConfirmSave}
+        onCancel={() => !isSaving && setShowSaveModal(false)}
+        highlights={[[formData.firstName, formData.lastName].filter(Boolean).join(" ") || "Artist", "Staff Artist"].filter(Boolean)}
+      />
 
       <StaffSaveResultModal
         result={saveResult}
-        successTitle="Profile Updated!"
-        failureTitle="Update Failed"
-        successDescription="Artist profile has been successfully updated."
-        failureDescription="There was an error updating the artist profile."
-        onFailureClose={handleCloseResultModal}
+        successTitle={language === "vi" ? "Cập nhật thành công" : "Update Successful"}
+        failureTitle={language === "vi" ? "Cập nhật thất bại" : "Update Failed"}
+        successDescription={language === "vi" ? "Nghệ sĩ đã được cập nhật thành công." : "The artist has been updated successfully."}
+        failureDescription={language === "vi" ? "Không thể cập nhật nghệ sĩ." : "Unable to update the artist."}
+        onFailureClose={() => setSaveResult(null)}
         onSuccessComplete={handleSuccessComplete}
+        redirectMessage={language === "vi" ? "Đang chuyển hướng đến danh sách nghệ sĩ..." : "Redirecting to artist list..."}
       />
     </section>
   );

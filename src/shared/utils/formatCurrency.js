@@ -3,5 +3,5 @@ export function formatCurrency(value, currency = "VND", locale = "vi-VN") {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(value ?? 0);
+  }).format(value ?? 0).replace("₫", "VND");
 }
