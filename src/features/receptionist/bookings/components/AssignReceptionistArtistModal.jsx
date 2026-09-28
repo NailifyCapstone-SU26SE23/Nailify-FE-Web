@@ -47,6 +47,16 @@ export function AssignReceptionistArtistModal({
   open,
 }) {
   const { t, language } = useLanguage();
+  const isVi = language === "vi";
+
+  const translateStatus = (status) => {
+    if (!status) return isVi ? "Sẵn sàng" : "Ready";
+    if (status.toLowerCase() === "active") return isVi ? "Sẵn sàng" : "Active";
+    if (status.toLowerCase() === "inactive") return isVi ? "Không hoạt động" : "Inactive";
+    if (status.toLowerCase() === "busy") return isVi ? "Đang bận" : "Busy";
+    if (status.toLowerCase() === "emergencyoff") return isVi ? "Tạm nghỉ" : "Emergency Off";
+    return status;
+  };
   const [artists, setArtists] = useState([]);
   const [selectedArtistId, setSelectedArtistId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -216,7 +226,7 @@ export function AssignReceptionistArtistModal({
                         {getArtistName(artist)}
                       </p>
                       <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857] shrink-0">
-                        {artist?.status || (t("receptionist.bookings.ready") || "Sẵn sàng")}
+                        {translateStatus(artist?.status)}
                       </span>
                     </div>
 
@@ -235,7 +245,7 @@ export function AssignReceptionistArtistModal({
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-[#F5F3FF] border border-[#DDD6FE] px-2 py-0.5 text-[10px] font-bold text-[#6D28D9]">
                           <BrushCleaning size={9} />
-                          Nail Staff
+                          {language === "vi" ? "Thợ làm móng" : "Staff Artist"}
                         </span>
                       )}
                     </div>

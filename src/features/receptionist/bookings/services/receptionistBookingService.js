@@ -451,3 +451,14 @@ export async function fetchCustomersList(pageNumber = 1, pageSize = 1000) {
 
   return unwrapResponse(response, "Failed to load customers list.");
 }
+
+export async function updateReceptionistBooking(bookingId, payload) {
+  const normalizedId = String(bookingId || "").trim();
+  if (!normalizedId) throw new Error("Booking ID is required.");
+  
+  const response = await axiosClient.put(`/Bookings/${normalizedId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  
+  return unwrapResponse(response, "Failed to update booking.");
+}

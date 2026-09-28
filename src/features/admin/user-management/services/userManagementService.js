@@ -106,7 +106,7 @@ export function normalizeAdminUser(user) {
     status: statusLabel,
     statusLabel,
     // lastActive: getLastActiveLabel(statusLabel),
-    joinedAt: getJoinedAtLabel(),
+    joinedAt: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown",
     notes: "",
   };
 }

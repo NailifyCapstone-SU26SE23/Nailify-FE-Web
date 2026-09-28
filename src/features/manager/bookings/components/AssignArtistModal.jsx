@@ -291,10 +291,10 @@ export function AssignArtistModal({
                       }
                     }}
                     className={`cursor-pointer rounded-[28px] border p-5 transition-all duration-300 ${staff.isBusy
-                        ? "opacity-60 grayscale-[30%] cursor-not-allowed border-[#f5e6eb] bg-[#fcf9fa]"
-                        : isSelected
-                          ? "border-[#ea4f93] bg-gradient-to-br from-white to-[#fff0f8] shadow-[0_15px_35px_rgba(234,79,147,0.15)]"
-                          : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
+                      ? "opacity-60 grayscale-[30%] cursor-not-allowed border-[#f5e6eb] bg-[#fcf9fa]"
+                      : isSelected
+                        ? "border-[#ea4f93] bg-gradient-to-br from-white to-[#fff0f8] shadow-[0_15px_35px_rgba(234,79,147,0.15)]"
+                        : "border-[#f0cfe1] bg-gradient-to-br from-white to-[#fffafd] hover:border-[#ea4f93] hover:shadow-[0_15px_35px_rgba(236,72,153,0.12)]"
                       }`}
                   >
                     <div className="flex items-start gap-4">
@@ -329,7 +329,7 @@ export function AssignArtistModal({
                             )}
                             {staff.status && !staff.isBusy && (
                               <span className="rounded-full bg-[#ECFDF5] border border-[#A7F3D0] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]">
-                                {language === "vi" 
+                                {language === "vi"
                                   ? (staff.status === "Active" ? "Hoạt động" : staff.status === "Inactive" ? "Ngừng hoạt động" : staff.status === "Suspended" ? "Đình chỉ" : staff.status)
                                   : staff.status}
                               </span>
@@ -373,7 +373,7 @@ export function AssignArtistModal({
                             ) : (
                               <span className="inline-flex items-center gap-1 rounded-full bg-[#F5F3FF] border border-[#DDD6FE] px-2 py-0.5 text-[10px] font-bold text-[#6D28D9]">
                                 <BrushCleaning size={9} />
-                                Nail Staff
+                                {language === "vi" ? "Thợ làm móng" : "Staff Artist"}
                               </span>
                             )}
                           </div>
