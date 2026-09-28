@@ -906,7 +906,7 @@ export function ReceptionistBookingDetailPage() {
 
   const doDeleteServices = async (itemsToDelete) => {
     if (!booking) return;
-    
+
     setIsDeletingService(true);
     try {
       const remainingItems = booking.bookingItems.filter(
@@ -945,18 +945,18 @@ export function ReceptionistBookingDetailPage() {
 
   const doUpdateServiceQuantity = async (row, newQuantity) => {
     if (!booking || newQuantity < 1) return;
-    
+
     setIsDeletingService(true);
     try {
       const groupedItems = new Map();
-      
+
       booking.bookingItems.forEach(item => {
         const sId = String(item.serviceId || "");
         const nId = String(item.nailVariantId || "");
         const key = `${sId}_${nId}`;
-        
+
         const isMatch = sId === String(row.sourceItem?.serviceId || "") && nId === String(row.sourceItem?.nailVariantId || "");
-        
+
         if (!groupedItems.has(key)) {
           groupedItems.set(key, {
             nailVariantId: item.nailVariantId,
@@ -967,7 +967,7 @@ export function ReceptionistBookingDetailPage() {
           groupedItems.get(key).quantity += (item.quantity || 1);
         }
       });
-      
+
       const payload = {
         bookingDate: booking.bookingDate || booking.createdAt,
         startTime: booking.startTime,
@@ -1061,7 +1061,7 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         editingQuantityId === row.id ? (
           <div className="flex items-center gap-1.5 bg-[#FFF0F6] border border-[#F3D7E4] px-1.5 py-1 rounded-full w-fit">
-            <button 
+            <button
               type="button"
               className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
               disabled={tempQuantity <= 1 || isDeletingService}
@@ -1070,7 +1070,7 @@ export function ReceptionistBookingDetailPage() {
               -
             </button>
             <span className="text-xs font-bold text-[#2B182B] w-4 text-center">{tempQuantity}</span>
-            <button 
+            <button
               type="button"
               className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
               disabled={isDeletingService}
@@ -1110,9 +1110,9 @@ export function ReceptionistBookingDetailPage() {
     },
     {
       title: (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ">
           {isVi ? "Thao tác" : "Action"}
-          <Checkbox 
+          <Checkbox
             checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
             indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
             onChange={(e) => {
@@ -1133,7 +1133,7 @@ export function ReceptionistBookingDetailPage() {
             buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
             label={isVi ? "Thao tác" : "Actions"}
           />
-          <Checkbox 
+          <Checkbox
             checked={selectedServiceIds.includes(row.id)}
             onChange={(e) => {
               if (e.target.checked) {
@@ -1553,11 +1553,11 @@ export function ReceptionistBookingDetailPage() {
             badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
             headerAction={
               selectedServiceIds.length > 0 && (
-                <Button 
-                  danger 
-                  type="primary" 
-                  size="small" 
-                  icon={<Trash2 size={14} />} 
+                <Button
+                  danger
+                  type="primary"
+                  size="small"
+                  icon={<Trash2 size={14} />}
                   onClick={handleMultiDeleteServices}
                   loading={isDeletingService}
                   className="rounded-full shadow-2xs font-bold"
@@ -2740,7 +2740,7 @@ export function ReceptionistBookingDetailPage() {
         open={itemsToDelete !== null}
         intent="danger"
         title={isVi ? (itemsToDelete?.length > 1 ? "Xác nhận xóa nhiều" : "Xác nhận xóa") : (itemsToDelete?.length > 1 ? "Confirm multi-delete" : "Confirm delete")}
-        description={isVi 
+        description={isVi
           ? (itemsToDelete?.length > 1 ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn?` : `Bạn có chắc chắn muốn xóa dịch vụ "${itemsToDelete?.[0]?.service}" không?`)
           : (itemsToDelete?.length > 1 ? `Are you sure you want to delete ${itemsToDelete.length} selected services?` : `Are you sure you want to delete "${itemsToDelete?.[0]?.service}"?`)
         }
