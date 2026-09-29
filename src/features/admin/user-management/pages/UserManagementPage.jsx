@@ -599,7 +599,7 @@ export function UserManagementPage() {
             <div className="flex flex-wrap gap-2 xl:justify-end">
               <Link
                 to={ROUTES.adminUsersCreate}
-                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-md text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <UserPlus size={15} className="mr-2" />
                 {t("userManagement.table.addUser")}

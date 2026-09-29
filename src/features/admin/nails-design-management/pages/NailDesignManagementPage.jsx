@@ -546,8 +546,7 @@ export function NailDesignManagementPage() {
         from-[#ea4f93]
         to-[#ff8ebb]
         px-4
-        text-xs
-        font-semibold
+        text-md
         text-white
         shadow-[0_5px_14px_rgba(234,79,147,0.20)]
         transition-all

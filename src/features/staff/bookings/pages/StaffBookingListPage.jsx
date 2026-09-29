@@ -670,8 +670,26 @@ export function StaffBookingListPage() {
           <div className="space-y-4">
             <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="grid gap-3 md:grid-cols-3">
-                <label className="space-y-2 md:col-span-2 lg:col-span-1">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                <label className="relative block space-y-2">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Tìm kiếm" : "Search"}
+                  </span>
+                  <div className="relative">
+                    <Search
+                      size={15}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
+                    />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder={language === "vi" ? "Tìm lịch hẹn bằng tên hoặc số điện thoại..." : "Search by name or phone..."}
+                      className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                    />
+                  </div>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Khoảng thời gian" : "Date Range"}
                   </span>
                   <DateRangePicker
@@ -685,12 +703,12 @@ export function StaffBookingListPage() {
                         setDateTo("");
                       }
                     }}
-                    className="h-10 rounded-xl bg-[#fff9fc] border-[#f5d7e4] transition hover:border-[#ef6bb4]"
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] transition hover:border-[#ef6bb4]"
                   />
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Trạng thái" : "Booking Status"}
                   </span>
                   <select
@@ -702,25 +720,6 @@ export function StaffBookingListPage() {
                       <option key={item} value={item}>{formatDisplay(item)}</option>
                     ))}
                   </select>
-                </label>
-
-              </div>
-
-              <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-                <label className="relative block">
-                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                    {language === "vi" ? "Tìm kiếm" : "Search"}
-                  </span>
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-3 top-[2.7rem] -translate-y-1/2 text-[#df7baa]"
-                  />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder={language === "vi" ? "Tìm lịch hẹn bằng tên hoặc số điện thoại của khách hàng..." : "Search booking by customer name or phone number..."}
-                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                  />
                 </label>
               </div>
             </article>

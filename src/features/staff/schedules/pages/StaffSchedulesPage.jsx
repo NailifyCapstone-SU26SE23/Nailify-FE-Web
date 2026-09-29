@@ -282,34 +282,7 @@ export function StaffSchedulesPage() {
 
       <div className="relative overflow-hidden rounded-lg shadow-[0_24px_90px_rgba(226,143,128,0.16)]">
         <div className="grid min-h-[760px]">
-          <div className="">
-            <div className="border-b border-[#eef0f5] bg-white/80 px-6 py-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentWeek(startOfIsoWeek(dayjs()));
-                    setSelectedDate(dayjs().startOf("day"));
-                  }}
-                  className="inline-flex items-center gap-3 rounded-2xl border border-[#eef0f5] bg-white px-3 py-2 text-[#1f2435] shadow-[0_8px_20px_rgba(25,35,68,0.04)]"
-                >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f0f2f6] bg-[#fff9f6] text-[#f57c67]">
-                    <ArrowLeft size={15} />
-                  </span>
-                  <span className="text-[16px] font-bold">{language === "vi" ? "Lịch làm việc hàng ngày" : "Daily schedule"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCurrentWeek((current) => current.clone())}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[#eef0f5] bg-white px-4 py-2 text-sm font-semibold text-[#4d556d]"
-                >
-                  <RefreshCcw size={14} className="text-[#f57c67]" />
-                  {language === "vi" ? "Tải lại" : "Refresh"}
-                </button>
-              </div>
-            </div>
-
+          <div>
             <div className="mt-6 bg-[linear-gradient(135deg,#fff6f1_0%,#fffaf7_42%,#ffe3dc_100%)]">
               {error ? (
                 <div className="mb-4 rounded-2xl border border-[#ffd9d3] bg-[#fff5f2] px-4 py-3 text-sm font-medium text-[#d36557]">

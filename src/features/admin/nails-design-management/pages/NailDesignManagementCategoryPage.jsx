@@ -238,7 +238,7 @@ export function NailDesignManagementCategoryPage() {
             </button>
             <Link
               to={ROUTES.adminNailDesignsCreate}
-              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+              className="rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-md text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
             >
               {t("adminNailsDesignManagement.addDesign")}
             </Link>
