@@ -234,15 +234,11 @@ export function NailShapesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-
-
-
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center">
           <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">

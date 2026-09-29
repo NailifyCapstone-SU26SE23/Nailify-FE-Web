@@ -332,16 +332,12 @@ export function ComponentsManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-
-
-
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center">
+          <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
                 <Search
@@ -364,7 +360,7 @@ export function ComponentsManagementPage() {
                     currentPage: 1,
                   }))
                 }
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
                 {t("adminComponents.search")}
@@ -380,7 +376,7 @@ export function ComponentsManagementPage() {
                   currentPage: 1,
                 }));
               }}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
+              className="h-10 shrink-0 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
             >
               <option value="">{t("adminComponents.allTypes")}</option>
               {COMPONENT_TYPE_OPTIONS.map((type) => (
@@ -391,11 +387,8 @@ export function ComponentsManagementPage() {
             </select>
           </div>
 
-          <Link
-            to={ROUTES.adminComponentsCreate}
-          >
-            <button
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]">
+          <Link to={ROUTES.adminComponentsCreate} className="shrink-0">
+            <button className="inline-flex h-10 w-full items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] sm:w-auto">
               <Plus size={13} className="mr-1.5 shrink-0" />
               {t("adminComponents.addComponent")}
             </button>
