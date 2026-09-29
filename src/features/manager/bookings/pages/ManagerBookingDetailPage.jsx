@@ -274,7 +274,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const totalEndMinutes = totalStartMinutes + (durationMinutes);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -809,7 +809,7 @@ export function ManagerBookingDetailPage() {
         {/* Left Section: Customer Info, Service Appointment & Items */}
         <div className="space-y-6">
           {/* Customer Reschedule Request Alert Banner */}
-          {(booking?.status === "ReschedulePending" || booking?.status === "RescheduleReq" || booking?.proposedBy === "Customer") && (
+          {(booking?.status === "ReschedulePending" || booking?.status === "RescheduleReq") && (
             <motion.div variants={fadeInUp} className="rounded-lg border-2 border-[#6366F1]/50 bg-gradient-to-r from-[#EEF2FF] via-[#F5F3FF] to-[#EEF2FF] p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -1010,7 +1010,7 @@ export function ManagerBookingDetailPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
-                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
+                  <span>{formatDuration(booking?.totalDuration, language)}</span>
                 </div>
               </div>
             </div>

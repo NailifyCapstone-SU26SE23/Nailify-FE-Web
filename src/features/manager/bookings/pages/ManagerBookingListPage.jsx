@@ -333,7 +333,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const totalEndMinutes = totalStartMinutes + (durationMinutes);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -456,7 +456,7 @@ function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
     date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
     time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
-    duration: formatDuration(apiBooking.totalDuration || 60, language),
+    duration: formatDuration(apiBooking.totalDuration, language),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
     customerName: customerName,
@@ -745,7 +745,7 @@ export function ManagerBookingListPage() {
     if (!draggedBooking) return;
 
     const formattedTime = `${String(targetHour).padStart(2, "0")}:00:00`;
-    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration || 60);
+    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration);
     const bookingIdToAssign = draggedBooking.id || draggedBooking.bookingId;
 
     const targetArtistName = typeof artistItem === "object" ? artistItem.name : artistItem;
@@ -1901,7 +1901,7 @@ export function ManagerBookingListPage() {
                                     </div>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
-                                      <span>{formatDuration(b.totalDuration || 60, language)}</span>
+                                      <span>{formatDuration(b.totalDuration, language)}</span>
                                     </div>
                                   </div>
                                 );
@@ -2035,7 +2035,7 @@ export function ManagerBookingListPage() {
       >
         {isLoadingDrawer ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Spin size="large" tip="Loading booking details..." />
+            <Spin size="large" tip={language === "vi" ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."} />
           </div>
         ) : selectedBookingForDrawer ? (
           <div className="bg-[#FAF6F8] h-full flex flex-col font-sans">

@@ -36,7 +36,7 @@ export function NotificationProvider({ children }) {
   }, [notifications]);
 
   // Handle incoming notification
-  const handleIncomingNotification = (rawNotification) => {
+  const handleIncomingNotification = async (rawNotification) => {
     console.log("NotificationContext: Processing raw notification:", rawNotification);
     
     let notificationItem = {
@@ -48,6 +48,14 @@ export function NotificationProvider({ children }) {
       messageType: rawNotification?.messageType || rawNotification?.MessageType || null,
       payload: rawNotification?.payload || rawNotification?.Payload || rawNotification,
     };
+
+    let displayMessage = notificationItem.message;
+    try {
+      const { formatNotificationMessage } = await import("../utils/notificationFormatter");
+      displayMessage = await formatNotificationMessage(notificationItem.message, true); // default to vi for toast
+    } catch (e) {
+      console.warn("Failed to format toast notification message", e);
+    }
 
     setNotifications((prev) => {
       // Avoid duplicate notifications by ID
@@ -75,7 +83,7 @@ export function NotificationProvider({ children }) {
             {notificationItem.title}
           </p>
           <p className="mt-1.5 text-[13px] text-gray-500 leading-snug line-clamp-2">
-            {notificationItem.message}
+            {displayMessage}
           </p>
         </div>
         <div className="flex-shrink-0 flex items-center justify-center">

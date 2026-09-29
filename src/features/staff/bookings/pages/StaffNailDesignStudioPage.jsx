@@ -2756,7 +2756,7 @@ export function StaffNailDesignStudioPage() {
         ...mergedServiceItemsMap.values(),
       ];
 
-      const updatedBooking = await updateStaffBooking(resolvedBookingApiId, {
+      const payloadToUpdate = {
         bookingDate: nextBookingDetail.bookingDate,
         startTime: nextBookingDetail.startTime,
         nailArtistId: toNullableUuid(
@@ -2765,8 +2765,14 @@ export function StaffNailDesignStudioPage() {
           || loadAuthSession()?.user?.staffId
           || loadAuthSession()?.staffId,
         ),
+        secondaryArtistId: toNullableUuid(nextBookingDetail.secondaryArtistId) || null,
+        selectedPromotionIds: Array.isArray(nextBookingDetail.selectedPromotionIds) ? nextBookingDetail.selectedPromotionIds : [],
         bookingItems: payloadBookingItems,
-      });
+      };
+
+      console.log("=== PAYLOAD UPDATE BOOKING ===", payloadToUpdate);
+
+      const updatedBooking = await updateStaffBooking(resolvedBookingApiId, payloadToUpdate);
 
       setBookingDetail(updatedBooking);
       setDesignActionSuccess(
@@ -3269,7 +3275,7 @@ export function StaffNailDesignStudioPage() {
                     })()}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <div className="mb-3 flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ef6aac] text-[10px] font-bold text-white">6</span>
                       <p className="text-xs font-bold text-[#ea4f93]">{isVi ? "Dịch vụ bổ sung" : "Extra Services"}</p>
@@ -3307,7 +3313,7 @@ export function StaffNailDesignStudioPage() {
                         );
                       })}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mt-6 rounded-[18px] border border-[#f2bfd4] bg-[linear-gradient(135deg,#fff6fa_0%,#ffeef7_100%)] p-4">

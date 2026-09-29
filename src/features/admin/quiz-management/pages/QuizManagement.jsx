@@ -161,7 +161,7 @@ export function QuizManagement() {
 
             // Then delete the quiz question itself
             await deleteQuizQuestion(deleteTarget.id);
-            
+
             setQuestions(prev => prev.filter(q => q.id !== deleteTarget.id));
             showNotification(language === "vi" ? "Xóa quiz thành công" : "Quiz deleted successfully");
             if (activeQuestionId === deleteTarget.id) handleCancelForm();
@@ -414,7 +414,7 @@ export function QuizManagement() {
             {/* Asymmetric Split Layout Section */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 {/* LEFT HALF: Questions editor dashboard section (7 cols) */}
-                <div className="lg:col-span-7 flex flex-col gap-5">
+                <div className="col-span-12 flex flex-col gap-5">
                     <div className="flex items-center gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
                             Q
@@ -566,7 +566,7 @@ export function QuizManagement() {
                 </div>
 
                 {/* RIGHT HALF: Shape recommendation rules & detail viewer (5 cols) */}
-                <div className="lg:col-span-5 flex flex-col gap-5">
+                {/* <div className="lg:col-span-5 flex flex-col gap-5">
                     <div className="flex items-center gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
                             S
@@ -574,10 +574,10 @@ export function QuizManagement() {
                         <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
                             {t("adminQuizManagement.nailShapesRecommendationModel")}
                         </h3>
-                    </div>
+                    </div> */}
 
-                    {/* Shape List Panel */}
-                    <div className="flex flex-col gap-2">
+                {/* Shape List Panel */}
+                {/* <div className="flex flex-col gap-2">
                         {shapes.map((shape) => (
                             <button
                                 key={shape.id}
@@ -594,10 +594,10 @@ export function QuizManagement() {
                                 <ChevronRight size={13} className={selectedShape?.id === shape.id ? "text-[#ea4f93]" : "text-[#c9a7be]"} />
                             </button>
                         ))}
-                    </div>
+                    </div> */}
 
-                    {/* Selected Shape Detail View */}
-                    {selectedShape && (
+                {/* Selected Shape Detail View */}
+                {/* {selectedShape && (
                         <div className="rounded-lg border border-[#f5e3ed] bg-white p-6 shadow-sm">
                             <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
                                 <div>
@@ -720,8 +720,8 @@ export function QuizManagement() {
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    )} 
+                </div>*/}
             </div>
 
             {/* Slide-over Drawer for Question Create/Edit */}

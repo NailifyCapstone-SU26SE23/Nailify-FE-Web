@@ -209,6 +209,7 @@ export function ReceptionistBookingListPage() {
   const appliedStaffFilter = filters.staffFilter;
 
   const [assignArtistBooking, setAssignArtistBooking] = useState(null);
+  const [realEndTimes, setRealEndTimes] = useState({});
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isScannerStarting, setIsScannerStarting] = useState(false);
@@ -229,6 +230,41 @@ export function ReceptionistBookingListPage() {
   const scannerSupportMessage = hasCameraSupport
     ? ""
     : "Camera access requires a secure browser context with webcam support.";
+
+  useEffect(() => {
+    const fetchEndTimes = async () => {
+      if (!bookings || bookings.length === 0) return;
+      
+      const newEndTimes = { ...realEndTimes };
+      let changed = false;
+      
+      for (const b of bookings) {
+        if (!b.bookingItems || b.bookingItems.length === 0 || newEndTimes[b.bookingId]) continue;
+        
+        let sumDuration = 0;
+        for (const item of b.bookingItems) {
+          try {
+            const procs = await fetchReceptionistBookingProcedures(item.bookingItemId);
+            if (Array.isArray(procs)) {
+              sumDuration += procs.reduce((acc, p) => acc + (p.duration || 0), 0);
+            }
+          } catch(e) {
+            console.error('fetchReceptionistBookingProcedures error', item.bookingItemId, e);
+          }
+        }
+        
+        console.log('sumDuration for', b.bookingId, sumDuration);
+        if (sumDuration > 0) {
+          newEndTimes[b.bookingId] = calculateEndTime(b.startTime, sumDuration);
+          changed = true;
+        }
+      }
+      
+      if (changed) setRealEndTimes(newEndTimes);
+    };
+    
+    fetchEndTimes();
+  }, [bookings]);
 
   const loadBookings = useCallback(() => {
     dispatch(fetchReceptionistBookingsThunk({ startDate: appliedDateFrom, endDate: appliedDateTo }));
@@ -386,7 +422,7 @@ export function ReceptionistBookingListPage() {
       },
       render: (_, booking) => {
         const start = formatTime(booking.startTime);
-        const end = calculateEndTime(booking.startTime, booking.totalDuration);
+        const end = (realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration));
         return (
           <div>
             <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
@@ -463,7 +499,7 @@ export function ReceptionistBookingListPage() {
         />
       ),
     },
-  ]), [handleCheckout, handleManualCheckIn, navigate, t]);
+  ]), [handleCheckout, handleManualCheckIn, navigate, t, realEndTimes]);
 
   useEffect(() => {
     if (!isScannerOpen) {
@@ -869,7 +905,7 @@ export function ReceptionistBookingListPage() {
                       <div>
                         <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
                         <p className="mt-1 text-[11px] text-[#b38a9f]">
-                          {formatTime(booking.startTime)} {formatTime(booking.startTime) !== "--" && calculateEndTime(booking.startTime, booking.totalDuration) !== "--" && `- ${calculateEndTime(booking.startTime, booking.totalDuration)}`}
+                          {formatTime(booking.startTime)} {formatTime(booking.startTime) !== "--" && (realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration)) !== "--" && `- ${(realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration))}`}
                         </p>
                       </div>
                       <ActionDropdown
