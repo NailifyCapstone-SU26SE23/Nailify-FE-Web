@@ -1082,7 +1082,7 @@ export function NailVariantDetailPage() {
     const normalizedName = String(variantDraft.name || "").trim();
 
     if (!normalizedName) {
-      setError(language === "vi" ? "Ten bien the la bat buoc." : "Variant name is required.");
+      setError(language === "vi" ? "Tên biến thể là bắt buộc." : "Variant name is required.");
       return;
     }
 
@@ -1112,7 +1112,7 @@ export function NailVariantDetailPage() {
       });
       setProcedures(loadedProcedures);
       setShowEditVariantModal(false);
-      toast.success(language === "vi" ? "Da cap nhat bien the." : "Updated variant details.");
+      toast.success(language === "vi" ? "Cập nhật biến thể thành công." : "Updated variant details.");
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Failed to update nail variant.");
     } finally {
@@ -1637,7 +1637,7 @@ export function NailVariantDetailPage() {
                 {t("adminNailsDesignManagement.variantDetail")}
               </p>
               <h2 className="mt-2 text-lg font-bold text-[#432744]">
-                {t("adminNailsDesignManagement.editVariant")}
+                {language === "vi" ? "Chỉnh sửa biến thể" : "Edit variant"}
               </h2>
             </div>
             <button

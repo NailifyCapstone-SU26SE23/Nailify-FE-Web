@@ -166,13 +166,32 @@ function mapStatus(status) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed": return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Confirmed": return "bg-[#e8f2ff] text-[#4a72d8]";
-    case "Pending": return "bg-[#fff4e8] text-[#d9871c]";
-    case "Cancelled": return "bg-[#ffe7ef] text-[#e1447f]";
-    case "No-show": return "bg-[#f3ebff] text-[#7e4fe6]";
-    default: return BOOKING_STATUS_STYLES[status] ?? "bg-[#fff5ef] text-[#8c5d44]";
+  const norm = String(status || "").trim().toLowerCase();
+  switch (norm) {
+    case "pending":
+      return "bg-[#fff4e8] text-[#d9871c] border border-[#ffe0b3]";
+    case "confirmed":
+    case "approved":
+      return "bg-[#e8f2ff] text-[#4a72d8] border border-[#c4d7ff]";
+    case "checkedin":
+    case "checked in":
+      return "bg-[#e0f7fa] text-[#00838f] border border-[#b2ebf2]";
+    case "inprogress":
+    case "in progress":
+      return "bg-[#f3ebff] text-[#7e4fe6] border border-[#dcd0ff]";
+    case "servicecompleted":
+      return "bg-[#fce4ec] text-[#d81b60] border border-[#f8bbd0]";
+    case "completed":
+      return "bg-[#eaf9ee] text-[#2fa25f] border border-[#b8f0d0]";
+    case "cancelled":
+    case "canceled":
+    case "rejected":
+      return "bg-[#ffe7ef] text-[#e1447f] border border-[#ffc2d5]";
+    case "noshow":
+    case "no-show":
+      return "bg-[#f5f5f5] text-[#616161] border border-[#e0e0e0]";
+    default:
+      return "bg-[#fff5ef] text-[#8c5d44] border border-[#f5d7c4]";
   }
 }
 
@@ -558,6 +577,16 @@ export function StaffBookingListPage() {
     toast.success(language === "vi" ? "Đã xuất CSV thành công." : "CSV exported successfully.");
   };
 
+  const getBookingEndTime = (startTime, duration) => {
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const totalMinutes = hours * 60 + minutes + Number(duration);
+
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
+
+    return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+  };
+
   const columns = [
     {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Khách hàng" : "Customer"}</span>,
@@ -606,7 +635,9 @@ export function StaffBookingListPage() {
           <p className="text-sm font-semibold text-[#432744]">
             {formatDateLabel(booking.bookingDate)}
           </p>
-          <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+          <p className="mt-1 text-[11px] text-[#c694ad]">
+            {booking.bookingTime} - {getBookingEndTime(booking.bookingTime, booking.totalDuration)}
+          </p>
         </div>
       )
     },

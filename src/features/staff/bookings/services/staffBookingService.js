@@ -346,6 +346,11 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
         return;
       }
 
+      const status = String(component?.status || item?.status || "").trim();
+      if (status && status !== "Active" && status !== "active") {
+        return;
+      }
+
       uniqueComponents.set(componentId, {
         componentId,
         name: String(component?.name || item?.name || "").trim(),
@@ -353,6 +358,7 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
         componentType: String(component?.componentType || item?.componentType || "").trim(),
         price: Number(component?.price || item?.price || 0),
         duration: Number(component?.duration || item?.duration || 0),
+        status,
       });
     });
   }
@@ -1151,6 +1157,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
+        serviceId,
+        nailVariantId,
         name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
@@ -1169,6 +1177,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
         bookingItemId,
+        serviceId,
+        nailVariantId,
         name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? "Customer Nail" : "Nail Variant",
         quantity,

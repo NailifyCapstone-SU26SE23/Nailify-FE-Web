@@ -115,10 +115,10 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({ 
-  services = [], 
-  onOpenServiceProcedures = null, 
-  onEditQuantity = null, 
+function ServiceInfoCard({
+  services = [],
+  onOpenServiceProcedures = null,
+  onEditQuantity = null,
   onDeleteService = null,
   selectedServiceIds = [],
   onSelectService = null,
@@ -133,7 +133,7 @@ function ServiceInfoCard({
 
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
-          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "grid-cols-[70px_minmax(0,1.8fr)_80px_120px_130px_110px]"}`}>
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[70px_minmax(0,1.8fr)_80px_120px_180px_110px]"}`}>
             <div className="flex items-center justify-center gap-2">
               <Checkbox
                 checked={services.length > 0 && selectedServiceIds.length === services.length}
@@ -154,7 +154,7 @@ function ServiceInfoCard({
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời gian ướt tính" : "Duration"}</p>
             {hasProcedureAction ? (
               <div className="flex items-center justify-center gap-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] m-0">{language === "vi" ? "Thao tác" : "Action"}</p>
@@ -194,7 +194,7 @@ function ServiceInfoCard({
               return (
                 <div
                   key={service.id || `${service.name}-${index}`}
-                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_110px_110px]" : "md:grid-cols-[70px_minmax(0,1.8fr)_80px_120px_130px_110px]"}`}
+                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "md:grid-cols-[70px_minmax(0,1.8fr)_80px_120px_180px_110px]"}`}
                 >
                   <div className="hidden md:flex items-center justify-center">
                     <Checkbox

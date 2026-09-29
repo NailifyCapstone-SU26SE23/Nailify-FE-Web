@@ -517,6 +517,7 @@ export function ReceptionistBookingDetailPage() {
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
   const [isDeletingService, setIsDeletingService] = useState(false);
+  const [bookingItemDurations, setBookingItemDurations] = useState({});
   const [itemsToDelete, setItemsToDelete] = useState(null);
   const [editingQuantityId, setEditingQuantityId] = useState(null);
   const [tempQuantity, setTempQuantity] = useState(1);
@@ -687,6 +688,26 @@ export function ReceptionistBookingDetailPage() {
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
 
+  useEffect(() => {
+    const fetchDurations = async () => {
+      if (!booking || !booking.bookingItems) return;
+      const newDurations = { ...bookingItemDurations };
+      let changed = false;
+      for (const item of booking.bookingItems) {
+        if (!item.bookingItemId || newDurations[item.bookingItemId]) continue;
+        try {
+          const procs = await fetchReceptionistBookingProcedures(item.bookingItemId);
+          if (Array.isArray(procs)) {
+            newDurations[item.bookingItemId] = procs.reduce((acc, p) => acc + (p.duration || 0), 0);
+            changed = true;
+          }
+        } catch (e) { }
+      }
+      if (changed) setBookingItemDurations(newDurations);
+    };
+    fetchDurations();
+  }, [booking]);
+
   const serviceRows = useMemo(() => {
     const rawItems = booking?.bookingItems ?? [];
     if (rawItems.length === 0) return [];
@@ -698,7 +719,7 @@ export function ReceptionistBookingDetailPage() {
       const sName = item.serviceName || (item.nailVariantName ? (language === "vi" ? "Dịch vụ làm móng: " : "Nail service: ") + item.nailVariantName : language === "vi" ? "Dịch vụ làm móng" : "Nail Service");
       const vName = item.nailVariantName || item.customerNailName || "";
       const uPrice = Number(item.price) || 0;
-      const uDur = Number(item.duration) || 0;
+      const uDur = (item.bookingItemId && bookingItemDurations[item.bookingItemId]) ? bookingItemDurations[item.bookingItemId] : (Number(item.duration) || 0);
       const key = `${sName}_${vName}_${uPrice}_${uDur}`;
 
       const itemQty = item.quantity || 1;
@@ -1169,6 +1190,7 @@ export function ReceptionistBookingDetailPage() {
     },
   ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows]);
 
+  const totalItemsDuration = booking?.bookingItems?.reduce((acc, item) => acc + (Number(item.duration) || 0) * (item.quantity || 1), 0) || booking?.totalDuration;
   const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
 
   const handleTransactionClick = async (txId) => {
@@ -1557,11 +1579,11 @@ export function ReceptionistBookingDetailPage() {
               {/* Duration */}
               <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
-                  {language === "vi" ? "Thời lượng" : "Duration"}
+                  {language === "vi" ? "Thời gian dự kiến" : "Expected duration"}
                 </p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
-                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
+                  <span>{formatDuration(totalItemsDuration, language)}</span>
                 </div>
               </div>
             </div>
@@ -1754,15 +1776,14 @@ export function ReceptionistBookingDetailPage() {
                         </div>
                         <div className="text-right">
 
-                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                            (() => {
-                              const statusStr = String(tx.status).toLowerCase();
-                              if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
-                              if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
-                              if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
-                              if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
-                              return 'bg-[#F3F4F6] text-[#6B7280]';
-                            })()
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${(() => {
+                            const statusStr = String(tx.status).toLowerCase();
+                            if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
+                            if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
+                            if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
+                            if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
+                            return 'bg-[#F3F4F6] text-[#6B7280]';
+                          })()
                             }`}>
                             {(() => {
                               const statusStr = String(tx.status).toLowerCase();
@@ -2570,7 +2591,7 @@ export function ReceptionistBookingDetailPage() {
                         </h4>
 
                         {/* Status Badges */}
-                        <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                        {/* <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${artist.isFree
                               ? "bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]"
@@ -2579,7 +2600,7 @@ export function ReceptionistBookingDetailPage() {
                           >
                             {artist.isFree ? (language === "vi" ? "Rảnh" : "Free") : (language === "vi" ? "Đang bận" : "Busy")}
                           </span>
-                        </div>
+                        </div> */}
                       </div>
 
                       <button
@@ -2601,7 +2622,7 @@ export function ReceptionistBookingDetailPage() {
                             ? artistPickerProcedure.assignedArtistName
                               ? (language === "vi" ? "Chọn thợ này" : "Select this artist")
                               : (language === "vi" ? "Phân công" : "Assign")
-                            : (language === "vi" ? "Thợ đang bận" : "Artist is busy")}
+                            : (language === "vi" ? "Thợ không khả dụng" : "Artist unavailable")}
                         </span>
                       </button>
                     </div>

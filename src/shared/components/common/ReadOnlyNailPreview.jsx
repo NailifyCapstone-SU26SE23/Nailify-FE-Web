@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { PropTypes } from "../../utils/propTypes";
-import {useLanguage} from "../../../shared/hooks/useLanguage";
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
 
@@ -467,17 +467,17 @@ export function ReadOnlyNailPreview({
       ) : null}
 
       <div className={`${showHeader ? "mt-4" : ""} rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-4`}>
-        {showSurfaceMode ? (
+        {/* {showSurfaceMode ? (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
             <span>Surface Mode</span>
             <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
               {finishLabel}
             </span>
           </div>
-        ) : null}
+        ) : null} */}
 
         {showInstruction ? (
-          <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white/75 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
+          <div className="rounded-lg border border-dashed border-[#f2bfd4] bg-white/75 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
             {instruction}
           </div>
         ) : null}

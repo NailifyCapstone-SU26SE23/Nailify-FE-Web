@@ -2237,7 +2237,7 @@ export function ReceptionistCustomerListPage() {
             customerName: assignChairGuest?.customerName || "Khách",
             bookingDate: new Date().toISOString().split('T')[0],
             startTime: new Date().toLocaleTimeString('en-US', { hour12: false }).substring(0, 5),
-            totalDuration: parseInt(assignChairGuest?.duration) || 60,
+            totalDuration: parseInt(assignChairGuest?.duration),
           }}
           onAssign={handleConfirmAssignChair}
         />
