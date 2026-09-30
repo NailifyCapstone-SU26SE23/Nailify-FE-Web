@@ -1416,7 +1416,9 @@ export function ReceptionistBookingDetailPage() {
                   : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
                     : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
                       : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
-                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
+                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                          : String(booking.status).toLowerCase() === 'inprogress' ? 'Đang thực hiện'
+                            : booking.status)
               : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -1713,7 +1715,7 @@ export function ReceptionistBookingDetailPage() {
             <div className="flex flex-col items-center">
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
-                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
+                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status))}`}>
                   {booking.status ?
                     (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
                       String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
@@ -1722,7 +1724,8 @@ export function ReceptionistBookingDetailPage() {
                             : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
                               : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
                                 : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
-                                  : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
+                                  : String(booking.status).toLowerCase() === 'inprogress' ? 'Đang thực hiện'
+                                    : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
                 </span>
               </div>
 

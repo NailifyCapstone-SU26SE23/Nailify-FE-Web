@@ -214,6 +214,40 @@ export async function fetchServiceCatalog(filters = {}) {
   };
 }
 
+export async function fetchNailDesignCatalog(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 10,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailDesigns", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+      status: "Active"
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail designs.");
+
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    metaData: data?.metaData ?? data?.pagination ?? {
+      currentPage: 1,
+      totalPages: 1,
+      pageSize,
+      totalItems: 0,
+      hasPrevious: false,
+      hasNext: false,
+      firstRowOnPage: 0,
+      lastRowOnPage: 0,
+    },
+  };
+}
+
 export async function fetchStaffServiceDetail(serviceId) {
   const normalizedServiceId = String(serviceId || "").trim();
 
