@@ -649,11 +649,12 @@ export function TransactionOverviewPage() {
                     const isActive = salonStatusFilter === value;
 
                     return (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setSalonStatusFilter(value)}
-                        className={`
+                      <Tooltip title={language === "vi" ? labelVi : labelEn}>
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setSalonStatusFilter(value)}
+                          className={`
                                   relative z-10
                                   w-full
                                   inline-flex items-center justify-center gap-1
@@ -664,58 +665,61 @@ export function TransactionOverviewPage() {
                                   transition-colors duration-200
                                   focus:outline-none
                                   ${isActive
-                            ? "text-white"
-                            : "text-[#7f6478] hover:text-[#2d1b35]"
-                          }`}
-                      >
-                        <Icon
-                          size={14}
-                          strokeWidth={2}
-                          className={`
+                              ? "text-white"
+                              : "text-[#7f6478] hover:text-[#2d1b35]"
+                            }`}
+                        >
+                          <Icon
+                            size={14}
+                            strokeWidth={2}
+                            className={`
                                     transition-all duration-300
                                     ${isActive
-                              ? "text-white scale-105"
-                              : "text-[#a88a9f] scale-100"
-                            }`}
-                        />
+                                ? "text-white scale-105"
+                                : "text-[#a88a9f] scale-100"
+                              }`}
+                          />
 
-                        <span>
-                          {language === "vi" ? labelVi : labelEn}
-                        </span>
-                      </button>
+                          <span>
+                            {language === "vi" ? labelVi : labelEn}
+                          </span>
+                        </button>
+                      </Tooltip>
                     );
                   })}
                 </div>
 
                 {/* Sort Option dropdown */}
                 <div className="flex items-center gap-2 self-end md:self-auto">
-                  <Select
-                    value={salonSortOption}
-                    onChange={(val) => setSalonSortOption(val)}
-                    className="w-36 h-10 select-premium-antd"
-                    popupClassName="select-premium-dropdown"
-                    prefix={
-                      <SlidersHorizontal
-                        size={15}
-                        strokeWidth={2}
-                        className="text-[#ea4f93]"
-                      />
-                    }
-                    options={[
-                      {
-                        value: "name",
-                        label: t("adminTransactions.salonName"),
-                      },
-                      {
-                        value: "rating",
-                        label: t("adminTransactions.rating"),
-                      },
-                      {
-                        value: "revenue",
-                        label: t("adminTransactions.revenue"),
-                      },
-                    ]}
-                  />
+                  <Tooltip title={language === "vi" ? "Sắp xếp theo" : "Sort by"}>
+                    <Select
+                      value={salonSortOption}
+                      onChange={(val) => setSalonSortOption(val)}
+                      className="w-36 h-10 select-premium-antd"
+                      popupClassName="select-premium-dropdown"
+                      prefix={
+                        <SlidersHorizontal
+                          size={15}
+                          strokeWidth={2}
+                          className="text-[#ea4f93]"
+                        />
+                      }
+                      options={[
+                        {
+                          value: "name",
+                          label: t("adminTransactions.salonName"),
+                        },
+                        {
+                          value: "rating",
+                          label: t("adminTransactions.rating"),
+                        },
+                        {
+                          value: "revenue",
+                          label: t("adminTransactions.revenue"),
+                        },
+                      ]}
+                    />
+                  </Tooltip>
                 </div>
               </div>
             </div>
@@ -1235,6 +1239,6 @@ export function TransactionOverviewPage() {
           </div>
         )}
       </Modal>
-    </div>
+    </div >
   );
 }

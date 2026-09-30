@@ -56,13 +56,6 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     config = {};
   }
 
-  // 🐛 DEBUG: Log surface config
-  console.log("🎨 Surface Debug:", {
-    name,
-    effectsConfigJson,
-    parsedConfig: config
-  });
-
   // 🪞 CHROME / MIRROR - Ultra metallic
   if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương")) {
     // Backend format: {"reflectivity":0.9, "metallic":1.0}

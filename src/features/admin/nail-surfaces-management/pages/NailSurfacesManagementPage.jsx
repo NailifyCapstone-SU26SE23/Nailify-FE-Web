@@ -234,7 +234,7 @@ export function NailSurfacesManagementPage() {
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (status) => (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status === "Active"
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold tracking-wider ${status === "Active"
               ? "bg-[#e7fbf4] text-[#23b68b]"
               : "bg-[#fff0f5] text-[#eb5a99]"
               }`}

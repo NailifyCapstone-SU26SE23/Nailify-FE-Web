@@ -73,15 +73,19 @@ function calculateEndTime(startTime, durationMinutes) {
   let hours = parseInt(parts[0], 10);
   let minutes = parseInt(parts[1], 10);
 
+
   if (isNaN(hours) || isNaN(minutes)) return "--";
+
 
   const totalDur = durationMinutes ? parseInt(durationMinutes, 10) : 0;
   if (isNaN(totalDur)) return formatTime(startTime);
+
 
   minutes += totalDur;
   hours += Math.floor(minutes / 60);
   minutes = minutes % 60;
   hours = hours % 24;
+
 
   const hh = String(hours).padStart(2, '0');
   const mm = String(minutes).padStart(2, '0');
@@ -235,11 +239,14 @@ export function ReceptionistBookingListPage() {
     const fetchEndTimes = async () => {
       if (!bookings || bookings.length === 0) return;
 
+
       const newEndTimes = { ...realEndTimes };
       let changed = false;
 
+
       for (const b of bookings) {
         if (!b.bookingItems || b.bookingItems.length === 0 || newEndTimes[b.bookingId]) continue;
+
 
         let sumDuration = 0;
         for (const item of b.bookingItems) {
@@ -252,16 +259,16 @@ export function ReceptionistBookingListPage() {
             console.error('fetchReceptionistBookingProcedures error', item.bookingItemId, e);
           }
         }
-
-        console.log('sumDuration for', b.bookingId, sumDuration);
         if (sumDuration > 0) {
           newEndTimes[b.bookingId] = calculateEndTime(b.startTime, sumDuration);
           changed = true;
         }
       }
 
+
       if (changed) setRealEndTimes(newEndTimes);
     };
+
 
     fetchEndTimes();
   }, [bookings]);

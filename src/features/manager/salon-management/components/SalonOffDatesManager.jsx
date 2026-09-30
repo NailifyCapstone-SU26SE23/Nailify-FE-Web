@@ -87,8 +87,25 @@ export function SalonOffDatesManager({ salonId }) {
       return;
     }
 
-    const startUTC = new Date(formData.startDate).toISOString();
-    const endUTC = new Date(formData.endDate).toISOString();
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const now = new Date();
+
+    const originalStartDate = currentOffDate?.startDate ? new Date(currentOffDate.startDate).toISOString().slice(0, 16) : null;
+    if (!currentOffDate || formData.startDate !== originalStartDate) {
+      if (start < now) {
+        toast.error(isVi ? "Thời gian bắt đầu không được trong quá khứ." : "Start time cannot be in the past.");
+        return;
+      }
+    }
+
+    if (end <= start) {
+      toast.error(isVi ? "Thời gian kết thúc phải sau thời gian bắt đầu." : "End time must be after start time.");
+      return;
+    }
+
+    const startUTC = start.toISOString();
+    const endUTC = end.toISOString();
 
     const payload = {
       startDate: startUTC,
@@ -129,6 +146,12 @@ export function SalonOffDatesManager({ salonId }) {
     if (!dateStr) return "—";
     const d = new Date(dateStr);
     return `${d.toLocaleDateString()} · ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
   };
 
   return (
@@ -253,6 +276,7 @@ export function SalonOffDatesManager({ salonId }) {
                     type="datetime-local"
                     name="startDate"
                     value={formData.startDate}
+                    min={getMinDateTime()}
                     onChange={handleInputChange}
                     className="w-full rounded-xl border border-[#f0e3e9] bg-[#fffafd] px-4 py-2.5 text-[14px] font-medium text-[#2d1b35] outline-none transition-colors hover:border-[#efb8d0] focus:border-[#ea4f93]"
                   />
@@ -266,6 +290,7 @@ export function SalonOffDatesManager({ salonId }) {
                     type="datetime-local"
                     name="endDate"
                     value={formData.endDate}
+                    min={formData.startDate || getMinDateTime()}
                     onChange={handleInputChange}
                     className="w-full rounded-xl border border-[#f0e3e9] bg-[#fffafd] px-4 py-2.5 text-[14px] font-medium text-[#2d1b35] outline-none transition-colors hover:border-[#efb8d0] focus:border-[#ea4f93]"
                   />

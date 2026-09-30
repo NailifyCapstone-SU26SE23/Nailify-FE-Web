@@ -14,7 +14,6 @@ function getAuthHeaders() {
 
 function unwrapResponse(response, fallbackMessage, isDetail = false, includePagination = false) {
   const payload = response?.data;
-  console.log("unwrapResponse payload:", payload);
 
   if (!payload?.isSucceeded) {
     throw new Error(payload?.message || fallbackMessage);
@@ -76,8 +75,6 @@ export async function fetchBookingsBySalonId(salonId, options = {}) {
   if (endDate) queryParams.endDate = endDate;
   if (search) queryParams.search = search;
   if (status) queryParams.status = status;
-
-  console.log("Fetching bookings for salon:", salonId, queryParams);
   try {
     const response = await axiosClient.get(`/Bookings/salon/${salonId}`, {
       headers: getAuthHeaders(),
@@ -99,7 +96,6 @@ export async function fetchBookingById(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching booking by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Bookings/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -120,7 +116,6 @@ export async function confirmBooking(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Confirming booking:", normalizedId);
   try {
     const response = await axiosClient.post(`/Bookings/${normalizedId}/confirm`, null, {
       headers: getAuthHeaders(),
@@ -141,7 +136,6 @@ export async function rejectBooking(bookingId, reason) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Rejecting booking:", normalizedId, "with reason:", reason);
   try {
     const response = await axiosClient.post(`/Bookings/${normalizedId}/reject`, { reason }, {
       headers: getAuthHeaders(),
@@ -170,7 +164,6 @@ export async function cancelBooking(bookingId, { reason, holdToken, customerRequ
     payload.holdToken = holdToken;
   }
 
-  console.log("Cancelling booking:", normalizedId, "with payload:", payload);
   try {
     const response = await axiosClient.post(`/Bookings/${normalizedId}/cancel`, payload, {
       headers: getAuthHeaders(),
@@ -197,7 +190,6 @@ export async function fetchSalonStaff(salonId, options = {}) {
     role = "Staff_Artist"
   } = options;
 
-  console.log("Fetching salon staff:", normalizedId, { pageNumber, pageSize, role });
   try {
     const response = await axiosClient.get(`/Users`, {
       headers: getAuthHeaders(),
@@ -224,7 +216,6 @@ export async function fetchAvailableArtistsForBooking(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching available artists for booking:", normalizedBookingId);
   try {
     const response = await axiosClient.get(
       `/Bookings/${normalizedBookingId}/available-artists-for-receptionist`,
@@ -248,7 +239,6 @@ export async function updateBooking(bookingId, updateData) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("updateBooking - Booking ID:", normalizedBookingId, "Update data:", updateData);
 
   try {
     const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`,
@@ -256,8 +246,6 @@ export async function updateBooking(bookingId, updateData) {
       { headers: getAuthHeaders() }
     );
 
-    console.log("updateBooking response status:", response?.status);
-    console.log("updateBooking response:", response);
     return unwrapResponse(response, "Failed to update booking.");
   } catch (error) {
     const errorMessage = error?.response?.data?.message || error?.message || "Failed to update booking.";
@@ -282,8 +270,6 @@ export async function assignArtistToBookingOld(bookingId, staffArtistId, slotInf
     throw new Error("Staff Artist ID is required.");
   }
 
-  console.log("assignArtistToBookingOld - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo);
-
   const payload = { staffArtistId: normalizedStaffId };
   if (slotInfo) {
     payload.slotStartTime = slotInfo.startTime;
@@ -295,7 +281,6 @@ export async function assignArtistToBookingOld(bookingId, staffArtistId, slotInf
       payload,
       { headers: getAuthHeaders() }
     );
-    console.log("assignArtistToBookingOld response status:", response?.status);
     return unwrapResponse(response, "Failed to assign artist to booking (old endpoint).");
   } catch (error) {
     const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking (old endpoint).";
@@ -319,8 +304,6 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
     throw new Error("Staff Artist ID is required.");
   }
 
-  console.log("assignArtistToBooking - Booking ID:", normalizedBookingId, "Staff Artist ID:", normalizedStaffId, "Slot:", slotInfo, "Booking date:", bookingDate);
-
   const payload = { nailArtistId: normalizedStaffId };
   if (bookingDate) {
     payload.bookingDate = bookingDate;
@@ -337,7 +320,6 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
       payload,
       { headers: getAuthHeaders() }
     );
-    console.log("assignArtistToBooking response status:", response?.status);
     return unwrapResponse(response, "Failed to assign artist to booking (new endpoint).");
   } catch (error) {
     const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking (new endpoint).";
@@ -350,8 +332,6 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
 }
 
 export async function fetchArtistBusySlots(nailArtistId, bookingDate) {
-  console.log("=== fetchArtistBusySlots ===");
-  console.log("Params:", { nailArtistId, bookingDate });
 
   try {
     const response = await axiosClient.get("/Bookings/artist-available-slots", {
@@ -361,9 +341,6 @@ export async function fetchArtistBusySlots(nailArtistId, bookingDate) {
         bookingDate
       }
     });
-
-    console.log("Axios raw response:", response);
-    console.log("Axios response.data:", response?.data);
 
     return unwrapResponse(response, "Failed to load artist busy slots.");
   } catch (error) {
@@ -382,7 +359,6 @@ export async function fetchUserById(userId) {
     throw new Error("User ID is required.");
   }
 
-  console.log("Fetching user by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Users/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -403,7 +379,6 @@ export async function fetchBookingRatingsBySalonId(salonId) {
     throw new Error("Salon ID is required.");
   }
 
-  console.log("Fetching booking ratings for salon:", normalizedId);
   try {
     const response = await axiosClient.get(`/BookingRatings/by-salon/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -505,8 +480,6 @@ export async function fetchBookingRatingsBySalonId(salonId) {
 export async function fetchSalonWaitlist(salonId, options = {}) {
   const { pageNumber = 1, pageSize = 10 } = options;
   const normalizedPage = normalizePageNumber(pageNumber);
-
-  console.log("Fetching waitlist for salonId:", salonId, { pageNumber: normalizedPage, pageSize });
   try {
     const response = await axiosClient.get(`/Waitlists/salon/${salonId}`, {
       headers: getAuthHeaders(),
@@ -528,7 +501,6 @@ export async function managerSuggestTime(bookingId, suggestData) {
   const normalizedBookingId = String(bookingId || "").trim();
   if (!normalizedBookingId) throw new Error("Booking ID is required.");
 
-  console.log("managerSuggestTime - Booking ID:", normalizedBookingId, suggestData);
   try {
     const response = await axiosClient.post(
       `/Bookings/${normalizedBookingId}/manager-suggest-time`,
@@ -547,7 +519,6 @@ export async function managerApproveReschedule(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
   if (!normalizedBookingId) throw new Error("Booking ID is required.");
 
-  console.log("managerApproveReschedule - Booking ID:", normalizedBookingId);
   try {
     const response = await axiosClient.post(
       `/Bookings/${normalizedBookingId}/manager-approve-reschedule`,
@@ -566,7 +537,6 @@ export async function managerRejectReschedule(bookingId) {
   const normalizedBookingId = String(bookingId || "").trim();
   if (!normalizedBookingId) throw new Error("Booking ID is required.");
 
-  console.log("managerRejectReschedule - Booking ID:", normalizedBookingId);
   try {
     const response = await axiosClient.post(
       `/Bookings/${normalizedBookingId}/manager-reject-reschedule`,
@@ -588,7 +558,6 @@ export async function fetchCustomerProfileById(userId) {
     throw new Error("User ID is required.");
   }
 
-  console.log("Fetching customer profile by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Users/customers/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -603,7 +572,6 @@ export async function fetchCustomerProfileById(userId) {
 }
 
 export async function fetchLoyaltyTiers() {
-  console.log("Fetching loyalty tiers");
   try {
     const response = await axiosClient.get(`/LoyaltyTiers`, {
       headers: getAuthHeaders(),
@@ -617,3 +585,23 @@ export async function fetchLoyaltyTiers() {
   }
 }
 
+
+export async function deleteBookingRating(ratingId) {
+  const normalizedId = String(ratingId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Rating ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.delete(`/BookingRatings/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to delete booking rating.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete booking rating.";
+    console.error("Error deleting booking rating:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}

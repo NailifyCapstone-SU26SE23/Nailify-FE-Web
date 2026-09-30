@@ -19,7 +19,7 @@ export function NotificationProvider({ children }) {
   });
 
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
-  
+
   // Track the current token to detect login/logout
   const currentTokenRef = useRef(null);
   const isConnectingRef = useRef(false);
@@ -38,7 +38,7 @@ export function NotificationProvider({ children }) {
   // Handle incoming notification
   const handleIncomingNotification = async (rawNotification) => {
     console.log("NotificationContext: Processing raw notification:", rawNotification);
-    
+
     let notificationItem = {
       id: rawNotification?.id || rawNotification?.notificationId || `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title: rawNotification?.title || rawNotification?.Title || "Thông báo mới",
@@ -68,9 +68,8 @@ export function NotificationProvider({ children }) {
     // Display a beautiful real-time toast
     toast.custom((t) => (
       <div
-        className={`${
-          t.visible ? "animate-enter" : "animate-leave"
-        } max-w-md w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl pointer-events-auto flex ring-1 ring-gray-100 p-4 items-start gap-4 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] cursor-pointer`}
+        className={`${t.visible ? "animate-enter" : "animate-leave"
+          } max-w-md w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl pointer-events-auto flex ring-1 ring-gray-100 p-4 items-start gap-4 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] cursor-pointer`}
         onClick={() => toast.dismiss(t.id)}
       >
         <div className="flex-shrink-0 mt-0.5">
@@ -87,11 +86,11 @@ export function NotificationProvider({ children }) {
           </p>
         </div>
         <div className="flex-shrink-0 flex items-center justify-center">
-            <div className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-            </div>
+          <div className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
         </div>
       </div>
     ), { duration: 5000 });
@@ -119,47 +118,47 @@ export function NotificationProvider({ children }) {
       // User logged in, token changed, or need to reconnect after disconnect
       if (token && token !== currentTokenRef.current) {
         if (isConnectingRef.current) return;
-        
+
         console.log("NotificationContext: Connecting SignalR...");
         currentTokenRef.current = token;
         isConnectingRef.current = true;
         setConnectionStatus("connecting");
-        
-        try {
-            const conn = await notificationSignalRService.startConnection({
-                // Use ref to always call the LATEST version of the handler (avoids stale closure)
-                onNotificationReceived: (notification) => {
-                    handleIncomingNotificationRef.current?.(notification);
-                },
-                onReconnected: () => {
-                    console.log("NotificationContext: SignalR reconnected.");
-                    setConnectionStatus("connected");
-                },
-                // Reset token ref so the polling loop can attempt to reconnect
-                onDisconnected: () => {
-                    console.warn("NotificationContext: SignalR disconnected — will retry.");
-                    setConnectionStatus("disconnected");
-                    currentTokenRef.current = null;
-                }
-            });
 
-            if (conn) {
-                console.log("NotificationContext: SignalR connection established ✅");
-                // Re-set the ref in case the StrictMode cleanup had nulled it while we were awaiting
-                currentTokenRef.current = token;
-                setConnectionStatus("connected");
-            } else {
-                // startConnection returned null — silent failure, allow retry
-                console.error("NotificationContext: SignalR connection failed (returned null). Will retry.");
-                setConnectionStatus("disconnected");
-                currentTokenRef.current = null;
+        try {
+          const conn = await notificationSignalRService.startConnection({
+            // Use ref to always call the LATEST version of the handler (avoids stale closure)
+            onNotificationReceived: (notification) => {
+              handleIncomingNotificationRef.current?.(notification);
+            },
+            onReconnected: () => {
+              console.log("NotificationContext: SignalR reconnected.");
+              setConnectionStatus("connected");
+            },
+            // Reset token ref so the polling loop can attempt to reconnect
+            onDisconnected: () => {
+              console.warn("NotificationContext: SignalR disconnected — will retry.");
+              setConnectionStatus("disconnected");
+              currentTokenRef.current = null;
             }
-        } catch (error) {
-            console.error("SignalR Connection failed:", error);
+          });
+
+          if (conn) {
+            console.log("NotificationContext: SignalR connection established ✅");
+            // Re-set the ref in case the StrictMode cleanup had nulled it while we were awaiting
+            currentTokenRef.current = token;
+            setConnectionStatus("connected");
+          } else {
+            // startConnection returned null — silent failure, allow retry
+            console.error("NotificationContext: SignalR connection failed (returned null). Will retry.");
             setConnectionStatus("disconnected");
-            currentTokenRef.current = null; // allow retry
+            currentTokenRef.current = null;
+          }
+        } catch (error) {
+          console.error("SignalR Connection failed:", error);
+          setConnectionStatus("disconnected");
+          currentTokenRef.current = null; // allow retry
         } finally {
-            isConnectingRef.current = false;
+          isConnectingRef.current = false;
         }
       }
     };

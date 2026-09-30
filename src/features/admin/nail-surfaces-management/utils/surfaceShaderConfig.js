@@ -220,6 +220,7 @@ export function parseShaderParamToControls(shaderParam, surface = {}) {
 
   return {
     name: String(surface?.name || "").trim(),
+    status: String(surface?.status || "Active").trim(),
     surfacePreset: preset,
     shineEnabled,
     shineOpacity,
@@ -256,6 +257,7 @@ export function createEmptySurfaceForm() {
     lightnessOffset: "0",
     saturationOffset: "0",
     hueOffset: "0",
+    status: "Active",
   };
 }
 
@@ -271,7 +273,7 @@ export function buildSurfacePayload(formValues) {
 
   return {
     name: String(synced?.name || "").trim(),
-    status: "Active",
+    status: String(synced?.status || "Active").trim(),
     shaderParam: synced.shaderParam,
     lightnessOffset: Number(synced?.lightnessOffset || 0),
     saturationOffset: Number(synced?.saturationOffset || 0),

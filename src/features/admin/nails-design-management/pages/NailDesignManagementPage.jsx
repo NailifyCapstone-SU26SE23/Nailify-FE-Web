@@ -107,7 +107,6 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
-  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
       {design.imageUrl ? (

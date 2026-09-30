@@ -19,11 +19,14 @@ import {
   Clock,
   ArrowLeft,
   ArrowRight,
-  Sparkle
+  Sparkle,
+  Trash2
 } from "lucide-react";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchBookingRatingsBySalonId, fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchBookingRatingsBySalonId, fetchUserById, deleteBookingRating } from "../../../manager/bookings/services/bookingsService";
 import { fetchAllSalonStaff } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import toast from "react-hot-toast";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { Spin, Alert, Select } from "antd";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
@@ -109,6 +112,26 @@ export function AdminSalonBookingRatingPage() {
   const [reviewScoreFilter, setReviewScoreFilter] = useState("all");
   const [reviewSortBy, setReviewSortBy] = useState("recent");
   const [reviewFilterDate, setReviewFilterDate] = useState(null);
+
+  // Deletion state
+  const [deletingRating, setDeletingRating] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingRating) return;
+    setIsDeleting(true);
+    try {
+      await deleteBookingRating(deletingRating.bookingRatingId);
+      toast.success(language === "vi" ? "Đã xóa đánh giá thành công" : "Review deleted successfully");
+      loadReviewsForSelectedSalon();
+      loadSalons(); // refresh metrics
+      setDeletingRating(null);
+    } catch (error) {
+      toast.error(error.message || (language === "vi" ? "Không thể xóa đánh giá" : "Failed to delete review"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Load Salons list
   const loadSalons = async () => {
@@ -731,38 +754,47 @@ export function AdminSalonBookingRatingPage() {
                             className="bg-white border border-[#ea4f93]/10 hover:border-[#ea4f93]/20 shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-lg p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300"
                           >
                             {/* Upper row: User Info (circular avatar, name, subtitle & stars) */}
-                            <div className="flex items-start gap-4">
-                              {avatarUrl ? (
-                                <img
-                                  src={avatarUrl}
-                                  alt={cName}
-                                  className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-100 shadow-2xs"
-                                />
-                              ) : (
-                                <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${getAvatarColor(cName)}`}>
-                                  {getInitials(cName)}
-                                </div>
-                              )}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                {avatarUrl ? (
+                                  <img
+                                    src={avatarUrl}
+                                    alt={cName}
+                                    className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-100 shadow-2xs"
+                                  />
+                                ) : (
+                                  <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${getAvatarColor(cName)}`}>
+                                    {getInitials(cName)}
+                                  </div>
+                                )}
 
-                              <div className="space-y-1">
-                                <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
-                                <p className="text-xs text-[#a88a9f] font-semibold leading-none">
-                                  Nail Service · {dateFormatted}
-                                </p>
-                                {/* Stars */}
-                                <div className="flex items-center gap-0.5 pt-1">
-                                  {[1, 2, 3, 4, 5].map((sIndex) => (
-                                    <Star
-                                      key={sIndex}
-                                      size={15}
-                                      className={`${sIndex <= Math.round(score)
-                                        ? "text-amber-400 fill-amber-400"
-                                        : "text-slate-200"
-                                        }`}
-                                    />
-                                  ))}
+                                <div className="space-y-1">
+                                  <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
+                                  <p className="text-xs text-[#a88a9f] font-semibold leading-none">
+                                    {language === 'vi' ? 'Ngày: ' : 'Date: '} {dateFormatted}
+                                  </p>
+                                  {/* Stars */}
+                                  <div className="flex items-center gap-0.5 pt-1">
+                                    {[1, 2, 3, 4, 5].map((sIndex) => (
+                                      <Star
+                                        key={sIndex}
+                                        size={15}
+                                        className={`${sIndex <= Math.round(score)
+                                          ? "text-amber-400 fill-amber-400"
+                                          : "text-slate-200"
+                                          }`}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
+                              {/* <button
+                                onClick={() => setDeletingRating(rating)}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-rose-100 bg-white text-rose-500 hover:bg-rose-50 transition-colors"
+                                title={isVi ? "Xóa đánh giá" : "Delete review"}
+                              >
+                                <Trash2 size={14} />
+                              </button> */}
                             </div>
 
                             {/* Mid Row: Comment bubble layout matching the design reference */}
@@ -992,6 +1024,21 @@ export function AdminSalonBookingRatingPage() {
           </div>
         )}
       </div>
+
+      <ActionConfirmModal
+        open={!!deletingRating}
+        intent="danger"
+        title={isVi ? "Xóa đánh giá" : "Delete Review"}
+        subtitle={isVi ? "Bạn có chắc chắn muốn xóa đánh giá này?" : "Are you sure you want to delete this review?"}
+        description={isVi ? "Hành động này không thể hoàn tác và sẽ xóa vĩnh viễn đánh giá khỏi hệ thống." : "This action cannot be undone and will permanently remove the review from the system."}
+        confirmText={isVi ? "Xóa đánh giá" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => !isDeleting && setDeletingRating(null)}
+        loading={isDeleting}
+        highlights={deletingRating ? [deletingRating.customerName || usersMap[deletingRating.customerId]?.name || "Customer", deletingRating.overallScore ? `${deletingRating.overallScore} Stars` : ""] : []}
+      />
     </div>
   );
 }

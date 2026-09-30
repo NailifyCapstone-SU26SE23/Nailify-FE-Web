@@ -1157,11 +1157,11 @@ export function ReceptionistCustomerListPage() {
                           <img
                             src={c.avatarUrl}
                             alt=""
-                            className="w-11 h-11 rounded-xl object-cover border border-gray-200"
+                            className="w-11 h-11 rounded-full object-cover border border-gray-200"
                           />
                         ) : (
                           <div
-                            className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${getAvatarGradient(
+                            className={`w-11 h-11 rounded-full bg-gradient-to-tr ${getAvatarGradient(
                               c.userId
                             )} flex items-center justify-center text-white font-bold text-xs shadow-xs`}
                           >

@@ -145,6 +145,7 @@ function mapPromotionToDraft(promotion) {
     endDate: toInputDateTime(promotion?.endDate),
     usageLimit: promotion?.usageLimit || "",
     userLimit: promotion?.userLimit || "",
+    status: promotion?.status || "Inactive",
     imageFile: null,
   };
 }
@@ -681,6 +682,18 @@ export function PromotionDetailPage() {
                     </select>
                   </FormField>
                 ) : null}
+
+                <FormField label={language === "vi" ? "Trạng thái" : "Status"}>
+                  <select
+                    value={draft.status}
+                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                    disabled={!isEditing}
+                    className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  >
+                    <option value="Active">{language === "vi" ? "Hoạt động" : "Active"}</option>
+                    <option value="Inactive">{language === "vi" ? "Ngừng hoạt động" : "Inactive"}</option>
+                  </select>
+                </FormField>
               </div>
 
               <FormField label={t("promotionDetail.description")}>

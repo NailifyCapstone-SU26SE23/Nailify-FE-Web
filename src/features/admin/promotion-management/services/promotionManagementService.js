@@ -163,6 +163,7 @@ function buildPromotionFormData(formValues) {
   appendIfPresent(formData, "EndDate", normalizeDateTime(formValues?.endDate));
   appendIfPresent(formData, "UsageLimit", formValues?.usageLimit);
   appendIfPresent(formData, "UserLimit", formValues?.userLimit);
+  appendIfPresent(formData, "Status", normalizeString(formValues?.status));
 
   if (formValues?.imageFile) {
     formData.append("image", formValues.imageFile);

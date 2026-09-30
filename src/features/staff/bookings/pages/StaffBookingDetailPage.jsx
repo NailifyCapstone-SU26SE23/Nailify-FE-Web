@@ -1121,7 +1121,7 @@ export function StaffBookingDetailPage() {
   };
 
   const handleSelectService = (checked, serviceId) => {
-    setSelectedServiceIds(prev => 
+    setSelectedServiceIds(prev =>
       checked ? [...prev, serviceId] : prev.filter(id => id !== serviceId)
     );
   };
@@ -1136,21 +1136,21 @@ export function StaffBookingDetailPage() {
 
   const handleMultiDeleteServices = () => {
     if (selectedServiceIds.length === 0) return;
-    
+
     const serviceInfo = resolvedStaffExperience?.bookingInfo?.find(info => info.label === "Service" || info.label === "Dịch vụ");
     const breakdown = serviceInfo?.services || [];
 
     const selectedItems = breakdown.filter(service => selectedServiceIds.includes(service.id));
-    
+
     // Fallback if none found for some reason, but we need names for UI
     if (selectedItems.length === 0) {
-      setItemsToDelete([{ 
-        id: "multi-delete", 
-        name: isVi ? "các dịch vụ đã chọn" : "selected services" 
+      setItemsToDelete([{
+        id: "multi-delete",
+        name: isVi ? "các dịch vụ đã chọn" : "selected services"
       }]);
       return;
     }
-    
+
     setItemsToDelete(selectedItems);
   };
 
@@ -1163,16 +1163,16 @@ export function StaffBookingDetailPage() {
         const sId = String(item.serviceId || "");
         const nId = String(item.nailVariantId || "");
         const key = `${sId}_${nId}`;
-        
+
         const isMatch = (() => {
           const editSId = String(editingServiceQuantity.serviceId || "");
           const editNId = String(editingServiceQuantity.nailVariantId || "");
           if (!editSId && !editNId) {
-             return String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id) === String(item.bookingItemId || item.id);
+            return String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id) === String(item.bookingItemId || item.id);
           }
           return editSId === sId && editNId === nId;
         })();
-        
+
         if (!groupedItems.has(key)) {
           groupedItems.set(key, {
             nailVariantId: item.nailVariantId,
@@ -1212,25 +1212,21 @@ export function StaffBookingDetailPage() {
     setIsUpdatingBookingItems(true);
     try {
       const groupedItems = new Map();
-      
-      // Debug: log to diagnose matching
-      console.log("[doDeleteService] itemsToDelete:", itemsToDelete);
-      console.log("[doDeleteService] staffBookingDetail.bookingItems:", staffBookingDetail.bookingItems);
 
       (staffBookingDetail.bookingItems || []).forEach((item) => {
         const sId = String(item.serviceId || "");
         const nId = String(item.nailVariantId || "");
         const key = `${sId}_${nId}`;
-        
+
         const isMatch = itemsToDelete.some(delItem => {
           const dsId = String(delItem.serviceId || "");
           const dnId = String(delItem.nailVariantId || "");
           if (!dsId && !dnId) {
-             return String(delItem.bookingItemId || delItem.id) === String(item.bookingItemId || item.id);
+            return String(delItem.bookingItemId || delItem.id) === String(item.bookingItemId || item.id);
           }
           return dsId === sId && dnId === nId;
         });
-        
+
         if (isMatch) return; // Skip deleted item
 
         if (!groupedItems.has(key)) {
@@ -1409,7 +1405,7 @@ export function StaffBookingDetailPage() {
         open={itemsToDelete.length > 0}
         title={isVi ? "Xác nhận xóa" : "Confirm Delete"}
         description={
-          itemsToDelete.length > 1 
+          itemsToDelete.length > 1
             ? (isVi ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn? Hành động này không thể hoàn tác.` : `Are you sure you want to delete ${itemsToDelete.length} selected services? This action cannot be undone.`)
             : (isVi ? `Bạn có chắc chắn muốn xóa "${itemsToDelete[0]?.name}"? Hành động này không thể hoàn tác.` : `Are you sure you want to delete "${itemsToDelete[0]?.name}"? This action cannot be undone.`)
         }

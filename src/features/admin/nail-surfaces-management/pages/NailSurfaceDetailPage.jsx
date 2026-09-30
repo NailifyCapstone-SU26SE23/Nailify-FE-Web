@@ -7,7 +7,9 @@ import {
   Trash2,
   Wallet,
   X,
+  Power,
 } from "lucide-react";
+import { Select } from "antd";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -335,6 +337,25 @@ export function NailSurfaceDetailPage() {
                   />
                 </div>
               </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Trạng thái" : "Status"}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5">
+                  <Power size={14} className="shrink-0 text-rose-300" />
+                  <Select
+                    value={draft?.status || "Active"}
+                    onChange={(val) => handleFieldChange("status", val)}
+                    disabled={!isEditing}
+                    variant="borderless"
+                    className="w-full -ml-3 bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    dropdownStyle={{ borderRadius: '12px', padding: '4px' }}
+                    options={[
+                      { value: "Active", label: language === "vi" ? "Hoạt động" : "Active" },
+                      { value: "Inactive", label: language === "vi" ? "Ngừng hoạt động" : "Inactive" },
+                    ]}
+                  />
+                </div>
+              </label>
             </div>
           </section>
 
@@ -436,10 +457,10 @@ export function NailSurfaceDetailPage() {
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || surface?.name || (t("adminNailSurfacesManagement.nailSurface"))]}
-        details={[
-          { label: t("adminNailSurfacesManagement.surfaceType"), value: draft?.surfacePreset },
-          { label: t("adminNailSurfacesManagement.price"), value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
-        ]}
+      // details={[
+      //   { label: t("adminNailSurfacesManagement.surfaceType"), value: draft?.surfacePreset },
+      //   { label: t("adminNailSurfacesManagement.price"), value: draft?.price ? formatNailSurfaceCurrency(draft.price) : "--" },
+      // ]}
       />
 
       <ActionConfirmModal

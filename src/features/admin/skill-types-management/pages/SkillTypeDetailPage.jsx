@@ -77,6 +77,7 @@ export function SkillTypeDetailPage() {
         setDraft({
           name: response.name,
           description: response.description,
+          status: response.status || "Inactive",
         });
       } catch (loadError) {
         if (!isMounted) {
@@ -129,6 +130,7 @@ export function SkillTypeDetailPage() {
     setDraft({
       name: skillType.name,
       description: skillType.description,
+      status: skillType.status || "Inactive",
     });
     setError("");
     setIsEditing(true);
@@ -142,6 +144,7 @@ export function SkillTypeDetailPage() {
     setDraft({
       name: skillType.name,
       description: skillType.description,
+      status: skillType.status || "Inactive",
     });
     setError("");
     setIsEditing(false);
@@ -171,6 +174,7 @@ export function SkillTypeDetailPage() {
       setDraft({
         name: updatedSkillType.name,
         description: updatedSkillType.description,
+        status: updatedSkillType.status || "Inactive",
       });
       setIsEditing(false);
       toast.success(t("adminSkillTypes.updateSuccess", { name: updatedSkillType.name }));
@@ -305,8 +309,8 @@ export function SkillTypeDetailPage() {
             </h2>
 
             <div className="grid gap-5">
-              <label className="flex w-full items-center justify-between">
-                <div className="space-y-2.5 w-[50%]">
+              <label className="flex w-full items-center justify-between gap-4">
+                <div className="space-y-2.5 w-full">
                   <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.skillTypeName")}</span>
                   <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                     <FolderTree size={14} className="shrink-0 text-rose-300" />
@@ -319,14 +323,25 @@ export function SkillTypeDetailPage() {
                     />
                   </div>
                 </div>
-                <div className="w-[48%] rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-2.5 w-full">
+                  <span className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</span>
+                  <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
                     <ShieldCheck size={14} className="shrink-0 text-rose-300" />
-                    <div>
-                      <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-800">
-                        {language === "vi" ? (skillType?.status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : skillType?.status}
-                      </p>
+                    <div className="w-full">
+                      {isEditing ? (
+                        <select
+                          value={draft?.status || "Active"}
+                          onChange={(event) => handleFieldChange("status", event.target.value)}
+                          className="mt-1 w-full bg-transparent text-sm font-bold text-slate-800 outline-none"
+                        >
+                          <option value="Active">{language === "vi" ? "Hoạt động" : "Active"}</option>
+                          <option value="Inactive">{language === "vi" ? "Ngừng hoạt động" : "Inactive"}</option>
+                        </select>
+                      ) : (
+                        <p className="mt-1 text-sm font-bold text-slate-800">
+                          {language === "vi" ? (skillType?.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : skillType?.status}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -345,36 +360,8 @@ export function SkillTypeDetailPage() {
                   />
                 </div>
               </label>
-
-              {/* <div className="rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={14} className="shrink-0 text-rose-300" />
-                  <div>
-                    <p className="text-[13px] font-semibold text-slate-600">{t("adminSkillTypes.currentStatus")}</p>
-                    <p className="mt-1 text-sm font-bold text-slate-800">{skillType?.status}</p>
-                  </div>
-                </div>
-              </div> */}
             </div>
           </section>
-
-          {/* <aside className="space-y-4">
-            <section className="rounded-lg border border-rose-50 bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur">
-              <h2 className="mb-5 flex items-center gap-2 text-[20px] font-bold text-slate-800">
-                <div className="h-1.5 w-10 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]" />
-                {t("adminSkillTypes.summary")}
-              </h2>
-
-              <div className="space-y-3 rounded-2xl border border-rose-100 bg-[#fff8fb] p-4">
-                {summaryItems.map(([label, value]) => (
-                  <div key={label} className="flex items-start justify-between gap-3 text-sm">
-                    <span className="font-semibold text-slate-500">{label}</span>
-                    <span className="text-right font-bold text-slate-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside> */}
         </div>
       )}
 

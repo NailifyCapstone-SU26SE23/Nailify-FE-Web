@@ -1060,6 +1060,7 @@ export function NailVariantDetailPage() {
     setVariantDraft({
       name: variant?.name || "",
       image: null,
+      status: variant?.status || "Inactive",
     });
     setShowEditVariantModal(true);
   };
@@ -1067,7 +1068,7 @@ export function NailVariantDetailPage() {
   const closeEditVariantModal = () => {
     if (isSavingVariant) return;
     setShowEditVariantModal(false);
-    setVariantDraft({ name: variant?.name || "", image: null });
+    setVariantDraft({ name: variant?.name || "", image: null, status: variant?.status || "Inactive" });
   };
 
   const updateVariantDraft = (field) => (event) => {
@@ -1098,6 +1099,7 @@ export function NailVariantDetailPage() {
         imageUrl: variant.imageUrl,
         image: variantDraft.image,
         colorJson: variant.colorJson,
+        status: variantDraft.status,
       });
 
       const [detail, loadedProcedures] = await Promise.all([
@@ -1663,6 +1665,21 @@ export function NailVariantDetailPage() {
               disabled={isSavingVariant}
               className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5]"
             />
+          </label>
+
+          <label className="space-y-2 mt-4 block">
+            <span className="text-sm font-semibold text-[#5c4559]">
+              {t("adminNailsDesignManagement.status") || "Status"}
+            </span>
+            <select
+              value={variantDraft.status || "Active"}
+              onChange={updateVariantDraft("status")}
+              disabled={isSavingVariant}
+              className="h-11 w-full rounded-2xl border border-[#f4d4e2] bg-[#fffdfd] px-4 text-sm text-[#432744] outline-none transition focus:border-[#ef6bb4] disabled:cursor-not-allowed disabled:bg-[#f9f1f5]"
+            >
+              <option value="Active">{t("adminNailsDesignManagement.active") || "Active"}</option>
+              <option value="Inactive">{t("adminNailsDesignManagement.inactive") || "Inactive"}</option>
+            </select>
           </label>
 
           <div className="rounded-[18px] border border-dashed border-[#f4bfd6] bg-[#fffafb] px-4 py-4 mt-4">

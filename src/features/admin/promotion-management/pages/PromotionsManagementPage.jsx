@@ -553,11 +553,11 @@ export function PromotionsManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Promotion"
-          subtitle="This will remove the promotion from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
-          confirmText="Delete Promotion"
-          cancelText="Keep Promotion"
+          title={language === "vi" ? "Xóa khuyến mãi" : "Delete Promotion"}
+          subtitle={language === "vi" ? "Xóa khuyến mãi" : "This will remove the promotion from backend."}
+          description={language === "vi" ? `Bạn sắp xóa ${deleteTarget.name}. Hành động này không thể hoàn tác từ trang này.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
+          confirmText={language === "vi" ? "Xóa khuyến mãi" : "Delete Promotion"}
+          cancelText={language === "vi" ? "Giữ khuyến mãi" : "Keep Promotion"}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeletePromotion}
