@@ -4849,7 +4849,7 @@ export const translations = {
       description: "Quản lý các chương trình khuyến mãi, mã giảm giá và chiến dịch đang chạy.",
       btnCreate: "Tạo khuyến mãi mới",
       filter: {
-        searchPlaceholder: "Tìm khuyến mãi theo tên, mô tả..."
+        searchPlaceholder: "Tìm khuyến mãi theo tên..."
       },
       table: {
         promotion: "Khuyến mãi",

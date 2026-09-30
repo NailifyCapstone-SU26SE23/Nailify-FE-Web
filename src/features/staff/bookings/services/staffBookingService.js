@@ -185,6 +185,7 @@ export async function fetchServiceCatalog(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -241,7 +242,7 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
   const {
     pageNumber = 1,
     pageSize = 100,
-    name,
+    name
   } = filters ?? {};
 
   const response = await axiosClient.get("/NailShapes", {
@@ -250,6 +251,7 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -278,20 +280,20 @@ export async function fetchStaffBuilderShapeMethodConfigs(nailShapeId) {
   const items = Array.isArray(data) ? data : (data?.items || []);
 
   return items.map((item) => ({
-      shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
-      nailShapeId: Number(item?.nailShapeId || 0),
-      name: String(item?.name || "").trim(),
-      price: Number(item?.price || 0),
-      duration: Number(item?.duration || 0),
-      status: String(item?.status || "").trim(),
-    }));
+    shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
+    nailShapeId: Number(item?.nailShapeId || 0),
+    name: String(item?.name || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+    status: String(item?.status || "").trim(),
+  }));
 }
 
 export async function fetchStaffBuilderNailSurfaces(filters = {}) {
   const {
     pageNumber = 1,
     pageSize = 100,
-    name,
+    name
   } = filters ?? {};
 
   const response = await axiosClient.get("/NailSurfaces", {
@@ -300,6 +302,7 @@ export async function fetchStaffBuilderNailSurfaces(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -864,7 +867,7 @@ export async function fetchAllCustomers(pageNumber = 1, pageSize = 1000, searchT
     headers: getAuthHeaders(),
     params
   });
-  
+
   if (response?.data?.isSucceeded) {
     return response.data.data.items || [];
   }
@@ -1376,11 +1379,11 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.totalPriceLabel ||
     booking?.total ||
     formatCurrency(booking?.totalPrice);
-    
+
   const originalServicePriceVal = Number(booking?.price || booking?.totalPrice || 0);
   const discountAmountVal = Math.abs(Number(booking?.discount || 0));
-  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0 
-    ? booking.discounts.map(d => d.name || d.type).join(", ") 
+  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0
+    ? booking.discounts.map(d => d.name || d.type).join(", ")
     : "Discount";
   const discountValue = discountAmountVal > 0 ? `-${formatCurrency(discountAmountVal)}` : "0 VND";
 

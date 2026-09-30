@@ -304,8 +304,7 @@ export function StaffUpdatePage() {
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
-        success: true,
-        message: `${[formData.firstName, formData.lastName].filter(Boolean).join(" ")} has been updated successfully.`,
+        success: true
       });
     } catch (err) {
       console.error("Error updating artist:", err);

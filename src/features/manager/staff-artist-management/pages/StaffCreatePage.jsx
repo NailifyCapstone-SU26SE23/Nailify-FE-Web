@@ -207,8 +207,7 @@ export function StaffCreatePage() {
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
-        success: true,
-        message: `${formData.firstName} ${formData.lastName} has been added successfully.`,
+        success: true
       });
     } catch (err) {
       console.error("Error creating artist:", err);

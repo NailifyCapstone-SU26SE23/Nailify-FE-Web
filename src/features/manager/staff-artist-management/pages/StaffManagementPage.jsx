@@ -1428,8 +1428,10 @@ export function StaffManagementPage() {
 
 
   function mapApiArtistToUiFormat(apiArtist) {
-    const fullName = API
-    apiArtist.account?.fullName ||
+    console.log("Mapping artist:", apiArtist);
+
+    const fullName =
+      apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
         ? `${apiArtist.firstName} ${apiArtist.lastName}`
         : apiArtist.fullName || apiArtist.name || "Staff Artist");
@@ -1458,7 +1460,7 @@ export function StaffManagementPage() {
       email: apiArtist.account?.email || apiArtist.email || "",
       phone: apiArtist.account?.phone || apiArtist.phone || "",
     };
-  };
+  }
 
   const fetchArtistDetail = async (artistId) => {
     try {

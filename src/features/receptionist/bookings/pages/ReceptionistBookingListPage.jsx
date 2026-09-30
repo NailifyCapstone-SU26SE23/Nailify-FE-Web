@@ -73,15 +73,19 @@ function calculateEndTime(startTime, durationMinutes) {
   let hours = parseInt(parts[0], 10);
   let minutes = parseInt(parts[1], 10);
 
+
   if (isNaN(hours) || isNaN(minutes)) return "--";
+
 
   const totalDur = durationMinutes ? parseInt(durationMinutes, 10) : 0;
   if (isNaN(totalDur)) return formatTime(startTime);
+
 
   minutes += totalDur;
   hours += Math.floor(minutes / 60);
   minutes = minutes % 60;
   hours = hours % 24;
+
 
   const hh = String(hours).padStart(2, '0');
   const mm = String(minutes).padStart(2, '0');
@@ -235,11 +239,14 @@ export function ReceptionistBookingListPage() {
     const fetchEndTimes = async () => {
       if (!bookings || bookings.length === 0) return;
 
+
       const newEndTimes = { ...realEndTimes };
       let changed = false;
 
+
       for (const b of bookings) {
         if (!b.bookingItems || b.bookingItems.length === 0 || newEndTimes[b.bookingId]) continue;
+
 
         let sumDuration = 0;
         for (const item of b.bookingItems) {
@@ -258,8 +265,10 @@ export function ReceptionistBookingListPage() {
         }
       }
 
+
       if (changed) setRealEndTimes(newEndTimes);
     };
+
 
     fetchEndTimes();
   }, [bookings]);
@@ -749,9 +758,23 @@ export function ReceptionistBookingListPage() {
           </div>
 
           <div className="mt-4 rounded-lg border border-[#F7D8E6] bg-white p-4">
-            <div className="grid gap-3 grid-cols-2">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+              <div className="w-full lg:flex-1 lg:min-w-[200px]">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {language === "vi" ? "Tìm kiếm" : "Search"}
+                </p>
+                <Input
+                  size="large"
+                  prefix={<Search size={17} color="#D47AA8" />}
+                  placeholder={language === "vi" ? "Tìm khách hàng, thợ..." : "Search customer, staff..."}
+                  value={draftQuery}
+                  onChange={(e) => setDraftQuery(e.target.value)}
+                  allowClear
+                />
+              </div>
 
-              <div>
+              {/* Date Range */}
+              <div className="w-full lg:flex-1 lg:min-w-[150px]">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
                   {t("receptionist.bookings.dateFrom")} - {t("receptionist.bookings.dateTo")}
                 </p>
@@ -768,11 +791,28 @@ export function ReceptionistBookingListPage() {
                 />
               </div>
 
-              <div>
+              {/* Staff */}
+              <div className="w-full lg:w-[200px] lg:shrink-0">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {language === "vi" ? "Nhân viên" : "Staff"}
+                </p>
+                <Select
+                  value={staffFilter}
+                  onChange={setStaffFilter}
+                  size="large"
+                  className="w-full"
+                  options={staffOptions.map((item) => ({
+                    value: item,
+                    label: item === "All staff" ? t("receptionist.bookings.allStaff") : item,
+                  }))}
+                />
+              </div>
+
+              {/* Status */}
+              <div className="w-full lg:w-[150px] lg:shrink-0">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
                   {language === "vi" ? "Trạng thái" : "Status"}
                 </p>
-
                 <Select
                   value={statusFilter}
                   onChange={setStatusFilter}
@@ -784,33 +824,9 @@ export function ReceptionistBookingListPage() {
                   }))}
                 />
               </div>
-            </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-
-              <Select
-                value={staffFilter}
-                onChange={setStaffFilter}
-                size="large"
-                options={staffOptions.map((item) => ({
-                  value: item,
-                  label:
-                    item === "All staff"
-                      ? t("receptionist.bookings.allStaff")
-                      : item,
-                }))}
-              />
-
-              <Input
-                size="large"
-                prefix={<Search size={17} color="#D47AA8" />}
-                placeholder={language === "vi" ? "Tìm kiếm khách hàng, thợ làm móng..." : "Search customer,staff artist..."}
-                value={draftQuery}
-                onChange={(e) => setDraftQuery(e.target.value)}
-                allowClear
-              />
-
-              <div className="flex gap-2">
+              {/* Actions */}
+              <div className="flex w-full gap-2 lg:w-auto lg:shrink-0">
                 <Button
                   type="primary"
                   size="large"
@@ -860,10 +876,6 @@ export function ReceptionistBookingListPage() {
               </div>
             </div>
           </div>
-
-
-
-
 
           {isLoading ? (
             <div className="mt-6 flex min-h-56 items-center justify-center rounded-lg border border-[#f7dce8] bg-[#fffafd]">
