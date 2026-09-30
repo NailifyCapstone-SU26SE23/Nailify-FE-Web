@@ -164,6 +164,7 @@ export function NailShapeDetailPage() {
         setShape(response);
         setDraft({
           name: response.name,
+          status: response.status || "Inactive",
           image: null,
         });
         setImagePreview(response.imageUrl || "");
@@ -239,6 +240,7 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
+      status: shape.status || "Inactive",
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -253,6 +255,7 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
+      status: shape.status || "Inactive",
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -286,6 +289,7 @@ export function NailShapeDetailPage() {
       setShape(updatedShape);
       setDraft({
         name: updatedShape.name,
+        status: updatedShape.status || "Inactive",
         image: null,
       });
       setImagePreview(updatedShape.imageUrl || imagePreview);
@@ -420,6 +424,21 @@ export function NailShapeDetailPage() {
                     disabled={!isEditing}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailsDesignManagement.status") || "Status"}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <select
+                    value={draft?.status || "Active"}
+                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  >
+                    <option value="Active">{t("adminNailsDesignManagement.active") || "Active"}</option>
+                    <option value="Inactive">{t("adminNailsDesignManagement.inactive") || "Inactive"}</option>
+                  </select>
                 </div>
               </label>
 

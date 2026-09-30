@@ -585,3 +585,23 @@ export async function fetchLoyaltyTiers() {
   }
 }
 
+
+export async function deleteBookingRating(ratingId) {
+  const normalizedId = String(ratingId || "").trim();
+
+  if (!normalizedId) {
+    throw new Error("Rating ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.delete(`/BookingRatings/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return unwrapResponse(response, "Failed to delete booking rating.");
+  } catch (error) {
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete booking rating.";
+    console.error("Error deleting booking rating:", error?.response?.data || error);
+    throw new Error(errorMessage, { cause: error });
+  }
+}

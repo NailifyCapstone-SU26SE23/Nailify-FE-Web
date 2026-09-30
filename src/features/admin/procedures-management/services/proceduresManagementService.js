@@ -159,7 +159,17 @@ function buildProcedurePayload(formValues, includeStatus = false) {
 }
 
 export async function createAdminProcedure(formValues) {
-  const response = await axiosClient.post("/Procedures", buildProcedurePayload(formValues), {
+  const payload = buildProcedurePayload(formValues);
+
+  const response = await axiosClient.post("/Procedures", null, {
+    params: {
+      Name: payload.name ?? "",
+      Description: payload.description ?? "",
+      Duration: Number(payload.duration) || 0,
+      IsRequired: Boolean(payload.isRequired),
+      IsMainStep: Boolean(payload.isMainStep),
+      ProcedureType: payload.procedureType || "Common",
+    },
     headers: getAuthHeaders(),
   });
 

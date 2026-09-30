@@ -4967,7 +4967,7 @@ export const translations = {
         reschedule: "Đổi lịch hẹn",
         editBooking: "Sửa lịch hẹn",
         assignToSeat: "Xếp chỗ ngồi",
-        reassignArtist: "Phân công lại thợ",
+        reassignArtist: "Phân công lại thợ chính",
         changeStaff: "Thay đổi nhân viên",
         moveSchedule: "Đổi lịch hẹn",
         rescheduleTime: "Thay đổi thời gian",

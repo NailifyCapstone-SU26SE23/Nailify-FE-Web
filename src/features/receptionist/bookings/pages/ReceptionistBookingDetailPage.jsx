@@ -1060,24 +1060,24 @@ export function ReceptionistBookingDetailPage() {
         </div>
       ),
     },
-    {
-      title: isVi ? "Thợ làm móng" : "Assigned Artist",
-      key: "artist",
-      render: (_, row) => (
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
-            {(row.artist)
-              .split(" ")
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join("")
-              .toUpperCase()}
-          </div>
-          <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
-        </div>
-      ),
-    },
+    // {
+    //   title: isVi ? "Thợ làm móng" : "Assigned Artist",
+    //   key: "artist",
+    //   render: (_, row) => (
+    //     <div className="flex items-center gap-2">
+    //       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
+    //         {(row.artist)
+    //           .split(" ")
+    //           .filter(Boolean)
+    //           .slice(0, 2)
+    //           .map((part) => part[0])
+    //           .join("")
+    //           .toUpperCase()}
+    //       </div>
+    //       <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
+    //     </div>
+    //   ),
+    // },
     {
       title: isVi ? "Thời gian" : "Duration",
       dataIndex: "duration",
@@ -1532,7 +1532,7 @@ export function ReceptionistBookingDetailPage() {
                         <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist")}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ làm móng chính" : "Preferred Nail Artist"}</p>
                         <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist}</p>
                       </div>
                     </div>
@@ -1734,7 +1734,7 @@ export function ReceptionistBookingDetailPage() {
 
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
-                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
+                  <span className="font-medium text-[#9E8497]">{language === "vi" ? "Thợ chính" : "Main Staff"}</span>
                   <span className="font-bold text-[#2B182B]">{booking.artistName}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">

@@ -30,6 +30,8 @@ const getRoleLabel = (role, t) => {
     case "staff":
     case "staff_artist":
       return t("nailArtist");
+    case "customer":
+      return t("customer");
     default:
       return role;
   }

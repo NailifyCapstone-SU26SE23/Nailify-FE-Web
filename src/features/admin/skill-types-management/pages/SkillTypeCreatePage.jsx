@@ -151,7 +151,7 @@ export function SkillTypeCreatePage() {
                   rows={5}
                   value={formValues.description}
                   onChange={(event) => handleFieldChange("description", event.target.value)}
-                  placeholder="Enter skill type description"
+                  placeholder={language === "vi" ? "Nhập mô tả loại kỹ năng" : "Enter skill type description"}
                   className="w-full resize-none bg-transparent text-[14px] font-medium text-slate-800 outline-none placeholder:text-rose-300"
                 />
               </div>

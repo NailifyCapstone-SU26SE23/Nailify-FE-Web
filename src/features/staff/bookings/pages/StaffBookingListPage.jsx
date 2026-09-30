@@ -621,7 +621,7 @@ export function StaffBookingListPage() {
       render: (_, booking) => <span className="text-[#6b5668] text-sm">{booking.uiBranch}</span>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</span>,
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thợ chính" : "Main Staff"}</span>,
       key: "staff",
       sorter: (a, b) => (a.staffName || "").localeCompare(b.staffName || ""),
       render: (_, booking) => <span className="text-[#8a7082] text-sm">{booking.staffName}</span>

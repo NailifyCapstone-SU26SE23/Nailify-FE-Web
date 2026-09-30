@@ -211,7 +211,7 @@ export default function ChairManagementPage() {
         </div>
       </div>
 
-      <div className="p-8 mx-auto w-full max-w-7xl">
+      <div className="py-8 mx-auto w-full max-w-7xl">
         <div className="bg-white/70 backdrop-blur-md border border-white/60 rounded-lg shadow-xl shadow-pink-500/5 p-8">
           {salons.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
