@@ -77,7 +77,6 @@ const formatVNDate = (date) => {
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
 const getStatusColor = (status) => {
   switch (status) {
     case 'Pending':
@@ -709,7 +708,7 @@ export function ReceptionistBookingDetailPage() {
     const itemMap = new Map();
 
     rawItems.forEach((item, index) => {
-      const sName = item.serviceName || item.nailVariantName ;
+      const sName = item.serviceName || item.nailVariantName;
       const vName = item.nailVariantName || item.customerNailName || "";
       const uPrice = Number(item.price) || 0;
       const uDur = (item.bookingItemId && bookingItemDurations[item.bookingItemId]) ? bookingItemDurations[item.bookingItemId] : (Number(item.duration) || 0);
@@ -767,7 +766,9 @@ export function ReceptionistBookingDetailPage() {
     });
 
   }, [language, booking]);
-
+  const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
+  const CAN_EDIT_SERVICE_STATUSES = ["Pending", "Approved", "CheckedIn"];
+  const canEditServices = CAN_EDIT_SERVICE_STATUSES.includes(booking?.status);
   const price = formatCurrency(booking?.price);
   const discount = formatCurrency(booking?.discount);
   const depositPaid = formatCurrency(booking?.amountPaid);
@@ -1147,17 +1148,19 @@ export function ReceptionistBookingDetailPage() {
       title: (
         <div className="flex items-center gap-2 ">
           {isVi ? "Thao tác" : "Action"}
-          <Checkbox
-            checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
-            indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedServiceIds(serviceRows.map(r => r.id));
-              } else {
-                setSelectedServiceIds([]);
-              }
-            }}
-          />
+          {canEditServices && (
+            <Checkbox
+              checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
+              indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedServiceIds(serviceRows.map(r => r.id));
+                } else {
+                  setSelectedServiceIds([]);
+                }
+              }}
+            />
+          )}
         </div>
       ),
       key: "action",
@@ -1165,23 +1168,25 @@ export function ReceptionistBookingDetailPage() {
         <div className="flex items-center gap-2">
           <ActionDropdown
             items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi)}
-            buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
+            buttonClassName="..."
             label={isVi ? "Thao tác" : "Actions"}
           />
-          <Checkbox
-            checked={selectedServiceIds.includes(row.id)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedServiceIds(prev => [...prev, row.id]);
-              } else {
-                setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
-              }
-            }}
-          />
+          {canEditServices && (
+            <Checkbox
+              checked={selectedServiceIds.includes(row.id)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedServiceIds(prev => [...prev, row.id]);
+                } else {
+                  setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
+                }
+              }}
+            />
+          )}
         </div>
       ),
     },
-  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows]);
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows, canEditServices]);
 
   const totalItemsDuration = booking?.bookingItems?.reduce((acc, item) => acc + (Number(item.duration) || 0) * (item.quantity || 1), 0) || booking?.totalDuration;
   const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
@@ -1378,29 +1383,32 @@ export function ReceptionistBookingDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
-            >
-              <QrCode size={14} />
-              {t("receptionist.dashboard.scanQr") || "QR Code"}
-            </button>
+            {(booking.status == "Approved" &&
+              <button
+                type="button"
+                onClick={() => setIsQrOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
+              >
+                <QrCode size={14} />
+                {t("receptionist.dashboard.scanQr") || "QR Code"}
+              </button>
+            )}
 
-            {/* Primary Gradient Quick Check-In Button */}
-            <button
-              type="button"
-              onClick={() => void handlePrimaryHeaderAction()}
-              disabled={isPrimaryHeaderActionDisabled}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
-                <LoaderCircle size={14} className="animate-spin" />
-              ) : (
-                <SquareCheckBig size={14} />
-              )}
-              {primaryHeaderAction}
-            </button>
+            {(booking.status == "Approved" || booking.status == "ServiceCompleted" &&
+              <button
+                type="button"
+                onClick={() => void handlePrimaryHeaderAction()}
+                disabled={isPrimaryHeaderActionDisabled}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isManualCheckInSubmitting || isCheckoutSubmitting ? (
+                  <LoaderCircle size={14} className="animate-spin" />
+                ) : (
+                  <SquareCheckBig size={14} />
+                )}
+                {primaryHeaderAction}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1414,9 +1422,10 @@ export function ReceptionistBookingDetailPage() {
               : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
                 : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
                   : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
-                    : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
-                      : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
-                        : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
+                    : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
+                      : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
+                        : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                          : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy' : booking.status)
               : booking.status) : null}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -1460,37 +1469,6 @@ export function ReceptionistBookingDetailPage() {
                           {customerPoints} pts
                         </span>
                       )}
-                    </div>
-
-                    {/* Quick Actions rounded icon buttons */}
-                    <div className="flex items-center gap-2 lg:items-end shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("Call Customer")}
-                        title="Call Customer"
-                        className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <Phone size={16} />
-                        <span className="hidden sm:inline lg:hidden">Call</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("Send SMS / Chat")}
-                        title="Send SMS / Chat"
-                        className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <MessageCircleMore size={16} />
-                        <span className="hidden sm:inline lg:hidden">SMS</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("View VTO History")}
-                        title="View VTO Try-On History"
-                        className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <Sparkles size={16} />
-                        <span className="hidden sm:inline lg:hidden">VTO</span>
-                      </button>
                     </div>
                   </div>
 
@@ -1588,6 +1566,7 @@ export function ReceptionistBookingDetailPage() {
             subtitle={t("receptionist.bookings.desc") || "Scheduled treatments & selected nail designs"}
             badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
             headerAction={
+              ["Pending", "Approved", "CheckedIn"].includes(booking.status) &&
               selectedServiceIds.length > 0 && (
                 <Button
                   danger
@@ -1613,69 +1592,68 @@ export function ReceptionistBookingDetailPage() {
             />
           </DetailCard>
 
-          {/* 5. FINANCIAL & PAYMENT SUMMARY (BOTTOM BLOCK) */}
-          <DetailCard
-            title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
-            subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
-          // badge="API Validated"
-          >
-            <div className="grid gap-5">
-              <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
-                    <span className="font-bold text-[#2B182B]">{price}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
-                    <span className="font-bold text-[#EF4444]">{discount}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
-                    <span className="font-bold text-[#2B182B]">{depositPaid}</span>
-                  </div>
-                  {amountDue > 0 && (
-
+          {!(isWarrantyBooking && price === "0 VND") && (
+            <DetailCard
+              title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
+              subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
+            >
+              <div className="grid gap-5">
+                <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
+                  <div className="space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
-                      <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
+                      <span className="font-bold text-[#2B182B]">{price}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
+                      <span className="font-bold text-[#EF4444]">{discount}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
+                      <span className="font-bold text-[#2B182B]">{depositPaid}</span>
+                    </div>
+                    {amountDue > 0 && booking.status != "Cancelled" && booking.status != "Rejected" && (
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
+                        <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {amountDue > 0 && booking.status != "Cancelled" && booking.status != "Rejected" && (
+                    <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">
+                          {t("receptionist.payments.totalAmount") || "Total Amount Payable"}
+                        </p>
+                        <p className="text-3xl font-bold text-[#047857] leading-none mt-1">
+                          {remainingBalance}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {amountDue > 0 && (
-                  <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">
-                        {t("receptionist.payments.totalAmount") || "Total Amount Payable"}
-                      </p>
-                      <p className="text-3xl font-bold text-[#047857] leading-none mt-1">
-                        {remainingBalance}
-                      </p>
-                    </div>
-                  </div>
+                {booking.status != "Completed" && booking.status != "Cancelled" && booking.status != "Rejected" && booking.status != "Repaired" && (
+                  <button
+                    type="button"
+                    onClick={handleCheckout}
+                    disabled={!actionAvailability.canCheckout || isCheckoutSubmitting}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCheckoutSubmitting ? (
+                      <LoaderCircle size={16} className="animate-spin" />
+                    ) : (
+                      <CreditCard size={16} />
+                    )}
+                    {isCheckoutSubmitting
+                      ? (isVi ? "Đang xử lý..." : "Processing...")
+                      : (t("receptionist.payments.checkoutTitle") || "Checkout")}
+                  </button>
                 )}
               </div>
-
-              {booking.status != "Completed" && booking.status != "Cancelled" && (
-                <button
-                  type="button"
-                  onClick={handleCheckout}
-                  disabled={!actionAvailability.canCheckout || isCheckoutSubmitting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCheckoutSubmitting ? (
-                    <LoaderCircle size={16} className="animate-spin" />
-                  ) : (
-                    <CreditCard size={16} />
-                  )}
-                  {isCheckoutSubmitting
-                    ? (isVi ? "Đang xử lý..." : "Processing...")
-                    : (t("receptionist.payments.checkoutTitle") || "Checkout")}
-                </button>
-              )}
-            </div>
-          </DetailCard>
+            </DetailCard>
+          )}
 
           {/* 6. RECEPTIONIST QUICK ACTION CENTER (BOTTOM GRID) */}
           <DetailCard
@@ -1719,10 +1697,11 @@ export function ReceptionistBookingDetailPage() {
                       String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
                         : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
                           : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
-                            : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
-                              : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
-                                : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
-                                  : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
+                            : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
+                              : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
+                                : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
+                                  : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                                    : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
                 </span>
               </div>
 
@@ -2049,7 +2028,7 @@ export function ReceptionistBookingDetailPage() {
           );
 
           return (
-            <div className="bg-white p-6 md:p-7 relative font-sans">
+            <div className="bg-white relative font-sans">
               {/* Ambient Top Glow */}
               <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-[#E84F93]/10 blur-3xl" />
 
@@ -2060,8 +2039,14 @@ export function ReceptionistBookingDetailPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}</h3>
-                    <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn" : "Actual service and nail art details selected by the customer"}</p>
+                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">
+                      {language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}
+                    </h3>
+                    <p className="text-xs text-[#9E8497] font-medium">
+                      {language === "vi"
+                        ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn"
+                        : "Actual service and nail art details selected by the customer"}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -2073,144 +2058,170 @@ export function ReceptionistBookingDetailPage() {
                 </button>
               </div>
 
-              {/* Service Hero Banner Card */}
-              <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
-                    {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
-                  </span>
-                  <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
-                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
-                  </span>
-                </div>
-                <h3 className="mt-2 text-base font-bold text-[#2B182B]">
-                  item?.serviceName || selectedServiceRow.service || item?.nailVariantName
-                </h3>
-              </div>
-
-              {/* Metadata Details Unified Single Block Card */}
-              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
-                  <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
-                </h4>
-
-                <div className="divide-y divide-[#F3E2EC]/70 text-xs">
-                  {/* Tên mẫu nail */}
-                  {Boolean(item?.nailVariantName) && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}</span>
-                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
+              {/* Two-Column Body: Left = Info, Right = Images */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* ─── LEFT COLUMN: Service Info ─── */}
+                <div className="space-y-5">
+                  {/* Service Hero Banner Card */}
+                  <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
+                        {isNail ? (
+                          <span className="flex items-center gap-1">
+                            <Sparkles size={12} /> {language === "vi" ? "Dịch Vụ Móng Nail" : "Nail Services"}
+                          </span>
+                        ) : (
+                          <span>{language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}</span>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#E84F93]">
+                        <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
+                      </span>
                     </div>
-                  )}
+                    <h3 className="mt-2 text-base font-bold text-[#2B182B]">
+                      {item?.serviceName || selectedServiceRow.service || item?.nailVariantName}
+                    </h3>
+                  </div>
 
-                  {/* Mẫu móng khách yêu cầu (Only shown if present) */}
-                  {Boolean(item?.customerNailName) && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}</span>
-                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
-                    </div>
-                  )}
+                  {/* Metadata Details Block */}
+                  <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
+                      <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
+                    </h4>
 
-                  {/* Tên dịch vụ (Only shown if no nailVariantName or if different) */}
-                  {Boolean(
-                    (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
-                    (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
-                  ) && (
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                        <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Dịch Vụ" : "Service Name"}</span>
-                        <span className="font-bold text-[#2B182B] sm:text-right">
-                          {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
-                        </span>
-                      </div>
-                    )}
-
-                  {/* Thời gian làm dự kiến */}
-                  {Boolean(selectedServiceRow.duration) && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
-                    </div>
-                  )}
-
-                  {/* Số lượng */}
-                  {Boolean(item?.quantity && item.quantity > 1) && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Số Lượng Suất" : "Quantity"}</span>
-                      <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
-                    </div>
-                  )}
-
-                  {/* Giá dịch vụ */}
-                  {item?.price !== undefined && item?.price !== null && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Giá Dịch Vụ" : "Service Price"}</span>
-                      <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
-                    </div>
-                  )}
-
-                  {/* Thợ đảm nhận */}
-                  {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Artist"}</span>
-                      <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Attached Images Section */}
-              {hasImages && (
-                <div className="mt-5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
-                    <span><ImageIcon size={12} /></span> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
-                  </h4>
-                  <div className="flex flex-wrap items-center justify-center gap-6">
-                    {sanitizeImageUrl(item?.nailVariantImageUrl) && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                          {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
-                        </span>
-                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
-                          <Image
-                            src={sanitizeImageUrl(item?.nailVariantImageUrl)}
-                            alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
-                            height={220}
-                            className="object-cover rounded-xl"
-                            crossOrigin="anonymous"
-                          />
+                    <div className="divide-y divide-[#F3E2EC]/70 text-xs">
+                      {Boolean(item?.nailVariantName) && (
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}
+                          </span>
+                          <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {sanitizeImageUrl(item?.customerNailImageUrl) && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
-                          {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
-                        </span>
-                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
-                          <Image
-                            src={sanitizeImageUrl(item?.customerNailImageUrl)}
-                            alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
-                            height={220}
-                            className="object-cover rounded-xl"
-                            crossOrigin="anonymous"
-                          />
+                      {Boolean(item?.customerNailName) && (
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}
+                          </span>
+                          <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                      {Boolean(
+                        (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
+                        (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
+                      ) && (
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                            <span className="font-bold text-[#9E8497]">
+                              {language === "vi" ? "Tên Dịch Vụ" : "Service Name"}
+                            </span>
+                            <span className="font-bold text-[#2B182B] sm:text-right">
+                              {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
+                            </span>
+                          </div>
+                        )}
+
+                      {Boolean(selectedServiceRow.duration) && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
+                        </div>
+                      )}
+
+                      {Boolean(item?.quantity && item.quantity > 1) && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Số Lượng Suất" : "Quantity"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
+                        </div>
+                      )}
+
+                      {item?.price !== undefined && item?.price !== null && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Giá Dịch Vụ" : "Service Price"}
+                          </span>
+                          <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
+                        </div>
+                      )}
+
+                      {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Thợ Đảm Nhận" : "Artist"}
+                          </span>
+                          <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Footer Close Button */}
-              <div className="mt-6 flex justify-end border-t border-[#F3E2EC] pt-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedServiceRow(null)}
-                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
-                >
-                  {language === "vi" ? "Đóng" : "Close"}
-                </button>
+                {/* ─── RIGHT COLUMN: Nail Images ─── */}
+                <div className="h-full">
+                  {hasImages ? (
+                    <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5 h-full flex flex-col">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-4 text-center flex items-center justify-center gap-1.5">
+                        <ImageIcon size={12} /> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
+                      </h4>
+
+                      <div className="flex flex-col items-center justify-center gap-5 flex-1">
+                        {sanitizeImageUrl(item?.nailVariantImageUrl) && (
+                          <div className="flex flex-col items-center gap-2 w-full">
+                            <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
+                              {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                            </span>
+                            <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                              <Image
+                                src={sanitizeImageUrl(item?.nailVariantImageUrl)}
+                                alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                                height={220}
+                                className="object-cover rounded-xl"
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {sanitizeImageUrl(item?.customerNailImageUrl) && (
+                          <div className="flex flex-col items-center gap-2 w-full">
+                            <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
+                              {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                            </span>
+                            <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                              <Image
+                                src={sanitizeImageUrl(item?.customerNailImageUrl)}
+                                alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                                height={220}
+                                className="object-cover rounded-xl"
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Empty-state placeholder so the two columns stay balanced */
+                    <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-8 flex flex-col items-center justify-center text-center h-full min-h-[280px]">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF0F6] text-[#E84F93] mb-3">
+                        <ImageIcon size={22} />
+                      </div>
+                      <p className="text-xs font-bold text-[#2B182B]">
+                        {language === "vi" ? "Chưa có hình ảnh mẫu móng" : "No nail style images"}
+                      </p>
+                      <p className="text-[11px] text-[#9E8497] font-medium mt-1 max-w-[220px]">
+                        {language === "vi"
+                          ? "Khách hàng chưa tải lên hoặc chọn mẫu móng nào cho dịch vụ này."
+                          : "The customer hasn't uploaded or selected a nail design for this service."}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -2824,6 +2835,6 @@ export function ReceptionistBookingDetailPage() {
         loading={isDeletingService}
       />
 
-    </section>
+    </section >
   );
 }

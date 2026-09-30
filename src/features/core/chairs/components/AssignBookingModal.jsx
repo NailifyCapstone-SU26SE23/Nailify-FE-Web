@@ -242,7 +242,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
             { label: language === "vi" ? "Đang thực hiện" : "InProgress", value: 'InProgress' },
             { label: language === "vi" ? "Đã hoàn thành dịch vụ" : "ServiceCompleted", value: 'ServiceCompleted' },
             { label: language === "vi" ? "Đã hoàn thành" : "Completed", value: 'Completed' },
-            { label: language === "vi" ? "Đã sửa chữa" : "Repaired", value: 'Repaired' },
+            { label: language === "vi" ? "Đã bảo hành" : "Repaired", value: 'Repaired' },
             { label: language === "vi" ? "Đang chờ sắp xếp lại" : "ReschedulePending", value: 'ReschedulePending' },
             { label: language === "vi" ? "Đang đề xuất sắp xếp lại" : "RescheduleSuggested", value: 'RescheduleSuggested' },
           ]}

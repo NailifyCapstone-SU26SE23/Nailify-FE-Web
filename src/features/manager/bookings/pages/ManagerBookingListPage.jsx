@@ -248,7 +248,7 @@ function StatusPill({ status, compact = false }) {
       case "RescheduleSuggested":
         return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
       case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+        return language === "vi" ? "Đã bảo hành" : "Repaired";
       default:
         return s;
     }

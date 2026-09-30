@@ -332,7 +332,7 @@ export function StaffBookingListPage() {
       case "RescheduleSuggested":
         return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
       case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+        return language === "vi" ? "Đã bảo hành" : "Repaired";
       case "All":
         return language === "vi" ? "Tất cả" : "All";
       default:

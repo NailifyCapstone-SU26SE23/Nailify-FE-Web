@@ -163,7 +163,7 @@ function formatStatusDisplay(status, language) {
       return language === "vi" ? "Đã xác nhận" : "Confirmed";
     case "Completed":
     case "ServiceCompleted":
-      return language === "vi" ? "Đã hoàn thành" : "Completed";
+      return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
     case "Rejected":
       return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
@@ -174,7 +174,7 @@ function formatStatusDisplay(status, language) {
     case "RescheduleSuggested":
       return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
     case "Repaired":
-      return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      return language === "vi" ? "Đã bảo hành" : "Repaired";
     default:
       return status;
   }
@@ -433,6 +433,8 @@ export function ManagerBookingDetailPage() {
     );
   }, [customer, loyaltyTiers]);
 
+  const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
+
   const mapBooking = useCallback((rawBooking) => {
     const artistName = getArtistDisplayName(rawBooking);
     const artistId =
@@ -690,9 +692,14 @@ export function ManagerBookingDetailPage() {
                   {t("manager.bookings.bookingDetails")}
                 </h1>
 
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-md font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
+                </span>
+
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3.5 py-1 text-md font-bold text-purple-700 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {isWarrantyBooking && (language === "vi" ? "Đơn bảo hành" : "Nail Maintenance")}
                 </span>
               </div>
             </div>
@@ -727,7 +734,7 @@ export function ManagerBookingDetailPage() {
               )}
 
               {/* Propose Reschedule Button */}
-              {!isFinalStatus && (
+              {!isFinalStatus && booking?.status !== "CheckedIn" && booking?.status !== "InProgress" && booking?.status !== "Repaired" && (
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -741,11 +748,7 @@ export function ManagerBookingDetailPage() {
                 </motion.button>
               )}
 
-              {!isFinalStatus &&
-                booking?.status !== "CheckedIn" &&
-                booking?.status !== "Checked In" &&
-                booking?.status !== "InProgress" &&
-                booking?.status !== "In Progress" ? (
+              {!isFinalStatus && booking?.status !== "CheckedIn" && booking?.status !== "InProgress" && booking?.status !== "Repaired" ? (
                 <>
                   {(booking?.status === "Pending") && (
                     <motion.button
@@ -1030,27 +1033,11 @@ export function ManagerBookingDetailPage() {
                       dataIndex: 'serviceName',
                       key: 'serviceName',
                       render: (text, item) => (
-                        <div className="flex items-start gap-4">
-                          {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
-                            <div
-                              className="group relative w-[72px] h-[72px] rounded-xl border border-[#F3D6E5] overflow-hidden cursor-pointer hover:border-[#E84F93] transition-colors shrink-0 shadow-sm"
-                              onClick={() => setActiveImageModalUrl((item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, ''))}
-                            >
-                              <img
-                                src={(item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, '')}
-                                alt="Design"
-                                className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                <Maximize2 size={16} />
-                              </div>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-4">
                           <div className="py-1">
-                            <h4 className="text-[15px] font-bold text-[#2B182B] mb-1">{text || "Nail Service"}</h4>
+                            <h4 className="text-[15px] font-bold text-[#2B182B] mb-1">{text || ""}</h4>
                             {item.nailVariantName && (
-                              <p className="text-xs font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
+                              <p className="text-[15px] font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
                                 <Sparkles size={13} /> {item.nailVariantName}
                               </p>
                             )}
@@ -1132,47 +1119,28 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="space-y-5">
-              {(() => {
-                const depositTx = transactions && transactions.length > 0 ? transactions[0] : null;
-                const actualDeposit = depositTx?.amount || booking?.depositAmount || 0;
-                const isPaid = depositTx?.status === "Paid" || (booking?.amountPaid > 0 && booking?.amountPaid >= actualDeposit);
-
-                let depositText = "Pending";
-                let depositTone = "text-[#D97706] font-bold";
-
-                if (actualDeposit > 0) {
-                  depositText = formatVND(actualDeposit);
-                  depositTone = isPaid ? "text-[#059669] font-bold" : "text-[#D97706] font-bold";
-                }
-
-                return (
-                  <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
-                    {/* <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${depositTone}`}>{depositText}</span>
-                    </div> */}
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
-                      <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
-                    </div>
-
-                    {booking?.discountAmount > 0 && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
-                        <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
-                      </div>
-                    )}
-
-                    <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
-                      <span className="text-xl font-bold text-[#E84F93]">
-                        {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
-                      </span>
-                    </div>
+              {!(isWarrantyBooking && booking?.totalPrice === 0) && (
+                <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
+                    <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
                   </div>
-                );
-              })()}
+
+                  {(booking?.discountAmount > 0) && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
+                      <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
+                    <span className="text-xl font-bold text-[#E84F93]">
+                      {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Transactions List */}
               <div className="pt-2">
