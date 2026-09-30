@@ -165,7 +165,6 @@ export function StaffUpdatePage() {
 
         // Get the real nailArtistId from the fetched artist data
         const nailArtistId = artistData?.nailArtistId || artistData?.staffId || artistData?.id || staffId;
-        console.log("Manager StaffUpdatePage: using nailArtistId:", nailArtistId);
 
         // Load existing skills for this Staff Artist
         try {
@@ -282,8 +281,6 @@ export function StaffUpdatePage() {
       if (formData.imageFile) {
         updatePayload.imageFile = formData.imageFile;
       }
-
-      console.log("Updating user with data:", updatePayload, "userId:", formData.userId);
       await updateUser(formData.userId, updatePayload);
 
       // 2. Update skill assignments if Staff Artist ID available
@@ -293,9 +290,6 @@ export function StaffUpdatePage() {
             skillTypeId: s.id,
             level: Math.floor(Number(formData.skillRatings[s.id] ?? 0)),
           }));
-
-        console.log("Updating skills for Staff Artist (nailArtistId):", formData.nailArtistId);
-        console.log("Skills payload:", skills);
 
         if (skills.length > 0) {
           const skillResult = await assignNailArtistSkills(formData.nailArtistId, skills);

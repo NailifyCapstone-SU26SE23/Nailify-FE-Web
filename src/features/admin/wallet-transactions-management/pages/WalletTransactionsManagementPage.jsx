@@ -320,37 +320,6 @@ export function WalletTransactionsManagementPage() {
   return (
     <div className="min-h-full pb-10 font-sans">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
-        <div className="flex flex-col gap-4 border-b border-slate-200/60 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl bg-[#ea4f93]/10 p-2 text-[#ea4f93]">
-                <WalletCards size={18} className="stroke-[2]" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {language === "vi" ? "Quản trị ví" : "Wallet Admin"}
-              </span>
-            </div>
-            <Title
-              level={2}
-              className="!mb-0 !text-3xl !font-bold !tracking-tight !text-[#2d1b35] md:!text-4xl"
-            >
-              {t("walletTransactions.title")}
-            </Title>
-            <Text className="block max-w-[65ch] !text-xs !leading-relaxed !text-[#a88a9f] md:!text-sm">
-              {t("walletTransactions.subtitle")}
-            </Text>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => loadTransactions(1)}
-            className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            {t("walletTransactions.refresh")}
-          </button>
-        </div>
-
         <TopMetricsRow metrics={metrics} className="grid gap-6 md:grid-cols-3" />
 
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200/75 bg-white/90 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)] backdrop-blur-sm">
@@ -409,6 +378,15 @@ export function WalletTransactionsManagementPage() {
                 onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
                 disabledDate={(date) => date && date > dayjs().endOf("day").add(365, "day")}
               />
+
+              <button
+                type="button"
+                onClick={() => loadTransactions(1)}
+                className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
+              >
+                <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+                {t("walletTransactions.refresh")}
+              </button>
             </div>
           </div>
 

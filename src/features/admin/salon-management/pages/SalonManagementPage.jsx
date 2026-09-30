@@ -470,7 +470,6 @@ export function SalonManagementPage() {
         name: search.trim() || undefined,
         status: status !== "All" ? status : undefined
       });
-      console.log("data", data);
       const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
 
       if (page === 1) {
@@ -494,7 +493,7 @@ export function SalonManagementPage() {
     return salons.map(salon => {
       const salonManagers = managers.filter(m => String(m.salonId || "").toLowerCase() === String(salon.salonId || "").toLowerCase());
       const managerNames = salonManagers.map(m => `${m.lastName} ${m.firstName}`.trim()).join(", ");
-      
+
       return {
         ...salon,
         manager: managerNames || salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
@@ -546,7 +545,6 @@ export function SalonManagementPage() {
   // Handle opening assign manager
   const handleAssignManager = async (formData) => {
     const { managerId, salonId } = formData || assignManagerForm;
-    console.log("handleAssignManager called with:", { managerId, salonId });
 
     // Find the selected salon and manager names for the notification
     const selectedSalon = filteredSalons.find(s => s.id === salonId);
@@ -556,7 +554,6 @@ export function SalonManagementPage() {
     try {
       // First fetch the current raw user data
       const rawUser = await fetchRawAdminUserDetail(managerId);
-      console.log("Raw user data:", rawUser);
 
       // Send all user data plus updated salonId
       await updateAdminUser(managerId, {

@@ -165,7 +165,6 @@ export default function AssignManagerModal({
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                  console.log("Selected salon:", salon);
                                   setAssignManagerForm((prev) => ({
                                     ...prev,
                                     salonId: salon.id,
@@ -261,7 +260,6 @@ export default function AssignManagerModal({
                                 whileHover={{ scale: 1.02, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
-                                  console.log("Selected manager:", manager);
                                   setAssignManagerForm((prev) => ({
                                     ...prev,
                                     managerId: manager.id,

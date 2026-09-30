@@ -585,11 +585,7 @@ export function ReceptionistBookingDetailPage() {
         try {
           const data = await fetchReceptionistBookingDetail(bookingId);
           setBooking(data);
-
-          console.log("Booking Detail Fetched:", data);
-
-          const custId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customerUserId;
-          console.log("Extracted Customer ID:", custId);
+          const custId = data?.customerId;
 
           if (custId) {
             try {
@@ -681,9 +677,6 @@ export function ReceptionistBookingDetailPage() {
     );
     return { customerTier: tier, customerPoints: points };
   }, [customerProfile, loyaltyTiers]);
-
-  console.log("customer", customerTier);
-  console.log("point", customerPoints);
 
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);

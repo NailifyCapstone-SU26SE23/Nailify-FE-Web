@@ -1094,7 +1094,6 @@ export function StaffManagementPage() {
       ]);
 
       const list = Array.isArray(schedulesData) ? schedulesData : schedulesData?.items || [];
-      console.log("Timeline loaded salon schedules:", list);
       setSchedules(list);
       setBreaks(Array.isArray(breaksData?.items) ? breaksData.items : (Array.isArray(breaksData) ? breaksData : []));
     } catch (err) {
@@ -1429,7 +1428,6 @@ export function StaffManagementPage() {
 
 
   function mapApiArtistToUiFormat(apiArtist) {
-    console.log("Mapping artist:", apiArtist);
     const fullName = API
     apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
@@ -1466,7 +1464,6 @@ export function StaffManagementPage() {
     try {
       setLoadingDetail(true);
       const detail = await fetchNailArtistById(artistId);
-      console.log("Fetched artist detail:", detail);
       const mappedDetail = mapApiArtistToUiFormat(detail);
       setViewingStaffDetail(mappedDetail);
       setViewingStaff(mappedDetail);

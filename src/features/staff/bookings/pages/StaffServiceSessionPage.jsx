@@ -984,8 +984,6 @@ export function StaffServiceSessionPage() {
     const summaryAmountDue = fallbackData?.amountDue || payload?.amountDue;
     const summaryAmountPaid = fallbackData?.amountPaid || payload?.amountPaid;
     const summaryOriginalServicePrice = fallbackData?.originalServicePrice || payload?.originalServicePrice;
-    console.log("fallbackData", fallbackData);
-    console.log("payload", payload);
     return {
       ...fallbackData,
       ...payload,

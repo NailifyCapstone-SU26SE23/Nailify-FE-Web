@@ -34,6 +34,7 @@ import { Trash2 } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { toast } from "react-hot-toast";
+import { Tooltip } from "antd";
 
 // Presentation-only helper: renders a tier's rank as a roman numeral stamp.
 // Purely derived from sortOrder at render time — does not touch any state.
@@ -395,28 +396,6 @@ export function LoyaltyTierManagement() {
 
             {/* Page Header + compact stat strip (replaces generic 4-box KPI grid) */}
             <div className="flex flex-col gap-5 border-b border-[#f5e3ed] pb-6">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div>
-                        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#c9799f]">
-                            {t("adminLoyaltyTiersManagement.nailifyMembershipProgram")}
-                        </span>
-                        <h1 className="mt-1 text-4xl font-bold tracking-tight text-[#3f2034]">
-                            {t("menus.admin-loyalty-tiers") || "Loyalty Tier Catalog"}
-                        </h1>
-                        <p className="mt-1 text-sm text-[#8c7484]">
-                            {t("adminLoyaltyTiersManagement.everyRankBelowIsRenderedExactl")}
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={handleStartCreate}
-                        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(235,90,153,0.18)] transition-all hover:opacity-95 active:scale-[0.98]"
-                    >
-                        <Plus size={15} className="mr-2" />
-                        {t("adminLoyaltyTiersManagement.createLoyaltyTier")}
-                    </button>
-                </div>
-
                 <TopMetricsRow
                     metrics={[
                         { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: String(totalMembers.toLocaleString()), icon: Users, color: "#ea4f93" },
@@ -430,7 +409,7 @@ export function LoyaltyTierManagement() {
 
             {/* Control Bar: Search input, points filter, Status filter */}
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-1 flex-col gap-2 sm:flex-row ">
+                <div className="flex flex-1 flex-col gap-2 md:flex-row ">
                     <div className="relative flex-1">
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
@@ -470,6 +449,13 @@ export function LoyaltyTierManagement() {
                             </button>
                         ))}
                     </div>
+                    <button
+                        onClick={handleStartCreate}
+                        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(235,90,153,0.18)] transition-all hover:opacity-95 active:scale-[0.98]"
+                    >
+                        <Plus size={15} className="mr-2" />
+                        {t("adminLoyaltyTiersManagement.createLoyaltyTier")}
+                    </button>
                 </div>
             </div>
 
@@ -640,57 +626,59 @@ export function LoyaltyTierManagement() {
                                             </div>
 
                                             <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleStatus(tier.id);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    title={language === "vi" ? `Đổi trạng thái thành ${tier.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${tier.status === "Active" ? "Inactive" : "Active"}`}
-                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${tier.status === "Active"
-                                                        ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
-                                                        : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
-                                                        }`}
-                                                >
-                                                    {updatingStatusTierId === tier.id ? (
-                                                        <svg className="h-2.5 w-2.5 animate-spin text-current" viewBox="0 0 24 24" fill="none">
-                                                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
-                                                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                                                        </svg>
-                                                    ) : (
-                                                        <Power size={9} />
-                                                    )}
-                                                    <span>
-                                                        {language === "vi"
-                                                            ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
-                                                            : tier.status
-                                                        }
-                                                    </span>
-                                                </button>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleStartEdit(tier);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={t("adminLoyaltyTiersManagement.editTierDetails")}
-                                                >
-                                                    <Edit3 size={11} />
-                                                </button>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteTier(tier.id);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={t("adminLoyaltyTiersManagement.deleteTier")}
-                                                >
-                                                    <Trash size={11} />
-                                                </button>
+                                                <Tooltip title={language === "vi" ? "Thay đổi trạng thái" : "Change status"}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleToggleStatus(tier.id);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        title={language === "vi" ? `Đổi trạng thái thành ${tier.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${tier.status === "Active" ? "Inactive" : "Active"}`}
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${tier.status === "Active"
+                                                            ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
+                                                            : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
+                                                            }`}
+                                                    >
+                                                        {updatingStatusTierId === tier.id ? (
+                                                            <svg className="h-2.5 w-2.5 animate-spin text-current" viewBox="0 0 24 24" fill="none">
+                                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
+                                                                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                                                            </svg>
+                                                        ) : (
+                                                            <Power size={9} />
+                                                        )}
+                                                        <span>
+                                                            {language === "vi"
+                                                                ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                                                                : tier.status
+                                                            }
+                                                        </span>
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip title={t("adminLoyaltyTiersManagement.editTierDetails")}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStartEdit(tier);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Edit3 size={11} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip title={t("adminLoyaltyTiersManagement.deleteTier")}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteTier(tier.id);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Trash size={11} />
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </motion.div>
