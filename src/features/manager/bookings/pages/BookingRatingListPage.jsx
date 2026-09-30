@@ -603,7 +603,7 @@ export function BookingRatingListPage() {
                             <div className="space-y-1">
                               <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
                               <p className="text-xs text-[#a88a9f] font-semibold leading-none">
-                                {language === "vi" ? "Dịch vụ làm móng" : "Nail Service"} · {dateFormatted}
+                                {dateFormatted}
                               </p>
                               <div className="flex items-center gap-0.5 pt-1">
                                 {[1, 2, 3, 4, 5].map((sIndex) => (

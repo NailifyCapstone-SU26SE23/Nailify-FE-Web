@@ -77,7 +77,7 @@ const formatVNDate = (date) => {
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-
+const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
 const getStatusColor = (status) => {
   switch (status) {
     case 'Pending':
@@ -716,7 +716,7 @@ export function ReceptionistBookingDetailPage() {
     const itemMap = new Map();
 
     rawItems.forEach((item, index) => {
-      const sName = item.serviceName || (item.nailVariantName ? (language === "vi" ? "Dịch vụ làm móng: " : "Nail service: ") + item.nailVariantName : language === "vi" ? "Dịch vụ làm móng" : "Nail Service");
+      const sName = item.serviceName || item.nailVariantName ;
       const vName = item.nailVariantName || item.customerNailName || "";
       const uPrice = Number(item.price) || 0;
       const uDur = (item.bookingItemId && bookingItemDurations[item.bookingItemId]) ? bookingItemDurations[item.bookingItemId] : (Number(item.duration) || 0);
@@ -2091,7 +2091,7 @@ export function ReceptionistBookingDetailPage() {
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-[#2B182B]">
-                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || language === "vi" ? "Dịch Vụ Làm Móng" : "Nail Service"}
+                  item?.serviceName || selectedServiceRow.service || item?.nailVariantName
                 </h3>
               </div>
 
