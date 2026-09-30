@@ -209,7 +209,7 @@ function ServiceInfoCard({
                     <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
                     {service.nailServiceName ? (
                       <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                        {language === "vi" ? "Dịch vụ làm móng: " : "Nail service: "}{service.nailServiceName}
+                        {service.nailServiceName}
                       </p>
                     ) : null}
                   </div>
