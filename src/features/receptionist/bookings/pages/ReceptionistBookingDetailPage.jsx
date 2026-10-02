@@ -1052,11 +1052,51 @@ export function ReceptionistBookingDetailPage() {
   };
 
   const serviceColumns = useMemo(() => ([
+    ...(canEditServices ? [{
+      title: (
+        <div className="flex items-center justify-center gap-2">
+          <Checkbox
+            checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
+            indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(serviceRows.map(r => r.id));
+              } else {
+                setSelectedServiceIds([]);
+              }
+            }}
+          />
+          {selectedServiceIds.length > 0 && (
+            <button
+              onClick={handleMultiDeleteServices}
+              className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
+              title={isVi ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      ),
+      key: "selection",
+      width: 60,
+      align: "center",
+      render: (_, row) => (
+        <Checkbox
+          checked={selectedServiceIds.includes(row.id)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedServiceIds(prev => [...prev, row.id]);
+            } else {
+              setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
+            }
+          }}
+        />
+      ),
+    }] : []),
     {
       title: isVi ? "Thời gian" : "Time",
-      dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-bold text-[#E84F93]">{value}</span>,
+      render: (_, row) => <span className="text-xs font-bold text-[#E84F93]">{row.sourceItem?.timeRangeDisplay || row.time}</span>,
     },
     {
       title: isVi ? "Tên dịch vụ" : "Service Name & Design",
@@ -1069,26 +1109,8 @@ export function ReceptionistBookingDetailPage() {
         </div>
       ),
     },
-    // {
-    //   title: isVi ? "Thợ làm móng" : "Assigned Artist",
-    //   key: "artist",
-    //   render: (_, row) => (
-    //     <div className="flex items-center gap-2">
-    //       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
-    //         {(row.artist)
-    //           .split(" ")
-    //           .filter(Boolean)
-    //           .slice(0, 2)
-    //           .map((part) => part[0])
-    //           .join("")
-    //           .toUpperCase()}
-    //       </div>
-    //       <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
-    //     </div>
-    //   ),
-    // },
     {
-      title: isVi ? "Thời gian" : "Duration",
+      title: isVi ? "Thời lượng" : "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
@@ -1102,48 +1124,10 @@ export function ReceptionistBookingDetailPage() {
     {
       title: isVi ? "Số lượng" : "Quantity",
       key: "quantity",
+      align: "center",
+      width: 100,
       render: (_, row) => (
-        editingQuantityId === row.id ? (
-          <div className="flex items-center gap-1.5 bg-[#FFF0F6] border border-[#F3D7E4] px-1.5 py-1 rounded-full w-fit">
-            <button
-              type="button"
-              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
-              disabled={tempQuantity <= 1 || isDeletingService}
-              onClick={() => setTempQuantity(prev => prev - 1)}
-            >
-              -
-            </button>
-            <span className="text-xs font-bold text-[#2B182B] w-4 text-center">{tempQuantity}</span>
-            <button
-              type="button"
-              className="w-5 h-5 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-pink-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
-              disabled={isDeletingService}
-              onClick={() => setTempQuantity(prev => prev + 1)}
-            >
-              +
-            </button>
-            <div className="flex items-center gap-1 ml-0.5 border-l border-pink-200 pl-1.5">
-              <button
-                type="button"
-                className="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
-                disabled={isDeletingService || tempQuantity === row.count}
-                onClick={() => doUpdateServiceQuantity(row, tempQuantity)}
-              >
-                <Check size={12} strokeWidth={3} />
-              </button>
-              <button
-                type="button"
-                className="w-5 h-5 flex items-center justify-center rounded-full bg-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow-xs"
-                disabled={isDeletingService}
-                onClick={() => setEditingQuantityId(null)}
-              >
-                <X size={12} strokeWidth={3} />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <span className="text-xs font-bold text-[#2B182B] pl-2">{row.count}</span>
-        )
+        <span className="text-xs font-bold text-[#2B182B]">{row.count}</span>
       ),
     },
     {
@@ -1153,24 +1137,7 @@ export function ReceptionistBookingDetailPage() {
       render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
     },
     {
-      title: (
-        <div className="flex items-center gap-2 ">
-          {isVi ? "Thao tác" : "Action"}
-          {canEditServices && (
-            <Checkbox
-              checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
-              indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedServiceIds(serviceRows.map(r => r.id));
-                } else {
-                  setSelectedServiceIds([]);
-                }
-              }}
-            />
-          )}
-        </div>
-      ),
+      title: isVi ? "Thao tác" : "Action",
       key: "action",
       render: (_, row) => (
         <div className="flex items-center gap-2">
@@ -1179,22 +1146,10 @@ export function ReceptionistBookingDetailPage() {
             buttonClassName="..."
             label={isVi ? "Thao tác" : "Actions"}
           />
-          {canEditServices && (
-            <Checkbox
-              checked={selectedServiceIds.includes(row.id)}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedServiceIds(prev => [...prev, row.id]);
-                } else {
-                  setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
-                }
-              }}
-            />
-          )}
         </div>
       ),
     },
-  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows, canEditServices, booking?.status]);
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, handleMultiDeleteServices, selectedServiceIds, serviceRows, canEditServices, booking?.status]);
 
   const totalItemsDuration = booking?.bookingItems?.reduce((acc, item) => acc + (Number(item.duration) || 0) * (item.quantity || 1), 0) || booking?.totalDuration;
   const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
@@ -1588,22 +1543,6 @@ export function ReceptionistBookingDetailPage() {
             title={t("receptionist.bookings.title") || "Appointment & Service Details"}
             subtitle={t("receptionist.bookings.desc") || "Scheduled treatments & selected nail designs"}
             badge={language === "vi" ? `${serviceRows.length || 0} Dịch vụ` : `${serviceRows.length || 0} Services`}
-            headerAction={
-              ["Pending", "Approved", "CheckedIn"].includes(booking.status) &&
-              selectedServiceIds.length > 0 && (
-                <Button
-                  danger
-                  type="primary"
-                  size="small"
-                  icon={<Trash2 size={14} />}
-                  onClick={handleMultiDeleteServices}
-                  loading={isDeletingService}
-                  className="rounded-full shadow-2xs font-bold"
-                >
-                  {isVi ? `Xóa (${selectedServiceIds.length})` : `Delete (${selectedServiceIds.length})`}
-                </Button>
-              )
-            }
           >
             <Table
               rowKey="id"
@@ -2860,6 +2799,55 @@ export function ReceptionistBookingDetailPage() {
         onCancel={() => setItemsToDelete(null)}
         loading={isDeletingService}
       />
+
+      <Modal
+        title={isVi ? "Sửa Số lượng" : "Edit Quantity"}
+        open={!!editingQuantityId}
+        onCancel={() => setEditingQuantityId(null)}
+        footer={null}
+        width={320}
+        centered
+      >
+        <div className="py-4 flex flex-col gap-4">
+          <p className="text-sm font-semibold text-[#2B182B]">
+            {serviceRows.find(r => r.id === editingQuantityId)?.service || ""}
+          </p>
+          <div className="flex items-center gap-4 border border-[#F3D6E5] rounded-full p-1 bg-[#FFF5FA]">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => Math.max(1, q - 1))}
+              disabled={tempQuantity <= 1 || isDeletingService}
+            >
+              -
+            </button>
+            <span className="flex-1 text-center font-bold text-lg text-[#2B182B]">{tempQuantity}</span>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => q + 1)}
+              disabled={isDeletingService}
+            >
+              +
+            </button>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-all disabled:opacity-50"
+              onClick={() => setEditingQuantityId(null)}
+              disabled={isDeletingService}
+            >
+              {isVi ? "Hủy" : "Cancel"}
+            </button>
+            <button
+              className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#F43F5E] hover:from-[#D83A7E] hover:to-[#E11D48] rounded-full shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              onClick={() => doUpdateServiceQuantity(serviceRows.find(r => r.id === editingQuantityId), tempQuantity)}
+              disabled={isDeletingService}
+            >
+              {isDeletingService && <LoaderCircle size={16} className="animate-spin" />}
+              {isVi ? "Lưu" : "Save"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
     </section >
   );

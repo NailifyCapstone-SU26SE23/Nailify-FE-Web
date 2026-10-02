@@ -265,6 +265,7 @@ function buildStaffExperienceFromBooking(
         price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0),
         duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedService?.duration),
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -285,6 +286,7 @@ function buildStaffExperienceFromBooking(
         price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0),
         duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedNailDetail?.duration),
         canViewProcedures: Boolean(bookingItemId),
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -1296,15 +1298,16 @@ export function StaffBookingDetailPage() {
         onDelete={handleDelete}
         onOpenDesignStudio={handleOpenDesignStudio}
         onOpenServiceProcedures={handleOpenServiceProcedures}
-        onEditQuantity={handleEnableEditQuantity}
-        onDeleteService={handleDeleteService}
+        onEditQuantity={staffBookingDetail?.status === "CheckedIn" ? handleEnableEditQuantity : null}
+        onDeleteService={staffBookingDetail?.status === "CheckedIn" ? handleDeleteService : null}
         selectedServiceIds={selectedServiceIds}
-        onSelectService={handleSelectService}
-        onSelectAllServices={handleSelectAllServices}
-        onMultiDelete={handleMultiDeleteServices}
+        onSelectService={staffBookingDetail?.status === "CheckedIn" ? handleSelectService : null}
+        onSelectAllServices={staffBookingDetail?.status === "CheckedIn" ? handleSelectAllServices : null}
+        onMultiDelete={staffBookingDetail?.status === "CheckedIn" ? handleMultiDeleteServices : null}
         onOpenUpdateBooking={handleOpenUpdateBooking}
         onStaffNoteChange={handleStaffNoteChange}
         onStartServiceSession={() => void handleOpenServiceSession()}
+        canEditServices={staffBookingDetail?.status === "CheckedIn"}
       />
       <OnsiteAddonModal
         open={showUpdateBookingModal}

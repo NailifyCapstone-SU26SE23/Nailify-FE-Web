@@ -523,7 +523,7 @@ export function ManagerBookingDetailPage() {
               if (itemId) {
                 const procedures = await fetchBookingProceduresByBookingItemId(itemId);
                 if (procedures && Array.isArray(procedures)) {
-                   allProcedures = allProcedures.concat(procedures);
+                  allProcedures = allProcedures.concat(procedures);
                 }
               }
             }
@@ -533,24 +533,24 @@ export function ManagerBookingDetailPage() {
                 .filter(p => p.actualStartTime)
                 .map(p => new Date(`1970-01-01T${p.actualStartTime}Z`).getTime())
                 .filter(time => !isNaN(time));
-                
+
               const actualEndTimes = allProcedures
                 .filter(p => p.actualEndTime)
                 .map(p => new Date(`1970-01-01T${p.actualEndTime}Z`).getTime())
                 .filter(time => !isNaN(time));
-                
-              
-                if (actualStartTimes.length > 0 && actualEndTimes.length > 0) {
+
+
+              if (actualStartTimes.length > 0 && actualEndTimes.length > 0) {
                 const minStart = new Date(Math.min(...actualStartTimes));
                 const maxEnd = new Date(Math.max(...actualEndTimes));
                 const totalActualDuration = Math.round((maxEnd - minStart) / 60000);
-                
+
                 const formatTimeOnly = (date) => {
-                   const h = String(date.getUTCHours()).padStart(2, "0");
-                   const m = String(date.getUTCMinutes()).padStart(2, "0");
-                   return `${h}:${m}`;
+                  const h = String(date.getUTCHours()).padStart(2, "0");
+                  const m = String(date.getUTCMinutes()).padStart(2, "0");
+                  return `${h}:${m}`;
                 };
-                
+
                 mappedBooking.actualTimeStr = `${formatTimeOnly(minStart)} - ${formatTimeOnly(maxEnd)}`;
                 mappedBooking.actualDuration = totalActualDuration;
               }
@@ -1064,6 +1064,11 @@ export function ManagerBookingDetailPage() {
                 <Table
                   columns={[
                     {
+                      title: language === "vi" ? "Thời gian" : "Time",
+                      key: 'time',
+                      render: (_, item) => <span className="font-bold text-[#E84F93] text-[14px]">{item.timeRangeDisplay || "-"}</span>,
+                    },
+                    {
                       title: language === "vi" ? "Dịch vụ" : "Service",
                       dataIndex: 'serviceName',
                       key: 'serviceName',
@@ -1098,7 +1103,7 @@ export function ManagerBookingDetailPage() {
                       dataIndex: 'duration',
                       key: 'duration',
                       align: 'center',
-                      width: 120,
+
                       render: (dur) => <span className="font-bold text-[#4B5563] text-sm">{dur !== undefined ? formatDuration(dur, language) : "-"}</span>,
                     },
                     {

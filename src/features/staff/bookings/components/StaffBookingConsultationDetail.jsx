@@ -123,38 +123,46 @@ function ServiceInfoCard({
   selectedServiceIds = [],
   onSelectService = null,
   onSelectAllServices = null,
-  onMultiDelete = null
+  onMultiDelete = null,
+  canEditServices = true
 }) {
   const { language } = useLanguage();
   const hasProcedureAction = typeof onOpenServiceProcedures === "function" || typeof onEditQuantity === "function" || typeof onDeleteService === "function";
+
+  const gridCols = canEditServices
+    ? (hasProcedureAction ? "grid-cols-[70px_130px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[70px_130px_minmax(0,1.8fr)_80px_120px_180px_110px]")
+    : (hasProcedureAction ? "grid-cols-[130px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[130px_minmax(0,1.8fr)_80px_120px_180px_110px]");
 
   return (
     <article className="rounded-[16px] xl:col-span-3">
 
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
-          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[70px_minmax(0,1.8fr)_80px_120px_180px_110px]"}`}>
-            <div className="flex items-center justify-center gap-2">
-              <Checkbox
-                checked={services.length > 0 && selectedServiceIds.length === services.length}
-                indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < services.length}
-                onChange={(e) => onSelectAllServices && onSelectAllServices(e.target.checked, services.map(s => s.id))}
-              />
-              {selectedServiceIds.length > 0 && (
-                <button
-                  onClick={onMultiDelete}
-                  className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
-                  title={language === "vi" ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
-                >
-                  <Trash2 size={12} />
-                </button>
-              )}
-            </div>
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${gridCols}`}>
+            {canEditServices && (
+              <div className="flex items-center justify-center gap-2">
+                <Checkbox
+                  checked={services.length > 0 && selectedServiceIds.length === services.length}
+                  indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < services.length}
+                  onChange={(e) => onSelectAllServices && onSelectAllServices(e.target.checked, services.map(s => s.id))}
+                />
+                {selectedServiceIds.length > 0 && (
+                  <button
+                    onClick={onMultiDelete}
+                    className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
+                    title={language === "vi" ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời gian" : "Time"}</p>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
             <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời gian ướt tính" : "Duration"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng dự kiến" : "Duration"}</p>
             {hasProcedureAction ? (
               <div className="flex items-center justify-center gap-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] m-0">{language === "vi" ? "Thao tác" : "Action"}</p>
@@ -194,15 +202,23 @@ function ServiceInfoCard({
               return (
                 <div
                   key={service.id || `${service.name}-${index}`}
-                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[70px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "md:grid-cols-[70px_minmax(0,1.8fr)_80px_120px_180px_110px]"}`}
+                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${gridCols}`}
                 >
-                  <div className="hidden md:flex items-center justify-center">
-                    <Checkbox
-                      checked={selectedServiceIds.includes(service.id)}
-                      onChange={(e) => onSelectService && onSelectService(e.target.checked, service.id)}
-                    />
+                  {canEditServices && (
+                    <div className="hidden md:flex items-center justify-center">
+                      <Checkbox
+                        checked={selectedServiceIds.includes(service.id)}
+                        onChange={(e) => onSelectService && onSelectService(e.target.checked, service.id)}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-left">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời gian" : "Time"}</p>
+                    <span className="font-bold text-[#ea4f93] text-[13px]">
+                      {service.timeRangeDisplay || "-"}
+                    </span>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 mt-3 md:mt-0">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
                       {service.detailLabel || `Service ${index + 1}`}
                     </p>
@@ -236,7 +252,7 @@ function ServiceInfoCard({
                   </div>
 
                   <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng" : "Duration"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng dự kiến" : "Duration"}</p>
                     <span className="inline-flex rounded-full bg-[#f4efff] px-3 py-1 text-[11px] font-bold text-[#8c63ef]">
                       {service.duration}
                     </span>
@@ -359,7 +375,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     tone="success"
                   />
                 )}
-                <InfoCard label={language === "vi" ? "Thời lượng" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
+                <InfoCard label={language === "vi" ? "Thời lượng dự kiến" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
               </div>
             </div>
 
@@ -574,6 +590,7 @@ export function StaffBookingConsultationDetail({
   onStaffNoteChange,
   onStartServiceSession,
   onConfirmCustomerNail,
+  canEditServices = true,
 }) {
   const canProceedToService =
     (requiresCustomerNailConfirmation ? isCustomerNailConfirmed : isCurrentDesignConfirmed) &&
@@ -811,6 +828,7 @@ export function StaffBookingConsultationDetail({
                       onSelectService={onSelectService}
                       onSelectAllServices={onSelectAllServices}
                       onMultiDelete={onMultiDelete}
+                      canEditServices={canEditServices}
                     />
                   </div>
                 )}
