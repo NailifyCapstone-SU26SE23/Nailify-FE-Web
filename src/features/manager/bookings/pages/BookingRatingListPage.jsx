@@ -688,7 +688,7 @@ export function BookingRatingListPage() {
                             </span>
                           </div>
 
-                          <button
+                          {/* <button
                             onClick={() => handleOpenReplyModal(rating)}
                             className={`px-4.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98] ${isReplied
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
@@ -697,7 +697,7 @@ export function BookingRatingListPage() {
                           >
                             <MessageSquare size={12} />
                             {isReplied ? (language === "vi" ? "Xem phản hồi" : "View Response") : (language === "vi" ? "Phản hồi đánh giá" : "Respond Feedback")}
-                          </button>
+                          </button> */}
                         </div>
 
                         {/* Response display trail */}

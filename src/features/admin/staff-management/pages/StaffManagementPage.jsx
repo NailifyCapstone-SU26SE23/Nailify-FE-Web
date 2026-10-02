@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import { Modal, Spin, Alert, Select, Drawer, Calendar as AntCalendar, Badge } from "antd";
+import { Modal, Spin, Alert, Select, Drawer, Calendar as AntCalendar, Badge, Popover } from "antd";
 import dayjs from "dayjs";
 import {
   Users,
@@ -37,6 +37,7 @@ import { fetchNailArtistSkills, deleteNailArtist, fetchNailArtistById } from "..
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { deleteAdminUser } from "../../user-management/services/userManagementService";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const ALL_ROLES_VALUE = "__all__";
 
@@ -798,18 +799,18 @@ export function StaffManagementPage() {
                     </h3>
                     <div className="space-y-1.5 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-2">
-                        <MapPin size={12} className="shrink-0 text-slate-400" />
+                        <MapPin size={13} className="shrink-0 text-[#ea4f93]" />
                         <span className="truncate">{salon.address}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Users size={12} className="shrink-0 text-slate-400" />
+                        <Users size={13} className="shrink-0 text-[#ea4f93]" />
                         <span className="truncate">
                           {language === "vi" ? "Nhân viên: " : "Staff: "}
                           <span className="font-semibold text-slate-600">{salon.staffCount || 0}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <User size={12} className="shrink-0 text-slate-400" />
+                        <User size={13} className="shrink-0 text-[#ea4f93]" />
                         <span className="truncate">
                           {language === "vi" ? "Quản lý: " : "Manager: "}
                           <span className="font-semibold text-slate-600">
@@ -819,6 +820,42 @@ export function StaffManagementPage() {
                           </span>
                         </span>
                       </div>
+                      <Popover
+                        content={
+                          <div className="flex flex-col gap-1.5 text-xs w-48">
+                            {salon.operatingHours && salon.operatingHours.length > 0 ? [...salon.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                              <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                                <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                                <span className="text-[#a88a9f]">
+                                  {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                                </span>
+                              </div>
+                            )) : (
+                              <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                            )}
+                          </div>
+                        }
+                        title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+                        trigger="hover"
+                        placement="bottomLeft"
+                      >
+                        <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+                          <Clock size={13} className="shrink-0 text-[#ea4f93]" />
+                          <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+                          <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                            {(() => {
+                              const today = new Date().getDay();
+                              const todayHours = salon.operatingHours?.find(h => h.dayOfWeek === today);
+                              if (todayHours) {
+                                return todayHours.isClosed
+                                  ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                                  : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                              }
+                              return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                            })()}
+                          </span>
+                        </div>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -1147,8 +1184,8 @@ export function StaffManagementPage() {
                   <div className="grid gap-3 md:grid-cols-2">
                     <InfoItem label={t("adminStaffManagement.role")}>{selectedStaff.role ? getLocalizedRole(selectedStaff.role, language) : '-'}</InfoItem>
                     <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-[#eaf9ee] text-[#2fa25f]">
-                        {selectedStaff.status === 'Active' || !selectedStaff.status ? (language === "vi" ? "Hoạt động" : "Active") : selectedStaff.status}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${BASIC_STATUS[selectedStaff.status || 'Active']?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                        {BASIC_STATUS[selectedStaff.status || 'Active']?.[language] || selectedStaff.status}
                       </span>
                     </InfoItem>
                   </div>

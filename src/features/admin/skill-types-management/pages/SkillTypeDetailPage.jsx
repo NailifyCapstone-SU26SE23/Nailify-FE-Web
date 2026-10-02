@@ -10,6 +10,7 @@ import {
   fetchAdminSkillTypeDetail,
   updateAdminSkillType,
 } from "../services/skillTypesManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {

@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchLoyaltyTierDetail } from "../services/loyaltyTiersManagementService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BASIC_STATUS } from '../../../../shared/utils/statusFormatters';
 
 export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, customers = [] }) {
   const { t, language } = useLanguage();

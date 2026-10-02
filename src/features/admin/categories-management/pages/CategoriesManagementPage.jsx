@@ -34,7 +34,7 @@ function CategoryStatusBadge({ status }) {
   const statusObj = BASIC_STATUS[normalizedStatus] || BASIC_STATUS.Inactive;
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusObj.tone}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusObj.tone}`}>
       {statusObj[language]}
     </span>
   );

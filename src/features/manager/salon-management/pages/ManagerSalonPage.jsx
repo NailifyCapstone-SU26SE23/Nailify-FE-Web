@@ -18,6 +18,7 @@ import { SalonOffDatesManager } from "../components/SalonOffDatesManager";
 import { SalonOperatingHoursManager } from "../components/SalonOperatingHoursManager";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { Input, InputNumber } from "antd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>'
@@ -335,17 +336,15 @@ export function ManagerSalonPage() {
                   {isVi ? "Trạng thái" : "Status"}
                 </p>
                 <div className="mt-1">
-                  {salon?.status === "Open" ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ecfdf3] px-3 py-1 text-[12px] font-semibold text-[#168a4b]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
-                      {isVi ? "Hoạt động" : "Open"}
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1f1] px-3 py-1 text-[12px] font-semibold text-[#d64545]">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#ef4444]" />
-                      {isVi ? "Đóng cửa" : "Closed"}
-                    </span>
-                  )}
+                  {(() => {
+                    const normalizedStatus = salon?.status === "Open" ? "Active" : salon?.status === "Closed" ? "Inactive" : salon?.status;
+                    const statusObj = BASIC_STATUS[normalizedStatus] || { [isVi ? "vi" : "en"]: salon?.status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+                    return (
+                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] font-semibold ${statusObj.tone}`}>
+                        {statusObj[isVi ? "vi" : "en"]}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

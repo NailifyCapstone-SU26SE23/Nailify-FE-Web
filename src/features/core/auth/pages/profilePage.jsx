@@ -51,6 +51,7 @@ import {
 } from "../services/profileService";
 import { useAuth } from "../hooks/useAuth";
 import toast from "react-hot-toast";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -747,16 +748,16 @@ export function ProfilePage() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, color: TEXT_DARK }}>
-                            {language === "vi" 
+                            {language === "vi"
                               ? {
-                                  Monday: "Thứ Hai",
-                                  Tuesday: "Thứ Ba",
-                                  Wednesday: "Thứ Tư",
-                                  Thursday: "Thứ Năm",
-                                  Friday: "Thứ Sáu",
-                                  Saturday: "Thứ Bảy",
-                                  Sunday: "Chủ Nhật"
-                                }[slot.dayName] || slot.dayName
+                                Monday: "Thứ Hai",
+                                Tuesday: "Thứ Ba",
+                                Wednesday: "Thứ Tư",
+                                Thursday: "Thứ Năm",
+                                Friday: "Thứ Sáu",
+                                Saturday: "Thứ Bảy",
+                                Sunday: "Chủ Nhật"
+                              }[slot.dayName] || slot.dayName
                               : slot.dayName}
                           </div>
                           <Text type="secondary" style={{ fontSize: 12 }}>

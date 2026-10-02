@@ -42,7 +42,7 @@ function CategoryTypeStatusBadge({ status }) {
 }
 
 export function CategoryTypesManagementPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");

@@ -489,7 +489,7 @@ export function WithdrawRequestDetailPage() {
             </p>
           </div>
 
-          <Form form={form} layout="vertical" onFinish={handleApprove} requiredMark={false}>
+          {/* <Form form={form} layout="vertical" onFinish={handleApprove} requiredMark={false}>
             <Form.Item
               name="transactionReference"
               label={
@@ -520,7 +520,7 @@ export function WithdrawRequestDetailPage() {
                 style={{ resize: "none" }}
               />
             </Form.Item>
-          </Form>
+          </Form> */}
         </div>
 
         {/* Footer */}

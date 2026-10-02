@@ -23,6 +23,7 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchTransactions, fetchBookingById } from "../services/transactionService";
 import dayjs from "dayjs";
 import { RefundConfirmModal } from "../components/RefundConfirmModal";
+import { TRANSACTION_STATUS } from "../../../../shared/utils/statusFormatters";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -318,51 +319,23 @@ export function TransactionManagementPage() {
 
   // Render Status Badge
   const renderStatusBadge = (status) => {
-    const normStatus = String(status || "").toLowerCase();
-    switch (normStatus) {
-      case "paid":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            {language === "vi" ? "Đã thanh toán" : "Paid"}
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce"></span>
-            {language === "vi" ? "Chờ xử lý" : "Pending"}
-          </span>
-        );
-      case "refunded":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-500/20 px-2.5 py-1 text-xs font-semibold text-blue-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-            {language === "vi" ? "Đã hoàn tiền" : "Refunded"}
-          </span>
-        );
-      case "expired":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            {language === "vi" ? "Hết hạn" : "Expired"}
-          </span>
-        );
-      case "canceled":
-      case "cancelled":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {language === "vi" ? "Đã hủy" : "Canceled"}
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            {status}
-          </span>
-        );
-    }
+    let normalized = status || "Pending";
+    const s = String(status || "").trim().toLowerCase();
+    
+    if (s === "paid") normalized = "Paid";
+    else if (s === "pending") normalized = "Pending";
+    else if (s === "refunded") normalized = "Refunded";
+    else if (s === "expired" || s === "overdue") normalized = "Overdue";
+    else if (s === "canceled" || s === "cancelled") normalized = "Cancelled";
+
+    const statusObj = TRANSACTION_STATUS[normalized] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusObj.tone}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${normalized === 'Paid' ? 'bg-green-500 animate-pulse' : normalized === 'Pending' ? 'bg-amber-500 animate-bounce' : normalized === 'Refunded' ? 'bg-purple-500' : 'bg-rose-500'}`}></span>
+        {statusObj[language]}
+      </span>
+    );
   };
 
   return (
