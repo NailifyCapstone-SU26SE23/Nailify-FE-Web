@@ -132,6 +132,7 @@ function normalizeAdminNailVariantDetail(variant) {
     durationLabel: formatDurationMinutes(normalizedDuration),
     imageUrl: String(variant?.imageUrl || "").trim(),
     colorJson: String(variant?.colorJson || "").trim(),
+    status: String(variant?.status || "").trim(),
     description: buildVariantDescription(variant),
     nailShape: variant?.nailShape
       ? {

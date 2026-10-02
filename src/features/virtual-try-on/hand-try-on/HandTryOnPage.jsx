@@ -184,6 +184,7 @@ export function HandTryOnPage() {
         nailSurfaceId,
         nailDesignId: variantDetail.nailDesignId || Number(designId || 0),
         imageUrl: variantDetail.imageUrl,
+        status: variantDetail.status,
         colorJson: buildColorJsonFromTryOn(nextConfig),
       });
       await createVariantNailComponents(activeVariantId, nextConfig);
