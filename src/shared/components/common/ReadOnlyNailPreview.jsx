@@ -51,16 +51,9 @@ function normalizeColorFingerIndex(value) {
 
 function normalizeFingerIndex(value) {
   const normalized = Number(value);
-
-  if (normalized === -1) {
-    return -1;
-  }
-
-  if (!Number.isInteger(normalized)) {
-    return 0;
-  }
-
-  return clamp(normalized, 0, 4);
+  if (normalized === -1) return -1;
+  if (!Number.isInteger(normalized)) return 0;
+  return clamp(normalized - 1, 0, 4);
 }
 
 function parsePlacementConfig(configJson) {

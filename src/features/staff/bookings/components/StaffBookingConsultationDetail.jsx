@@ -403,12 +403,13 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
                               {(() => {
                                 const idx = Number(item.fingerIndex);
-                                if (idx >= 0 && idx <= 4) {
+                                const arrayIdx = idx - 1;
+                                if (arrayIdx >= 0 && arrayIdx <= 4) {
                                   return language === "vi"
-                                    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][idx]
-                                    : ["Thumb", "Index", "Middle", "Ring", "Pinky"][idx];
+                                    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][arrayIdx]
+                                    : ["Thumb", "Index", "Middle", "Ring", "Pinky"][arrayIdx];
                                 }
-                                return language === "vi" ? `Ngón tay #${idx + 1}` : `Finger #${idx + 1}`;
+                                return language === "vi" ? `Ngón tay #${idx}` : `Finger #${idx}`;
                               })()}
                             </span>
                           )}
