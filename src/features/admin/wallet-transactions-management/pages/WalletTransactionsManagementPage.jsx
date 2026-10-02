@@ -21,6 +21,7 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { WALLET_TRANSACTION_STATUS, WALLET_TRANSACTION_TYPE } from "../../../../shared/utils/statusFormatters";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 const { Title, Text } = Typography;
@@ -256,11 +257,22 @@ export function WalletTransactionsManagementPage() {
       key: "type",
       width: 170,
       sorter: (a, b) => String(a.type || "").localeCompare(String(b.type || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionTypeColor(value)}>
-          {getWalletTransactionTypeLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const key = value === "Withdraw" ? "Withdrawal" : value;
+        const typeObj = WALLET_TRANSACTION_TYPE[key];
+        if (typeObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${typeObj.tone}`}>
+              {language === "vi" ? typeObj.vi : typeObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionTypeColor(value)}>
+            {getWalletTransactionTypeLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.referenceType"),
@@ -277,11 +289,21 @@ export function WalletTransactionsManagementPage() {
       key: "status",
       width: 140,
       sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionStatusColor(value)}>
-          {getWalletTransactionStatusLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const statusObj = WALLET_TRANSACTION_STATUS[value];
+        if (statusObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${statusObj.tone}`}>
+              {language === "vi" ? statusObj.vi : statusObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionStatusColor(value)}>
+            {getWalletTransactionStatusLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.createdAt"),
@@ -354,10 +376,14 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-48"
                 placeholder={t("walletTransactions.filterType")}
-                options={WALLET_TRANSACTION_TYPES.map((type) => ({
-                  value: type,
-                  label: getWalletTransactionTypeLabel(type, language),
-                }))}
+                options={WALLET_TRANSACTION_TYPES.map((type) => {
+                  const key = type === "Withdraw" ? "Withdrawal" : type;
+                  const typeObj = WALLET_TRANSACTION_TYPE[key];
+                  return {
+                    value: type,
+                    label: typeObj ? (language === "vi" ? typeObj.vi : typeObj.en) : getWalletTransactionTypeLabel(type, language),
+                  };
+                })}
                 value={filters.type}
                 onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
               />
@@ -365,10 +391,13 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-44"
                 placeholder={t("walletTransactions.filterStatus")}
-                options={WALLET_TRANSACTION_STATUSES.map((status) => ({
-                  value: status,
-                  label: getWalletTransactionStatusLabel(status, language),
-                }))}
+                options={WALLET_TRANSACTION_STATUSES.map((status) => {
+                  const statusObj = WALLET_TRANSACTION_STATUS[status];
+                  return {
+                    value: status,
+                    label: statusObj ? (language === "vi" ? statusObj.vi : statusObj.en) : getWalletTransactionStatusLabel(status, language),
+                  };
+                })}
                 value={filters.status}
                 onChange={(status) => setFilters((prev) => ({ ...prev, status }))}
               />

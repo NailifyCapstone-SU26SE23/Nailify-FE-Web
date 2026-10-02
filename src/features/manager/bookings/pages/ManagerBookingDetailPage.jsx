@@ -59,6 +59,7 @@ import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { fetchBookingProceduresByBookingItemId } from "../services/bookingProceduresService";
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
@@ -325,6 +326,7 @@ export function ManagerBookingDetailPage() {
   const navigate = useNavigate();
   const backRoute = location.state?.from || (location.pathname.startsWith("/admin/") ? ROUTES.adminBookings : ROUTES.managerBookings);
   const [booking, setBooking] = useState(null);
+  console.log("booking: ", booking)
   const [customer, setCustomer] = useState(null);
   const [loyaltyTiers, setLoyaltyTiers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -510,6 +512,55 @@ export function ManagerBookingDetailPage() {
       }
       const rawBooking = await fetchBookingById(bookingId);
       const mappedBooking = mapBooking(rawBooking);
+
+      // Fetch actual times if ServiceCompleted
+      if (mappedBooking.status === "ServiceCompleted" || mappedBooking.status === "�� ho�n th�nh d?ch v?" || rawBooking.status === "ServiceCompleted") {
+        try {
+          if (mappedBooking.bookingItems && mappedBooking.bookingItems.length > 0) {
+            let allProcedures = [];
+            for (const item of mappedBooking.bookingItems) {
+              const itemId = item.id || item.bookingItemId;
+              if (itemId) {
+                const procedures = await fetchBookingProceduresByBookingItemId(itemId);
+                if (procedures && Array.isArray(procedures)) {
+                   allProcedures = allProcedures.concat(procedures);
+                }
+              }
+            }
+
+            if (allProcedures.length > 0) {
+              const actualStartTimes = allProcedures
+                .filter(p => p.actualStartTime)
+                .map(p => new Date(`1970-01-01T${p.actualStartTime}Z`).getTime())
+                .filter(time => !isNaN(time));
+                
+              const actualEndTimes = allProcedures
+                .filter(p => p.actualEndTime)
+                .map(p => new Date(`1970-01-01T${p.actualEndTime}Z`).getTime())
+                .filter(time => !isNaN(time));
+                
+              
+                if (actualStartTimes.length > 0 && actualEndTimes.length > 0) {
+                const minStart = new Date(Math.min(...actualStartTimes));
+                const maxEnd = new Date(Math.max(...actualEndTimes));
+                const totalActualDuration = Math.round((maxEnd - minStart) / 60000);
+                
+                const formatTimeOnly = (date) => {
+                   const h = String(date.getUTCHours()).padStart(2, "0");
+                   const m = String(date.getUTCMinutes()).padStart(2, "0");
+                   return `${h}:${m}`;
+                };
+                
+                mappedBooking.actualTimeStr = `${formatTimeOnly(minStart)} - ${formatTimeOnly(maxEnd)}`;
+                mappedBooking.actualDuration = totalActualDuration;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to fetch booking procedures for actual times:", e);
+        }
+      }
+
       setBooking(mappedBooking);
       setBookingNotesText(mappedBooking.notes);
 
@@ -677,35 +728,39 @@ export function ManagerBookingDetailPage() {
           <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full bg-[#E84F93]/10 blur-3xl" />
 
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
-            <div>
-              <button
-                type="button"
-                onClick={() => navigate(backRoute)}
-                className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
-              >
-                <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                <span>{t("manager.common.back")}</span>
-              </button>
+            <div className="flex flex-col gap-2 item-center">
+              <div className="flex flex-row gap-2 item-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate(backRoute)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
+                >
+                  <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                  <span>{t("manager.common.back")}</span>
+                </button>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
-                  {t("manager.bookings.bookingDetails")}
-                </h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
+                    {t("manager.bookings.bookingDetails")}
+                  </h1>
+                </div>
 
+              </div>
+              <div className="flex flex-row gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-md font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
                 </span>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3.5 py-1 text-md font-bold text-purple-700 shadow-2xs">
+                {isWarrantyBooking && <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3.5 py-1 text-md font-bold text-purple-700 shadow-2xs">
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                  {isWarrantyBooking && (language === "vi" ? "Đơn bảo hành" : "Nail Maintenance")}
-                </span>
+                  {language === "vi" ? "Đơn bảo hành" : "Nail Maintenance"}
+                </span>}
               </div>
             </div>
 
             {/* Header Action Buttons Bar */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-row items-center gap-2">
               {/* Refund Button */}
               {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
                 <motion.button
@@ -893,7 +948,7 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="flex items-center gap-4 mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/60">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-bold text-white shadow-md">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-bold text-white shadow-md">
                 {(customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : booking?.customerName || "C").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -929,26 +984,6 @@ export function ManagerBookingDetailPage() {
                 </InfoItem>
               )}
             </div>
-
-            {/* Customer Notes & Special Requests */}
-            {/* <div className="mt-5 pt-4 border-t border-[#F3E2EC]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                  <NotebookPen size={13} className="text-[#E84F93]" />
-                  {language === "vi" ? "Ghi chú" : "Notes"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsEditNotesModalOpen(true)}
-                  className="text-xs font-bold text-[#E84F93] hover:underline flex items-center gap-1"
-                >
-                  <Edit3 size={12} /> {t("manager.common.edit")}
-                </button>
-              </div>
-              <div className="rounded-2xl border-l-4 border-l-[#E84F93] border-y border-r border-[#F3D6E5]/60 bg-gradient-to-r from-[#FFF5FA]/70 to-[#FFF0F5]/30 p-4 text-xs text-[#2B182B] leading-relaxed italic shadow-2xs">
-                "{booking?.notes || language === "vi" ? "Không có ghi chú" : "No notes"}"
-              </div>
-            </div> */}
 
             {/* Check-in Photo */}
             {(booking?.checkInImageUrl || booking?.checkOutImagesUrl) && (
@@ -1042,7 +1077,7 @@ export function ManagerBookingDetailPage() {
                               </p>
                             )}
                             {item.customerNailName && (
-                              <p className="text-xs font-medium text-[#9E8497] flex items-center gap-1.5">
+                              <p className="text-[15px] font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
                                 <Edit3 size={12} /> Custom: {item.customerNailName}
                               </p>
                             )}
@@ -1093,7 +1128,7 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/70">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-bold text-white shadow-xs">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-bold text-white shadow-xs">
                 {(booking?.artistName && booking.artistName !== "Unassigned" ? booking.artistName : "U").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">

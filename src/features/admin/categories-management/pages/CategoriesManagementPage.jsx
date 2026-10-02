@@ -25,19 +25,21 @@ import {
   fetchAdminCategoryTypeOptions,
 } from "../services/categoriesManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function CategoryStatusBadge({ status }) {
-  const { t } = useLanguage();
-  const normalizedStatus = String(status || "").toLowerCase();
-  const isStatusActive = normalizedStatus === "active";
-  const className = isStatusActive
-    ? "bg-[#e7fbf4] text-[#159669]"
-    : "bg-[#fff1f5] text-[#d14c84]";
+  const { language } = useLanguage();
+  const normalizedStatus = String(status || "Active").charAt(0).toUpperCase() + String(status || "Active").slice(1).toLowerCase();
 
-  const displayLabel = isStatusActive ? t("adminCategories.active") : t("adminCategories.inactive");
+  const statusObj = BASIC_STATUS[normalizedStatus] || BASIC_STATUS.Inactive;
 
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>{displayLabel}</span>;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${statusObj.tone}`}>
+      {statusObj[language]}
+    </span>
+  );
 }
+
 
 export function CategoriesManagementPage() {
   const { t, language } = useLanguage();

@@ -339,7 +339,7 @@ export function SkillTypeDetailPage() {
                         </select>
                       ) : (
                         <p className="mt-1 text-sm font-bold text-slate-800">
-                          {language === "vi" ? (skillType?.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : skillType?.status}
+                          {BASIC_STATUS[skillType?.status]?.[language] || skillType?.status}
                         </p>
                       )}
                     </div>

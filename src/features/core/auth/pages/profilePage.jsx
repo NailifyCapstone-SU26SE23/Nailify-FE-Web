@@ -691,7 +691,7 @@ export function ProfilePage() {
                   <ProfileField label={t("profile.email")} value={profile?.email} icon={Mail} />
                   <ProfileField label={t("profile.phone")} value={profile?.phone} icon={Phone} />
                   <ProfileField label={t("profile.status")} icon={CheckCircle2}>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${profile?.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${BASIC_STATUS[profile?.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
                       {profile?.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : profile?.status === "Inactive" ? (language === "vi" ? "Ngừng hoạt động" : "Inactive") : profile?.status || "—"}
                     </span>
                   </ProfileField>

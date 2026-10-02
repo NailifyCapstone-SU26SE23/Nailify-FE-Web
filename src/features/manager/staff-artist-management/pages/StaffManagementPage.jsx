@@ -914,7 +914,7 @@ function TimelineSchedule({
                               {isLeave ? (
                                 <div className="flex flex-col items-center gap-1">
                                   <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">{language === "vi" ? "Đang Nghỉ" : "On Leave"}</span>
-                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã Duyệt" : "Approved"}</span>
+                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã xác nhận" : "Approved"}</span>
                                 </div>
                               ) : (
                                 <>

@@ -28,6 +28,9 @@ import {
   deleteAdminNailDesign,
   deleteAdminNailVariant,
   fetchAdminCategoryTypes,
+} from "../services/nailDesignManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
+import {
   fetchAdminNailDesignDetail,
   fetchAdminNailDesignSummary,
   fetchProceduresByVariant,
@@ -855,7 +858,7 @@ export function NailDesignManagementDetailPage() {
       );
     });
 
-    if (!designNameChanged && !designDescriptionChanged && !categoriesChanged && !imagesChanged && !variantsToUpdate.length) {
+    if (!designNameChanged && !designDescriptionChanged && !categoriesChanged && !imagesChanged && !variantsToUpdate.length && !formValues?.designStatus) {
       toast.error(language === "vi" ? "Không có thay đổi đáng kể nào được phát hiện" : "No changes detected. Other edits on this screen remain local only.");
       setIsEditing(false);
       return;
@@ -1089,8 +1092,8 @@ export function NailDesignManagementDetailPage() {
                 <option value="Inactive">{t("adminNailsDesignManagement.inactive")}</option>
               </select>
             ) : (
-              <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${formValues.designStatus === "Active" ? "bg-[#eaf9ee] text-[#2fa25f]" : "bg-slate-100 text-slate-600"}`}>
-                {formValues.designStatus === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive")}
+              <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${BASIC_STATUS[formValues.designStatus]?.tone || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+                {BASIC_STATUS[formValues.designStatus]?.[language] || formValues.designStatus}
               </span>
             )}
             {isEditing ? (
@@ -1154,8 +1157,8 @@ export function NailDesignManagementDetailPage() {
         >
           {/* Status Tag on Top Right */}
           <div className="absolute top-4 right-4 md:top-5 md:right-5">
-            <span className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold ${formValues.designStatus === "Active" ? "bg-[#eaf9ee] text-[#2fa25f]" : "bg-slate-100 text-slate-600"}`}>
-              {formValues.designStatus === "Active" ? t("adminNailsDesignManagement.active") || "Active" : t("adminNailsDesignManagement.inactive") || "Inactive"}
+            <span className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold ${BASIC_STATUS[formValues.designStatus]?.tone || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+              {BASIC_STATUS[formValues.designStatus]?.[language] || formValues.designStatus}
             </span>
           </div>
 
@@ -1678,7 +1681,7 @@ export function NailDesignManagementDetailPage() {
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.status}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{BASIC_STATUS[item.status]?.[language] || item.status}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>

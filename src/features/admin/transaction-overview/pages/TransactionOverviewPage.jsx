@@ -30,6 +30,7 @@ import { ActionButtons } from "../../../../shared/components/common/ActionButton
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { CalendarRange } from "lucide-react";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { SALON_STATUS_FILTER, TRANSACTION_STATUS, PAYMENT_METHOD } from "../../../../shared/utils/statusFormatters";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -379,53 +380,52 @@ export function TransactionOverviewPage() {
     setStatusFilter("all");
   };
 
-  const renderStatusBadge = (status) => {
-    const normStatus = String(status || "").toLowerCase();
-    const isVi = language === "vi";
-    switch (normStatus) {
-      case "paid":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            {isVi ? "Đã thanh toán" : "Paid"}
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce"></span>
-            {isVi ? "Chờ xử lý" : "Pending"}
-          </span>
-        );
-      case "expired":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            {isVi ? "Hết hạn" : "Expired"}
-          </span>
-        );
-      case "canceled":
-      case "cancelled":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {isVi ? "Đã hủy" : "Canceled"}
-          </span>
-        );
-      case "refunded":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {isVi ? "Đã hoàn tiền" : "Refunded"}
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            {status}
-          </span>
-        );
+  const renderPaymentMethod = (tx) => {
+    if (!tx) return null;
+    const method = PAYMENT_METHOD[tx.paymentMethod];
+    if (method) {
+      return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${method.tone}`}>
+          {language === "vi" ? method.vi : method.en}
+        </span>
+      );
     }
+    return (
+      <TransactionBadge
+        walletId={tx.walletId}
+        paymentLinkId={tx.paymentLinkId}
+        language={language}
+      />
+    );
+  };
+
+  const renderStatusBadge = (status) => {
+    const key = Object.keys(TRANSACTION_STATUS).find(k => k.toLowerCase() === String(status || "").toLowerCase());
+    const statusObj = TRANSACTION_STATUS[key];
+    const isVi = language === "vi";
+    
+    if (statusObj) {
+      let dotColor = "bg-slate-500";
+      if (statusObj.tone.includes("emerald")) dotColor = "bg-emerald-500";
+      else if (statusObj.tone.includes("amber")) dotColor = "bg-amber-500";
+      else if (statusObj.tone.includes("purple")) dotColor = "bg-purple-500";
+      else if (statusObj.tone.includes("rose")) dotColor = "bg-rose-500";
+      
+      const animClass = key === 'Pending' ? 'animate-bounce' : key === 'Paid' ? 'animate-pulse' : '';
+      
+      return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${statusObj.tone}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${dotColor} ${animClass}`}></span>
+          {isVi ? statusObj.vi : statusObj.en}
+        </span>
+      );
+    }
+    
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
+        {status}
+      </span>
+    );
   };
 
   const transactionColumns = useMemo(() => {
@@ -495,13 +495,7 @@ export function TransactionOverviewPage() {
         title: language === "vi" ? "Phương thức" : "Payment Method",
         key: "paymentMethod",
         width: "12%",
-        render: (_, tx) => (
-          <TransactionBadge
-            walletId={tx.walletId}
-            paymentLinkId={tx.paymentLinkId}
-            language={language}
-          />
-        ),
+        render: (_, tx) => renderPaymentMethod(tx),
       },
       {
         title: language === "vi" ? "Hành động" : "Actions",
@@ -792,15 +786,10 @@ export function TransactionOverviewPage() {
                               </div>
                             )}
 
-                            <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${salon.status === "Active" || salon.status === "Open"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : salon.status === "Busy"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
-                                : "bg-slate-50 text-slate-600 border-slate-200"
-                              }`}>
+                            <span className={`absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full border shadow-xs ${SALON_STATUS_FILTER[salon.status || "Active"]?.tone || "bg-slate-50 text-slate-600 border-slate-200"}`}>
                               {language === "vi"
-                                ? ({ Open: "Mở cửa", Closed: "Đóng cửa" }[salon.status] || salon.status || "Hoạt động")
-                                : (salon.status)
+                                ? (SALON_STATUS_FILTER[salon.status || "Active"]?.vi || salon.status || "Hoạt động")
+                                : (SALON_STATUS_FILTER[salon.status || "Active"]?.en || salon.status || "Active")
                               }
                             </span>
 
@@ -1201,11 +1190,7 @@ export function TransactionOverviewPage() {
                   </div>
                   <div className="flex justify-between gap-3">
                     <span className="text-[#a88a9f] shrink-0">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
-                    <TransactionBadge
-                      walletId={selectedTransaction.walletId}
-                      paymentLinkId={selectedTransaction.paymentLinkId}
-                      language={language}
-                    />
+                    {renderPaymentMethod(transactionDetails || selectedTransaction)}
                   </div>
                 </div>
               </div>

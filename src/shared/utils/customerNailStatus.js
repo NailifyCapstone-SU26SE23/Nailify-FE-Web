@@ -39,7 +39,7 @@ const CUSTOMER_NAIL_STATUS_CONFIG = {
   },
   Approved: {
     en: "Approved",
-    vi: "Đã duyệt",
+    vi: "Đã xác nhận",
     tone: "bg-[#eaf9ee] text-[#2fa25f]",
     icon: CheckCircle2,
   },

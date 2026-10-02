@@ -35,6 +35,7 @@ import {
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { Tooltip } from "antd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 export function QuizManagement() {
     const navigate = useNavigate();
@@ -469,10 +470,7 @@ export function QuizManagement() {
                                                         <button
                                                             onClick={() => handleToggleStatus(q.id)}
 
-                                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold transition-all active:scale-[0.98] ${q.status === "Active"
-                                                                ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
-                                                                : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
-                                                                }`}
+                                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold transition-all active:scale-[0.98] ${BASIC_STATUS[q.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
                                                         >
                                                             <Power size={8} />
                                                             <span>

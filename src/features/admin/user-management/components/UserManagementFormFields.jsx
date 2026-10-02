@@ -8,6 +8,7 @@ import {
 } from "../services/mockUsers";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { USER_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const isSalonRole = (role) => {
   const normalized = String(role || "").trim().toLowerCase();
@@ -37,20 +38,7 @@ const getRoleLabel = (role, t) => {
   }
 };
 
-const getStatusLabel = (status, t) => {
-  switch (status) {
-    case "Active":
-      return t("userManagement.detail.statusActive");
-    case "Inactive":
-      return t("userManagement.detail.statusInactive");
-    case "Pending":
-      return t("userManagement.detail.statusPending");
-    case "Suspended":
-      return t("userManagement.detail.statusSuspended");
-    default:
-      return status;
-  }
-};
+
 
 export function UserManagementFormFields({
   formValues,
@@ -268,11 +256,14 @@ export function UserManagementFormFields({
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           >
-            {FORM_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {getStatusLabel(status, t)}
-              </option>
-            ))}
+            {FORM_STATUS_OPTIONS.map((status) => {
+              const statusObj = USER_STATUS[status] || { vi: status, en: status };
+              return (
+                <option key={status} value={status}>
+                  {language === "vi" ? statusObj.vi : statusObj.en}
+                </option>
+              );
+            })}
           </select>
         </label>
 
@@ -441,11 +432,14 @@ export function UserManagementFormFields({
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
         >
-          {FORM_STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {getStatusLabel(status, t)}
-            </option>
-          ))}
+          {FORM_STATUS_OPTIONS.map((status) => {
+            const statusObj = USER_STATUS[status] || { vi: status, en: status };
+            return (
+              <option key={status} value={status}>
+                {language === "vi" ? statusObj.vi : statusObj.en}
+              </option>
+            );
+          })}
         </select>
       </label>
 

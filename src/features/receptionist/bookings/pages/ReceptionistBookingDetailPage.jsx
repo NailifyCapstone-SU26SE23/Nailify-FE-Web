@@ -285,8 +285,8 @@ function getServiceAction(status, isVi) {
   return isVi ? "Xem" : "View";
 }
 
-function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi) {
-  return [
+function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi, bookingStatus) {
+  const items = [
     {
       key: `view-${row.id}`,
       label: isVi ? "Xem" : "View",
@@ -300,20 +300,27 @@ function getServiceActionItems(row, handleViewService, handleViewProcedures, han
       className: "text-[#7c63d8]",
       onSelect: () => handleViewProcedures(row),
     },
-    {
-      key: `edit-quantity-${row.id}`,
-      label: isVi ? "Cập nhật số lượng" : "Update Quantity",
-      icon: Edit2,
-      onSelect: () => handleEnableEditQuantity(row),
-    },
-    {
-      key: `delete-${row.id}`,
-      label: isVi ? "Xóa dịch vụ" : "Delete Service",
-      icon: Trash2,
-      className: "text-red-500",
-      onSelect: () => handleDeleteService(row),
-    },
   ];
+
+  if (bookingStatus === "CheckedIn" || bookingStatus === "InProgress") {
+    items.push(
+      {
+        key: `edit-quantity-${row.id}`,
+        label: isVi ? "Cập nhật số lượng" : "Update Quantity",
+        icon: Edit2,
+        onSelect: () => handleEnableEditQuantity(row),
+      },
+      {
+        key: `delete-${row.id}`,
+        label: isVi ? "Xóa dịch vụ" : "Delete Service",
+        icon: Trash2,
+        className: "text-red-500",
+        onSelect: () => handleDeleteService(row),
+      }
+    );
+  }
+
+  return items;
 }
 
 function getProgressPercent(booking) {
@@ -1167,7 +1174,7 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <div className="flex items-center gap-2">
           <ActionDropdown
-            items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi)}
+            items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi, booking?.status)}
             buttonClassName="..."
             label={isVi ? "Thao tác" : "Actions"}
           />
@@ -1186,7 +1193,7 @@ export function ReceptionistBookingDetailPage() {
         </div>
       ),
     },
-  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows, canEditServices]);
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, doUpdateServiceQuantity, editingQuantityId, tempQuantity, isDeletingService, selectedServiceIds, serviceRows, canEditServices, booking?.status]);
 
   const totalItemsDuration = booking?.bookingItems?.reduce((acc, item) => acc + (Number(item.duration) || 0) * (item.quantity || 1), 0) || booking?.totalDuration;
   const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
@@ -1276,6 +1283,19 @@ export function ReceptionistBookingDetailPage() {
   }, [actionAvailability.canCheckout, handleCheckout, handleManualCheckIn]);
 
   const receptionistActionCenterItems = useMemo(
+    //     return {
+    //   canCheckIn: normalizedStatus === "approved",
+    //   canStartService: normalizedStatus === "checkedin",
+    //   canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
+    //   canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    //   canAddService: ["checkedin", "in progress", "inprogress"].includes(normalizedStatus),
+    //   canCompleteBooking: ["in progress", "inprogress"].includes(normalizedStatus),
+    //   canCancelBooking: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    //   canSendInvoice: ["servicecompleted", "completed"].includes(normalizedStatus),
+    //   canCheckout: normalizedStatus === "servicecompleted",
+    //   canAddPayment: normalizedStatus === "servicecompleted",
+    //   canPrintReceipt: ["servicecompleted", "completed"].includes(normalizedStatus),
+    // };
     () => [
       {
         label: actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In"),
@@ -1420,7 +1440,7 @@ export function ReceptionistBookingDetailPage() {
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
             badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận'
               : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
-                : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                : String(booking.status).toLowerCase() === 'approved' ? 'Đã xác nhận'
                   : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
                     : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
                       : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
@@ -1512,7 +1532,7 @@ export function ReceptionistBookingDetailPage() {
                         <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ làm móng chính" : "Preferred Nail Artist"}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ chính" : "Main Staff"}</p>
                         <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist}</p>
                       </div>
                     </div>
@@ -1697,7 +1717,7 @@ export function ReceptionistBookingDetailPage() {
                   {booking.status ?
                     (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
                       String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
-                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã duyệt'
+                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã xác nhận'
                           : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
                             : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
                               : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
@@ -2429,15 +2449,17 @@ export function ReceptionistBookingDetailPage() {
                               </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
-                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
-                            >
-                              {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
-                              <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
-                              </span>
-                            </button>
+                            {["Approved", "CheckedIn", "InProgress"].includes(booking?.status) && (
+                              <button
+                                type="button"
+                                onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                                className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
+                              >
+                                {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
+                                <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
+                                </span>
+                              </button>
+                            )}
                           </div>
 
                           {/* Right: Time Breakdown & Overlap Badges */}

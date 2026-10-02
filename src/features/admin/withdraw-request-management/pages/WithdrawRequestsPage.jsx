@@ -16,11 +16,7 @@ import {
   fetchSystemSummary,
   fetchWithdrawalRequests,
 } from "../services/withdrawRequestService";
-import {
-  WITHDRAW_REQUEST_STATUSES,
-  getWithdrawRequestStatusColor,
-  getWithdrawRequestStatusLabel,
-} from "../utils/withdrawRequestUtils";
+import { WITHDRAWAL_STATUS } from "../../../../shared/utils/statusFormatters";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
@@ -191,11 +187,17 @@ export function WithdrawRequestsPage() {
       key: "status",
       width: 140,
       sorter: (a, b) => a.status.localeCompare(b.status),
-      render: (status) => (
-        <Tag color={getWithdrawRequestStatusColor(status)}>
-          {getWithdrawRequestStatusLabel(status, language)}
-        </Tag>
-      ),
+      render: (status) => {
+        const statusObj = WITHDRAWAL_STATUS[status];
+        if (statusObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${statusObj.tone}`}>
+              {language === "vi" ? statusObj.vi : statusObj.en}
+            </span>
+          );
+        }
+        return <Tag>{status}</Tag>;
+      },
     },
 
     {
@@ -240,12 +242,10 @@ export function WithdrawRequestsPage() {
                   className="w-full sm:w-48"
                   value={statusFilter}
                   onChange={setStatusFilter}
-                  options={[
-                    { value: WITHDRAW_REQUEST_STATUSES.PENDING, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.PENDING, language) },
-                    { value: WITHDRAW_REQUEST_STATUSES.APPROVED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.APPROVED, language) },
-                    { value: WITHDRAW_REQUEST_STATUSES.REJECTED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.REJECTED, language) },
-                    { value: WITHDRAW_REQUEST_STATUSES.COMPLETED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.COMPLETED, language) },
-                  ]}
+                  options={["Pending", "Approved", "Rejected", "Completed"].map((s) => ({
+                    value: s,
+                    label: WITHDRAWAL_STATUS[s] ? (language === "vi" ? WITHDRAWAL_STATUS[s].vi : WITHDRAWAL_STATUS[s].en) : s,
+                  }))}
                 />
               </div>
               <div className="flex items-center gap-3">

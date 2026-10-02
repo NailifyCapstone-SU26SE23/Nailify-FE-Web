@@ -35,6 +35,7 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { toast } from "react-hot-toast";
 import { Tooltip } from "antd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 // Presentation-only helper: renders a tier's rank as a roman numeral stamp.
 // Purely derived from sortOrder at render time — does not touch any state.
@@ -165,11 +166,6 @@ export function LoyaltyTierManagement() {
         }
     };
 
-    // Badge image upload handling.
-    // NOTE: this reads the file locally and previews it as a base64 data URL so the
-    // drawer + card preview update instantly. Wire this up to your real upload
-    // endpoint (e.g. Cloudinary) and swap `reader.result` for the returned URL
-    // once that endpoint is available.
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -601,7 +597,7 @@ export function LoyaltyTierManagement() {
                                                             {t("adminLoyaltyTiersManagement.threshold")}
                                                         </span>
                                                         <span className="nailify-mono text-xs font-bold">
-                                                            {tier.minLifetimePoints.toLocaleString()}–{tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
+                                                            {tier.minLifetimePoints.toLocaleString()} – {tier.maxLifetimePoints.toLocaleString() === "0" ? "∞" : tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
                                                         </span>
                                                     </div>
                                                     <div className="text-right">
@@ -634,10 +630,7 @@ export function LoyaltyTierManagement() {
                                                         }}
                                                         disabled={updatingStatusTierId === tier.id}
                                                         title={language === "vi" ? `Đổi trạng thái thành ${tier.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${tier.status === "Active" ? "Inactive" : "Active"}`}
-                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${tier.status === "Active"
-                                                            ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
-                                                            : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
-                                                            }`}
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${BASIC_STATUS[tier.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
                                                     >
                                                         {updatingStatusTierId === tier.id ? (
                                                             <svg className="h-2.5 w-2.5 animate-spin text-current" viewBox="0 0 24 24" fill="none">

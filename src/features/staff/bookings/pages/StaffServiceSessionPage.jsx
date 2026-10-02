@@ -1510,7 +1510,7 @@ export function StaffServiceSessionPage() {
             pageSize: 10,
             name: serviceSearchKeyword.trim() || undefined,
           });
-          
+
           mappedItems = response.items.map(design => ({
             serviceId: String(design.nailDesignId || design.id).trim(),
             name: String(design.name || design.title).trim(),
@@ -1524,7 +1524,7 @@ export function StaffServiceSessionPage() {
             categories: Array.isArray(design.categories) ? design.categories : [],
             nailVariants: Array.isArray(design.nailVariants) ? design.nailVariants : [],
           }));
-          
+
           metaData = response.metaData ?? {};
         }
 
@@ -2846,8 +2846,8 @@ export function StaffServiceSessionPage() {
                               <th className="px-4 py-3 font-bold">{isVi ? "Bước" : "Step"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Quy trình" : "Procedure"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Thợ" : "Artist"}</th>
-                              <th className="px-4 py-3 font-bold">{isVi ? "Thời lượng & Hẹn" : "Duration & Time"}</th>
-                              <th className="px-4 py-3 font-bold">{isVi ? "Thực tế" : "Start & End Time"}</th>
+                              {/* <th className="px-4 py-3 font-bold">{isVi ? "Thời lượng & Hẹn" : "Duration & Time"}</th> */}
+                              <th className="px-4 py-3 font-bold">{isVi ? "Thời gian" : "Time"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Trạng thái" : "Status"}</th>
                               <th className="px-4 py-3 font-bold text-center">{isVi ? "Thao tác" : "Action"}</th>
                             </tr>
@@ -2877,14 +2877,14 @@ export function StaffServiceSessionPage() {
                                 <td className="px-4 py-4 text-[#8a7082]">
                                   {procedure.artist}
                                 </td>
-                                <td className="px-4 py-4">
+                                {/* <td className="px-4 py-4">
                                   <div className="flex flex-col items-start">
                                     <span className="rounded bg-purple-100 px-2 py-0.5 text-sm font-bold text-purple-900">{procedure.time}</span>
                                     <span className="mt-1 text-[11px] font-semibold text-green-500">
                                       {formatDurationMinutes(procedure.duration, language)}
                                     </span>
                                   </div>
-                                </td>
+                                </td> */}
                                 <td className="px-4 py-4">
                                   <div className="flex flex-col items-start">
                                     <span className="rounded bg-indigo-50 px-2 py-0.5 text-sm font-bold text-indigo-700">{procedure.actualTime}</span>

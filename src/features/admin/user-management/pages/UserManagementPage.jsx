@@ -25,14 +25,13 @@ import {
   getAdminUserDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import {
-  USER_STATUS_STYLES,
-  USER_ROLE_OPTIONS,
-} from "../services/mockUsers";
+
+import { USER_STATUS } from "../../../../shared/utils/statusFormatters";
 import { fetchAdminUsers, deleteAdminUser } from "../services/userManagementService";
 import { toast } from "react-hot-toast";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { USER_ROLE_OPTIONS } from "../services/mockUsers";
 
 const ALL_FILTER_VALUE = "__all__";
 
@@ -69,19 +68,8 @@ const getRoleLabel = (role, t) => {
   }
 };
 
-const getStatusLabel = (status, t) => {
-  switch (status) {
-    case "Active":
-      return t("userManagement.detail.statusActive");
-    case "Inactive":
-      return t("userManagement.detail.statusInactive");
-    case "Pending":
-      return t("userManagement.detail.statusPending");
-    case "Suspended":
-      return t("userManagement.detail.statusSuspended");
-    default:
-      return status;
-  }
+const getUserStatusObj = (status) => {
+  return USER_STATUS[status] || { vi: status, en: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
 };
 
 
@@ -485,11 +473,14 @@ export function UserManagementPage() {
       dataIndex: "statusLabel",
       key: "statusLabel",
       sorter: (a, b) => (a.statusLabel || "").localeCompare(b.statusLabel || ""),
-      render: (value, user) => (
-        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
-          {getStatusLabel(user.status || value, t)}
-        </span>
-      ),
+      render: (value, user) => {
+        const statusObj = getUserStatusObj(user.status || value);
+        return (
+          <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold border ${statusObj.tone}`}>
+            {language === "vi" ? statusObj.vi : statusObj.en}
+          </span>
+        );
+      },
     },
     // {
     //   title: t("userManagement.table.lastActive"),
@@ -658,11 +649,14 @@ export function UserManagementPage() {
                         <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
                       </div>
                       <div className="text-right">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
-                        >
-                          {getStatusLabel(user.status || user.statusLabel, t)}
-                        </span>
+                        {(() => {
+                          const statusObj = getUserStatusObj(user.status || user.statusLabel);
+                          return (
+                            <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold border ${statusObj.tone}`}>
+                              {language === "vi" ? statusObj.vi : statusObj.en}
+                            </span>
+                          );
+                        })()}
                         <div className="mt-4 flex items-center justify-end gap-2">
                           <Tooltip title={language === "vi" ? "Xem" : "View"} placement="top">
                             <button

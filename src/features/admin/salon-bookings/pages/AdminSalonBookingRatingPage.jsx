@@ -403,7 +403,7 @@ export function AdminSalonBookingRatingPage() {
         color: "#ea4f93",
       },
       {
-        label: isVi ? "Đánh giá đã duyệt" : "Audited Reviews",
+        label: isVi ? "Đánh giá Đã xác nhận" : "Audited Reviews",
         value: loadingMetrics ? <Spin size="small" /> : `${totalNetworkReviews} logs`,
         note: "Audited reviews",
         icon: MessageSquare,

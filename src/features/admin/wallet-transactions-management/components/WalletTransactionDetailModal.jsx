@@ -8,6 +8,7 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { WALLET_TRANSACTION_STATUS, WALLET_TRANSACTION_TYPE } from "../../../../shared/utils/statusFormatters";
 
 const { Text } = Typography;
 
@@ -53,9 +54,21 @@ export function WalletTransactionDetailModal({
                   {t("walletTransactions.transactionInformation")}
                 </div>
               </div>
-              <Tag color={getWalletTransactionStatusColor(transaction.status)} className="!rounded-full !text-xs !font-bold">
-                {getWalletTransactionStatusLabel(transaction.status, language)}
-              </Tag>
+              {(() => {
+                const statusObj = WALLET_TRANSACTION_STATUS[transaction.status];
+                if (statusObj) {
+                  return (
+                    <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold border ${statusObj.tone}`}>
+                      {language === "vi" ? statusObj.vi : statusObj.en}
+                    </span>
+                  );
+                }
+                return (
+                  <Tag color={getWalletTransactionStatusColor(transaction.status)} className="!rounded-full !text-xs !font-bold">
+                    {getWalletTransactionStatusLabel(transaction.status, language)}
+                  </Tag>
+                );
+              })()}
             </div>
 
             <div className="mb-2 rounded-2xl border border-[#f5e2ec] bg-[#fff9fb] p-5 text-center">
@@ -75,9 +88,22 @@ export function WalletTransactionDetailModal({
                 <span className="font-mono">{formatCurrency(transaction.balanceAfter)}</span>
               </DetailRow>
               <DetailRow label={t("walletTransactions.type")}>
-                <Tag color={getWalletTransactionTypeColor(transaction.type)} className="!m-0 !rounded-full !font-bold">
-                  {getWalletTransactionTypeLabel(transaction.type, language)}
-                </Tag>
+                {(() => {
+                  const key = transaction.type === "Withdraw" ? "Withdrawal" : transaction.type;
+                  const typeObj = WALLET_TRANSACTION_TYPE[key];
+                  if (typeObj) {
+                    return (
+                      <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-bold border !m-0 ${typeObj.tone}`}>
+                        {language === "vi" ? typeObj.vi : typeObj.en}
+                      </span>
+                    );
+                  }
+                  return (
+                    <Tag color={getWalletTransactionTypeColor(transaction.type)} className="!m-0 !rounded-full !font-bold">
+                      {getWalletTransactionTypeLabel(transaction.type, language)}
+                    </Tag>
+                  );
+                })()}
               </DetailRow>
               <DetailRow label={t("walletTransactions.referenceType")}>
                 {getWalletReferenceTypeLabel(transaction.referenceType, language)}

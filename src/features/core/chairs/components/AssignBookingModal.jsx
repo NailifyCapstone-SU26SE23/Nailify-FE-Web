@@ -235,7 +235,7 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
           style={{ width: 180 }}
           options={[
             { label: language === "vi" ? "Đang chờ" : "Pending", value: 'Pending' },
-            { label: language === "vi" ? "Đã duyệt" : "Approved", value: 'Approved' },
+            { label: language === "vi" ? "Đã xác nhận" : "Approved", value: 'Approved' },
             { label: language === "vi" ? "Đã từ chối" : "Rejected", value: 'Rejected' },
             { label: language === "vi" ? "Đã hủy" : "Cancelled", value: 'Cancelled' },
             { label: language === "vi" ? "Đã check-in" : "CheckedIn", value: 'CheckedIn' },

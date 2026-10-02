@@ -30,22 +30,18 @@ import {
   formatProcedureDuration,
 } from "../services/proceduresManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
 function ProcedureStatusBadge({ status }) {
-  const { t, language } = useLanguage();
-  const toneMap = {
-    Active: "bg-[#e7fbf4] text-[#159669]",
-    Inactive: "bg-[#fff1f5] text-[#d14c84]",
-  };
-
-  const isStatusActive = String(status || "").toLowerCase() === "active";
-  const displayLabel = isStatusActive ? t("adminProcedures.active") : t("adminProcedures.inactive");
+  const { language } = useLanguage();
+  const normalizedStatus = String(status || "Inactive");
+  const statusObj = BASIC_STATUS[normalizedStatus] || BASIC_STATUS.Inactive;
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${isStatusActive ? toneMap.Active : toneMap.Inactive}`}>
-      {displayLabel}
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${statusObj.tone}`}>
+      {statusObj[language]}
     </span>
   );
 }

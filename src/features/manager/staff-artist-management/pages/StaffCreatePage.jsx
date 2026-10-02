@@ -237,6 +237,8 @@ export function StaffCreatePage() {
     navigate(ROUTES.managerStaffArtists);
   };
 
+  const roleLabel = isVi ? "Thợ làm móng" : "Staff Artist";
+
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
       {/* Header */}
@@ -373,7 +375,7 @@ export function StaffCreatePage() {
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Staff_Artist"
+                    value={roleLabel}
                     readOnly
                     className={inputClassName}
                   />

@@ -176,7 +176,7 @@ function translateStatus(status, language) {
       case "inactive": return "Ngừng hoạt động";
       case "blocked": return "Đã khóa";
       case "pending": return "Chờ xử lý";
-      case "approved": return "Đã duyệt";
+      case "approved": return "Đã xác nhận";
       case "checkedin": return "Đã Check-in";
       case "inprogress": return "Đang thực hiện";
       case "servicecompleted": return "Đã xong dịch vụ";

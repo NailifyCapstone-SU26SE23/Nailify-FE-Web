@@ -28,6 +28,7 @@ import {
 import { mapSalonOperatingHours, normalizeAdminSalon, fetchAdminSalonDetail, deleteAdminSalon, fetchSalonStaffSummary } from "../services/salonManagementService";
 import { uploadSalonImage, fetchSalonRatings } from "../services/salonsService";
 import { fetchAdminUsers } from "../../user-management/services/userManagementService";
+import { SALON_STATUS_FILTER } from "../../../../shared/utils/statusFormatters";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
@@ -138,18 +139,7 @@ export function SalonDetailPage() {
 
   const menuRef = useRef(null);
 
-  const getLocalizedSalonStatus = (status, lang) => {
-    if (!status) return "";
-    const lower = status.toLowerCase();
-    if (lang === "vi") {
-      if (lower === "open" || lower === "active") return "Đang hoạt động";
-      if (lower === "closed" || lower === "inactive") return "Đóng cửa";
-      return status;
-    }
-    if (lower === "open" || lower === "active") return "Open";
-    if (lower === "closed" || lower === "inactive") return "Closed";
-    return status;
-  };
+
 
   const salonDetail = useMemo(() => {
     if (!salonForm && !salonRow) {
@@ -513,12 +503,17 @@ export function SalonDetailPage() {
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-2.5 text-[12px] font-bold ${salonDetail.statusColor}`}
-                  >
-                    <span className="h-2 w-2 rounded-full bg-current" />
-                    {getLocalizedSalonStatus(salonDetail.status, language)}
-                  </span>
+                  {(() => {
+                    const statusObj = SALON_STATUS_FILTER[salonDetail.status] || SALON_STATUS_FILTER.Open;
+                    return (
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-2.5 text-[12px] font-bold border ${statusObj.tone}`}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-current" />
+                        {language === "vi" ? statusObj.vi : statusObj.en}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </PremiumCard>

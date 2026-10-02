@@ -118,6 +118,7 @@ function normalizeAdminNailVariantDetail(variant) {
   const nailComponents = Array.isArray(variant?.nailComponents) ? variant.nailComponents : [];
 
   return {
+    status: String(variant?.status || "").trim(),
     id: String(variant?.nailVariantId || ""),
     nailVariantId: normalizeIntegerId(variant?.nailVariantId),
     name: String(variant?.name || "").trim(),

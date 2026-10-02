@@ -22,6 +22,6 @@ export function useAuth() {
     error,
     login: (credentials) => dispatch(login(credentials)),
     loginGoogle: (idToken) => dispatch(loginGoogle(idToken)),
-    logout: () => dispatch(logout()),
+    logout: (options = {}) => dispatch(logout(options)),
   };
 }

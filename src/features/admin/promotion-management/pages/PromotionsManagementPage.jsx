@@ -67,20 +67,12 @@ function formatDiscount(promotion) {
 }
 
 function PromotionStatusBadge({ promotion, language }) {
-  const className = promotion?.isActive
-    ? "bg-[#e7fbf4] text-[#159669]"
-    : "bg-[#fff1f5] text-[#d14c84]";
-
-  let statusText = promotion?.status || (promotion?.isActive ? "Active" : "Inactive");
-  if (statusText.toLowerCase() === "active") {
-    statusText = language === "vi" ? "Hoạt động" : "Active";
-  } else if (statusText.toLowerCase() === "inactive") {
-    statusText = language === "vi" ? "Ngừng hoạt động" : "Inactive";
-  }
+  const normalizedStatus = String(promotion?.status || (promotion?.isActive ? "Active" : "Inactive"));
+  const statusObj = BASIC_STATUS[normalizedStatus] || BASIC_STATUS.Inactive;
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
-      {statusText}
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${statusObj.tone}`}>
+      {statusObj[language]}
     </span>
   );
 }

@@ -690,8 +690,8 @@ export function PromotionDetailPage() {
                     disabled={!isEditing}
                     className="h-12 w-full rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                   >
-                    <option value="Active">{language === "vi" ? "Hoạt động" : "Active"}</option>
-                    <option value="Inactive">{language === "vi" ? "Ngừng hoạt động" : "Inactive"}</option>
+                    <option value="Active">{BASIC_STATUS["Active"]?.[language]}</option>
+                    <option value="Inactive">{BASIC_STATUS["Inactive"]?.[language]}</option>
                   </select>
                 </FormField>
               </div>

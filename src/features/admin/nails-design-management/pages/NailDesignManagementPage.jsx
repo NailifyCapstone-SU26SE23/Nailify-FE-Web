@@ -24,6 +24,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 // import { LoadingSpinner } from "../../../../shared/components/ui/LoadingSpinner";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
@@ -66,6 +67,7 @@ function normalizeDesign(design, index, t) {
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
   const estimatedPrice = getDesignEstimatedPrice(design);
+  const { language } = useLanguage();
 
   return {
     ...design,
@@ -76,10 +78,8 @@ function normalizeDesign(design, index, t) {
       : [],
     uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
     uiEstimatedPrice: estimatedPrice,
-    uiStatus: design.status === "Active"
-      ? (t("adminNailsDesignManagement.active"))
-      : (t("adminNailsDesignManagement.inactive")),
-    uiStatusTone: design.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
+    uiStatus: BASIC_STATUS[design.status]?.[language] || design.status,
+    uiStatusTone: BASIC_STATUS[design.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -692,7 +692,7 @@ export function NailDesignManagementPage() {
             ? {
               title: pendingDeleteDesign.name,
               image: pendingDeleteDesign.imageUrl || undefined,
-              meta: pendingDeleteDesign.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive"),
+              meta: BASIC_STATUS[pendingDeleteDesign.status]?.[language] || pendingDeleteDesign.status,
               note: pendingDeleteDesign.description || "Nail design",
             }
             : undefined

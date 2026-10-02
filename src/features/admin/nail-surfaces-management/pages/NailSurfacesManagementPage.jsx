@@ -234,12 +234,9 @@ export function NailSurfacesManagementPage() {
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (status) => (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold tracking-wider ${status === "Active"
-              ? "bg-[#e7fbf4] text-[#23b68b]"
-              : "bg-[#fff0f5] text-[#eb5a99]"
-              }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold tracking-wider ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-[#23b68b]" : "bg-[#eb5a99]"}`}></span>
+            <span className={`h-1.5 w-1.5 rounded-full ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}></span>
             {status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
           </span>
         ),

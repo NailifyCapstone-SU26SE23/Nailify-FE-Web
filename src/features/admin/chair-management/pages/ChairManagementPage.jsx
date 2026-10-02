@@ -7,6 +7,7 @@ import { fetchSalons } from '../../salon-management/services/salonsService';
 import ChairFormModal from '../components/ChairFormModal';
 import toast from 'react-hot-toast';
 import ChairMap from '../../../../shared/components/ui/ChairMap';
+import { CHAIR_STATUS } from '../../../../shared/utils/statusFormatters';
 
 const { Option } = Select;
 
@@ -95,9 +96,7 @@ export default function ChairManagementPage() {
   };
 
   const getStatusColor = (status) => {
-    if (status === 'Active') return 'bg-emerald-50 text-emerald-600 border-emerald-200';
-    if (status === 'Maintenance') return 'bg-amber-50 text-amber-600 border-amber-200';
-    return 'bg-slate-50 text-slate-600 border-slate-200';
+    return CHAIR_STATUS[status]?.tone || CHAIR_STATUS.Active.tone;
   };
 
   // Drag and drop handlers

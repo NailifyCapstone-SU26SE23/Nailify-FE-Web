@@ -292,7 +292,7 @@ export async function assignArtistToBookingOld(bookingId, staffArtistId, slotInf
   }
 }
 
-// New assign API using PUT /Bookings/{id}
+// New assign API using POST /Bookings/{id}/receptionist-assign-artist
 export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo = null, bookingDate = null, bookingItems = []) {
   const normalizedBookingId = String(bookingId || "").trim();
   const normalizedStaffId = String(staffArtistId || "").trim();
@@ -304,29 +304,21 @@ export async function assignArtistToBooking(bookingId, staffArtistId, slotInfo =
     throw new Error("Staff Artist ID is required.");
   }
 
-  const payload = { nailArtistId: normalizedStaffId };
-  if (bookingDate) {
-    payload.bookingDate = bookingDate;
-  }
-  if (slotInfo) {
-    payload.startTime = slotInfo.startTime;
-  }
-  if (bookingItems && bookingItems.length > 0) {
-    payload.bookingItems = bookingItems;
-  }
+  const payload = { staffArtistId: normalizedStaffId };
 
   try {
-    const response = await axiosClient.put(`/Bookings/${normalizedBookingId}`,
+    const response = await axiosClient.post(`/Bookings/${normalizedBookingId}/receptionist-assign-artist`,
       payload,
       { headers: getAuthHeaders() }
     );
-    return unwrapResponse(response, "Failed to assign artist to booking (new endpoint).");
+    return unwrapResponse(response, "Failed to assign artist to booking.");
   } catch (error) {
-    const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking (new endpoint).";
-    console.error("Error assigning artist to booking (new endpoint):");
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to assign artist to booking.";
+    console.error("Error assigning artist to booking:");
     console.error("- Response status:", error?.response?.status);
     console.error("- Response data:", error?.response?.data);
     console.error("- Request config:", error?.config);
+    console.error("- Error message:", error?.message);
     throw new Error(errorMessage, { cause: error });
   }
 }

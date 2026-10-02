@@ -36,6 +36,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BOOKING_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></rect></svg>'
@@ -65,32 +66,14 @@ function SectionHeading({ title, subtitle }) {
 }
 const getStatusDisplay = (status, isVi) => {
   const s = status || "";
-  switch (s) {
-    case "Pending":
-      return { text: isVi ? "Chờ xác nhận" : "Pending", color: "bg-yellow-50 text-yellow-700 border-yellow-200" };
-    case "Approved":
-      return { text: isVi ? "Đã duyệt" : "Approved", color: "bg-blue-50 text-blue-700 border-blue-200" };
-    case "Rejected":
-      return { text: isVi ? "Đã từ chối" : "Rejected", color: "bg-red-50 text-red-700 border-red-200" };
-    case "Cancelled":
-      return { text: isVi ? "Đã hủy" : "Cancelled", color: "bg-gray-50 text-gray-700 border-gray-200" };
-    case "CheckedIn":
-      return { text: isVi ? "Đã Check-in" : "Checked In", color: "bg-purple-50 text-purple-700 border-purple-200" };
-    case "InProgress":
-      return { text: isVi ? "Đang thực hiện" : "In Progress", color: "bg-indigo-50 text-indigo-700 border-indigo-200" };
-    case "ServiceCompleted":
-      return { text: isVi ? "Dịch vụ hoàn tất" : "Service Completed", color: "bg-teal-50 text-teal-700 border-teal-200" };
-    case "Completed":
-      return { text: isVi ? "Hoàn thành" : "Completed", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
-    case "Repaired":
-      return { text: isVi ? "Đã bảo hành" : "Repaired", color: "bg-cyan-50 text-cyan-700 border-cyan-200" };
-    case "ReschedulePending":
-      return { text: isVi ? "Chờ đổi lịch" : "Reschedule Pending", color: "bg-orange-50 text-orange-700 border-orange-200" };
-    case "RescheduleSuggested":
-      return { text: isVi ? "Đề xuất đổi lịch" : "Reschedule Suggested", color: "bg-orange-50 text-orange-700 border-orange-200" };
-    default:
-      return { text: s, color: "bg-slate-50 text-slate-700 border-slate-200" };
+  const statusObj = BOOKING_STATUS[s];
+  if (statusObj) {
+    return {
+      text: isVi ? statusObj.vi : statusObj.en,
+      color: statusObj.tone
+    };
   }
+  return { text: s, color: "bg-slate-50 text-slate-700 border-slate-200" };
 };
 
 function BookingCard({ booking, index }) {
@@ -427,7 +410,7 @@ export function AdminSalonBookingDetailPage() {
               placeholder={isVi ? "Chọn trạng thái" : "Select status"}
               options={[
                 { value: "Pending", label: isVi ? "Chờ xác nhận" : "Pending" },
-                { value: "Approved", label: isVi ? "Đã duyệt" : "Approved" },
+                { value: "Approved", label: isVi ? "Đã xác nhận" : "Approved" },
                 { value: "Rejected", label: isVi ? "Đã từ chối" : "Rejected" },
                 { value: "Cancelled", label: isVi ? "Đã hủy" : "Cancelled" },
                 { value: "CheckedIn", label: isVi ? "Đã Check-in" : "Checked In" },

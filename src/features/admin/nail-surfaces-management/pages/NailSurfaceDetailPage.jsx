@@ -350,8 +350,8 @@ export function NailSurfaceDetailPage() {
                     className="w-full -ml-3 bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
                     dropdownStyle={{ borderRadius: '12px', padding: '4px' }}
                     options={[
-                      { value: "Active", label: language === "vi" ? "Hoạt động" : "Active" },
-                      { value: "Inactive", label: language === "vi" ? "Ngừng hoạt động" : "Inactive" },
+                      { value: "Active", label: BASIC_STATUS["Active"]?.[language] || "Active" },
+                      { value: "Inactive", label: BASIC_STATUS["Inactive"]?.[language] || "Inactive" },
                     ]}
                   />
                 </div>

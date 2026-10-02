@@ -533,8 +533,8 @@ export function NailShapeDetailPage() {
                   key: 'status',
                   sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${BASIC_STATUS[val]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                      {BASIC_STATUS[val]?.[language] || val}
                     </span>
                   )
                 },

@@ -56,6 +56,7 @@ import { Canvas } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -878,6 +879,7 @@ export function NailVariantDetailPage() {
   const { t, language } = useLanguage();
   const location = useLocation();
   const [variant, setVariant] = useState(null);
+  console.log("variant", variant);
   const [procedures, setProcedures] = useState([]);
   const [availableProcedures, setAvailableProcedures] = useState([]);
   const [editingProcedureIndex, setEditingProcedureIndex] = useState(null);
@@ -1226,11 +1228,14 @@ export function NailVariantDetailPage() {
                 </div>
               )}
             </div>
-            <div>
-              <p className="text-xs text-[#c694ad]">
-                {t("adminNailsDesignManagement.nailDesigns")}<span className="text-[#ea4f93]">{t("adminNailsDesignManagement.variantDetail")}</span>
-              </p>
-              <h1 className="mt-2 text-2xl font-bold text-[#432744]">{variant.name}</h1>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-2xl font-bold text-[#432744]">{variant.name}</h1>
+              <div className={`w-fit rounded-2xl border px-3 py-0.5 text-center text-sm font-semibold ${variant.status === "Active"
+                ? "border-green-600 bg-green-50 text-green-600"
+                : "border-red-600 bg-red-50 text-red-600"
+                }`}>
+                {variant.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive")}
+              </div>
             </div>
           </div>
 
@@ -1437,9 +1442,9 @@ export function NailVariantDetailPage() {
                                 <Clock size={14} className="text-[#a1909e]" />
                                 {item.durationLabel || item.duration}
                               </div>
-                              <div className="flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-3 py-1.5 text-xs font-semibold text-[#4a72d8]">
-                                <Activity size={14} className="text-[#84a3f3]" />
-                                {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
+                              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${BASIC_STATUS[item.status]?.tone || "bg-gray-100 text-gray-600"}`}>
+                                <Activity size={14} className="text-current opacity-70" />
+                                {BASIC_STATUS[item.status]?.[language] || item.status}
                               </div>
                               <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${item.isRequired ? 'bg-[#fff0f7] text-[#ea4f93]' : 'bg-[#f3f4f6] text-[#9ca3af]'}`}>
                                 {item.isRequired ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
@@ -1504,9 +1509,9 @@ export function NailVariantDetailPage() {
                                   <Clock size={12} className="text-[#a1909e]" />
                                   {item.durationLabel || item.duration}
                                 </span>
-                                <span className="flex items-center gap-1.5 rounded-lg bg-[#eef4ff] px-2.5 py-1 text-[#4a72d8]">
-                                  <Activity size={12} className="text-[#84a3f3]" />
-                                  {item.status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (item.status === 'Inactive' ? (language === 'vi' ? 'Đã ẩn' : 'Inactive') : item.status)}
+                                <span className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 ${BASIC_STATUS[item.status]?.tone || "bg-gray-100 text-gray-600"}`}>
+                                  <Activity size={12} className="text-current opacity-70" />
+                                  {BASIC_STATUS[item.status]?.[language] || item.status}
                                 </span>
                                 {item.isRequired && (
                                   <span className="flex items-center gap-1.5 rounded-lg bg-[#fff0f7] px-2.5 py-1 text-[#ea4f93]">

@@ -131,7 +131,7 @@ export function ManagerArtistBreakPage() {
       // Status filter
       let matchesStatus = true;
       if (filterStatus === "pending") matchesStatus = st === "pending" || st === "chờ duyệt";
-      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "đã duyệt";
+      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "Đã xác nhận";
       else if (filterStatus === "rejected") matchesStatus = st === "rejected" || st === "từ chối";
 
       if (!matchesStatus) return false;
@@ -226,7 +226,7 @@ export function ManagerArtistBreakPage() {
     breaks.forEach((b) => {
       const st = String(b.status || "").toLowerCase();
       if (st === "pending" || st === "chờ duyệt") pending++;
-      else if (st === "approved" || st === "đã duyệt") approved++;
+      else if (st === "approved" || st === "Đã xác nhận") approved++;
       else if (st === "rejected" || st === "từ chối") rejected++;
     });
     return { pending, approved, rejected, total: breaks.length };
@@ -324,13 +324,13 @@ export function ManagerArtistBreakPage() {
     const s = String(status || "Pending").trim().toLowerCase();
     switch (s) {
       case "approved":
-      case "đã duyệt":
+      case "Đã xác nhận":
       case "đồng ý":
       case "active":
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            {language === 'vi' ? 'Đã duyệt' : 'Approved'}
+            {language === 'vi' ? 'Đã xác nhận' : 'Approved'}
           </span>
         );
       case "rejected":

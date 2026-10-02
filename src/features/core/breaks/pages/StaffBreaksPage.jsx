@@ -207,12 +207,12 @@ export function StaffBreaksPage() {
     const s = String(status || "Pending").trim().toLowerCase();
     switch (s) {
       case "approved":
-      case "đã duyệt":
+      case "Đã xác nhận":
       case "đồng ý":
       case "active":
         return (
           <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
-            {language === "vi" ? "Đã duyệt" : "Approved"}
+            {language === "vi" ? "Đã xác nhận" : "Approved"}
           </span>
         );
       case "rejected":

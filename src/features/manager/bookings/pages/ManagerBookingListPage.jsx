@@ -203,8 +203,6 @@ function StatusPill({ status, compact = false }) {
         return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
       case "ServiceCompleted":
         return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
-      case "Rejected":
-        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
       case "RescheduleReq":
       case "Reschedule Req":
       case "ReschedulePending":
@@ -213,8 +211,10 @@ function StatusPill({ status, compact = false }) {
         return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
       case "Cancelled":
         return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
+      case "Rejected":
+        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
       case "Repaired":
-        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+        return "bg-purple-100 text-purple-500 border-purple-500 shadow-2xs";
 
       default:
         return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";

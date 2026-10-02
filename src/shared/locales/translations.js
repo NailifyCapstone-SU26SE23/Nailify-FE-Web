@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 import { custom } from "zod";
 
 export const translations = {
@@ -5084,7 +5085,7 @@ export const translations = {
         startTime: "Giờ bắt đầu",
         endTime: "Giờ kết thúc",
         reason: "Lý do",
-        statusApproved: "Đã duyệt",
+        statusApproved: "Đã xác nhận",
         statusPending: "Chờ duyệt",
         statusRejected: "Bị từ chối",
         submitRequest: "Gửi yêu cầu",
@@ -5243,7 +5244,7 @@ export const translations = {
         startTime: "Giờ bắt đầu",
         endTime: "Giờ kết thúc",
         reason: "Lý do",
-        statusApproved: "Đã duyệt",
+        statusApproved: "Đã xác nhận",
         statusPending: "Chờ duyệt",
         statusRejected: "Bị từ chối",
         reject: "Từ chối"
