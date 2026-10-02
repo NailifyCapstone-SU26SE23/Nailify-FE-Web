@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle2, Clock3, XCircle } from "lucide-react";
-import { CUSTOMER_NAIL_REQUEST_STATUS } from "./statusFormatters";
+import { CUSTOMER_NAIL_STATUS } from "./statusFormatters";
 
 const STATUS_ICONS = {
   PendingReview: Clock3,
@@ -18,7 +18,7 @@ const FALLBACK_STATUS_CONFIG = {
 };
 
 export function getCustomerNailStatusMeta(status, language = "en") {
-  const config = CUSTOMER_NAIL_REQUEST_STATUS[status];
+  const config = CUSTOMER_NAIL_STATUS[status];
   const locale = language === "vi" ? "vi" : "en";
 
   if (!config) {

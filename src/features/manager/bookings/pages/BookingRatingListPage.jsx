@@ -628,7 +628,7 @@ export function BookingRatingListPage() {
                         {/* Mid Row: Comment bubble */}
                         <div className="relative bg-[#fff5f9]/70 border-l-4 border-[#ea4f93] p-4 lg:p-5 pl-11 rounded-r-2xl rounded-bl-2xl rounded-tl-xs shadow-3xs">
                           <Quote size={16} className="absolute left-4 top-4 text-[#ea4f93]/30 fill-[#ea4f93]/10" />
-                          <p className="text-xs md:text-sm text-[#2d1b35] leading-relaxed font-medium">
+                          <p className="text-xs md:text-sm text-[#2d1b35] leading-relaxed font-medium pt-4">
                             {rating.comment || "No written comment provided."}
                           </p>
                         </div>

@@ -77,31 +77,10 @@ const formatVNDate = (date) => {
 import { useQuery } from "@tanstack/react-query";
 import { TransactionBadge } from "../../../../shared/utils/transactions";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
+
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Pending':
-      return '!border-slate-200 !bg-slate-50 !text-slate-600';
-    case 'Approved':
-      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
-    case 'Rejected':
-    case 'Cancelled':
-      return '!border-red-200 !bg-red-50 !text-red-600';
-    case 'CheckedIn':
-      return '!border-purple-200 !bg-purple-50 !text-purple-600';
-    case 'InProgress':
-      return '!border-blue-200 !bg-blue-50 !text-blue-600';
-    case 'ServiceCompleted':
-      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
-    case 'Completed':
-      return '!border-green-200 !bg-green-50 !text-green-700';
-    case 'Repaired':
-      return '!border-orange-200 !bg-orange-50 !text-orange-600';
-    case 'ReschedulePending':
-    case 'RescheduleSuggested':
-      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
-    default:
-      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
-  }
+  return BOOKING_STATUS[status]?.tone || 'bg-[#fff8df] border-[#f3ddab] text-[#d39a1d]';
 };
 
 function formatDuration(totalMinutes, language = "en") {
@@ -192,21 +171,7 @@ function getCustomerInitials(customerProfile, booking) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "In Progress":
-    case "CheckedIn":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Confirmed":
-      return "bg-[#e9f2ff] text-[#4772da]";
-    case "Pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "Cancelled":
-      return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#fff1f6] text-[#eb5b92] border border-[#ffc2d5]";
 }
 
 function getServiceStatus(index, bookingStatus) {
@@ -458,6 +423,7 @@ function getReceptionistActionAvailability(status) {
 }
 
 function DetailCard({ title, subtitle, badge, children, className = "", headerAction }) {
+  const { language } = useLanguage();
   return (
     <section
       className={`rounded-[26px] border border-[#F3E2EC] bg-white/95 backdrop-blur-md p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.07)] transition-all ${className}`}
@@ -469,10 +435,10 @@ function DetailCard({ title, subtitle, badge, children, className = "", headerAc
         </div>
         {badge ? (
           <div className="flex items-center gap-2">
-            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "4px 12px", borderRadius: "20px", fontWeight: "700", fontSize: "11px" }}>
-              <Clock size={11} className="mr-1 inline-block" />
-              {badge}
-            </Tag>
+            <span className={`inline-flex items-center m-0 px-3 py-1 rounded-full font-bold text-[11px] ${getStatusColor(badge)}`}>
+              <Clock size={11} className="mr-1" />
+              {getStatusLabel(badge, BOOKING_STATUS, language)}
+            </span>
           </div>
         ) : null}
         {headerAction && (
@@ -1394,17 +1360,7 @@ export function ReceptionistBookingDetailPage() {
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
-            badge={booking.status ? (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận'
-              : String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
-                : String(booking.status).toLowerCase() === 'approved' ? 'Đã xác nhận'
-                  : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
-                    : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
-                      : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đợi thanh toán'
-                        : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
-                          : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
-                            : String(booking.status).toLowerCase() === 'inprogress' ? 'Đang thực hiện'
-                              : booking.status)
-              : booking.status) : null}
+            badge={booking.status}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -1654,17 +1610,7 @@ export function ReceptionistBookingDetailPage() {
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
                 <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status))}`}>
-                  {booking.status ?
-                    (language === "vi" ? (String(booking.status).toLowerCase() === 'pending' ? 'Chờ xác nhận' :
-                      String(booking.status).toLowerCase() === 'confirmed' ? 'Đã xác nhận'
-                        : String(booking.status).toLowerCase() === 'approved' ? 'Đã xác nhận'
-                          : String(booking.status).toLowerCase() === 'checkedin' ? 'Đã check in'
-                            : String(booking.status).toLowerCase() === 'repaired' ? 'Đã bảo hành'
-                              : String(booking.status).toLowerCase() === 'servicecompleted' ? 'Đã hoàn thành dịch vụ'
-                                : String(booking.status).toLowerCase() === 'completed' ? 'Đã hoàn thành'
-                                  : String(booking.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
-                                    : String(booking.status).toLowerCase() === 'inprogress' ? 'Đang thực hiện'
-                                      : booking.status) : booking.status) : (language === "vi" ? "Đã check in" : "Checked In")}
+                  {getStatusLabel(booking.status || "CheckedIn", BOOKING_STATUS, language)}
                 </span>
               </div>
 
