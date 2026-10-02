@@ -15,6 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchLoyaltyTierDetail } from "../services/loyaltyTiersManagementService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BASIC_STATUS } from '../../../../shared/utils/statusFormatters';
 
 export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, customers = [] }) {
   const { t, language } = useLanguage();
@@ -277,8 +278,7 @@ export default function LoyaltyTierDetailModal({ isOpen, tierId, onClose, custom
               <div className="grid grid-cols-2 gap-3.5">
                 {/* Active Status */}
                 <div className="rounded-2xl border border-[#fcedf5] bg-[#fffcfd] p-3 flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${tier.status === "Active" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                    }`}>
+                  <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${BASIC_STATUS[tier.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
                     <CheckCircle2 size={14} />
                   </div>
                   <div>

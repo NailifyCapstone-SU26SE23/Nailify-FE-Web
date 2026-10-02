@@ -28,21 +28,6 @@ const inputWrapperClassName =
 const inputClassName =
   "w-full min-w-0 bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-rose-300 font-medium";
 
-function InfoChip({ icon: Icon, title, value, tone = "text-rose-500" }) {
-  return (
-    <div className="rounded-2xl border border-rose-100 bg-white px-4 py-3 shadow-[0_10px_20px_rgba(226,93,143,0.06)]">
-      <div className="flex items-center gap-3">
-        <div className={`rounded-xl bg-[#fff2f7] p-2 ${tone}`}>
-          <Icon size={14} />
-        </div>
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{title}</p>
-          <p className="text-[12px] font-bold text-slate-700">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function getStaffInitials(fullName) {
   return fullName
@@ -77,6 +62,7 @@ export function StaffUpdatePage() {
     phone: "",
     status: "Active",
     salonId: "",
+    role: "Staff_Artist",
     avatarUrl: "",
     imageFile: null,
     skillRatings: {},
@@ -114,6 +100,7 @@ export function StaffUpdatePage() {
             phone: "+84 912 345 678",
             status: mockData.status || "Active",
             salonId: "",
+            role: "Staff_Artist",
             avatarUrl: "",
             imageFile: null,
             skillRatings: defaultRatings,
@@ -165,7 +152,6 @@ export function StaffUpdatePage() {
 
         // Get the real nailArtistId from the fetched artist data
         const nailArtistId = artistData?.nailArtistId || artistData?.staffId || artistData?.id || staffId;
-        console.log("Manager StaffUpdatePage: using nailArtistId:", nailArtistId);
 
         // Load existing skills for this Staff Artist
         try {
@@ -201,6 +187,7 @@ export function StaffUpdatePage() {
           phone: userData?.phone || "",
           status: userData?.status || artistData?.status || "Active",
           salonId,
+          role: userData?.role || artistData?.role || "Staff_Artist",
           avatarUrl,
           imageFile: null,
           skillRatings,
@@ -276,14 +263,14 @@ export function StaffUpdatePage() {
         phone: formData.phone,
         status: formData.status,
         salonId: formData.salonId,
+        role: formData.role || "Staff_Artist",
+        avatarUrl: formData.avatarUrl,
       };
 
       // Only include imageFile if there is one
       if (formData.imageFile) {
         updatePayload.imageFile = formData.imageFile;
       }
-
-      console.log("Updating user with data:", updatePayload, "userId:", formData.userId);
       await updateUser(formData.userId, updatePayload);
 
       // 2. Update skill assignments if Staff Artist ID available
@@ -293,9 +280,6 @@ export function StaffUpdatePage() {
             skillTypeId: s.id,
             level: Math.floor(Number(formData.skillRatings[s.id] ?? 0)),
           }));
-
-        console.log("Updating skills for Staff Artist (nailArtistId):", formData.nailArtistId);
-        console.log("Skills payload:", skills);
 
         if (skills.length > 0) {
           const skillResult = await assignNailArtistSkills(formData.nailArtistId, skills);
@@ -310,8 +294,7 @@ export function StaffUpdatePage() {
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
-        success: true,
-        message: `${[formData.firstName, formData.lastName].filter(Boolean).join(" ")} has been updated successfully.`,
+        success: true
       });
     } catch (err) {
       console.error("Error updating artist:", err);
@@ -492,7 +475,7 @@ export function StaffUpdatePage() {
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Staff Artist"
+                    value={language === "vi" ? "Thợ làm móng" : "Staff Artist"}
                     readOnly
                     className={inputClassName}
                   />

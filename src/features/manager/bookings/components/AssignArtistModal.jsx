@@ -37,7 +37,7 @@ function calculateEndTime(startTime, durationMinutes) {
   let minutes = parseInt(parts[1], 10) || 0;
   if (isNaN(hours)) return null;
 
-  const duration = parseInt(durationMinutes, 10) || 60;
+  const duration = parseInt(durationMinutes, 10);
   const totalMinutes = hours * 60 + minutes + duration;
   const endHours = Math.floor(totalMinutes / 60) % 24;
   const endMinutes = totalMinutes % 60;
@@ -87,7 +87,7 @@ export function AssignArtistModal({
 
         let fetchedStaffList = Array.isArray(data) ? data : [];
         const queryDate = bookingDate ? dayjs(bookingDate).format("YYYY-MM-DD") : null;
-        const duration = booking?.totalDuration || 60;
+        const duration = booking?.totalDuration;
 
         if (queryDate && startTime) {
           const bookingStart = dayjs(`${queryDate}T${startTime}`);
@@ -163,7 +163,7 @@ export function AssignArtistModal({
       const queryDate = bookingDate ? dayjs(bookingDate).format("YYYY-MM-DD") : null;
 
       const startTime = booking?.startTime;
-      const duration = booking?.totalDuration || 60;
+      const duration = booking?.totalDuration;
       const endTime = calculateEndTime(startTime, duration);
       const slotInfo = startTime ? { startTime, endTime } : null;
 

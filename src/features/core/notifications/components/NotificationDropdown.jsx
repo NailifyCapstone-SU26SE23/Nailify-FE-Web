@@ -165,32 +165,11 @@ function NotificationItem({ item, markAsRead, deleteNotification, onClose, isVi,
   const [displayMessage, setDisplayMessage] = useState(item.message);
   
   useEffect(() => {
-    try {
-      const data = JSON.parse(item.message);
-      if (data.salonId && data.artistId) {
-        Promise.all([
-          import("../../../../lib/axiosClient").then(m => m.axiosClient.get(`/Salons/${data.salonId}`)),
-          import("../../../../lib/axiosClient").then(m => m.axiosClient.get(`/NailArtists/${data.artistId}`))
-        ]).then(([salonRes, artistRes]) => {
-          const salonName = salonRes.data?.data?.name || "Chi nhánh";
-          const artistData = artistRes.data?.data;
-          const artistName = artistData ? `${artistData.firstName || ""} ${artistData.lastName || ""}`.trim() : "Thợ";
-          
-          let actionText = data.action === "Held" ? (isVi ? "đã được giữ" : "has been held") : 
-                           data.action === "Released" ? (isVi ? "đã được giải phóng" : "has been released") : data.action === "Booked" ? (isVi ? "đã đặt lịch hẹn" : "has been booked") : data.action;
-                           
-          setDisplayMessage(
-            isVi 
-              ? `Lịch hẹn ngày ${data.bookingDate} lúc ${data.startTime} tại ${salonName} cho thợ ${artistName} ${actionText}.`
-              : `Booking on ${data.bookingDate} at ${data.startTime} at ${salonName} for artist ${artistName} ${actionText}.`
-          );
-        }).catch((e) => {
-          console.error("Failed to parse notification info", e);
-        });
-      }
-    } catch (e) {
-      // not a json string
-    }
+    import("../utils/notificationFormatter").then(({ formatNotificationMessage }) => {
+      formatNotificationMessage(item.message, isVi).then((formattedMsg) => {
+        setDisplayMessage(formattedMsg);
+      });
+    });
   }, [item.message, isVi]);
 
   return (

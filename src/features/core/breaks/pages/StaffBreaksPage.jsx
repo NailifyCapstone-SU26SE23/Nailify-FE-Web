@@ -30,6 +30,7 @@ import {
   getStaffArtistId
 } from "../services/breakService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BREAK_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 export function StaffBreaksPage() {
   const { language } = useLanguage();
@@ -204,34 +205,13 @@ export function StaffBreaksPage() {
   };
 
   const getStatusBadge = (status) => {
-    const s = String(status || "Pending").trim().toLowerCase();
-    switch (s) {
-      case "approved":
-      case "đã duyệt":
-      case "đồng ý":
-      case "active":
-        return (
-          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
-            {language === "vi" ? "Đã duyệt" : "Approved"}
-          </span>
-        );
-      case "rejected":
-      case "từ chối":
-      case "không đồng ý":
-        return (
-          <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 border border-rose-100">
-            {language === "vi" ? "Từ chối" : "Rejected"}
-          </span>
-        );
-      case "pending":
-      case "chờ duyệt":
-      default:
-        return (
-          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600 border border-amber-100">
-            {language === "vi" ? "Chờ duyệt" : "Pending"}
-          </span>
-        );
-    }
+    const fallbackStatus = status || "Pending";
+    const tone = BREAK_STATUS[fallbackStatus]?.tone || "bg-amber-100 text-amber-600 border-amber-200";
+    return (
+      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold border ${tone}`}>
+        {getStatusLabel(fallbackStatus, BREAK_STATUS, language)}
+      </span>
+    );
   };
 
   const columns = [

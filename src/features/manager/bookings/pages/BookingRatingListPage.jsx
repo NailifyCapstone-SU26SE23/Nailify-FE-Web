@@ -603,7 +603,7 @@ export function BookingRatingListPage() {
                             <div className="space-y-1">
                               <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
                               <p className="text-xs text-[#a88a9f] font-semibold leading-none">
-                                {language === "vi" ? "Dịch vụ làm móng" : "Nail Service"} · {dateFormatted}
+                                {dateFormatted}
                               </p>
                               <div className="flex items-center gap-0.5 pt-1">
                                 {[1, 2, 3, 4, 5].map((sIndex) => (
@@ -628,7 +628,7 @@ export function BookingRatingListPage() {
                         {/* Mid Row: Comment bubble */}
                         <div className="relative bg-[#fff5f9]/70 border-l-4 border-[#ea4f93] p-4 lg:p-5 pl-11 rounded-r-2xl rounded-bl-2xl rounded-tl-xs shadow-3xs">
                           <Quote size={16} className="absolute left-4 top-4 text-[#ea4f93]/30 fill-[#ea4f93]/10" />
-                          <p className="text-xs md:text-sm text-[#2d1b35] leading-relaxed font-medium">
+                          <p className="text-xs md:text-sm text-[#2d1b35] leading-relaxed font-medium pt-4">
                             {rating.comment || "No written comment provided."}
                           </p>
                         </div>
@@ -688,7 +688,7 @@ export function BookingRatingListPage() {
                             </span>
                           </div>
 
-                          <button
+                          {/* <button
                             onClick={() => handleOpenReplyModal(rating)}
                             className={`px-4.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-[0.98] ${isReplied
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
@@ -697,7 +697,7 @@ export function BookingRatingListPage() {
                           >
                             <MessageSquare size={12} />
                             {isReplied ? (language === "vi" ? "Xem phản hồi" : "View Response") : (language === "vi" ? "Phản hồi đánh giá" : "Respond Feedback")}
-                          </button>
+                          </button> */}
                         </div>
 
                         {/* Response display trail */}

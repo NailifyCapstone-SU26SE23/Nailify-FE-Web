@@ -32,6 +32,7 @@ import {
 } from "../services/nailSurfacesManagementService";
 import { NailSurfacePreview } from "../components/NailSurfacePreview";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
@@ -234,12 +235,8 @@ export function NailSurfacesManagementPage() {
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (status) => (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${status === "Active"
-              ? "bg-[#e7fbf4] text-[#23b68b]"
-              : "bg-[#fff0f5] text-[#eb5a99]"
-              }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${status === "Active" ? "bg-[#23b68b]" : "bg-[#eb5a99]"}`}></span>
             {status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
           </span>
         ),
@@ -292,16 +289,12 @@ export function NailSurfacesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-
-
-
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex w-full flex-col gap-3 xl:max-w-6xl xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center">
+          <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
                 <Search
@@ -324,31 +317,16 @@ export function NailSurfacesManagementPage() {
                     currentPage: 1,
                   }))
                 }
-                className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <Search size={14} className="mr-2 shrink-0" />
                 {t("adminNailSurfacesManagement.search")}
               </button>
             </div>
-
-            {/* <select
-              value={shaderFilter}
-              onChange={(event) => setShaderFilter(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              <option value="">All shader params</option>
-              {shaderOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select> */}
           </div>
 
-          <Link
-            to={ROUTES.adminNailSurfacesCreate}
-          > <button
-            className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]">
+          <Link to={ROUTES.adminNailSurfacesCreate} className="shrink-0">
+            <button className="inline-flex h-10 w-full items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] sm:w-auto">
               <Plus size={13} className="mr-1.5 shrink-0" />
               {t("adminNailSurfacesManagement.addNailSurface")}
             </button>

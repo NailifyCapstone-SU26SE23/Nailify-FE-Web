@@ -63,6 +63,7 @@ import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
 import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar.jsx";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow.jsx";
 import dayjs from "dayjs";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 // Import separated modals
 import { EditScheduleModal } from "../components/EditScheduleModal";
@@ -407,14 +408,12 @@ function formatShiftStatus(status, language) {
 
 function StatusPill({ status }) {
   const { language } = useLanguage();
-  const isActive = status === "Active";
-  const displayStatus = language === "vi"
-    ? (isActive ? "Hoạt động" : (status === "Inactive" ? "Ngừng hoạt động" : status))
-    : status;
+  const normalizedStatus = status === "Open" ? "Active" : status === "Closed" ? "Inactive" : status;
+  const statusObj = BASIC_STATUS[normalizedStatus] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${isActive ? "bg-[#eaf9ee] text-[#2fa25f] border-transparent" : "bg-[#fff0dd] text-[#db8520] border-transparent"}`}>
-      {displayStatus}
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${statusObj.tone}`}>
+      {statusObj[language]}
     </span>
   );
 }
@@ -914,7 +913,7 @@ function TimelineSchedule({
                               {isLeave ? (
                                 <div className="flex flex-col items-center gap-1">
                                   <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">{language === "vi" ? "Đang Nghỉ" : "On Leave"}</span>
-                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã Duyệt" : "Approved"}</span>
+                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã xác nhận" : "Approved"}</span>
                                 </div>
                               ) : (
                                 <>
@@ -1094,7 +1093,6 @@ export function StaffManagementPage() {
       ]);
 
       const list = Array.isArray(schedulesData) ? schedulesData : schedulesData?.items || [];
-      console.log("Timeline loaded salon schedules:", list);
       setSchedules(list);
       setBreaks(Array.isArray(breaksData?.items) ? breaksData.items : (Array.isArray(breaksData) ? breaksData : []));
     } catch (err) {
@@ -1151,6 +1149,8 @@ export function StaffManagementPage() {
       const updatedStaff = {
         ...(baseStaff || {}),
         ...mapApiArtistToUiFormat(userData),
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         skills: baseStaff?.skills || [], // Keep existing skills
         stats: baseStaff?.stats || { today: 0, month: 0, revenue: "$0" },
       };
@@ -1430,8 +1430,9 @@ export function StaffManagementPage() {
 
   function mapApiArtistToUiFormat(apiArtist) {
     console.log("Mapping artist:", apiArtist);
-    const fullName = API
-    apiArtist.account?.fullName ||
+
+    const fullName =
+      apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
         ? `${apiArtist.firstName} ${apiArtist.lastName}`
         : apiArtist.fullName || apiArtist.name || "Staff Artist");
@@ -1447,7 +1448,7 @@ export function StaffManagementPage() {
       userId: accountId,
       name: fullName,
       role: apiArtist.role || "Staff_Artist",
-      rating: apiArtist.averageRating || apiArtist.rating || 4.5,
+      rating: apiArtist.averageRating || apiArtist.rating,
       status: apiArtist.status || "Active",
       skills: apiArtist.skills || [],
       stats: {
@@ -1460,13 +1461,12 @@ export function StaffManagementPage() {
       email: apiArtist.account?.email || apiArtist.email || "",
       phone: apiArtist.account?.phone || apiArtist.phone || "",
     };
-  };
+  }
 
   const fetchArtistDetail = async (artistId) => {
     try {
       setLoadingDetail(true);
       const detail = await fetchNailArtistById(artistId);
-      console.log("Fetched artist detail:", detail);
       const mappedDetail = mapApiArtistToUiFormat(detail);
       setViewingStaffDetail(mappedDetail);
       setViewingStaff(mappedDetail);
@@ -1492,7 +1492,8 @@ export function StaffManagementPage() {
         params: {
           pageNumber: 1,
           pageSize: 100,
-          role: 'Staff_Artist'
+          role: 'Staff_Artist',
+          status: 'Active'
         }
       });
       const data = response.data?.data?.items || [];
@@ -1991,19 +1992,26 @@ export function StaffManagementPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Personal Information */}
-              <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin cá nhân" : "Personal Information"}</h3>
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                  {t("adminStaffManagement.personalInfo")}
+                </h3>
                 <div className="space-y-4">
-                  <InfoItem label={language === "vi" ? "Tên" : "Name"}>{selectedStaff.name || '-'}</InfoItem>
-                  <InfoItem label={language === "vi" ? "Email" : "Email"}>{selectedStaff.email || '-'}</InfoItem>
-                  <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone Number"}>{selectedStaff.phone || '-'}</InfoItem>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
+                  </div>
                 </div>
               </div>
 
               {/* Account Information */}
               <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
                 <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin tài khoản" : "Account Information"}</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{formatRole(selectedStaff.role, language) || '-'}</InfoItem>
                   <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                     <StatusPill status={selectedStaff.status || 'Active'} />

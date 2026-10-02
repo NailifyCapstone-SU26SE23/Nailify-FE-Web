@@ -45,6 +45,7 @@ import { fetchSalonStaffCount } from "../services/salonManagementService";
 import { fetchAdminUsers, updateAdminUser, fetchRawAdminUserDetail } from "../../user-management/services/userManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { useDebounce } from "../../../../shared/hooks/useDebounce";
+import { SALON_STATUS_FILTER } from "../../../../shared/utils/statusFormatters";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></svg>',
@@ -198,9 +199,8 @@ function BranchCard({ branch, onClick }) {
     return () => { isMounted = false; };
   }, [branch.id]);
 
-  const displayStatus = branch.status.toLowerCase() === "open"
-    ? (language === "vi" ? "Mở cửa" : "Open")
-    : (language === "vi" ? "Đóng cửa" : "Closed");
+  const statusObj = SALON_STATUS_FILTER[branch.status] || SALON_STATUS_FILTER.Open;
+  const displayStatus = language === "vi" ? statusObj.vi : statusObj.en;
 
   return (
     <motion.button
@@ -220,7 +220,7 @@ function BranchCard({ branch, onClick }) {
           referrerPolicy="no-referrer"
         />
         <div className="absolute right-4 top-4 z-10">
-          <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md ${branch.statusColor}`}>
+          <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-bold shadow-md border ${statusObj.tone}`}>
             {displayStatus}
           </span>
         </div>
@@ -342,21 +342,14 @@ function mapApiSalonToUiFormat(apiSalon) {
   const apiStatus = (apiSalon.status || "Open").toLowerCase();
 
   let internalStatus = "Open";
-  let statusColor = "bg-[#e6fdf0] text-[#16975f]";
-  let statusTone = "bg-[#e6fdf0] text-[#16975f]";
-
   if (apiStatus === "closed") {
     internalStatus = "Closed";
-    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
-    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
   } else if (apiStatus === "busy") {
     internalStatus = "Open";
   } else if (apiStatus === "open") {
     internalStatus = "Open";
   } else {
     internalStatus = "Closed";
-    statusColor = "bg-[#fff0f0] text-[#e53e3e]";
-    statusTone = "bg-[#fff0f0] text-[#e53e3e]";
   }
 
 
@@ -375,8 +368,6 @@ function mapApiSalonToUiFormat(apiSalon) {
     imageUrl: apiSalon.imageUrl || apiSalon.image || "",
     image: apiSalon.imageUrl || apiSalon.image || SALON_PLACEHOLDER_IMAGE,
     status: internalStatus,
-    statusColor: statusColor,
-    statusTone: statusTone,
     staff: apiSalon.staffAmount || 0,
     hours: "9AM - 9PM",
     schedule: "9AM - 9PM",
@@ -470,7 +461,6 @@ export function SalonManagementPage() {
         name: search.trim() || undefined,
         status: status !== "All" ? status : undefined
       });
-      console.log("data", data);
       const newItems = Array.isArray(data?.items) ? data.items.map(mapApiSalonToUiFormat) : [];
 
       if (page === 1) {
@@ -494,7 +484,7 @@ export function SalonManagementPage() {
     return salons.map(salon => {
       const salonManagers = managers.filter(m => String(m.salonId || "").toLowerCase() === String(salon.salonId || "").toLowerCase());
       const managerNames = salonManagers.map(m => `${m.lastName} ${m.firstName}`.trim()).join(", ");
-      
+
       return {
         ...salon,
         manager: managerNames || salon.manager || (language === "vi" ? "Chưa có quản lý" : "No manager")
@@ -546,7 +536,6 @@ export function SalonManagementPage() {
   // Handle opening assign manager
   const handleAssignManager = async (formData) => {
     const { managerId, salonId } = formData || assignManagerForm;
-    console.log("handleAssignManager called with:", { managerId, salonId });
 
     // Find the selected salon and manager names for the notification
     const selectedSalon = filteredSalons.find(s => s.id === salonId);
@@ -556,7 +545,6 @@ export function SalonManagementPage() {
     try {
       // First fetch the current raw user data
       const rawUser = await fetchRawAdminUserDetail(managerId);
-      console.log("Raw user data:", rawUser);
 
       // Send all user data plus updated salonId
       await updateAdminUser(managerId, {
@@ -780,11 +768,10 @@ export function SalonManagementPage() {
                     }}
                     className="w-full sm:w-[150px] min-w-[150px] custom-select"
                     style={{ height: "46px" }}
-                    options={[
-                      { value: "All", label: language === "vi" ? "Tất cả" : "All" },
-                      { value: "Open", label: language === "vi" ? "Mở cửa" : "Open" },
-                      { value: "Closed", label: language === "vi" ? "Đóng cửa" : "Closed" },
-                    ]}
+                    options={["All", "Open", "Closed"].map(s => ({
+                      value: s,
+                      label: language === "vi" ? SALON_STATUS_FILTER[s].vi : SALON_STATUS_FILTER[s].en
+                    }))}
                   />
                   <div className="flex flex-1 sm:flex-none items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-inner shadow-slate-50 sm:w-[340px] focus-within:border-[#ea4f93] focus-within:ring-2 focus-within:ring-[#ea4f93]/20 transition-all">
                     <Search size={18} className="text-[#a88a9f]" />

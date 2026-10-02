@@ -37,6 +37,7 @@ import { fetchAdminServices, createAdminService, updateAdminService, deleteAdmin
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
@@ -237,7 +238,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : status}
+                  {BASIC_STATUS[status]?.[language] || status}
                 </option>
               ))}
             </select>
@@ -324,12 +325,9 @@ function ServiceDetailModal({ service, onClose }) {
               {language === "vi" ? "Trạng thái" : "Status"}
             </p>
             <span
-              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
-                }`}
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${BASIC_STATUS[service.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
             >
-              {language === "vi"
-                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
-                : service.status}
+              {BASIC_STATUS[service.status]?.[language] || service.status}
             </span>
           </div>
         </div>

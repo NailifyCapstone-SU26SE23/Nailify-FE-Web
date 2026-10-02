@@ -5,6 +5,7 @@ import {
   NAIL_DESIGN_STATUS_FILTERS,
 } from "../services/mockNailDesigns";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const FORM_STATUS_OPTIONS = NAIL_DESIGN_STATUS_FILTERS.filter(
   (item) => item !== "All",
@@ -18,24 +19,26 @@ export function NailDesignManagementFormFields({
   onFieldChange,
   disabled = false,
 }) {
+  const { language } = useLanguage();
+  const isVi = language === "vi";
   return (
     <>
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Design name
+          {isVi ? "Tên mẫu thiết kế" : "Design name"}
         </span>
         <input
           value={formValues.name}
           onChange={onFieldChange("name")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Enter design name"
+          placeholder={isVi ? "Nhập tên mẫu thiết kế" : "Enter design name"}
         />
       </label>
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Collection
+          {isVi ? "Bộ sưu tập" : "Collection"}
         </span>
         <select
           value={formValues.collection}
@@ -53,7 +56,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Category
+          {isVi ? "Danh mục" : "Category"}
         </span>
         <select
           value={formValues.category}
@@ -71,7 +74,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Status
+          {isVi ? "Trạng thái" : "Status"}
         </span>
         <select
           value={formValues.status}
@@ -88,7 +91,7 @@ export function NailDesignManagementFormFields({
       </label>
 
       <label className="space-y-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">Price</span>
+        <span className="text-sm font-medium text-[var(--color-ink)]">{isVi ? "Giá" : "Price"}</span>
         <input
           value={formValues.price}
           onChange={onFieldChange("price")}
@@ -100,33 +103,33 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Duration
+          {isVi ? "Thời gian dự kiến" : "Duration"}
         </span>
         <input
           value={formValues.duration}
           onChange={onFieldChange("duration")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Example: 75 min"
+          placeholder={isVi ? "Ví dụ: 75 phút" : "Example: 75 min"}
         />
       </label>
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Lead artist
+          {isVi ? "Nghệ sĩ chính" : "Main staff"}
         </span>
         <input
           value={formValues.artist}
           onChange={onFieldChange("artist")}
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Enter lead artist name"
+          placeholder={isVi ? "Nhập tên nhân viên chính" : "Enter main staff name"}
         />
       </label>
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Popularity
+          {isVi ? "Độ phổ biến" : "Popularity"}
         </span>
         <select
           value={formValues.popularity}
@@ -144,7 +147,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Updated date
+          {isVi ? "Ngày cập nhật" : "Updated date"}
         </span>
         <input
           type="date"
@@ -157,7 +160,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Category
+          {isVi ? "Danh mục" : "Category"}
         </span>
         <input
           value={formValues.palette}
@@ -181,7 +184,7 @@ export function NailDesignManagementFormFields({
 
       <label className="space-y-2 md:col-span-2">
         <span className="text-sm font-medium text-[var(--color-ink)]">
-          Description
+          {isVi ? "Mô tả" : "Description"}
         </span>
         <textarea
           value={formValues.description}
@@ -190,20 +193,6 @@ export function NailDesignManagementFormFields({
           disabled={disabled}
           className={`w-full rounded-lg border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           placeholder="Describe the design concept"
-        />
-      </label>
-
-      <label className="space-y-2 md:col-span-2">
-        <span className="text-sm font-medium text-[var(--color-ink)]">
-          Admin notes
-        </span>
-        <textarea
-          value={formValues.notes}
-          onChange={onFieldChange("notes")}
-          rows={5}
-          disabled={disabled}
-          className={`w-full rounded-lg border border-[#f1d7c0] bg-[#fffdfb] px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[#ef6bb4] ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          placeholder="Add merchandising or publishing notes"
         />
       </label>
     </>

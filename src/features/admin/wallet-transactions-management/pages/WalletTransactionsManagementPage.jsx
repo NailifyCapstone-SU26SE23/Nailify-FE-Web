@@ -21,6 +21,7 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { WALLET_TRANSACTION_STATUS, WALLET_TRANSACTION_TYPE } from "../../../../shared/utils/statusFormatters";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 const { Title, Text } = Typography;
@@ -256,11 +257,22 @@ export function WalletTransactionsManagementPage() {
       key: "type",
       width: 170,
       sorter: (a, b) => String(a.type || "").localeCompare(String(b.type || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionTypeColor(value)}>
-          {getWalletTransactionTypeLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const key = value === "Withdraw" ? "Withdrawal" : value;
+        const typeObj = WALLET_TRANSACTION_TYPE[key];
+        if (typeObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${typeObj.tone}`}>
+              {language === "vi" ? typeObj.vi : typeObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionTypeColor(value)}>
+            {getWalletTransactionTypeLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.referenceType"),
@@ -277,11 +289,21 @@ export function WalletTransactionsManagementPage() {
       key: "status",
       width: 140,
       sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionStatusColor(value)}>
-          {getWalletTransactionStatusLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const statusObj = WALLET_TRANSACTION_STATUS[value];
+        if (statusObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${statusObj.tone}`}>
+              {language === "vi" ? statusObj.vi : statusObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionStatusColor(value)}>
+            {getWalletTransactionStatusLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.createdAt"),
@@ -320,37 +342,6 @@ export function WalletTransactionsManagementPage() {
   return (
     <div className="min-h-full pb-10 font-sans">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
-        <div className="flex flex-col gap-4 border-b border-slate-200/60 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl bg-[#ea4f93]/10 p-2 text-[#ea4f93]">
-                <WalletCards size={18} className="stroke-[2]" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {language === "vi" ? "Quản trị ví" : "Wallet Admin"}
-              </span>
-            </div>
-            <Title
-              level={2}
-              className="!mb-0 !text-3xl !font-bold !tracking-tight !text-[#2d1b35] md:!text-4xl"
-            >
-              {t("walletTransactions.title")}
-            </Title>
-            <Text className="block max-w-[65ch] !text-xs !leading-relaxed !text-[#a88a9f] md:!text-sm">
-              {t("walletTransactions.subtitle")}
-            </Text>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => loadTransactions(1)}
-            className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            {t("walletTransactions.refresh")}
-          </button>
-        </div>
-
         <TopMetricsRow metrics={metrics} className="grid gap-6 md:grid-cols-3" />
 
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200/75 bg-white/90 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)] backdrop-blur-sm">
@@ -385,10 +376,14 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-48"
                 placeholder={t("walletTransactions.filterType")}
-                options={WALLET_TRANSACTION_TYPES.map((type) => ({
-                  value: type,
-                  label: getWalletTransactionTypeLabel(type, language),
-                }))}
+                options={WALLET_TRANSACTION_TYPES.map((type) => {
+                  const key = type === "Withdraw" ? "Withdrawal" : type;
+                  const typeObj = WALLET_TRANSACTION_TYPE[key];
+                  return {
+                    value: type,
+                    label: typeObj ? (language === "vi" ? typeObj.vi : typeObj.en) : getWalletTransactionTypeLabel(type, language),
+                  };
+                })}
                 value={filters.type}
                 onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
               />
@@ -396,10 +391,13 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-44"
                 placeholder={t("walletTransactions.filterStatus")}
-                options={WALLET_TRANSACTION_STATUSES.map((status) => ({
-                  value: status,
-                  label: getWalletTransactionStatusLabel(status, language),
-                }))}
+                options={WALLET_TRANSACTION_STATUSES.map((status) => {
+                  const statusObj = WALLET_TRANSACTION_STATUS[status];
+                  return {
+                    value: status,
+                    label: statusObj ? (language === "vi" ? statusObj.vi : statusObj.en) : getWalletTransactionStatusLabel(status, language),
+                  };
+                })}
                 value={filters.status}
                 onChange={(status) => setFilters((prev) => ({ ...prev, status }))}
               />
@@ -409,6 +407,15 @@ export function WalletTransactionsManagementPage() {
                 onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
                 disabledDate={(date) => date && date > dayjs().endOf("day").add(365, "day")}
               />
+
+              <button
+                type="button"
+                onClick={() => loadTransactions(1)}
+                className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
+              >
+                <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+                {t("walletTransactions.refresh")}
+              </button>
             </div>
           </div>
 

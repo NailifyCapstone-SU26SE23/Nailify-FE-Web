@@ -63,11 +63,11 @@ export function StaffCreatePage() {
         const salonList = await fetchAdminSalons({ pageSize: 100 });
         const fetchedSalons = salonList.items || [];
         setSalons(fetchedSalons);
-        
+
         if (location.state?.selectedSalonId) {
           const preSelected = fetchedSalons.find(s => s.id === location.state.selectedSalonId);
-          setFormData(prev => ({ 
-            ...prev, 
+          setFormData(prev => ({
+            ...prev,
             salonId: location.state.selectedSalonId,
             assignedSalon: preSelected ? preSelected.name : ""
           }));
@@ -141,12 +141,7 @@ export function StaffCreatePage() {
         salonId: formData.salonId || salons[0]?.id || "",
       };
 
-      console.log("StaffCreatePage - userData to send:", userData);
-      console.log("StaffCreatePage - available salons:", salons);
-
       const createdUser = await createUser(userData);
-
-      console.log("Created user:", createdUser);
 
       if (formData.role === "Staff_Artist") {
         let targetArtistId = createdUser?.staffId || createdUser?.nailArtistId;
@@ -169,11 +164,10 @@ export function StaffCreatePage() {
         const skillsPayload = Object.entries(selectedSkills)
           .filter(([_, level]) => level > 0)
           .map(([skillTypeId, level]) => ({ skillTypeId, level }));
-        
+
         if (skillsPayload.length > 0 && targetArtistId) {
           try {
             await assignNailArtistSkills(targetArtistId, skillsPayload);
-            console.log("Assigned skills successfully.");
           } catch (err) {
             console.error("Failed to assign skills:", err);
           }
@@ -310,7 +304,7 @@ export function StaffCreatePage() {
                     type="email"
                     value={formData.email}
                     onChange={(event) => handleInputChange("email", event.target.value)}
-                    placeholder="staff@nailify.com"
+                    placeholder="nguyenvana@gmail.com"
                     className={inputClassName}
                     required
                     autoComplete="new-email"
@@ -328,7 +322,7 @@ export function StaffCreatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+84 XXX XXX XXX"
                     className={inputClassName}
                     required
                     autoComplete="none"
@@ -450,7 +444,7 @@ export function StaffCreatePage() {
                 <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
                 {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
               </h2>
-              
+
               <div className="grid gap-6 md:grid-cols-2">
                 {skillTypes.map((skill) => (
                   <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
@@ -516,7 +510,7 @@ export function StaffCreatePage() {
                     {formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New Staff Member")}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))} · #{formData.staffId || "NF-NEW"}
+                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))}
                   </p>
                   <p className="text-[11px] font-medium text-slate-400 text-center">
                     {language === "vi" ? "Chi nhánh phân bổ:" : "Assigned Salon:"}{" "}

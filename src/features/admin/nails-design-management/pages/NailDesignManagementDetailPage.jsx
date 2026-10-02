@@ -28,6 +28,9 @@ import {
   deleteAdminNailDesign,
   deleteAdminNailVariant,
   fetchAdminCategoryTypes,
+} from "../services/nailDesignManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
+import {
   fetchAdminNailDesignDetail,
   fetchAdminNailDesignSummary,
   fetchProceduresByVariant,
@@ -855,7 +858,7 @@ export function NailDesignManagementDetailPage() {
       );
     });
 
-    if (!designNameChanged && !designDescriptionChanged && !categoriesChanged && !imagesChanged && !variantsToUpdate.length) {
+    if (!designNameChanged && !designDescriptionChanged && !categoriesChanged && !imagesChanged && !variantsToUpdate.length && !formValues?.designStatus) {
       toast.error(language === "vi" ? "Không có thay đổi đáng kể nào được phát hiện" : "No changes detected. Other edits on this screen remain local only.");
       setIsEditing(false);
       return;
@@ -864,7 +867,7 @@ export function NailDesignManagementDetailPage() {
     setIsSavingVariants(true);
 
     try {
-      if (designNameChanged || designDescriptionChanged || categoriesChanged || imagesChanged) {
+      if (designNameChanged || designDescriptionChanged || categoriesChanged || imagesChanged || formValues?.designStatus !== initialDesign?.designStatus) {
         const designDetail = await updateAdminNailDesign(designId, {
           name: formValues?.heroTitle,
           description: formValues?.heroSubtitle,
@@ -872,6 +875,7 @@ export function NailDesignManagementDetailPage() {
           nailVariantIds: currentVariants.map((variant) => variant.nailVariantId),
           existingImageUrls: formValues?.imageUrl ? [formValues.imageUrl] : [],
           image: designImageFile,
+          status: formValues?.designStatus,
         });
         toast.success(
           language === "vi"
@@ -1078,9 +1082,20 @@ export function NailDesignManagementDetailPage() {
 
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-full bg-[#eaf9ee] px-4 py-2 text-xs font-bold text-[#2fa25f]">
-              {formValues.designStatus === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive")}
-            </span>
+            {isEditing ? (
+              <select
+                value={formValues.designStatus || "Active"}
+                onChange={(e) => setFormValues(prev => ({ ...prev, designStatus: e.target.value }))}
+                className="h-9 rounded-full border border-[#f4d4e2] bg-[#fffafb] px-4 text-xs font-bold text-[#5c4559] outline-none transition focus:border-[#ef6bb4]"
+              >
+                <option value="Active">{t("adminNailsDesignManagement.active")}</option>
+                <option value="Inactive">{t("adminNailsDesignManagement.inactive")}</option>
+              </select>
+            ) : (
+              <span className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-bold ${BASIC_STATUS[formValues.designStatus]?.tone || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+                {BASIC_STATUS[formValues.designStatus]?.[language] || formValues.designStatus}
+              </span>
+            )}
             {isEditing ? (
               <>
                 <button
@@ -1135,11 +1150,18 @@ export function NailDesignManagementDetailPage() {
         <article
           ref={heroSectionRef}
           id="hero-section"
-          className={`scroll-mt-6 rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
+          className={`scroll-mt-6 relative rounded-lg border bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] transition-all duration-300 md:p-5 ${highlightedSection === "hero"
             ? "border-[#ea4f93] shadow-[0_18px_38px_rgba(236,72,153,0.18)] ring-4 ring-[#ffd8e8]"
             : "border-[#f8d3e2]"
             }`}
         >
+          {/* Status Tag on Top Right */}
+          <div className="absolute top-4 right-4 md:top-5 md:right-5">
+            <span className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold ${BASIC_STATUS[formValues.designStatus]?.tone || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+              {BASIC_STATUS[formValues.designStatus]?.[language] || formValues.designStatus}
+            </span>
+          </div>
+
           <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="lg:order-2">
               {isEditing ? (
@@ -1323,7 +1345,7 @@ export function NailDesignManagementDetailPage() {
           highlighted={highlightedSection === "design-variants"}
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {formValues.variants.map((variant, index) => (
+            {formValues.nailVariants.map((variant, index) => (
               <div
                 key={variant.id || variant.nailVariantId || `${variant.name}-${index}`}
                 className="rounded-lg border border-[#f7d7e5] bg-white p-3 shadow-[0_10px_20px_rgba(236,72,153,0.05)] cursor-pointer transition-all duration-200 hover:shadow-[0_16px_32px_rgba(236,72,153,0.12)] hover:border-[#ea4f93]"
@@ -1345,8 +1367,11 @@ export function NailDesignManagementDetailPage() {
                 </div>
                 <h4 className="mt-3 font-bold text-[#432744]">{variant.name}</h4>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Pill tone="yellow">{variant.priceDelta}</Pill>
+                  <Pill tone="yellow">{variant.price}</Pill>
                   <Pill tone="green">{formatDurationLabel(variant.duration)}</Pill>
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-bold ${variant.status === "Active" ? "bg-[#eaf9ee] text-[#2fa25f] border border-green-200" : "bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                    {variant.status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Không hoạt động" : "Inactive")}
+                  </span>
                 </div>
               </div>
             ))}
@@ -1656,7 +1681,7 @@ export function NailDesignManagementDetailPage() {
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.status")}</p>
-                            <p className="mt-1 font-semibold text-[#432744]">{item.status}</p>
+                            <p className="mt-1 font-semibold text-[#432744]">{BASIC_STATUS[item.status]?.[language] || item.status}</p>
                           </div>
                           <div>
                             <p className="text-[11px] uppercase tracking-[0.08em] text-[#c694ad]">{t("adminNailsDesignManagement.required")}</p>

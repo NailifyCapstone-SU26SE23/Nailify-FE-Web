@@ -25,6 +25,7 @@ import {
   PROCEDURE_STATUS_OPTIONS,
   updateAdminProcedure,
 } from "../services/proceduresManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
@@ -129,7 +130,7 @@ export function ProcedureDetailPage() {
       [t("adminProcedures.procedureNameLabel"), procedure.name],
       [t("adminProcedures.createdAtLabel"), formatProcedureDate(procedure.createAt)],
       [t("adminProcedures.duration"), draft.duration !== "" ? formatProcedureDuration(draft.duration) : "--"],
-      [t("adminProcedures.status"), draft.status],
+      [t("adminProcedures.status"), BASIC_STATUS[draft.status]?.[language] || draft.status],
       [t("adminProcedures.required"), draft.isRequired ? t("adminProcedures.required") : t("adminProcedures.optional")],
     ];
   }, [draft, procedure]);
@@ -442,7 +443,7 @@ export function ProcedureDetailPage() {
                     >
                       {PROCEDURE_STATUS_OPTIONS.map((status) => (
                         <option key={status} value={status}>
-                          {status === 'Active' ? (language === 'vi' ? 'Hoạt động' : 'Active') : (language === 'vi' ? 'Ngưng hoạt động' : 'Inactive')}
+                          {BASIC_STATUS[status]?.[language] || status}
                         </option>
                       ))}
                     </select>

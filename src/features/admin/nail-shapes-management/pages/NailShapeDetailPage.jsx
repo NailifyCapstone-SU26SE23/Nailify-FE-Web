@@ -27,6 +27,7 @@ import {
 } from "../services/nailShapesManagementService";
 import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button } from "antd";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function validateForm(formValues, language) {
   const isVi = language === "vi";
@@ -164,6 +165,7 @@ export function NailShapeDetailPage() {
         setShape(response);
         setDraft({
           name: response.name,
+          status: response.status || "Inactive",
           image: null,
         });
         setImagePreview(response.imageUrl || "");
@@ -239,6 +241,7 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
+      status: shape.status || "Inactive",
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -253,6 +256,7 @@ export function NailShapeDetailPage() {
 
     setDraft({
       name: shape.name,
+      status: shape.status || "Inactive",
       image: null,
     });
     setImagePreview(shape.imageUrl || "");
@@ -286,6 +290,7 @@ export function NailShapeDetailPage() {
       setShape(updatedShape);
       setDraft({
         name: updatedShape.name,
+        status: updatedShape.status || "Inactive",
         image: null,
       });
       setImagePreview(updatedShape.imageUrl || imagePreview);
@@ -424,6 +429,21 @@ export function NailShapeDetailPage() {
               </label>
 
               <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{t("adminNailsDesignManagement.status") || "Status"}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                  <select
+                    value={draft?.status || "Active"}
+                    onChange={(event) => handleFieldChange("status", event.target.value)}
+                    disabled={!isEditing}
+                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  >
+                    <option value="Active">{t("adminNailsDesignManagement.active") || "Active"}</option>
+                    <option value="Inactive">{t("adminNailsDesignManagement.inactive") || "Inactive"}</option>
+                  </select>
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">{t("adminNailShapesManagement.previewImage")}</span>
                 <label
                   className={`flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-rose-200 p-3 ${isEditing
@@ -514,8 +534,8 @@ export function NailShapeDetailPage() {
                   key: 'status',
                   sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
                   render: (val) => (
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${val === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {language === 'vi' ? (val === 'Active' ? 'Hoạt động' : 'Ngưng hoạt động') : val}
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${BASIC_STATUS[val]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                      {BASIC_STATUS[val]?.[language] || val}
                     </span>
                   )
                 },

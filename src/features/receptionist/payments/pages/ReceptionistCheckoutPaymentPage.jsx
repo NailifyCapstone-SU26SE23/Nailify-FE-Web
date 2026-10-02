@@ -96,7 +96,7 @@ function getBillItems(booking) {
     id: item.bookingItemId || `${item.serviceId || "service"}-${index}`,
     name: item.nailVariantName || item.customerNailName || item.serviceName,
     duration: item.duration ? formatDurationMinutes(item.duration) : "--",
-    total: Number(item.price || 0) * Math.max(1, Number(item.quantity || 1)),
+    total: Number(item.price || 0),        
     quantity: Math.max(1, Number(item.quantity || 1)),
   }));
 }
@@ -269,12 +269,12 @@ export function ReceptionistCheckoutPaymentPage() {
   const customerDisplayName = getCustomerDisplayName(customerProfile, booking);
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const billItems = useMemo(() => getBillItems(booking), [booking]);
-  const subtotalValue = billItems.reduce((sum, item) => sum + item.total, 0);
-  // const totalValue = Number(booking?.totalPrice || subtotalValue || 0);
-  const totalValue = Number(booking?.totalPrice);
+
+  const subtotalValue = Number(booking?.price);
   const discountValue = Number(booking?.discount);
   const depositValue = Number(booking?.amountPaid);
   const remainingValue = Number(booking?.amountDue);
+
   const qrImageSrc = useMemo(
     () => {
       if (paymentInfo?.qrCode) {

@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import { AUTH_STATUS } from "../constants/authConstants";
 import { getDashboardRouteByRole } from "../utils/getDashboardRouteByRole";
 import { ROUTES } from "../../../../shared/constants/routes";
+import { ROLES } from "../../../../shared/constants/roles";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 
 const loginSchema = ({ language }) => z.object({
@@ -31,7 +32,7 @@ const DECORATIVE_DOTS = Array.from({ length: 12 }, (_, index) => `dot-${index + 
 export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { login, loginGoogle, isAuthenticated, status, error, role } = useAuth();
+  const { login, loginGoogle, logout, isAuthenticated, status, error, role } = useAuth();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const { language } = useLanguage();
   const {
@@ -49,9 +50,15 @@ export function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(getDashboardRouteByRole(role), { replace: true });
+      const isInternalRole = Object.values(ROLES).includes(role?.toLowerCase());
+      if (!isInternalRole) {
+        logout({ silent: true });
+        toast.error(isVi ? "Tài khoản khách hàng không thể đăng nhập vào hệ thống nội bộ." : "Customer accounts cannot log in to the internal system.", { id: "auth-toast", duration: 5000 });
+      } else {
+        navigate(getDashboardRouteByRole(role), { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate, role]);
+  }, [isAuthenticated, navigate, role, logout, isVi]);
 
   useEffect(() => {
     if (searchParams.get("reason") === "session_expired") {
@@ -76,9 +83,7 @@ export function LoginPage() {
             try {
               const result = await loginGoogle(response.credential);
               if (result.meta.requestStatus === "fulfilled") {
-                navigate(getDashboardRouteByRole(result.payload.user.role), {
-                  replace: true,
-                });
+                // Navigation and role checks are handled by the useEffect watching isAuthenticated
               }
             } catch (err) {
               console.error("Google sign-in error:", err);
@@ -101,9 +106,7 @@ export function LoginPage() {
     const result = await login(values);
 
     if (result.meta.requestStatus === "fulfilled") {
-      navigate(getDashboardRouteByRole(result.payload.user.role), {
-        replace: true,
-      });
+      // Navigation and role checks are handled by the useEffect watching isAuthenticated
     }
   };
 
@@ -166,11 +169,11 @@ export function LoginPage() {
                 <span className="text-sm font-medium text-[var(--color-ink)]">
                   Email
                 </span>
-                <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ef6bb4]">
+                <div className="flex items-center rounded-full border border-[#f1d7c0] px-4 transition focus-within:border-[#ef6bb4]">
                   <Mail size={18} className="mr-3 text-[#d38f6b]" />
                   <input
                     {...register("email")}
-                    className="w-full bg-transparent py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
+                    className="w-full py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
                     placeholder={isVi ? "Nhập email của bạn" : "Enter your email"}
                   />
                 </div>
@@ -185,12 +188,12 @@ export function LoginPage() {
                 <span className="text-sm font-medium text-[var(--color-ink)]">
                   {isVi ? "Mật khẩu" : "Password"}
                 </span>
-                <div className="flex items-center rounded-full border border-[#f1d7c0] bg-white px-4 transition focus-within:border-[#ffbf69]">
+                <div className="flex items-center rounded-full border border-[#f1d7c0] px-4 transition focus-within:border-[#ffbf69]">
                   <LockKeyhole size={18} className="mr-3 text-[#d38f6b]" />
                   <input
                     {...register("password")}
                     type={isPasswordVisible ? "text" : "password"}
-                    className="w-full bg-transparent py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
+                    className="w-full py-3 text-[var(--color-ink)] outline-none placeholder:text-[#b3a298]"
                     placeholder={isVi ? "Nhập mật khẩu của bạn" : "Enter your password"}
                   />
                   <button

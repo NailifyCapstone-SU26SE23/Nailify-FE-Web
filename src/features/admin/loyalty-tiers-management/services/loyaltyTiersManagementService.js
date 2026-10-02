@@ -137,23 +137,8 @@ export async function createLoyaltyTier(formData) {
     fData.append("ColorJson", JSON.stringify(colors));
     fData.append("SortOrder", Number(formData.sortOrder || 1));
 
-    // FIX #1: re-added Status on create.
-    // Hypothesis: the Status column on the backend entity is a non-nullable
-    // enum. When this field was omitted, ASP.NET Core model binding defaulted
-    // it to 0, which may not map to a valid enum member (Active/Inactive
-    // usually start at 1), causing SaveChangesAsync to throw a DbUpdateException
-    // with the generic "error occurred while saving the entity changes" message
-    // seen in the 400 response. Swagger likely worked because it always submits
-    // an explicit value for every field, including Status.
-    // If this turns out to be wrong (e.g. backend truly rejects Status on
-    // create), remove this line again.
     fData.append("Status", String(formData.status || "Active").trim());
 
-    // FIX #2: aligned image field casing with the rest of the payload
-    // ("Image" instead of "image"). All other fields use PascalCase matching
-    // the backend model; "image" was the one inconsistent key. Unlikely to be
-    // the root cause (ASP.NET Core form binding is usually case-insensitive),
-    // but worth eliminating as a variable while testing FIX #1.
     if (formData.imageFile instanceof File) {
         fData.append("Image", formData.imageFile);
     } else if (formData.imageUrl && !formData.imageUrl.startsWith("blob:") && !formData.imageUrl.startsWith("data:")) {
@@ -164,12 +149,6 @@ export async function createLoyaltyTier(formData) {
         const response = await axiosClient.post("/LoyaltyTiers", fData, {
             headers: {
                 ...getAuthHeaders(),
-                // IMPORTANT: do NOT hardcode "multipart/form-data" here.
-                // Axios/the browser must generate this header itself so it can
-                // append the required "boundary=..." parameter. A hardcoded
-                // value without a boundary produces a malformed multipart body
-                // that the server can't parse — every field will look "missing"
-                // even though the form was filled in correctly.
                 "Content-Type": undefined,
             },
         });
@@ -243,7 +222,7 @@ export async function fetchAllCustomersForLoyalty() {
             headers: getAuthHeaders(),
             params: {
                 pageNumber: 1,
-                pageSize: 10000,
+                pageSize: 1000,
             },
         });
         const data = unwrapResponse(response, "Failed to fetch customers.");

@@ -12,6 +12,7 @@ import {
   fetchAdminCategoryTypeDetail,
   updateAdminCategoryType,
 } from "../services/categoryTypesManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
@@ -345,7 +346,7 @@ export function CategoryTypeDetailPage() {
                   >
                     {CATEGORY_TYPE_STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {BASIC_STATUS[status]?.[language] || status}
                       </option>
                     ))}
                   </select>
@@ -398,7 +399,7 @@ export function CategoryTypeDetailPage() {
         onConfirm={handleSave}
         onCancel={() => !isSaving && setShowSaveConfirm(false)}
         highlights={[draft?.name || categoryType?.name || "Category type"]}
-        details={[{ label: "Status", value: draft?.status }]}
+        details={[{ label: "Status", value: BASIC_STATUS[draft?.status]?.[language] || draft?.status }]}
       />
 
       <ActionConfirmModal

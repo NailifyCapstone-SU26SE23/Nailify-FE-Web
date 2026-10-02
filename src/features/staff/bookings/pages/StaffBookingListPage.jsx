@@ -19,7 +19,6 @@ import { Table, ConfigProvider } from "antd";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
-import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
@@ -44,6 +43,7 @@ import {
   fetchAllCustomers,
 } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 import {
   setFilter,
   fetchStaffBookingsThunk,
@@ -166,14 +166,7 @@ function mapStatus(status) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed": return "bg-[#eaf9ee] text-[#2fa25f]";
-    case "Confirmed": return "bg-[#e8f2ff] text-[#4a72d8]";
-    case "Pending": return "bg-[#fff4e8] text-[#d9871c]";
-    case "Cancelled": return "bg-[#ffe7ef] text-[#e1447f]";
-    case "No-show": return "bg-[#f3ebff] text-[#7e4fe6]";
-    default: return BOOKING_STATUS_STYLES[status] ?? "bg-[#fff5ef] text-[#8c5d44]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#fff5ef] text-[#8c5d44] border-[#f5d7c4]";
 }
 
 function escapeCsvCell(value) {
@@ -226,15 +219,9 @@ const translateOption = (option, language) => {
     "All": "Tất cả",
     "All salons": "Tất cả chi nhánh",
     "All staff": "Tất cả nhân viên",
-    "Pending": "Đang chờ",
-    "Confirmed": "Đã xác nhận",
-    "ServiceCompleted": "Đã hoàn tất dịch vụ",
-    "Completed": "Đã hoàn thành",
-    "CheckedIn": "Đã có mặt",
-    "Cancelled": "Đã hủy",
-    "No-show": "Không đến",
   };
-  return mapVi[option] || option;
+  if (mapVi[option]) return mapVi[option];
+  return getStatusLabel(option, BOOKING_STATUS, language);
 };
 
 const translateSummaryText = (text, language) => {
@@ -313,7 +300,7 @@ export function StaffBookingListPage() {
       case "RescheduleSuggested":
         return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
       case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
+        return language === "vi" ? "Đã bảo hành" : "Repaired";
       case "All":
         return language === "vi" ? "Tất cả" : "All";
       default:
@@ -445,27 +432,55 @@ export function StaffBookingListPage() {
     });
   }, [filteredBookings, staffTimeSortDirection]);
 
-  const {
-    currentPage,
-    paginatedItems: paginatedBookings,
-    setCurrentPage,
-    totalPages,
-  } = usePagination(sortedBookings, BOOKING_PAGE_SIZE);
+  const [bookingPagination, setBookingPagination] = useState({
+    currentPage: 1,
+    pageSize: BOOKING_PAGE_SIZE,
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / bookingPagination.pageSize));
+
+  const paginatedBookings = useMemo(() => {
+    const safePage = Math.min(bookingPagination.currentPage, totalPages);
+    const startIndex = (safePage - 1) * bookingPagination.pageSize;
+    return sortedBookings.slice(startIndex, startIndex + bookingPagination.pageSize);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, sortedBookings, totalPages]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [dateFrom, dateTo, query, salonFilter, setCurrentPage, staffFilter, staffTimeSortDirection, statusFilter]);
+    setBookingPagination(prev => ({ ...prev, currentPage: 1 }));
+  }, [dateFrom, dateTo, query, salonFilter, staffFilter, staffTimeSortDirection, statusFilter]);
+
+  const handleTableChange = (pagination) => {
+    const nextPage = Number(pagination?.current || 1);
+    const nextPageSize = Number(pagination?.pageSize || BOOKING_PAGE_SIZE);
+
+    setBookingPagination((current) => ({
+      currentPage: nextPageSize !== current.pageSize ? 1 : nextPage,
+      pageSize: nextPageSize,
+    }));
+  };
+
+  const tablePagination = useMemo(
+    () => ({
+      current: bookingPagination.currentPage,
+      pageSize: bookingPagination.pageSize,
+      total: sortedBookings.length,
+      showSizeChanger: true,
+      pageSizeOptions: ["5", "10", "20", "50"],
+      showTotal: (total, range) => language === "vi" ? `${range[0]}-${range[1]} của ${total} lịch hẹn` : `${range[0]}-${range[1]} of ${total} bookings`,
+    }),
+    [bookingPagination.currentPage, bookingPagination.pageSize, sortedBookings.length, language],
+  );
 
   const paginationLabel = useMemo(() => {
     if (!filteredBookings.length) {
       return language === "vi" ? "Đang hiển thị 0 lịch hẹn" : "Showing 0 bookings";
     }
-    const start = (currentPage - 1) * BOOKING_PAGE_SIZE + 1;
-    const end = Math.min(filteredBookings.length, currentPage * BOOKING_PAGE_SIZE);
+    const start = (bookingPagination.currentPage - 1) * bookingPagination.pageSize + 1;
+    const end = Math.min(filteredBookings.length, bookingPagination.currentPage * bookingPagination.pageSize);
     return language === "vi"
       ? `Đang hiển thị ${start}-${end} trong số ${filteredBookings.length} lịch hẹn`
       : `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
-  }, [currentPage, filteredBookings.length, language]);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, filteredBookings.length, language]);
 
   /* STREAMING_CHUNK: Dynamic Summary & Actions */
   const summaryItems = useMemo(() => {
@@ -558,6 +573,16 @@ export function StaffBookingListPage() {
     toast.success(language === "vi" ? "Đã xuất CSV thành công." : "CSV exported successfully.");
   };
 
+  const getBookingEndTime = (startTime, duration) => {
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const totalMinutes = hours * 60 + minutes + Number(duration);
+
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
+
+    return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+  };
+
   const columns = [
     {
       title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Khách hàng" : "Customer"}</span>,
@@ -592,7 +617,7 @@ export function StaffBookingListPage() {
       render: (_, booking) => <span className="text-[#6b5668] text-sm">{booking.uiBranch}</span>
     },
     {
-      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thợ làm nail" : "Staff Artist"}</span>,
+      title: <span className="uppercase tracking-[0.16em] font-bold text-[10px] text-[#c696ad]">{language === "vi" ? "Thợ chính" : "Main Staff"}</span>,
       key: "staff",
       sorter: (a, b) => (a.staffName || "").localeCompare(b.staffName || ""),
       render: (_, booking) => <span className="text-[#8a7082] text-sm">{booking.staffName}</span>
@@ -606,7 +631,9 @@ export function StaffBookingListPage() {
           <p className="text-sm font-semibold text-[#432744]">
             {formatDateLabel(booking.bookingDate)}
           </p>
-          <p className="mt-1 text-[11px] text-[#c694ad]">{booking.bookingTime}</p>
+          <p className="mt-1 text-[11px] text-[#c694ad]">
+            {booking.bookingTime} - {getBookingEndTime(booking.bookingTime, booking.totalDuration)}
+          </p>
         </div>
       )
     },
@@ -639,8 +666,26 @@ export function StaffBookingListPage() {
           <div className="space-y-4">
             <article className="rounded-lg border border-[#f7d8e6] bg-white p-4 shadow-[0_14px_32px_rgba(236,72,153,0.06)] md:p-5">
               <div className="grid gap-3 md:grid-cols-3">
-                <label className="space-y-2 md:col-span-2 lg:col-span-1">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                <label className="relative block space-y-2">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                    {language === "vi" ? "Tìm kiếm" : "Search"}
+                  </span>
+                  <div className="relative">
+                    <Search
+                      size={15}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#df7baa]"
+                    />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder={language === "vi" ? "Tìm lịch hẹn bằng tên hoặc số điện thoại..." : "Search by name or phone..."}
+                      className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
+                    />
+                  </div>
+                </label>
+
+                <label className="space-y-2">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Khoảng thời gian" : "Date Range"}
                   </span>
                   <DateRangePicker
@@ -654,12 +699,12 @@ export function StaffBookingListPage() {
                         setDateTo("");
                       }
                     }}
-                    className="h-10 rounded-xl bg-[#fff9fc] border-[#f5d7e4] transition hover:border-[#ef6bb4]"
+                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] transition hover:border-[#ef6bb4]"
                   />
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
                     {language === "vi" ? "Trạng thái" : "Booking Status"}
                   </span>
                   <select
@@ -671,25 +716,6 @@ export function StaffBookingListPage() {
                       <option key={item} value={item}>{formatDisplay(item)}</option>
                     ))}
                   </select>
-                </label>
-
-              </div>
-
-              <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-                <label className="relative block">
-                  <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#c896af]">
-                    {language === "vi" ? "Tìm kiếm" : "Search"}
-                  </span>
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-3 top-[2.7rem] -translate-y-1/2 text-[#df7baa]"
-                  />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder={language === "vi" ? "Tìm lịch hẹn bằng tên hoặc số điện thoại của khách hàng..." : "Search booking by customer name or phone number..."}
-                    className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fff9fc] pl-10 pr-4 text-sm text-[#5c4559] outline-none transition placeholder:text-[#d39bb5] focus:border-[#ef6bb4]"
-                  />
                 </label>
               </div>
             </article>
@@ -767,10 +793,11 @@ export function StaffBookingListPage() {
                         }}
                       >
                         <Table
-                          dataSource={paginatedBookings}
+                          dataSource={sortedBookings}
                           columns={columns}
                           rowKey="id"
-                          pagination={false}
+                          pagination={tablePagination}
+                          onChange={handleTableChange}
                           className="min-w-full"
                           rowClassName="align-top"
                         />
@@ -826,15 +853,15 @@ export function StaffBookingListPage() {
                   </>
                 )}
 
-                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:hidden">
                   <p className="text-[11px] text-[#c694ad]">
                     {paginationLabel}
                   </p>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage <= 1}
+                      onClick={() => setBookingPagination(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
+                      disabled={bookingPagination.currentPage <= 1}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                     >
                       <ChevronLeft size={12} />
@@ -843,15 +870,15 @@ export function StaffBookingListPage() {
                       type="button"
                       className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
                     >
-                      {currentPage}
+                      {bookingPagination.currentPage}
                     </button>
                     <span className="px-2 text-[11px] font-medium text-[#b9849f]">
                       / {totalPages}
                     </span>
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage >= totalPages}
+                      onClick={() => setBookingPagination(prev => ({ ...prev, currentPage: Math.min(totalPages, prev.currentPage + 1) }))}
+                      disabled={bookingPagination.currentPage >= totalPages}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                     >
                       <ChevronRight size={12} />

@@ -249,9 +249,6 @@ export async function updateAdminUser(userId, formValues) {
     payload.salonId = null;
   }
 
-  console.log("updateAdminUser - userId:", normalizedUserId);
-  console.log("updateAdminUser - payload:", payload);
-
   try {
     const response = await axiosClient.put(
       `/Users/${normalizedUserId}`,

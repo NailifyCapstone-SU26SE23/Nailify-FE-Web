@@ -288,7 +288,7 @@ const STAFF_FORM_SEED = {
     fullName: "Sophia Lee",
     staffId: "NF-001",
     email: "sophia.lee@nailify.com",
-    phone: "+1 (555) 101-2001",
+    phone: "+84 XXX XXX XXX) 101-2001",
     role: "SENIOR_ARTIST",
     assignedSalon: "",
     status: "ACTIVE",
@@ -303,7 +303,7 @@ const STAFF_FORM_SEED = {
       material: 4,
       speed: 3,
     },
-    emergencyContact: "Olivia Lee · +1 (555) 010-2001",
+    emergencyContact: "Olivia Lee · +84 XXX XXX XXX) 010-2001",
     address: "122 East 47th St, New York, NY",
     notes: "Top performer with strong retention and premium nail art skill set.",
     schedule: {
@@ -320,7 +320,7 @@ const STAFF_FORM_SEED = {
     fullName: "Nina Torres",
     staffId: "NF-003",
     email: "nina.torres@nailify.com",
-    phone: "+1 (555) 101-2003",
+    phone: "+84 XXX XXX XXX) 101-2003",
     role: "SALON_MANAGER",
     assignedSalon: "Nailify Uptown",
     status: "ACTIVE",
@@ -335,7 +335,7 @@ const STAFF_FORM_SEED = {
       material: 3,
       speed: 4,
     },
-    emergencyContact: "Marco Torres · +1 (555) 010-2003",
+    emergencyContact: "Marco Torres · +84 XXX XXX XXX) 010-2003",
     address: "88 Madison Ave, New York, NY",
     notes: "Experienced salon manager focused on team coaching and daily operations.",
     schedule: {
@@ -429,7 +429,7 @@ export const mapStaffMemberToForm = (member) => ({
   fullName: member.name,
   staffId: member.id,
   email: `${member.name.toLowerCase().replace(/\s+/g, ".")}@nailify.com`,
-  phone: `+1 (555) ${member.id.slice(-3)}-${member.id.slice(-3)}`,
+  phone: `+84 XXX XXX XXX) ${member.id.slice(-3)}-${member.id.slice(-3)}`,
   role: ROLE_LABEL_TO_VALUE[member.role] ?? "NAIL_ARTIST",
   assignedSalon: member.salon,
   status: MEMBER_STATUS_TO_FORM_STATUS[member.status] ?? "ACTIVE",
@@ -603,7 +603,7 @@ export const getStaffContactEmail = (member) =>
   `${member.name.toLowerCase().replace(/\s+/g, ".")}@nailify.com`;
 
 export const getStaffContactPhone = (member) =>
-  `+1 (555) ${member.id.slice(-3)}-${member.id.slice(-3)}`;
+  `+84 XXX XXX XXX) ${member.id.slice(-3)}-${member.id.slice(-3)}`;
 
 export const getStaffContactLocation = (member) => `${member.salon} Branch`;
 

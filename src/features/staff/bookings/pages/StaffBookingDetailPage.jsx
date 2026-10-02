@@ -176,7 +176,7 @@ function translateStatus(status, language) {
       case "inactive": return "Ngừng hoạt động";
       case "blocked": return "Đã khóa";
       case "pending": return "Chờ xử lý";
-      case "approved": return "Đã duyệt";
+      case "approved": return "Đã xác nhận";
       case "checkedin": return "Đã Check-in";
       case "inprogress": return "Đang thực hiện";
       case "servicecompleted": return "Đã xong dịch vụ";
@@ -265,6 +265,7 @@ function buildStaffExperienceFromBooking(
         price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0),
         duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedService?.duration),
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -285,6 +286,7 @@ function buildStaffExperienceFromBooking(
         price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0),
         duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedNailDetail?.duration),
         canViewProcedures: Boolean(bookingItemId),
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -1121,7 +1123,7 @@ export function StaffBookingDetailPage() {
   };
 
   const handleSelectService = (checked, serviceId) => {
-    setSelectedServiceIds(prev => 
+    setSelectedServiceIds(prev =>
       checked ? [...prev, serviceId] : prev.filter(id => id !== serviceId)
     );
   };
@@ -1136,21 +1138,22 @@ export function StaffBookingDetailPage() {
 
   const handleMultiDeleteServices = () => {
     if (selectedServiceIds.length === 0) return;
-    // selectedServiceIds are composite like "${bookingItemId}-service" / "${bookingItemId}-nail"
-    // extract the real bookingItemId by stripping known suffixes
-    const uniqueBookingItemIds = [
-      ...new Set(
-        selectedServiceIds.map(id =>
-          id.replace(/-service$/, "").replace(/-nail$/, "")
-        )
-      ),
-    ];
-    setItemsToDelete(
-      uniqueBookingItemIds.map(bookingItemId => ({
-        bookingItemId,
-        name: isVi ? "các dịch vụ đã chọn" : "selected services",
-      }))
-    );
+
+    const serviceInfo = resolvedStaffExperience?.bookingInfo?.find(info => info.label === "Service" || info.label === "Dịch vụ");
+    const breakdown = serviceInfo?.services || [];
+
+    const selectedItems = breakdown.filter(service => selectedServiceIds.includes(service.id));
+
+    // Fallback if none found for some reason, but we need names for UI
+    if (selectedItems.length === 0) {
+      setItemsToDelete([{
+        id: "multi-delete",
+        name: isVi ? "các dịch vụ đã chọn" : "selected services"
+      }]);
+      return;
+    }
+
+    setItemsToDelete(selectedItems);
   };
 
   const doUpdateServiceQuantity = async () => {
@@ -1162,12 +1165,23 @@ export function StaffBookingDetailPage() {
         const sId = String(item.serviceId || "");
         const nId = String(item.nailVariantId || "");
         const key = `${sId}_${nId}`;
-        const isMatch = String(item.bookingItemId || item.id) === String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id);
-        
+
+        const isMatch = (() => {
+          const editSId = String(editingServiceQuantity.serviceId || "");
+          const editNId = String(editingServiceQuantity.nailVariantId || "");
+          if (!editSId && !editNId) {
+            return String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id) === String(item.bookingItemId || item.id);
+          }
+          return editSId === sId && editNId === nId;
+        })();
+
         if (!groupedItems.has(key)) {
           groupedItems.set(key, {
             nailVariantId: item.nailVariantId,
             serviceId: item.serviceId,
+            shapeMethodConfigId: item.shapeMethodConfigId,
+            customerNailId: item.customerNailId,
+            customerNailRequestId: item.customerNailRequestId,
             quantity: isMatch ? tempQuantity : (item.quantity || 1)
           });
         } else if (!isMatch) {
@@ -1179,6 +1193,7 @@ export function StaffBookingDetailPage() {
         bookingDate: getBookingDateStr(),
         startTime: staffBookingDetail.startTime,
         nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        secondaryArtistId: staffBookingDetail.secondaryArtistId || null,
         selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
         bookingItems: Array.from(groupedItems.values()).filter(i => i.serviceId || i.nailVariantId),
       };
@@ -1199,25 +1214,30 @@ export function StaffBookingDetailPage() {
     setIsUpdatingBookingItems(true);
     try {
       const groupedItems = new Map();
-      const idsToDelete = itemsToDelete.map(i => String(i.bookingItemId || i.id));
-      
-      // Debug: log to diagnose matching
-      console.log("[doDeleteService] itemsToDelete:", itemsToDelete);
-      console.log("[doDeleteService] idsToDelete:", idsToDelete);
-      console.log("[doDeleteService] staffBookingDetail.bookingItems:", staffBookingDetail.bookingItems);
 
       (staffBookingDetail.bookingItems || []).forEach((item) => {
         const sId = String(item.serviceId || "");
         const nId = String(item.nailVariantId || "");
         const key = `${sId}_${nId}`;
-        const isMatch = idsToDelete.includes(String(item.bookingItemId || item.id)) || idsToDelete.includes(String(item.id));
-        
+
+        const isMatch = itemsToDelete.some(delItem => {
+          const dsId = String(delItem.serviceId || "");
+          const dnId = String(delItem.nailVariantId || "");
+          if (!dsId && !dnId) {
+            return String(delItem.bookingItemId || delItem.id) === String(item.bookingItemId || item.id);
+          }
+          return dsId === sId && dnId === nId;
+        });
+
         if (isMatch) return; // Skip deleted item
 
         if (!groupedItems.has(key)) {
           groupedItems.set(key, {
             nailVariantId: item.nailVariantId,
             serviceId: item.serviceId,
+            shapeMethodConfigId: item.shapeMethodConfigId,
+            customerNailId: item.customerNailId,
+            customerNailRequestId: item.customerNailRequestId,
             quantity: item.quantity || 1
           });
         } else {
@@ -1237,6 +1257,7 @@ export function StaffBookingDetailPage() {
         bookingDate: getBookingDateStr(),
         startTime: staffBookingDetail.startTime,
         nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        secondaryArtistId: staffBookingDetail.secondaryArtistId || null,
         selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
         bookingItems: resultingItems.filter(i => i.serviceId || i.nailVariantId),
       };
@@ -1277,15 +1298,16 @@ export function StaffBookingDetailPage() {
         onDelete={handleDelete}
         onOpenDesignStudio={handleOpenDesignStudio}
         onOpenServiceProcedures={handleOpenServiceProcedures}
-        onEditQuantity={handleEnableEditQuantity}
-        onDeleteService={handleDeleteService}
+        onEditQuantity={staffBookingDetail?.status === "CheckedIn" ? handleEnableEditQuantity : null}
+        onDeleteService={staffBookingDetail?.status === "CheckedIn" ? handleDeleteService : null}
         selectedServiceIds={selectedServiceIds}
-        onSelectService={handleSelectService}
-        onSelectAllServices={handleSelectAllServices}
-        onMultiDelete={handleMultiDeleteServices}
+        onSelectService={staffBookingDetail?.status === "CheckedIn" ? handleSelectService : null}
+        onSelectAllServices={staffBookingDetail?.status === "CheckedIn" ? handleSelectAllServices : null}
+        onMultiDelete={staffBookingDetail?.status === "CheckedIn" ? handleMultiDeleteServices : null}
         onOpenUpdateBooking={handleOpenUpdateBooking}
         onStaffNoteChange={handleStaffNoteChange}
         onStartServiceSession={() => void handleOpenServiceSession()}
+        canEditServices={staffBookingDetail?.status === "CheckedIn"}
       />
       <OnsiteAddonModal
         open={showUpdateBookingModal}
@@ -1383,19 +1405,19 @@ export function StaffBookingDetailPage() {
       </Modal>
 
       <ActionConfirmModal
-        show={itemsToDelete.length > 0}
+        open={itemsToDelete.length > 0}
         title={isVi ? "Xác nhận xóa" : "Confirm Delete"}
-        message={
-          itemsToDelete.length > 1 
+        description={
+          itemsToDelete.length > 1
             ? (isVi ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn? Hành động này không thể hoàn tác.` : `Are you sure you want to delete ${itemsToDelete.length} selected services? This action cannot be undone.`)
             : (isVi ? `Bạn có chắc chắn muốn xóa "${itemsToDelete[0]?.name}"? Hành động này không thể hoàn tác.` : `Are you sure you want to delete "${itemsToDelete[0]?.name}"? This action cannot be undone.`)
         }
         onConfirm={doDeleteService}
         onCancel={() => setItemsToDelete([])}
-        isConfirming={isUpdatingBookingItems}
+        loading={isUpdatingBookingItems}
         confirmText={isVi ? "Xóa" : "Delete"}
         cancelText={isVi ? "Hủy" : "Cancel"}
-        variant="danger"
+        intent="danger"
       />
     </>
   );

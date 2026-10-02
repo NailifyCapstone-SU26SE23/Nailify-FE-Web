@@ -207,8 +207,7 @@ export function StaffCreatePage() {
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
-        success: true,
-        message: `${formData.firstName} ${formData.lastName} has been added successfully.`,
+        success: true
       });
     } catch (err) {
       console.error("Error creating artist:", err);
@@ -237,6 +236,8 @@ export function StaffCreatePage() {
     setShowCancelModal(false);
     navigate(ROUTES.managerStaffArtists);
   };
+
+  const roleLabel = isVi ? "Thợ làm móng" : "Staff Artist";
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
@@ -374,7 +375,7 @@ export function StaffCreatePage() {
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Staff_Artist"
+                    value={roleLabel}
                     readOnly
                     className={inputClassName}
                   />

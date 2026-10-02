@@ -211,31 +211,28 @@ export function LoyaltyTransactionsManagementPage() {
       <TopMetricsRow metrics={metrics} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" />
 
       <div className="rounded-lg border border-[#f5e3ed] bg-white p-5 shadow-sm">
-
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 grid gap-4 sm:grid-cols-3">
           <Input.Search
             placeholder={isVi ? "Tìm kiếm khách hàng..." : "Search customer..."}
             allowClear
-            className="w-full sm:max-w-xs"
+            className="w-full"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Space className="flex-wrap">
-            <DateRangePicker
-              value={dateRange}
-              onChange={(dates) => setDateRange(dates)}
-              className="h-8"
-            />
-            <Select
-              placeholder={isVi ? "Loại giao dịch" : "Transaction Type"}
-              allowClear
-              className="w-40"
-              options={[
-                { value: "Earned", label: isVi ? "Tích điểm" : "Earned" },
-                { value: "Redeemed", label: isVi ? "Đổi điểm" : "Redeemed" },
-              ]}
-              onChange={(value) => setFilterType(value)}
-            />
-          </Space>
+          <DateRangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates)}
+            className="w-full h-8"
+          />
+          <Select
+            placeholder={isVi ? "Loại giao dịch" : "Transaction Type"}
+            allowClear
+            className="w-full"
+            options={[
+              { value: "Earned", label: isVi ? "Tích điểm" : "Earned" },
+              { value: "Redeemed", label: isVi ? "Đổi điểm" : "Redeemed" },
+            ]}
+            onChange={(value) => setFilterType(value)}
+          />
         </div>
 
         <Table

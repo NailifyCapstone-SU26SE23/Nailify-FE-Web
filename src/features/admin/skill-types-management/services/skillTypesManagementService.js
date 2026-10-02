@@ -61,10 +61,16 @@ export function normalizeAdminSkillType(skillType) {
 }
 
 function buildSkillTypePayload(formValues) {
-  return {
+  const payload = {
     name: String(formValues?.name || "").trim(),
     description: normalizeDescription(formValues?.description),
   };
+
+  if (formValues?.status) {
+    payload.status = String(formValues.status).trim();
+  }
+
+  return payload;
 }
 
 export async function fetchAdminSkillTypes({

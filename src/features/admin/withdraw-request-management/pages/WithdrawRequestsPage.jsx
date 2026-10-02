@@ -16,11 +16,7 @@ import {
   fetchSystemSummary,
   fetchWithdrawalRequests,
 } from "../services/withdrawRequestService";
-import {
-  WITHDRAW_REQUEST_STATUSES,
-  getWithdrawRequestStatusColor,
-  getWithdrawRequestStatusLabel,
-} from "../utils/withdrawRequestUtils";
+import { WITHDRAWAL_STATUS } from "../../../../shared/utils/statusFormatters";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
@@ -102,13 +98,13 @@ export function WithdrawRequestsPage() {
   const topMetrics = useMemo(() => {
     if (!summary) return [];
     return [
-      {
-        label: isVi ? "Tổng số dư" : "Total Balance",
-        value: summary.totalUserBalance,
-        unit: "VND",
-        icon: Wallet,
-        color: "#3b82f6",
-      },
+      // {
+      //   label: isVi ? "Tổng số dư" : "Total Balance",
+      //   value: summary.totalUserBalance,
+      //   unit: "VND",
+      //   icon: Wallet,
+      //   color: "#3b82f6",
+      // },
       {
         label: isVi ? "Tổng số dư đóng băng" : "Total Frozen",
         value: summary.totalFrozenBalance,
@@ -116,26 +112,26 @@ export function WithdrawRequestsPage() {
         icon: Snowflake,
         color: "#64748b",
       },
-      {
-        label: isVi ? "Ví hoạt động" : "Active Wallets",
-        value: summary.totalActiveWallets,
-        icon: Users,
-        color: "#10b981",
-      },
-      {
-        label: isVi ? "Tổng nạp" : "Total Deposited",
-        value: summary.totalDepositedAmount,
-        unit: "VND",
-        icon: ArrowDownToLine,
-        color: "#8b5cf6",
-      },
-      {
-        label: isVi ? "Tổng rút" : "Total Withdrawn",
-        value: summary.totalWithdrawnAmount,
-        unit: "VND",
-        icon: ArrowUpFromLine,
-        color: "#f59e0b",
-      },
+      // {
+      //   label: isVi ? "Ví hoạt động" : "Active Wallets",
+      //   value: summary.totalActiveWallets,
+      //   icon: Users,
+      //   color: "#10b981",
+      // },
+      // {
+      //   label: isVi ? "Tổng nạp" : "Total Deposited",
+      //   value: summary.totalDepositedAmount,
+      //   unit: "VND",
+      //   icon: ArrowDownToLine,
+      //   color: "#8b5cf6",
+      // },
+      // {
+      //   label: isVi ? "Tổng rút" : "Total Withdrawn",
+      //   value: summary.totalWithdrawnAmount,
+      //   unit: "VND",
+      //   icon: ArrowUpFromLine,
+      //   color: "#f59e0b",
+      // },
       {
         label: isVi ? "Yêu cầu đang chờ xử lý" : "Pending Requests",
         value: summary.pendingWithdrawalRequests,
@@ -191,11 +187,17 @@ export function WithdrawRequestsPage() {
       key: "status",
       width: 140,
       sorter: (a, b) => a.status.localeCompare(b.status),
-      render: (status) => (
-        <Tag color={getWithdrawRequestStatusColor(status)}>
-          {getWithdrawRequestStatusLabel(status, language)}
-        </Tag>
-      ),
+      render: (status) => {
+        const statusObj = WITHDRAWAL_STATUS[status];
+        if (statusObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${statusObj.tone}`}>
+              {language === "vi" ? statusObj.vi : statusObj.en}
+            </span>
+          );
+        }
+        return <Tag>{status}</Tag>;
+      },
     },
 
     {
@@ -219,64 +221,45 @@ export function WithdrawRequestsPage() {
   return (
     <div className="min-h-full pb-10 font-sans p-6">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
-        <div className="flex flex-col gap-4 border-b border-slate-200/60 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl bg-[#ea4f93]/10 p-2 text-[#ea4f93]">
-                <WalletCards size={18} className="stroke-[2]" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {language === "vi" ? "Quản trị ví" : "Wallet Admin"}
-              </span>
-            </div>
-            <Title level={2} className="!mb-0 !text-3xl !font-bold !tracking-tight !text-[#2d1b35] md:!text-4xl">
-              {language === "vi" ? "Quản lý và xét duyệt các yêu cầu rút tiền" : "Withdraw Requests"}
-            </Title>
-            <Text className="block max-w-[65ch] !text-xs !leading-relaxed !text-[#a88a9f] md:!text-sm">
-              {language === "vi" ? "Quản lý và xét duyệt các yêu cầu rút tiền của khách hàng." : "Manage and approve customer withdrawal requests."}
-            </Text>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              icon={<RefreshCw size={16} />}
-              onClick={() => {
-                loadSummary();
-                loadRequests(metaData.currentPage);
-              }}
-              className="flex items-center gap-2"
-            >
-              {language === "vi" ? "Làm mới" : "Refresh"}
-            </Button>
-          </div>
-        </div>
-
         {summary && (
-          <TopMetricsRow metrics={topMetrics} className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-3" />
+          <TopMetricsRow metrics={topMetrics} className="grid gap-4 grid-cols-2" />
         )}
 
         <Card className="shadow-sm">
           <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex w-full flex-col sm:flex-row gap-3 sm:w-auto">
-              <DateRangePicker
-                value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
-                onChange={(dates) => {
-                  setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
-                }}
-                className="w-full sm:w-[280px]"
-              />
-              <Select
-                allowClear
-                placeholder={isVi ? "Lọc theo trạng thái" : "Filter by Status"}
-                className="w-full sm:w-48"
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: WITHDRAW_REQUEST_STATUSES.PENDING, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.PENDING, language) },
-                  { value: WITHDRAW_REQUEST_STATUSES.APPROVED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.APPROVED, language) },
-                  { value: WITHDRAW_REQUEST_STATUSES.REJECTED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.REJECTED, language) },
-                  { value: WITHDRAW_REQUEST_STATUSES.COMPLETED, label: getWithdrawRequestStatusLabel(WITHDRAW_REQUEST_STATUSES.COMPLETED, language) },
-                ]}
-              />
+            <div className="flex w-full flex-col sm:flex-row justify-between items-end">
+              <div className="flex items-center gap-3">
+                <DateRangePicker
+                  value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+                  onChange={(dates) => {
+                    setDateRange(dates ? [dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()] : null);
+                  }}
+                  className="w-full sm:w-[280px]"
+                />
+                <Select
+                  allowClear
+                  placeholder={isVi ? "Lọc theo trạng thái" : "Filter by Status"}
+                  className="w-full sm:w-48"
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={["Pending", "Approved", "Rejected", "Completed"].map((s) => ({
+                    value: s,
+                    label: WITHDRAWAL_STATUS[s] ? (language === "vi" ? WITHDRAWAL_STATUS[s].vi : WITHDRAWAL_STATUS[s].en) : s,
+                  }))}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  icon={<RefreshCw size={16} />}
+                  onClick={() => {
+                    loadSummary();
+                    loadRequests(metaData.currentPage);
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  {language === "vi" ? "Làm mới" : "Refresh"}
+                </Button>
+              </div>
             </div>
           </div>
 
