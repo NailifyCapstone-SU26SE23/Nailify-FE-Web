@@ -27,6 +27,7 @@ import {
 } from "../services/nailShapesManagementService";
 import { Image, Table, Modal, Form, Input, InputNumber, Switch, Button } from "antd";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function validateForm(formValues, language) {
   const isVi = language === "vi";

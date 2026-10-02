@@ -304,7 +304,7 @@ export function StaffCreatePage() {
                     type="email"
                     value={formData.email}
                     onChange={(event) => handleInputChange("email", event.target.value)}
-                    placeholder="staff@nailify.com"
+                    placeholder="nguyenvana@gmail.com"
                     className={inputClassName}
                     required
                     autoComplete="new-email"
@@ -322,7 +322,7 @@ export function StaffCreatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+84 XXX XXX XXX"
                     className={inputClassName}
                     required
                     autoComplete="none"
@@ -510,7 +510,7 @@ export function StaffCreatePage() {
                     {formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New Staff Member")}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))} · #{formData.staffId || "NF-NEW"}
+                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))}
                   </p>
                   <p className="text-[11px] font-medium text-slate-400 text-center">
                     {language === "vi" ? "Chi nhánh phân bổ:" : "Assigned Salon:"}{" "}

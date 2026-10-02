@@ -98,13 +98,13 @@ export function WithdrawRequestsPage() {
   const topMetrics = useMemo(() => {
     if (!summary) return [];
     return [
-      {
-        label: isVi ? "Tổng số dư" : "Total Balance",
-        value: summary.totalUserBalance,
-        unit: "VND",
-        icon: Wallet,
-        color: "#3b82f6",
-      },
+      // {
+      //   label: isVi ? "Tổng số dư" : "Total Balance",
+      //   value: summary.totalUserBalance,
+      //   unit: "VND",
+      //   icon: Wallet,
+      //   color: "#3b82f6",
+      // },
       {
         label: isVi ? "Tổng số dư đóng băng" : "Total Frozen",
         value: summary.totalFrozenBalance,
@@ -112,26 +112,26 @@ export function WithdrawRequestsPage() {
         icon: Snowflake,
         color: "#64748b",
       },
-      {
-        label: isVi ? "Ví hoạt động" : "Active Wallets",
-        value: summary.totalActiveWallets,
-        icon: Users,
-        color: "#10b981",
-      },
-      {
-        label: isVi ? "Tổng nạp" : "Total Deposited",
-        value: summary.totalDepositedAmount,
-        unit: "VND",
-        icon: ArrowDownToLine,
-        color: "#8b5cf6",
-      },
-      {
-        label: isVi ? "Tổng rút" : "Total Withdrawn",
-        value: summary.totalWithdrawnAmount,
-        unit: "VND",
-        icon: ArrowUpFromLine,
-        color: "#f59e0b",
-      },
+      // {
+      //   label: isVi ? "Ví hoạt động" : "Active Wallets",
+      //   value: summary.totalActiveWallets,
+      //   icon: Users,
+      //   color: "#10b981",
+      // },
+      // {
+      //   label: isVi ? "Tổng nạp" : "Total Deposited",
+      //   value: summary.totalDepositedAmount,
+      //   unit: "VND",
+      //   icon: ArrowDownToLine,
+      //   color: "#8b5cf6",
+      // },
+      // {
+      //   label: isVi ? "Tổng rút" : "Total Withdrawn",
+      //   value: summary.totalWithdrawnAmount,
+      //   unit: "VND",
+      //   icon: ArrowUpFromLine,
+      //   color: "#f59e0b",
+      // },
       {
         label: isVi ? "Yêu cầu đang chờ xử lý" : "Pending Requests",
         value: summary.pendingWithdrawalRequests,
@@ -222,7 +222,7 @@ export function WithdrawRequestsPage() {
     <div className="min-h-full pb-10 font-sans p-6">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
         {summary && (
-          <TopMetricsRow metrics={topMetrics} className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-3" />
+          <TopMetricsRow metrics={topMetrics} className="grid gap-4 grid-cols-2" />
         )}
 
         <Card className="shadow-sm">

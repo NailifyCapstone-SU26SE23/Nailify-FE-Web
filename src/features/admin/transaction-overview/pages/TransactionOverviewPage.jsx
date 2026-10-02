@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Modal, message, Select, Spin, Alert, Table, Tooltip, DatePicker } from "antd";
+import { Modal, message, Select, Spin, Alert, Table, Tooltip, DatePicker, Popover } from "antd";
 import {
   Search,
   Eye,
@@ -403,16 +403,16 @@ export function TransactionOverviewPage() {
     const key = Object.keys(TRANSACTION_STATUS).find(k => k.toLowerCase() === String(status || "").toLowerCase());
     const statusObj = TRANSACTION_STATUS[key];
     const isVi = language === "vi";
-    
+
     if (statusObj) {
       let dotColor = "bg-slate-500";
       if (statusObj.tone.includes("emerald")) dotColor = "bg-emerald-500";
       else if (statusObj.tone.includes("amber")) dotColor = "bg-amber-500";
       else if (statusObj.tone.includes("purple")) dotColor = "bg-purple-500";
       else if (statusObj.tone.includes("rose")) dotColor = "bg-rose-500";
-      
+
       const animClass = key === 'Pending' ? 'animate-bounce' : key === 'Paid' ? 'animate-pulse' : '';
-      
+
       return (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${statusObj.tone}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${dotColor} ${animClass}`}></span>
@@ -420,7 +420,7 @@ export function TransactionOverviewPage() {
         </span>
       );
     }
-    
+
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
         {status}
@@ -793,9 +793,9 @@ export function TransactionOverviewPage() {
                               }
                             </span>
 
-                            <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
+                            {/* <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-xs px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
                               ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {t("adminTransactions.reviews")})
-                            </div>
+                            </div> */}
                           </div>
 
                           {/* Salon Details */}
@@ -805,19 +805,51 @@ export function TransactionOverviewPage() {
                             </h3>
                             <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
                               <div className="flex items-center gap-2">
-                                <MapPin size={12} className="shrink-0 text-slate-400" />
+                                <MapPin size={13} className="shrink-0 text-[#ea4f93]" />
                                 <span className="truncate">{salon.address}</span>
                               </div>
                               {salon.phone && (
                                 <div className="flex items-center gap-2">
-                                  <Phone size={12} className="shrink-0 text-slate-400" />
+                                  <Phone size={13} className="shrink-0 text-[#ea4f93]" />
                                   <span>{salon.phone}</span>
                                 </div>
                               )}
-                              <div className="flex items-center gap-2">
-                                <Clock size={12} className="shrink-0 text-slate-400" />
-                                <span>{salon.hours || (t("adminTransactions.hoursNotListed"))}</span>
-                              </div>
+                              <Popover
+                                content={
+                                  <div className="flex flex-col gap-1.5 text-xs w-48">
+                                    {salon.operatingHours && salon.operatingHours.length > 0 ? [...salon.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                                      <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                                        <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                                        <span className="text-[#a88a9f]">
+                                          {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                                        </span>
+                                      </div>
+                                    )) : (
+                                      <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                                    )}
+                                  </div>
+                                }
+                                title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+                                trigger="hover"
+                                placement="bottomLeft"
+                              >
+                                <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+                                  <Clock size={13} className="shrink-0 text-[#ea4f93]" />
+                                  <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+                                  <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                                    {(() => {
+                                      const today = new Date().getDay();
+                                      const todayHours = salon.operatingHours?.find(h => h.dayOfWeek === today);
+                                      if (todayHours) {
+                                        return todayHours.isClosed
+                                          ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                                          : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                                      }
+                                      return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                                    })()}
+                                  </span>
+                                </div>
+                              </Popover>
                             </div>
 
                             {/* Audit Metrics Panel inside Card */}
@@ -830,7 +862,7 @@ export function TransactionOverviewPage() {
                                     {isMetricLoading ? (
                                       <Spin size="small" className="scale-75" />
                                     ) : salonMetric.txCount === 0 ? (
-                                      "N/A"
+                                      "0%"
                                     ) : (
                                       `${salonMetric.successRate}%`
                                     )}

@@ -18,7 +18,7 @@ export const BOOKING_STATUS = {
   Cancelled: { vi: "Đã hủy", en: "Cancelled", tone: "bg-rose-100 text-rose-600 border-rose-200" },
   CheckedIn: { vi: "Đã Check-in", en: "Checked In", tone: "bg-cyan-100 text-cyan-600 border-cyan-200" },
   InProgress: { vi: "Đang thực hiện", en: "In Progress", tone: "bg-indigo-100 text-indigo-600 border-indigo-200" },
-  ServiceCompleted: { vi: "Làm dịch vụ xong", en: "Service Completed", tone: "bg-teal-100 text-teal-600 border-teal-200" },
+  ServiceCompleted: { vi: "Đã hoàn thành dịch vụ", en: "Service Completed", tone: "bg-teal-100 text-teal-600 border-teal-200" },
   Completed: { vi: "Đã hoàn thành", en: "Completed", tone: "bg-green-100 text-green-600 border-green-200" },
   Repaired: { vi: "Đã bảo hành", en: "Repaired", tone: "bg-purple-100 text-purple-600 border-purple-200" },
   ReschedulePending: { vi: "Chờ duyệt đổi lịch", en: "Reschedule Pending", tone: "bg-orange-100 text-orange-600 border-orange-200" },
@@ -76,10 +76,10 @@ export const PAYMENT_METHOD = {
 }
 
 export const WALLET_STATUS = {
-  Active: { vi: "Đang hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
+  Active: { vi: "Hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
   Frozen: { vi: "Tạm đóng băng", en: "Frozen", tone: "bg-amber-100 text-amber-600 border-amber-200" },
   Locked: { vi: "Bị khóa", en: "Locked", tone: "bg-rose-100 text-rose-600 border-rose-200" },
-  1: { vi: "Đang hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
+  1: { vi: "Hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
   2: { vi: "Tạm đóng băng", en: "Frozen", tone: "bg-amber-100 text-amber-600 border-amber-200" },
   3: { vi: "Bị khóa", en: "Locked", tone: "bg-rose-100 text-rose-600 border-rose-200" },
 };
@@ -118,21 +118,36 @@ export const SALON_STATUS_FILTER = {
 };
 
 export const CHAIR_STATUS = {
-  Active: { vi: "Đang hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
+  Active: { vi: "Hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
   Inactive: { vi: "Ngừng hoạt động", en: "Inactive", tone: "bg-rose-100 text-rose-600 border-rose-200" },
   Maintenance: { vi: "Bảo trì", en: "Maintenance", tone: "bg-amber-100 text-amber-600 border-amber-200" },
   Booked: { vi: "Đang đặt", en: "Booked", tone: "bg-blue-100 text-blue-600 border-blue-200" },
 };
 
 export const USER_STATUS = {
-  Active: { vi: "Đang hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
+  Active: { vi: "Hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
   Inactive: { vi: "Ngừng hoạt động", en: "Inactive", tone: "bg-rose-100 text-rose-600 border-rose-200" },
 };
 
 export const BASIC_STATUS = {
-  Active: { vi: "Đang hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
+  Active: { vi: "Hoạt động", en: "Active", tone: "bg-green-100 text-green-600 border-green-200" },
   Inactive: { vi: "Ngừng hoạt động", en: "Inactive", tone: "bg-rose-100 text-rose-600 border-rose-200" },
 };
+
+export const CUSTOMER_NAIL_REQUEST_STATUS = {
+  PendingReview: { vi: "Chờ xét duyệt", en: "Pending Review", tone: "bg-amber-100 text-amber-600 border-amber-200" },
+  Assigned: { vi: "Đã phân công", en: "Assigned", tone: "bg-blue-100 text-blue-600 border-blue-200" },
+  Reviewed: { vi: "Đã xem xét", en: "Reviewed", tone: "bg-blue-100 text-blue-600 border-blue-200" },
+  Quoted: { vi: "Đã báo giá", en: "Quoted", tone: "bg-green-100 text-green-600 border-green-200" },
+  Approved: { vi: "Đã duyệt", en: "Approved", tone: "bg-green-100 text-green-600 border-green-200" },
+  Rejected: { vi: "Đã từ chối", en: "Rejected", tone: "bg-rose-100 text-rose-600 border-rose-200" },
+}
+
+export const BREAK_STATUS = {
+  Pending: { vi: "Chờ duyệt", en: "Pending", tone: "bg-amber-100 text-amber-600 border-amber-200" },
+  Approved: { vi: "Đã duyệt", en: "Approved", tone: "bg-green-100 text-green-600 border-green-200" },
+  Rejected: { vi: "Đã từ chối", en: "Rejected", tone: "bg-rose-100 text-rose-600 border-rose-200" },
+}
 
 /**
  * Get the formatted status label based on current language

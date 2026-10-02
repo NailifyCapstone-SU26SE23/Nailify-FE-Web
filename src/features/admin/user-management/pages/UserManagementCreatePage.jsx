@@ -111,9 +111,9 @@ export function UserManagementCreatePage() {
         panelDescription={t("userManagement.detail.createPayloadDesc")}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-4">
         <article className="rounded-lg bg-white p-4 shadow-[0_16px_34px_rgba(94,76,62,0.06)] sm:p-5 md:p-6">
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-3">
             <UserManagementFormFields
               formValues={formValues}
               onFieldChange={handleChange}
@@ -128,7 +128,7 @@ export function UserManagementCreatePage() {
             </div>
           ) : null}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <div className="mt-6 flex flex-col justify-end gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               disabled={isSubmitting}
@@ -141,10 +141,10 @@ export function UserManagementCreatePage() {
           </div>
         </article>
 
-        <UserManagementSnapshotCard
+        {/* <UserManagementSnapshotCard
           formValues={formValues}
           notice={t("userManagement.detail.createNotice")}
-        />
+        /> */}
       </div>
 
       <ActionConfirmModal

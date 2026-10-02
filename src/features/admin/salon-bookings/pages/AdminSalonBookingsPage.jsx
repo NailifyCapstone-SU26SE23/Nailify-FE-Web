@@ -451,14 +451,14 @@ export function AdminSalonBookingsPage() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                       <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm">
                             <Star size={16} className="text-yellow-500 fill-yellow-500" />
                           </div>
                           <span className="text-white font-bold text-sm drop-shadow-md">
                             {salon?.rating || "4.8"}
                           </span>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                     <div className="p-6">

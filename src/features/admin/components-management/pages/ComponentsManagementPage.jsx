@@ -32,6 +32,7 @@ import {
   formatComponentDuration,
 } from "../services/componentsManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
@@ -273,9 +274,9 @@ export function ComponentsManagementPage() {
         sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
         render: (status) => (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold tracking-wider ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-md font-semibold ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${BASIC_STATUS[status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}></span>
+
             {status === "Active" ? (language === "vi" ? "Hoạt động" : "Active") : (language === "vi" ? "Ngừng hoạt động" : "Inactive")}
           </span>
         ),

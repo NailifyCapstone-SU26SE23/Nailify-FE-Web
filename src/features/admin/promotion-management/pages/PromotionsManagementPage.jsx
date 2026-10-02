@@ -36,7 +36,10 @@ import {
 } from "../services/promotionManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import dayjs from "dayjs";
-import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker"; function formatDateTime(value) {
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
+
+function formatDateTime(value) {
   if (!value) {
     return "--";
   }

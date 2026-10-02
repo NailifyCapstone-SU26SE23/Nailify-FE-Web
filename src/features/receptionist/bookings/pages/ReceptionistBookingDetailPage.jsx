@@ -286,6 +286,7 @@ function getServiceAction(status, isVi) {
 }
 
 function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi, bookingStatus) {
+  console.log("row", row);
   const items = [
     {
       key: `view-${row.id}`,
@@ -1063,7 +1064,7 @@ export function ReceptionistBookingDetailPage() {
       render: (_, row) => (
         <div className="flex items-center gap-2">
           <p className="text-xs font-bold text-[#2B182B]">
-            {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
+            {row.service ? row.service : row.sourceItem.customerNailName}
           </p>
         </div>
       ),

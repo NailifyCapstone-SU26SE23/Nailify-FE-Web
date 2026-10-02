@@ -31,6 +31,7 @@ import {
   PROMOTION_TYPE_OPTIONS,
   updateAdminPromotion,
 } from "../services/promotionManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 function toInputDateTime(value) {
   if (!value) {

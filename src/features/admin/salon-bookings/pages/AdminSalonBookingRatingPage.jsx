@@ -28,7 +28,7 @@ import { fetchAllSalonStaff } from "../../../manager/staff-artist-management/ser
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import toast from "react-hot-toast";
 import { formatDate } from "../../../../shared/utils/formatDate";
-import { Spin, Alert, Select } from "antd";
+import { Spin, Alert, Select, Popover } from "antd";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -404,7 +404,7 @@ export function AdminSalonBookingRatingPage() {
       },
       {
         label: isVi ? "Đánh giá Đã xác nhận" : "Audited Reviews",
-        value: loadingMetrics ? <Spin size="small" /> : `${totalNetworkReviews} logs`,
+        value: loadingMetrics ? <Spin size="small" /> : (isVi ? `${totalNetworkReviews} đánh giá` : `${totalNetworkReviews} reviews`),
         note: "Audited reviews",
         icon: MessageSquare,
         color: "#4f46e5",
@@ -581,19 +581,51 @@ export function AdminSalonBookingRatingPage() {
                           </h3>
                           <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2">
-                              <MapPin size={12} className="shrink-0 text-slate-400" />
+                              <MapPin size={13} className="shrink-0 text-[#ea4f93]" />
                               <span className="truncate">{salon.address}</span>
                             </div>
                             {salon.phone && (
                               <div className="flex items-center gap-2">
-                                <Phone size={12} className="shrink-0 text-slate-400" />
+                                <Phone size={13} className="shrink-0 text-[#ea4f93]" />
                                 <span>{salon.phone}</span>
                               </div>
                             )}
-                            {/* <div className="flex items-center gap-2">
-                              <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || (isVi ? "Chưa có thông tin giờ mở cửa" : "Operating hours not listed")}</span>
-                            </div> */}
+                            <Popover
+                              content={
+                                <div className="flex flex-col gap-1.5 text-xs w-48">
+                                  {salon.operatingHours && salon.operatingHours.length > 0 ? [...salon.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                                    <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                                      <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                                      <span className="text-[#a88a9f]">
+                                        {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                                      </span>
+                                    </div>
+                                  )) : (
+                                    <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                                  )}
+                                </div>
+                              }
+                              title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+                              trigger="hover"
+                              placement="bottomLeft"
+                            >
+                              <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+                                <Clock size={13} className="shrink-0 text-[#ea4f93]" />
+                                <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+                                <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                                  {(() => {
+                                    const today = new Date().getDay();
+                                    const todayHours = salon.operatingHours?.find(h => h.dayOfWeek === today);
+                                    if (todayHours) {
+                                      return todayHours.isClosed
+                                        ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                                        : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                                    }
+                                    return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                                  })()}
+                                </span>
+                              </div>
+                            </Popover>
                           </div>
 
                           {/* Audit Metrics Panel inside Card */}
@@ -738,14 +770,12 @@ export function AdminSalonBookingRatingPage() {
                       className="space-y-6"
                     >
                       {processedRatings.map((rating) => {
+                        console.log("rating", rating);
                         const cName = rating.customerName || usersMap[rating.customerId]?.name || "Customer";
                         const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
                         const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || (isVi ? "Thợ làm móng" : "Staff Artist");
-
-                        // Check if there is an operational comment response in the API/mock
-                        const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";
 
                         return (
                           <motion.div
@@ -788,13 +818,6 @@ export function AdminSalonBookingRatingPage() {
                                   </div>
                                 </div>
                               </div>
-                              {/* <button
-                                onClick={() => setDeletingRating(rating)}
-                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-rose-100 bg-white text-rose-500 hover:bg-rose-50 transition-colors"
-                                title={isVi ? "Xóa đánh giá" : "Delete review"}
-                              >
-                                <Trash2 size={14} />
-                              </button> */}
                             </div>
 
                             {/* Mid Row: Comment bubble layout matching the design reference */}
@@ -851,7 +874,7 @@ export function AdminSalonBookingRatingPage() {
                             </div>
 
                             {/* Staff Attribution & Response auditing */}
-                            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                            {/* <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
                               <div className="flex items-center gap-2">
                                 <div className="h-6 w-6 rounded-lg bg-pink-50 text-[#ea4f93] flex items-center justify-center">
                                   <User size={12} />
@@ -860,23 +883,7 @@ export function AdminSalonBookingRatingPage() {
                                   {isVi ? "Kỹ thuật viên:" : "Assigned Artist:"} <span className="font-bold text-[#2d1b35]">{artistName}</span>
                                 </span>
                               </div>
-
-                              <span className="text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider bg-[#ea4f93]/5 border border-[#ea4f93]/15 px-3 py-1 rounded-full flex items-center gap-1 select-none">
-                                <Sparkle size={10} className="fill-[#ea4f93]" />
-                                {isVi ? "Bản ghi đã kiểm toán" : "Audited Record"}
-                              </span>
-                            </div>
-
-                            {/* Read-Only Manager Response Auditing Box */}
-                            <div className="bg-[#f0fdf4]/50 border border-emerald-500/10 rounded-2xl p-4.5 space-y-2">
-                              <div className="flex items-center gap-1.5 text-[10px] text-emerald-800 font-bold uppercase tracking-wider">
-                                <ShieldCheck size={12} />
-                                {isVi ? "Nhật ký kiểm toán quản lý (Phản hồi)" : "Manager Audit Trail (Response)"}
-                              </div>
-                              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                                "{responseContent}"
-                              </p>
-                            </div>
+                            </div> */}
                           </motion.div>
                         );
                       })}
