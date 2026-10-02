@@ -19,7 +19,6 @@ import { Table, ConfigProvider } from "antd";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROLES } from "../../../../shared/constants/roles";
-import { usePagination } from "../../../../shared/hooks/usePagination";
 import {
   getStaffBookingDesignStudioRoute,
   getStaffBookingServiceSessionRoute,
@@ -44,6 +43,7 @@ import {
   fetchAllCustomers,
 } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 import {
   setFilter,
   fetchStaffBookingsThunk,
@@ -166,33 +166,7 @@ function mapStatus(status) {
 }
 
 function getStatusTone(status) {
-  const norm = String(status || "").trim().toLowerCase();
-  switch (norm) {
-    case "pending":
-      return "bg-[#fff4e8] text-[#d9871c] border border-[#ffe0b3]";
-    case "confirmed":
-    case "approved":
-      return "bg-[#e8f2ff] text-[#4a72d8] border border-[#c4d7ff]";
-    case "checkedin":
-    case "checked in":
-      return "bg-[#e0f7fa] text-[#00838f] border border-[#b2ebf2]";
-    case "inprogress":
-    case "in progress":
-      return "bg-[#f3ebff] text-[#7e4fe6] border border-[#dcd0ff]";
-    case "servicecompleted":
-      return "bg-[#fce4ec] text-[#d81b60] border border-[#f8bbd0]";
-    case "completed":
-      return "bg-[#eaf9ee] text-[#2fa25f] border border-[#b8f0d0]";
-    case "cancelled":
-    case "canceled":
-    case "rejected":
-      return "bg-[#ffe7ef] text-[#e1447f] border border-[#ffc2d5]";
-    case "noshow":
-    case "no-show":
-      return "bg-[#f5f5f5] text-[#616161] border border-[#e0e0e0]";
-    default:
-      return "bg-[#fff5ef] text-[#8c5d44] border border-[#f5d7c4]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#fff5ef] text-[#8c5d44] border-[#f5d7c4]";
 }
 
 function escapeCsvCell(value) {
@@ -245,15 +219,9 @@ const translateOption = (option, language) => {
     "All": "Tất cả",
     "All salons": "Tất cả chi nhánh",
     "All staff": "Tất cả nhân viên",
-    "Pending": "Đang chờ",
-    "Confirmed": "Đã xác nhận",
-    "ServiceCompleted": "Đã hoàn tất dịch vụ",
-    "Completed": "Đã hoàn thành",
-    "CheckedIn": "Đã có mặt",
-    "Cancelled": "Đã hủy",
-    "No-show": "Không đến",
   };
-  return mapVi[option] || option;
+  if (mapVi[option]) return mapVi[option];
+  return getStatusLabel(option, BOOKING_STATUS, language);
 };
 
 const translateSummaryText = (text, language) => {
@@ -464,27 +432,55 @@ export function StaffBookingListPage() {
     });
   }, [filteredBookings, staffTimeSortDirection]);
 
-  const {
-    currentPage,
-    paginatedItems: paginatedBookings,
-    setCurrentPage,
-    totalPages,
-  } = usePagination(sortedBookings, BOOKING_PAGE_SIZE);
+  const [bookingPagination, setBookingPagination] = useState({
+    currentPage: 1,
+    pageSize: BOOKING_PAGE_SIZE,
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / bookingPagination.pageSize));
+
+  const paginatedBookings = useMemo(() => {
+    const safePage = Math.min(bookingPagination.currentPage, totalPages);
+    const startIndex = (safePage - 1) * bookingPagination.pageSize;
+    return sortedBookings.slice(startIndex, startIndex + bookingPagination.pageSize);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, sortedBookings, totalPages]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [dateFrom, dateTo, query, salonFilter, setCurrentPage, staffFilter, staffTimeSortDirection, statusFilter]);
+    setBookingPagination(prev => ({ ...prev, currentPage: 1 }));
+  }, [dateFrom, dateTo, query, salonFilter, staffFilter, staffTimeSortDirection, statusFilter]);
+
+  const handleTableChange = (pagination) => {
+    const nextPage = Number(pagination?.current || 1);
+    const nextPageSize = Number(pagination?.pageSize || BOOKING_PAGE_SIZE);
+
+    setBookingPagination((current) => ({
+      currentPage: nextPageSize !== current.pageSize ? 1 : nextPage,
+      pageSize: nextPageSize,
+    }));
+  };
+
+  const tablePagination = useMemo(
+    () => ({
+      current: bookingPagination.currentPage,
+      pageSize: bookingPagination.pageSize,
+      total: sortedBookings.length,
+      showSizeChanger: true,
+      pageSizeOptions: ["5", "10", "20", "50"],
+      showTotal: (total, range) => language === "vi" ? `${range[0]}-${range[1]} của ${total} lịch hẹn` : `${range[0]}-${range[1]} of ${total} bookings`,
+    }),
+    [bookingPagination.currentPage, bookingPagination.pageSize, sortedBookings.length, language],
+  );
 
   const paginationLabel = useMemo(() => {
     if (!filteredBookings.length) {
       return language === "vi" ? "Đang hiển thị 0 lịch hẹn" : "Showing 0 bookings";
     }
-    const start = (currentPage - 1) * BOOKING_PAGE_SIZE + 1;
-    const end = Math.min(filteredBookings.length, currentPage * BOOKING_PAGE_SIZE);
+    const start = (bookingPagination.currentPage - 1) * bookingPagination.pageSize + 1;
+    const end = Math.min(filteredBookings.length, bookingPagination.currentPage * bookingPagination.pageSize);
     return language === "vi"
       ? `Đang hiển thị ${start}-${end} trong số ${filteredBookings.length} lịch hẹn`
       : `Showing ${start}-${end} of ${filteredBookings.length} bookings`;
-  }, [currentPage, filteredBookings.length, language]);
+  }, [bookingPagination.currentPage, bookingPagination.pageSize, filteredBookings.length, language]);
 
   /* STREAMING_CHUNK: Dynamic Summary & Actions */
   const summaryItems = useMemo(() => {
@@ -797,10 +793,11 @@ export function StaffBookingListPage() {
                         }}
                       >
                         <Table
-                          dataSource={paginatedBookings}
+                          dataSource={sortedBookings}
                           columns={columns}
                           rowKey="id"
-                          pagination={false}
+                          pagination={tablePagination}
+                          onChange={handleTableChange}
                           className="min-w-full"
                           rowClassName="align-top"
                         />
@@ -856,15 +853,15 @@ export function StaffBookingListPage() {
                   </>
                 )}
 
-                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-t border-[#f7dce8] bg-[#fffafd] px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:hidden">
                   <p className="text-[11px] text-[#c694ad]">
                     {paginationLabel}
                   </p>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage <= 1}
+                      onClick={() => setBookingPagination(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
+                      disabled={bookingPagination.currentPage <= 1}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                     >
                       <ChevronLeft size={12} />
@@ -873,15 +870,15 @@ export function StaffBookingListPage() {
                       type="button"
                       className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-[#ea4f93] px-2 text-[11px] font-bold text-white"
                     >
-                      {currentPage}
+                      {bookingPagination.currentPage}
                     </button>
                     <span className="px-2 text-[11px] font-medium text-[#b9849f]">
                       / {totalPages}
                     </span>
                     <button
                       type="button"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage >= totalPages}
+                      onClick={() => setBookingPagination(prev => ({ ...prev, currentPage: Math.min(totalPages, prev.currentPage + 1) }))}
+                      disabled={bookingPagination.currentPage >= totalPages}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#f3cade] bg-white text-[#e84d92]"
                     >
                       <ChevronRight size={12} />

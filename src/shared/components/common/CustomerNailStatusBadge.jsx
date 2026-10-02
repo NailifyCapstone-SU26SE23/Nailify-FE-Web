@@ -10,7 +10,7 @@ export function CustomerNailStatusBadge({
   const { label, tone, Icon } = getCustomerNailStatusMeta(status, language);
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-bold ${tone} ${className}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${tone} ${className}`}>
       <Icon size={iconSize} />
       {label}
     </span>

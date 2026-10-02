@@ -25,6 +25,7 @@ import {
   fetchNailArtists
 } from "../services/breakService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BREAK_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 export function ReceptionistBreaksPage() {
   const [breaks, setBreaks] = useState([]);
@@ -114,34 +115,17 @@ export function ReceptionistBreaksPage() {
   };
 
   const getStatusBadge = (status) => {
-    const s = String(status || "Pending").trim().toLowerCase();
-    switch (s) {
-      case "approved":
-      case "Đã xác nhận":
-      case "đồng ý":
-      case "active":
-        return (
-          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600 border border-emerald-100">
-            {language === "vi" ? "Đã xác nhận" : "Approved"}
-          </span>
-        );
-      case "rejected":
-      case "từ chối":
-      case "không đồng ý":
-        return (
-          <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-600 border border-rose-100">
-            {language === "vi" ? "Từ chối" : "Rejected"}
-          </span>
-        );
-      case "pending":
-      case "chờ duyệt":
-      default:
-        return (
-          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-600 border border-amber-100">
-            {language === "vi" ? "Chờ duyệt" : "Pending"}
-          </span>
-        );
-    }
+    let norm = "Pending";
+    const raw = String(status || "").trim().toLowerCase();
+    if (raw === "approved" || raw === "đã xác nhận" || raw === "đồng ý" || raw === "active") norm = "Approved";
+    else if (raw === "rejected" || raw === "từ chối" || raw === "không đồng ý") norm = "Rejected";
+    
+    const matched = BREAK_STATUS[norm] || BREAK_STATUS["Pending"];
+    return (
+      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold border ${matched.tone}`}>
+        {getStatusLabel(norm, BREAK_STATUS, language)}
+      </span>
+    );
   };
 
   const columns = [

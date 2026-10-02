@@ -39,6 +39,7 @@ import {
   updateBookingLocally,
   setAllFilters,
 } from "../../../../store/receptionistBookingsSlice";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 function formatCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
@@ -111,23 +112,7 @@ function getTodayDateParam() {
 }
 
 function getStatusTone(status) {
-  const norm = String(status || "").trim().toLowerCase();
-  switch (norm) {
-    case "completed":
-    case "servicecompleted":
-      return "bg-[#e8f8ef] text-[#1f9d61] border border-[#b8f0d0]";
-    case "confirmed":
-    case "approved":
-    case "checkedin":
-      return "bg-[#eaf1ff] text-[#4c71d9] border border-[#c4d7ff]";
-    case "pending":
-      return "bg-[#fff3e5] text-[#d98b1d] border border-[#ffe0b3]";
-    case "cancelled":
-    case "rejected":
-      return "bg-[#ffe8ef] text-[#df4e86] border border-[#ffc2d5]";
-    default:
-      return "bg-[#f5ecff] text-[#7c63d8] border border-[#dcd0ff]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#f5ecff] text-[#7c63d8] border border-[#dcd0ff]";
 }
 
 
@@ -149,38 +134,7 @@ const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "
 export function ReceptionistBookingListPage() {
   const { t, language } = useLanguage();
   const formatDisplay = (s) => {
-    switch (s) {
-      case "Checked In":
-      case "CheckedIn":
-        return language === "vi" ? "Đã check in" : "Checked In";
-      case "In Progress":
-      case "InProgress":
-        return language === "vi" ? "Đang tiến hành" : "In Progress";
-      case "Pending":
-        return language === "vi" ? "Đang chờ" : "Pending";
-      case "Confirmed":
-      case "Approved":
-        return language === "vi" ? "Đã xác nhận" : "Approved";
-      case "Completed":
-        return language === "vi" ? "Đã hoàn thành" : "Completed";
-      case "ServiceCompleted":
-        return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
-      case "Rejected":
-        return language === "vi" ? "Đã từ chối" : "Rejected";
-      case "Cancelled":
-      case "Canceled":
-        return language === "vi" ? "Đã hủy" : "Cancelled";
-      case "ReschedulePending":
-        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-      case "RescheduleSuggested":
-        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-      case "Repaired":
-        return language === "vi" ? "Đã bảo hành" : "Repaired";
-      case "All":
-        return language === "vi" ? "Tất cả" : "All";
-      default:
-        return s;
-    }
+    return getStatusLabel(s, BOOKING_STATUS, language);
   };
   const location = useLocation();
   const navigate = useNavigate();

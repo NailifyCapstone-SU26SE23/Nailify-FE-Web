@@ -24,62 +24,14 @@ import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown"
 import { useQuery } from "@tanstack/react-query";
 import { fetchStaffCustomerDetail, fetchLoyaltyTiers, fetchStaffShapeMethodConfigDetail } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Pending':
-      return '!border-slate-200 !bg-slate-50 !text-slate-600';
-    case 'Approved':
-      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
-    case 'Rejected':
-    case 'Cancelled':
-      return '!border-red-200 !bg-red-50 !text-red-600';
-    case 'CheckedIn':
-      return '!border-purple-200 !bg-purple-50 !text-purple-600';
-    case 'InProgress':
-      return '!border-blue-200 !bg-blue-50 !text-blue-600';
-    case 'ServiceCompleted':
-      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
-    case 'Completed':
-      return '!border-green-200 !bg-green-50 !text-green-700';
-    case 'Repaired':
-      return '!border-orange-200 !bg-orange-50 !text-orange-600';
-    case 'ReschedulePending':
-    case 'RescheduleSuggested':
-      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
-    default:
-      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
-  }
+  return BOOKING_STATUS[status]?.tone || 'bg-[#fff8df] border-[#f3ddab] text-[#d39a1d]';
 };
 
 const formatStatusDisplay = (status, language) => {
-  switch (status) {
-    case "CheckedIn":
-      return language === "vi" ? "Đã check in" : "Checked In";
-    case "InProgress":
-      return language === "vi" ? "Đang tiến hành" : "In Progress";
-    case "Pending":
-      return language === "vi" ? "Đang chờ" : "Pending";
-    case "Approved":
-      return language === "vi" ? "Đã xác nhận" : "Confirmed";
-    case "ServiceCompleted":
-      return language === "vi" ? "Đã hoàn thành DV" : "Service Completed";
-    case "Completed":
-      return language === "vi" ? "Đã hoàn thành" : "Completed";
-    case "Rejected":
-      return language === "vi" ? "Đã từ chối" : "Rejected";
-    case "Cancelled":
-    case "Canceled":
-      return language === "vi" ? "Đã hủy" : "Cancelled";
-    case "ReschedulePending":
-      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-    case "RescheduleSuggested":
-      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-    case "Repaired":
-      return language === "vi" ? "Đã bảo hành" : "Repaired";
-    default:
-      return status;
-  }
+  return getStatusLabel(status, BOOKING_STATUS, language);
 };
 
 function SectionTitle({ icon: Icon, title }) {
