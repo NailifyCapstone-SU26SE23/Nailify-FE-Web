@@ -541,13 +541,13 @@ export function StaffBookingListPage() {
 
     return [
       { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-        ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
-        : []),
+      // ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+      //   ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
+      //   : []),
       ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{ key: "complete", label: language === "vi" ? "Hoàn thành" : "Complete Service", icon: SquareCheckBig, onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }) }]
         : []),
-      { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
+      // { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
     ];
   };
 

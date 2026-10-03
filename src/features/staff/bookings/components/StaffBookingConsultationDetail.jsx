@@ -167,7 +167,7 @@ function ServiceInfoCard({
                   <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-left">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời gian" : "Time"}</p>
                     <span className="font-bold text-[#ea4f93] text-[13px]">
-                      {service.timeRangeDisplay || "-"}
+                      {service.timeRangeDisplay || (service.startTime && service.endTime ? `${service.startTime} - ${service.endTime}` : "-")}
                     </span>
                   </div>
                   <div className="min-w-0 mt-3 md:mt-0">
@@ -403,11 +403,10 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                             <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
                               {(() => {
                                 const idx = Number(item.fingerIndex);
-                                const arrayIdx = idx - 1;
-                                if (arrayIdx >= 0 && arrayIdx <= 4) {
+                                if (idx >= 0 && idx <= 4) {
                                   return language === "vi"
-                                    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][arrayIdx]
-                                    : ["Thumb", "Index", "Middle", "Ring", "Pinky"][arrayIdx];
+                                    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][idx]
+                                    : ["Thumb", "Index", "Middle", "Ring", "Pinky"][idx];
                                 }
                                 return language === "vi" ? `Ngón tay #${idx}` : `Finger #${idx}`;
                               })()}

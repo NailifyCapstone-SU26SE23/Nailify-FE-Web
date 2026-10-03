@@ -225,42 +225,47 @@ function parseVariantColorJson(colorJson, fallbackPrimaryColor, fallbackSecondar
           return;
         }
 
-        const gradientStops = Array.isArray(finger?.gradient?.stops) ? finger.gradient.stops.filter(Boolean) : [];
-        const rawMode = String(finger?.mode || "").trim();
-        // Use explicit mode from JSON if present, otherwise infer from gradient stops
-        const fingerMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
-        defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
-          mode: fingerMode,
-          primaryColor: String(finger?.primaryColor || finger?.color || gradientStops[0] || fallbackPrimaryColor),
-          secondaryColor: String(
-            finger?.secondaryColor
-            || gradientStops[1]
-            || gradientStops[0]
-            || finger?.primaryColor
-            || fallbackSecondaryColor,
-          ),
-          gradientStops,
-        });
+        if (fingerIndex >= 0 && fingerIndex <= 4) {
+          let parsedGradientStops = [];
+          if (Array.isArray(finger?.gradientStops)) parsedGradientStops = finger.gradientStops;
+          else if (Array.isArray(finger?.gradient?.stops)) parsedGradientStops = finger.gradient.stops;
+          else if (Array.isArray(finger?.gradient)) parsedGradientStops = finger.gradient;
+
+          const rawMode = String(finger?.mode || "").trim();
+          const fingerMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : parsedGradientStops.length >= 2 ? "gradient" : "solid";
+
+          defaultFingerColors[fingerIndex] = normalizeFingerColorConfig({
+            mode: fingerMode,
+            primaryColor: String(finger?.primaryColor || finger?.color || parsedGradientStops[0] || fallbackPrimaryColor),
+            secondaryColor: String(finger?.secondaryColor || parsedGradientStops[1] || parsedGradientStops[0] || fallbackSecondaryColor),
+            gradientStops: parsedGradientStops,
+            rotationAngle: Number(finger?.rotationAngle ?? finger?.gradient?.rotation ?? 180),
+          });
+        }
       });
 
       return defaultFingerColors;
     }
 
-    const gradientStops = Array.isArray(parsed?.gradient?.stops) ? parsed.gradient.stops.filter(Boolean) : [];
+    let parsedGradientStops = [];
+    if (Array.isArray(parsed?.gradientStops)) parsedGradientStops = parsed.gradientStops;
+    else if (Array.isArray(parsed?.gradient?.stops)) parsedGradientStops = parsed.gradient.stops;
+    else if (Array.isArray(parsed?.gradient)) parsedGradientStops = parsed.gradient;
+
     const rawMode = String(parsed?.mode || "").trim();
     // Respect explicit mode from JSON
-    const sharedMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : gradientStops.length >= 2 ? "gradient" : "solid";
+    const sharedMode = rawMode === "gradient" ? "gradient" : rawMode === "solid" ? "solid" : parsedGradientStops.length >= 2 ? "gradient" : "solid";
     const sharedColor = normalizeFingerColorConfig({
       mode: sharedMode,
-      primaryColor: String(parsed?.primaryColor || parsed?.color || gradientStops[0] || fallbackPrimaryColor),
+      primaryColor: String(parsed?.primaryColor || parsed?.color || parsedGradientStops[0] || fallbackPrimaryColor),
       secondaryColor: String(
         parsed?.secondaryColor
-        || gradientStops[1]
-        || gradientStops[0]
+        || parsedGradientStops[1]
+        || parsedGradientStops[0]
         || parsed?.primaryColor
         || fallbackSecondaryColor,
       ),
-      gradientStops,
+      gradientStops: parsedGradientStops,
     });
 
     return Array.from({ length: NAIL_LABELS.length }, () => ({ ...sharedColor }));
@@ -1770,13 +1775,18 @@ export function StaffNailDesignStudioPage() {
   const customerNailCustomColor = useMemo(
     () => JSON.stringify({
       mode: "perFinger",
-      fingers: fingerColorConfigs.map((item, index) => ({
-        ...normalizeFingerColorConfig(item),
-        fingerIndex: index,
-        gradient: {
-          stops: normalizeFingerColorConfig(item).gradientStops,
-        },
-      })),
+      fingers: fingerColorConfigs.map((item, index) => {
+        const config = normalizeFingerColorConfig(item);
+        return {
+          ...config,
+          fingerIndex: index + 1, // Align with backend and variantTryOnUtils (1-based)
+          color: config.primaryColor,
+          gradient: config.mode === 'gradient' && config.gradientStops && config.gradientStops.length > 0 ? {
+            stops: config.gradientStops,
+            rotation: config.rotationAngle,
+          } : null,
+        };
+      }),
     }),
     [fingerColorConfigs],
   );
@@ -2071,11 +2081,17 @@ export function StaffNailDesignStudioPage() {
     const nextDecorations = Array.from({ length: NAIL_LABELS.length }, () => []);
     const nextPlacements = [];
 
+    const maxRawIndex = Math.max(...rawComponents.map((c) => Number(c?.fingerIndex ?? 0)));
+    const isRawOneBased = maxRawIndex >= 1 && rawComponents.every((c) => Number(c?.fingerIndex ?? 0) >= 1) && maxRawIndex <= 5;
+    const isRawZeroBased = rawComponents.some((c) => Number(c?.fingerIndex ?? -1) === 0);
+    const useRawLegacy = isRawOneBased && !isRawZeroBased;
+
     rawComponents.forEach((item, index) => {
       const sourceComponent = item?.customerComponent || item?.component;
       const label = String(sourceComponent?.name || "").trim();
-      // Backend stores fingerIndex as 0-based for customerNailComponents (same as how we save)
-      const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
+
+      const rawIdx = Number(item?.fingerIndex ?? 0);
+      const fingerIndex = useRawLegacy ? Math.min(4, Math.max(0, rawIdx - 1)) : normalizeFingerIndex(rawIdx);
 
       if (!label || fingerIndex < 0) {
         return;
@@ -2253,6 +2269,11 @@ export function StaffNailDesignStudioPage() {
     const nextPlacements = [];
     const variantComponents = Array.isArray(variantDetail?.nailComponents) ? variantDetail.nailComponents : [];
 
+    const maxVariantFingerIndex = Math.max(...variantComponents.map((c) => Number(c?.fingerIndex ?? 0)));
+    const isVariantOneBased = maxVariantFingerIndex >= 1 && variantComponents.every((c) => Number(c?.fingerIndex ?? 0) >= 1) && maxVariantFingerIndex <= 5;
+    const isVariantZeroBased = variantComponents.some((c) => Number(c?.fingerIndex ?? -1) === 0);
+    const useVariantLegacy = isVariantOneBased && !isVariantZeroBased;
+
     variantComponents.forEach((item, index) => {
       const componentName = String(item?.component?.name || "").trim();
 
@@ -2260,8 +2281,8 @@ export function StaffNailDesignStudioPage() {
         return;
       }
 
-      // Backend stores fingerIndex as 0-based (same convention for both variant and customerNail)
-      const fingerIndex = normalizeFingerIndex(item?.fingerIndex);
+      const rawIdx = Number(item?.fingerIndex ?? 0);
+      const fingerIndex = useVariantLegacy ? Math.min(4, Math.max(0, rawIdx - 1)) : normalizeFingerIndex(rawIdx);
 
       if (fingerIndex === -1) {
         nextDecorations.forEach((fingerItems, currentFingerIndex) => {
@@ -2404,16 +2425,41 @@ export function StaffNailDesignStudioPage() {
 
   const toggleNailDecoration = (decoration) => {
     markAsCustomized();
+    const option = decorationOptionMap.get(decoration);
+    if (!option) return;
+
     setNailDecorations((current) => {
       const nextDecorations = current.map((items, index) => {
         if (activeNailIndex !== -1 && index !== activeNailIndex) {
           return items;
         }
 
+        if (items.includes(decoration)) {
+          return items.filter((d) => d !== decoration);
+        }
         return [...items, decoration];
       });
 
-      syncPlacementsFromDecorations(nextDecorations);
+      setComponentPlacements((prevPlacements) => {
+        let nextPlacements = [...prevPlacements];
+
+        nextDecorations.forEach((items, fingerIndex) => {
+          if (activeNailIndex !== -1 && fingerIndex !== activeNailIndex) return;
+
+          const hasDeco = items.includes(decoration);
+          const existingPlacements = nextPlacements.filter(p => p.fingerIndex === fingerIndex && p.label === decoration);
+
+          if (hasDeco && existingPlacements.length === 0) {
+            const uniqueToken = option.customerComponentId || option.componentId || option.id || decoration;
+            nextPlacements.push(buildDefaultPlacement(option, fingerIndex, uniqueToken));
+          } else if (!hasDeco && existingPlacements.length > 0) {
+            nextPlacements = nextPlacements.filter(p => !(p.fingerIndex === fingerIndex && p.label === decoration));
+          }
+        });
+
+        return nextPlacements;
+      });
+
       return nextDecorations;
     });
   };
@@ -2639,7 +2685,8 @@ export function StaffNailDesignStudioPage() {
           customerComponentId: toNullableNumber(item?.customerComponentId),
           posX: Number(item?.posX ?? 0),
           posY: Number(item?.posY ?? 0),
-          fingerIndex: Number(item?.fingerIndex ?? 0),
+          // Ensure fingerIndex is saved as 1-5 because the backend may ignore/drop 0
+          fingerIndex: Number(item?.fingerIndex ?? 0) + 1,
           configJson: String(item?.configJson || "").trim(),
         }))
         .filter((item) => item.componentId || item.customerComponentId);

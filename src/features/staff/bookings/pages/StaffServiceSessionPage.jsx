@@ -2551,7 +2551,7 @@ export function StaffServiceSessionPage() {
               >
                 {isVi ? "Quay lại danh sách" : "Back to Booking List"}
               </button>
-              <button
+              {/* <button
                 type="button"
                 onClick={() => {
                   setCompleted(false);
@@ -2560,7 +2560,7 @@ export function StaffServiceSessionPage() {
                 className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f3d5e2] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
               >
                 {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
-              </button>
+              </button> */}
             </div>
           </div>
         </article>
@@ -3278,13 +3278,13 @@ export function StaffServiceSessionPage() {
                   {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setCompleted(false)}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
                 >
                   {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
-                </button>
+                </button> */}
               </article>
 
               <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">

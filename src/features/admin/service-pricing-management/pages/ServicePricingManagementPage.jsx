@@ -12,11 +12,13 @@ import {
   Trash2,
   X,
   Eye,
+  Filter,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { CustomSelect } from "../../../../shared/components/common/CustomSelect";
 import toast from "react-hot-toast";
 
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -705,17 +707,17 @@ export function ServicePricingManagementPage() {
               </button>
             </div>
 
-            <select
+            <CustomSelect
+              options={serviceCategories.map((category) => ({
+                value: category,
+                label: category === "All" ? t("servicePricing.filter.allCategories") : category,
+              }))}
               value={activeCategory}
-              onChange={(event) => setActiveCategory(event.target.value)}
-              className="h-10 rounded-full border border-[#f4d7e5] bg-[#fffafc] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
-            >
-              {serviceCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category === "All" ? t("servicePricing.filter.allCategories") : category}
-                </option>
-              ))}
-            </select>
+              onChange={setActiveCategory}
+              className="w-full sm:w-56"
+              triggerClassName="!h-10 !min-h-[40px] !rounded-full !border-[#f4d7e5] !bg-[#fffafc] !px-4 !py-0 !text-sm !text-[#5b4658] !shadow-none focus-within:!border-[#ea4f93]"
+              prefixIcon={<Filter size={16} />}
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">
