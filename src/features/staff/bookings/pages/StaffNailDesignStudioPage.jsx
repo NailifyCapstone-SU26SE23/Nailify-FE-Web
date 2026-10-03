@@ -1282,7 +1282,18 @@ export function StaffNailDesignStudioPage() {
       filters: [],
       builder: {
         initialSelection: { shape: "", length: "", finish: "", decorations: [], extras: [] },
-        colors: [{ swatch: "#f8b4d9" }, { swatch: "#f3e8ff" }],
+        colors: [
+          { label: "Pink", swatch: "#f8b4d9" },
+          { label: "Purple", swatch: "#f3e8ff" },
+          { label: "Nude", swatch: "#e6c1a2" },
+          { label: "Chrome", swatch: "#c4cfde" },
+          { label: "White", swatch: "#f7f7fb" },
+          { label: "Red", swatch: "#ff6d6d" },
+          { label: "Black", swatch: "#273044" },
+          { label: "Mint", swatch: "#c1e1c1" },
+          { label: "Blue", swatch: "#a8c0ff" },
+          { label: "Peach", swatch: "#ffcda3" }
+        ],
         shapes: [], finishes: [], decorations: [], extras: []
       }
     };
@@ -3183,30 +3194,52 @@ export function StaffNailDesignStudioPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
-                            <span className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Màu chính" : "Primary Color"}</span>
-                            <div className="mt-3 flex items-center gap-3">
-                              <input
-                                type="color"
-                                value={selectedPrimaryColor}
-                                onChange={(event) => updateFingerColors((item) => ({
+                        <div className="space-y-4">
+                          <ChoiceGrid
+                            items={studio.builder.colors.filter((c) => !String(c.swatch || "").includes("linear-gradient"))}
+                            selected={studio.builder.colors.find(c => String(c.swatch || "").toLowerCase() === selectedPrimaryColor.toLowerCase())?.label || ""}
+                            onSelect={(label) => {
+                              const option = studio.builder.colors.find(c => c.label === label);
+                              if (option && option.swatch) {
+                                updateFingerColors((item) => ({
                                   ...item,
-                                  primaryColor: event.target.value,
+                                  primaryColor: option.swatch,
                                   gradientStops: [
-                                    event.target.value,
-                                    normalizeFingerColorConfig(item).gradientStops[1] || event.target.value,
+                                    option.swatch,
+                                    normalizeFingerColorConfig(item).gradientStops[1] || option.swatch,
                                     ...normalizeFingerColorConfig(item).gradientStops.slice(2),
                                   ],
-                                }))}
-                                className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
-                              />
-                              <div>
-                                <p className="text-[10px] font-bold text-[#38253a]">{selectedPrimaryColor.toUpperCase()}</p>
-                                <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedPrimaryColor)}</p>
+                                }));
+                              }
+                            }}
+                            type="color"
+                            language={language}
+                          />
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <label className="rounded-[14px] border border-[#f4dbe7] bg-white p-3">
+                              <span className="text-[10px] font-bold text-[#ea4f93]">{isVi ? "Tùy chỉnh màu chính" : "Custom Primary Color"}</span>
+                              <div className="mt-3 flex items-center gap-3">
+                                <input
+                                  type="color"
+                                  value={selectedPrimaryColor}
+                                  onChange={(event) => updateFingerColors((item) => ({
+                                    ...item,
+                                    primaryColor: event.target.value,
+                                    gradientStops: [
+                                      event.target.value,
+                                      normalizeFingerColorConfig(item).gradientStops[1] || event.target.value,
+                                      ...normalizeFingerColorConfig(item).gradientStops.slice(2),
+                                    ],
+                                  }))}
+                                  className="h-10 w-14 cursor-pointer rounded-md border border-[#f2bfd4] bg-white p-1"
+                                />
+                                <div>
+                                  <p className="text-[10px] font-bold text-[#38253a]">{selectedPrimaryColor.toUpperCase()}</p>
+                                  <p className="mt-1 text-[10px] text-[#a98c9f]">{hexToRgbLabel(selectedPrimaryColor)}</p>
+                                </div>
                               </div>
-                            </div>
-                          </label>
+                            </label>
+                          </div>
                         </div>
                       )}
                       <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white p-3">

@@ -532,7 +532,7 @@ function StaffArtistCard({ staff, onOpenDrawer }) {
       {/* Action Button: Clean Secondary Outline Button with Icon */}
       <div className="mt-auto pt-4">
         <Link
-          to={getManagerStaffUpdateRoute(staff.id)}
+          to={getManagerStaffUpdateRoute(staff.userId || staff.accountId || staff.id)}
           onClick={(event) => event.stopPropagation()}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 px-4 text-xs font-bold text-slate-700 hover:border-[#E84F93] hover:text-[#E84F93] hover:bg-[#FFF0F5]/50 transition-all shadow-2xs"
         >
@@ -1737,7 +1737,7 @@ export function StaffManagementPage() {
                     title={language === "vi" ? "Nhân viên" : "Staff Artists"}
                     subtitle={language === "vi" ? "Xem và quản lý nhân viên của bạn" : "View and manage your Staff Artists"}
                   />
-                  <div className="flex flex-wrap gap-2">
+                  {/* <div className="flex flex-wrap gap-2">
                     {STAFF_FILTER_TABS.map((filterObj) => {
                       const filterName = filterObj.label;
                       const count = filterName === "All" ? staffArtists.length : staffArtists.filter(s => s.status === filterName).length;
@@ -1759,7 +1759,7 @@ export function StaffManagementPage() {
                         </button>
                       );
                     })}
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px_auto]">
@@ -2062,7 +2062,7 @@ export function StaffManagementPage() {
               <div className="pt-4 border-t border-[#f1e7ed] space-y-3">
                 <div className="flex gap-2">
                   <Link
-                    to={getManagerStaffUpdateRoute(selectedStaff.userId || selectedStaff.accountId || selectedStaff.id)}
+                    to={getManagerStaffUpdateRoute(selectedStaff.userId || selectedStaff.accountId)}
                     onClick={() => {
                       setIsDrawerOpen(false);
                     }}

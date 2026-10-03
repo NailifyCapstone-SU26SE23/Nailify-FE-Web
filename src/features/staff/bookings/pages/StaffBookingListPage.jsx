@@ -752,13 +752,13 @@ export function StaffBookingListPage() {
                       );
                     })}
                   </div>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleExportCsv}
                     className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                   >
                     {language === "vi" ? "Xuất CSV" : "Export CSV"}
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
