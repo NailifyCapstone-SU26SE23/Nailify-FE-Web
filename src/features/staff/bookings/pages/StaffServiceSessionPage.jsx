@@ -1841,8 +1841,11 @@ export function StaffServiceSessionPage() {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
+  const bookingStaffArtistId = bookingDetail?.nailArtistId || bookingDetail?.artistId || bookingDetail?.staffId;
+  const isAssignedStaff = !bookingStaffArtistId || !currentStaffArtistId || String(bookingStaffArtistId).trim() === currentStaffArtistId;
+
   const allConfirmed = displayConfirmations.every((item) => item.checked);
-  const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
+  const canStartService = allConfirmed && Boolean(effectiveBeforePhoto) && isAssignedStaff;
   const hasAfterPhotoFile = Boolean(afterPhoto?.file);
   const canCompleteSession =
     displayCompletionChecks.every((item) => item.checked)
@@ -2553,44 +2556,17 @@ export function StaffServiceSessionPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setCompleted(false);
-                  setIsSessionFinalized(false);
-                }}
-                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f3d5e2] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                disabled={!canOpenComparison}
+                onClick={handleOpenComparison}
+                className={`flex gap-2 min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
+                  }`}
               >
-                {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+                <span className="flex shrink-0 items-center justify-center text-[#ea4f93]">
+                  <Camera size={19} />
+                </span>
+                <span className="block text-base font-medium text-[#ea4f93]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
               </button>
             </div>
-          </div>
-        </article>
-
-        <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
-          <SectionTitle
-            icon={Sparkles}
-            title={isVi ? "Bước tiếp theo" : "Next Step"}
-            subtitle={isVi ? "Các hành động sau khi hoàn thành dịch vụ." : "Handoff actions after the staff session is finished."}
-          />
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-
-            <button
-              type="button"
-              disabled={!canOpenComparison}
-              onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-lg border px-5 py-5 text-left transition ${canOpenComparison
-                ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
-                : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
-                }`}
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
-                <Camera size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-bold text-[#3f2b3f]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}</span>
-              </span>
-            </button>
           </div>
         </article>
         {comparisonModal}
@@ -2600,9 +2576,6 @@ export function StaffServiceSessionPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 p-4">
-
-
-
       <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
@@ -2745,6 +2718,13 @@ export function StaffServiceSessionPage() {
                     />
                   ))}
                 </div>
+
+                {!isAssignedStaff && (
+                  <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100 flex items-start gap-2">
+                    <ShieldCheck size={18} className="mt-0.5 shrink-0" />
+                    <p>{isVi ? "Bạn không phải thợ chính của lịch hẹn này nên không thể bắt đầu dịch vụ." : "You are not the assigned staff for this booking and cannot start the service."}</p>
+                  </div>
+                )}
 
                 <button
                   type="button"
@@ -2953,16 +2933,21 @@ export function StaffServiceSessionPage() {
                     label={isVi ? "Thêm dịch vụ phụ" : "Add Extra Service"}
                     onClick={handleOpenExtraServiceModal}
                   />
-                  <ActionGhostButton
-                    icon={FilePenLine}
-                    label={isVi ? "Ghi chú" : "Add Session Note"}
-                    onClick={() =>
-                      handleSessionAction(isVi ? "Ghi lại lưu ý đặc biệt cho phiên làm móng này ở mục bên dưới." : "Use the staff notes area below to record the latest session update.")
-                    }
-                  />
+                  <button
+                    type="button"
+                    onClick={handleMarkServiceDone}
+                    disabled={isMarkingServiceDone || !areAllProceduresCompleted}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold ${isMarkingServiceDone || !areAllProceduresCompleted
+                      ? "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                      : "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                      }`}
+                  >
+                    <CheckCircle2 size={16} />
+                    {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
+                  </button>
                 </div>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handleMarkServiceDone}
                   disabled={isMarkingServiceDone || !areAllProceduresCompleted}
@@ -2973,15 +2958,15 @@ export function StaffServiceSessionPage() {
                 >
                   <CheckCircle2 size={16} />
                   {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
-                </button>
+                </button> */}
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setStarted(false)}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
                 >
                   {isVi ? "Quay lại trạng thái Chưa bắt đầu (Undo)" : "Back to Preparation (Undo)"}
-                </button>
+                </button> */}
               </article>
 
 
@@ -3278,16 +3263,16 @@ export function StaffServiceSessionPage() {
                   {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setCompleted(false)}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
                 >
                   {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
-                </button>
+                </button> */}
               </article>
 
-              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              {/* <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Bước tiếp theo" : "Next Step"}
@@ -3315,7 +3300,7 @@ export function StaffServiceSessionPage() {
                     </span>
                   </button>
                 </div>
-              </article>
+              </article> */}
             </>
           )}
         </div>
@@ -3470,6 +3455,7 @@ export function StaffServiceSessionPage() {
         confirmText={isVi ? "Bắt đầu" : "Start Service"}
         cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={Play}
+        loading={isStartingService}
         onConfirm={handleStartService}
         onCancel={() => setShowStartConfirm(false)}
         highlights={[data.customerName, data.serviceLabel, data.chair]}
@@ -3491,6 +3477,7 @@ export function StaffServiceSessionPage() {
         confirmText={isVi ? "Hoàn tất" : "Complete Session"}
         cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={CheckCircle2}
+        loading={isCompletingSession}
         onConfirm={handleCompleteSession}
         onCancel={() => setShowCompleteConfirm(false)}
         highlights={[data.customerName, data.serviceLabel]}

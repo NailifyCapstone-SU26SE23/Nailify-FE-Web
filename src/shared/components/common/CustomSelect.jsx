@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import PropTypes from "prop-types";
+import { PropTypes } from "../../utils/propTypes";
 import { ChevronDown, X, Check } from "lucide-react";
 
 export const CustomSelect = ({
@@ -11,6 +11,7 @@ export const CustomSelect = ({
   prefixIcon,
   suffixIcon,
   className = "",
+  triggerClassName = "",
   disabled = false,
   error = false,
 }) => {
@@ -100,6 +101,7 @@ export const CustomSelect = ({
               : "border-[#f1d7c0] hover:border-[#ef6bb4] focus-within:border-[#ef6bb4] focus-within:ring-2 focus-within:ring-[#ef6bb4]/20"
           }
           ${disabled ? "cursor-not-allowed bg-gray-50 opacity-50 hover:border-[#f1d7c0]" : ""}
+          ${triggerClassName}
         `}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         tabIndex={disabled ? -1 : 0}
@@ -184,6 +186,7 @@ CustomSelect.propTypes = {
   prefixIcon: PropTypes.node,
   suffixIcon: PropTypes.node,
   className: PropTypes.string,
+  triggerClassName: PropTypes.string,
   disabled: PropTypes.bool,
   error: PropTypes.bool,
 };

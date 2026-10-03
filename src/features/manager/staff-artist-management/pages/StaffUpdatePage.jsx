@@ -12,7 +12,6 @@ import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
 import { ROUTES } from "../../../../shared/constants/routes";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
-  fetchNailArtistById,
   fetchNailArtistSkills,
   fetchSkillTypes,
 } from "../services/nailArtistsService";
@@ -110,33 +109,17 @@ export function StaffUpdatePage() {
           return;
         }
 
-        // 1. staffId (from the URL) belongs to the NailArtist/Staff table.
-        const artistData = await fetchNailArtistById(staffId);
-
-        if (!mounted) return;
-
-        if (!artistData) {
-          throw new Error("Không tìm thấy thông tin nhân viên.");
-        }
-
-        // 2. Resolve the real Users-table id from the Staff Artist record.
-        const realUserId =
-          artistData.userId ||
-          artistData.userID ||
-          artistData.accountId ||
-          artistData.user?.id;
-
-        if (!realUserId) {
-          throw new Error("Không tìm thấy userId tương ứng với nhân viên này.");
-        }
-
-        // 3. Now fetch the actual user profile + skill types in parallel.
+        // 1. staffId param from URL is actually the userId — call GET /Users/{userId} directly.
         const [userData, skillTypesData] = await Promise.all([
-          fetchUserById(realUserId),
+          fetchUserById(staffId),
           fetchSkillTypes({ pageNumber: 1, pageSize: 100 }),
         ]);
 
         if (!mounted) return;
+
+        if (!userData) {
+          throw new Error("Không tìm thấy thông tin người dùng.");
+        }
 
         const items = Array.isArray(skillTypesData?.items)
           ? skillTypesData.items
@@ -150,44 +133,44 @@ export function StaffUpdatePage() {
         const skillRatings = {};
         normalizedItems.forEach((s) => { skillRatings[s.id] = 0; });
 
-        // Get the real nailArtistId from the fetched artist data
-        const nailArtistId = artistData?.nailArtistId || artistData?.staffId || artistData?.id || staffId;
+        // userData.staffId is the nailArtistId returned by GET /Users/{id}
+        const nailArtistId = userData?.staffId || "";
 
         // Load existing skills for this Staff Artist
-        try {
-          const existingSkills = await fetchNailArtistSkills(nailArtistId);
-          const skillArr = Array.isArray(existingSkills?.items)
-            ? existingSkills.items
-            : Array.isArray(existingSkills)
-              ? existingSkills
-              : [];
-          skillArr.forEach((s) => {
-            const skillTypeId = s.skillTypeId || s.SkillTypeId;
-            if (skillTypeId) skillRatings[skillTypeId] = s.level ?? 0;
-          });
-        } catch (e) {
-          console.warn("Failed to load existing skills:", e);
+        if (nailArtistId) {
+          try {
+            const existingSkills = await fetchNailArtistSkills(nailArtistId);
+            const skillArr = Array.isArray(existingSkills?.items)
+              ? existingSkills.items
+              : Array.isArray(existingSkills)
+                ? existingSkills
+                : [];
+            skillArr.forEach((s) => {
+              const skillTypeId = s.skillTypeId || s.SkillTypeId;
+              if (skillTypeId) skillRatings[skillTypeId] = s.level ?? 0;
+            });
+          } catch (e) {
+            console.warn("Failed to load existing skills:", e);
+          }
         }
 
         if (!mounted) return;
 
-        const avatarUrl = userData?.avatarUrl || artistData?.avatarUrl || "";
+        const avatarUrl = userData?.avatarUrl || "";
         if (avatarUrl) {
           setImagePreview(avatarUrl);
         }
 
-        const salonId = userData?.salonId || artistData?.salonId || "";
-
         setFormData({
-          userId: userData?.userId || userData?.id || realUserId,
+          userId: userData?.userId || staffId,
           nailArtistId,
           firstName: userData?.firstName || "",
           lastName: userData?.lastName || "",
           email: userData?.email || "",
           phone: userData?.phone || "",
-          status: userData?.status || artistData?.status || "Active",
-          salonId,
-          role: userData?.role || artistData?.role || "Staff_Artist",
+          status: userData?.status || "Active",
+          salonId: userData?.salonId || "",
+          role: userData?.role || "Staff_Artist",
           avatarUrl,
           imageFile: null,
           skillRatings,

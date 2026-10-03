@@ -930,14 +930,14 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-        ? [{
-          key: "start",
-          label: language === "vi" ? "Bắt đầu làm" : "Start Service",
-          icon: Play,
-          onSelect: () => void startService(),
-        }]
-        : []),
+      // ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+      //   ? [{
+      //     key: "start",
+      //     label: language === "vi" ? "Bắt đầu làm" : "Start Service",
+      //     icon: Play,
+      //     onSelect: () => void startService(),
+      //   }]
+      //   : []),
       ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "complete",
@@ -946,12 +946,12 @@ export function StaffDashboardPage() {
           onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
         }]
         : []),
-      {
-        key: "notes",
-        label: language === "vi" ? "Ghi chú" : "View Notes",
-        icon: FileText,
-        onSelect: () => setSelectedStaffNotesBooking(booking),
-      },
+      // {
+      //   key: "notes",
+      //   label: language === "vi" ? "Ghi chú" : "View Notes",
+      //   icon: FileText,
+      //   onSelect: () => setSelectedStaffNotesBooking(booking),
+      // },
     ];
   };
 

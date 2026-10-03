@@ -541,13 +541,13 @@ export function StaffBookingListPage() {
 
     return [
       { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-        ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
-        : []),
+      // ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+      //   ? [{ key: "start", label: language === "vi" ? "Bắt đầu làm" : "Start Service", icon: Play, onSelect: () => void openServiceSession() }]
+      //   : []),
       ...(isOwnBooking && !isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{ key: "complete", label: language === "vi" ? "Hoàn thành" : "Complete Service", icon: SquareCheckBig, onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }) }]
         : []),
-      { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
+      // { key: "notes", label: language === "vi" ? "Xem ghi chú" : "View Notes", icon: FileText, onSelect: () => setSelectedStaffNotesBooking(booking) },
     ];
   };
 
@@ -752,13 +752,13 @@ export function StaffBookingListPage() {
                       );
                     })}
                   </div>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={handleExportCsv}
                     className="rounded-full border border-[#f4c6da] bg-[#fff7fb] px-4 py-2 text-xs font-bold text-[#ea4f93]"
                   >
                     {language === "vi" ? "Xuất CSV" : "Export CSV"}
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
