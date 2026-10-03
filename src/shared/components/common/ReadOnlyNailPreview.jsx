@@ -74,18 +74,62 @@ function parsePlacementConfig(configJson) {
   }
 }
 
-function parseVariantColorJson(value) {
-  const raw = String(value || "").trim();
-
-  if (!raw) {
-    return null;
-  }
-
+function parseVariantColorConfig(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+  if (!rawValue) return null;
   try {
-    return JSON.parse(raw);
+    return JSON.parse(rawValue);
   } catch {
-    return null;
+    return rawValue;
   }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) return [];
+  if (Array.isArray(colorConfig)) return colorConfig;
+  if (Array.isArray(colorConfig.gradient)) return colorConfig.gradient;
+  if (Array.isArray(colorConfig.gradient?.stops)) return colorConfig.gradient.stops;
+  if (Array.isArray(colorConfig.gradientStops)) return colorConfig.gradientStops;
+  return [];
+}
+
+function buildFingerColorStyle(colorConfig, fingerIndex) {
+  if (!colorConfig) return { backgroundColor: "#f9c2d8" };
+  if (typeof colorConfig === "string") return { backgroundColor: colorConfig };
+
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f9c2d8").trim();
+    return { backgroundColor: color || "#f9c2d8" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
+  }
+
+  if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
+    const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
+    if (finger) {
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
+      }
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
+      }
+    }
+  }
+
+  if (colorConfig.mode === "gradient" && colorConfig.primaryColor && colorConfig.secondaryColor) {
+    return { background: `linear-gradient(to bottom, ${colorConfig.primaryColor}, ${colorConfig.secondaryColor})` };
+  }
+  if (colorConfig.color) return { backgroundColor: colorConfig.color };
+  if (colorConfig.primaryColor) return { backgroundColor: colorConfig.primaryColor };
+
+  return { backgroundColor: "#f9c2d8" };
 }
 
 function useShapeAspectRatio(shapeImageUrl) {
@@ -122,85 +166,7 @@ function useShapeAspectRatio(shapeImageUrl) {
   return shapeImageUrl ? aspectRatio : DEFAULT_SHAPE_RATIO;
 }
 
-function buildFingerColorConfigs(colorJson) {
-  const fallbackPrimary = "#f7bdd7";
-  const fallbackSecondary = "#fce7f3";
-  const parsed = parseVariantColorJson(colorJson);
-  const defaults = Array.from({ length: NAIL_LABELS.length }, () => ({
-    mode: "solid",
-    primaryColor: fallbackPrimary,
-    secondaryColor: fallbackSecondary,
-    gradientStops: [fallbackPrimary, fallbackSecondary],
-  }));
 
-  if (!parsed) {
-    return defaults;
-  }
-
-  const topGradientStops = Array.isArray(parsed?.gradient?.stops)
-    ? parsed.gradient.stops.filter(Boolean)
-    : [];
-  const sharedIsGradient =
-    (parsed?.mode === "gradient" || parsed?.gradient?.enabled === true)
-    && topGradientStops.length >= 2;
-
-  const sharedColor = {
-    mode: sharedIsGradient ? "gradient" : "solid",
-    primaryColor: normalizeColorValue(
-      parsed?.primaryColor || parsed?.color || topGradientStops[0],
-      fallbackPrimary,
-    ),
-    secondaryColor: normalizeColorValue(
-      parsed?.secondaryColor || topGradientStops[1] || topGradientStops[0] || parsed?.primaryColor,
-      fallbackSecondary,
-    ),
-    gradientStops: normalizeGradientStops(
-      topGradientStops,
-      parsed?.primaryColor || parsed?.color || topGradientStops[0],
-      parsed?.secondaryColor || topGradientStops[1] || topGradientStops[0] || parsed?.primaryColor,
-    ),
-  };
-
-  if (parsed?.mode !== "perFinger" || !Array.isArray(parsed?.fingers)) {
-    return defaults.map(() => ({ ...sharedColor }));
-  }
-
-  const nextConfigs = defaults.map(() => ({ ...sharedColor }));
-
-  parsed.fingers.forEach((finger) => {
-    const fingerIndex = normalizeColorFingerIndex(finger?.fingerIndex);
-
-    if (fingerIndex < 0 || fingerIndex > 4) {
-      return;
-    }
-
-    const fingerStops = Array.isArray(finger?.gradient?.stops)
-      ? finger.gradient.stops.filter(Boolean)
-      : [];
-    const fingerIsGradient =
-      (finger?.mode === "gradient" || finger?.gradient?.enabled === true)
-      && fingerStops.length >= 2;
-
-    nextConfigs[fingerIndex] = {
-      mode: fingerIsGradient ? "gradient" : "solid",
-      primaryColor: normalizeColorValue(
-        finger?.primaryColor || finger?.color || fingerStops[0],
-        sharedColor.primaryColor,
-      ),
-      secondaryColor: normalizeColorValue(
-        finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
-        sharedColor.secondaryColor,
-      ),
-      gradientStops: normalizeGradientStops(
-        fingerStops,
-        finger?.primaryColor || finger?.color || fingerStops[0],
-        finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
-      ),
-    };
-  });
-
-  return nextConfigs;
-}
 
 function buildComponentPlacements(nailComponents = []) {
   const placements = [];
@@ -242,25 +208,7 @@ function buildComponentPlacements(nailComponents = []) {
   return placements;
 }
 
-function getColorStyle(colorConfig) {
-  if (colorConfig?.mode === "gradient") {
-    const gradientFormula = normalizeGradientStops(
-      colorConfig?.gradientStops,
-      colorConfig?.primaryColor,
-      colorConfig?.secondaryColor,
-    )
-      .map((color, index, stops) => `${color} ${((index / Math.max(stops.length - 1, 1)) * 100).toFixed(2)}%`)
-      .join(", ");
 
-    return {
-      backgroundImage: `linear-gradient(135deg, ${gradientFormula})`,
-    };
-  }
-
-  return {
-    backgroundColor: colorConfig?.primaryColor || "#f7bdd7",
-  };
-}
 
 
 
@@ -435,7 +383,7 @@ export function ReadOnlyNailPreview({
   variantDetail,
   compact = false,
 }) {
-  const fingerColorConfigs = buildFingerColorConfigs(variantDetail?.colorJson);
+  const colorConfig = useMemo(() => parseVariantColorConfig(variantDetail?.colorJson), [variantDetail?.colorJson]);
   const componentPlacements = buildComponentPlacements(variantDetail?.nailComponents);
   const shapeImageUrl = String(variantDetail?.nailShape?.imageUrl || "").trim();
   const finishLabel = String(variantDetail?.nailSurface?.name).trim();
@@ -480,7 +428,7 @@ export function ReadOnlyNailPreview({
             <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible">
               <ReadOnlyNailCard
                 index={index} fingerLabel={fingerLabels[index]}
-                colorStyle={getColorStyle(fingerColorConfigs[index])}
+                colorStyle={buildFingerColorStyle(colorConfig, index + 1)}
                 components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}
                 compact={compact}
