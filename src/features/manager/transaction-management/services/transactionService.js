@@ -296,8 +296,6 @@ export async function fetchTransactions(options = {}) {
     queryParams.endDate = endDate;
   }
 
-  console.log("Fetching transactions with params:", queryParams);
-
   try {
     const response = await axiosClient.get("/Transactions", {
       headers: getAuthHeaders(),
@@ -403,7 +401,6 @@ export async function fetchBookingById(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching booking by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Bookings/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -451,8 +448,6 @@ export async function fetchTransactionById(id) {
   if (!normalizedId) {
     throw new Error("Transaction ID is required.");
   }
-
-  console.log("Fetching transaction by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Transactions/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -481,7 +476,6 @@ export async function fetchTransactionsByBookingId(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching transactions for booking:", normalizedId);
   try {
     const response = await axiosClient.get(`/Transactions/booking/${normalizedId}/payment-history`, {
       headers: getAuthHeaders(),
@@ -508,7 +502,6 @@ export async function fetchWalletTransactionById(walletTransactionId) {
     throw new Error("Wallet Transaction ID is required.");
   }
 
-  console.log("Fetching wallet transaction by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Wallets/transactions/${normalizedId}`, {
       headers: getAuthHeaders(),

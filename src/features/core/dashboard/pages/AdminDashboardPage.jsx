@@ -160,6 +160,10 @@ export function AdminDashboardPage() {
   const { data: managersList } = useManagersList();
   const { data: salonsList } = useSalonsList();
 
+  const openSalonsList = useMemo(() => {
+    return salonsList?.filter(salon => salon.status === "Open" || salon.status === "open") || [];
+  }, [salonsList]);
+
   const { data: salonManagers } = useSalonStaffByRole(selectedSalonId, "Manager");
   const { data: salonReceptionists } = useSalonStaffByRole(selectedSalonId, "Receptionist");
   const { data: salonStaffArtists } = useSalonStaffByRole(selectedSalonId, "Staff_Artist");
@@ -236,8 +240,8 @@ export function AdminDashboardPage() {
   };
 
   const salonPerformanceRows = useMemo(() => {
-    if (!salonsList) return [];
-    return salonsList.map((salon) => {
+    if (!openSalonsList) return [];
+    return openSalonsList.map((salon) => {
       const salonId = salon.salonId || salon.id;
       const salonName = salon.name;
       let revenue = 0;
@@ -258,7 +262,7 @@ export function AdminDashboardPage() {
       }
       return { id: salonId, name: salonName, manager: managerName, revenue: revenue, originalId: salonId };
     }).sort((a, b) => b.revenue - a.revenue);
-  }, [data, salonsList, managersList]);
+  }, [data, openSalonsList, managersList]);
 
   const salonPerformanceColumns = useMemo(() => ([
     {
@@ -298,8 +302,8 @@ export function AdminDashboardPage() {
   ]), [t]);
 
   const topSalonsData = useMemo(() => {
-    if (!salonsList) return [];
-    return salonsList.map((salon) => {
+    if (!openSalonsList) return [];
+    return openSalonsList.map((salon) => {
       let revenue = 0;
       if (data?.topPerformingSalons?.labels) {
         const topIndex = data.topPerformingSalons.labels.findIndex(label =>
@@ -311,11 +315,11 @@ export function AdminDashboardPage() {
       }
       return { name: salon.name, value: revenue };
     }).sort((a, b) => a.value - b.value);
-  }, [salonsList, data]);
+  }, [openSalonsList, data]);
 
   const salonRatingData = useMemo(() => {
-    if (!salonsList) return [];
-    return salonsList.map((salon) => {
+    if (!openSalonsList) return [];
+    return openSalonsList.map((salon) => {
       let rating = 0;
       if (data?.salonRatingDistribution?.length) {
         const found = data.salonRatingDistribution.find(r =>
@@ -327,7 +331,7 @@ export function AdminDashboardPage() {
       }
       return { name: salon.name, value: rating };
     }).sort((a, b) => a.value - b.value);
-  }, [salonsList, data]);
+  }, [openSalonsList, data]);
 
   const metricCards = useMemo(() => [
     { label: t("adminDashboard.table.revenue"), value: `${(data?.totalPlatformRevenue || 0).toLocaleString("vi-VN")}`, unit: "VND", trend: "+12.5%", icon: CircleDollarSign, color: '#0ea5e9' },

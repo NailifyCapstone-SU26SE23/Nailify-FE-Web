@@ -36,7 +36,10 @@ import {
 } from "../services/promotionManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import dayjs from "dayjs";
-import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker"; function formatDateTime(value) {
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
+
+function formatDateTime(value) {
   if (!value) {
     return "--";
   }
@@ -67,20 +70,12 @@ function formatDiscount(promotion) {
 }
 
 function PromotionStatusBadge({ promotion, language }) {
-  const className = promotion?.isActive
-    ? "bg-[#e7fbf4] text-[#159669]"
-    : "bg-[#fff1f5] text-[#d14c84]";
-
-  let statusText = promotion?.status || (promotion?.isActive ? "Active" : "Inactive");
-  if (statusText.toLowerCase() === "active") {
-    statusText = language === "vi" ? "Hoạt động" : "Active";
-  } else if (statusText.toLowerCase() === "inactive") {
-    statusText = language === "vi" ? "Ngừng hoạt động" : "Inactive";
-  }
+  const normalizedStatus = String(promotion?.status || (promotion?.isActive ? "Active" : "Inactive"));
+  const statusObj = BASIC_STATUS[normalizedStatus] || BASIC_STATUS.Inactive;
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${className}`}>
-      {statusText}
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${statusObj.tone}`}>
+      {statusObj[language]}
     </span>
   );
 }
@@ -392,17 +387,13 @@ export function PromotionsManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-
-
-
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-3 shadow-[0_12px_26px_rgba(236,72,153,0.05)] 2xl:flex-row 2xl:items-start 2xl:justify-between">
-          <div className="flex w-full flex-wrap gap-3 items-center flex-1">
-            <label className="relative flex-1 min-w-[250px]">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-3 shadow-[0_12px_26px_rgba(236,72,153,0.05)]">
+          <div className="flex w-full flex-wrap items-center gap-3">
+            <label className="relative flex-1">
               <Search size={15} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#dd8eb0]" />
               <input
                 value={query}
@@ -418,11 +409,11 @@ export function PromotionsManagementPage() {
               className="h-10 w-full sm:w-auto"
             />
 
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
               <Select
                 value={typeFilter || undefined}
                 onChange={(val) => setTypeFilter(val || "")}
-                className="h-10 select-premium-antd min-w-[140px]"
+                className="h-10 select-premium-antd min-w-[140px] shrink-0"
                 popupClassName="select-premium-dropdown"
                 placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả các loại" : "All types"}
                 allowClear
@@ -435,7 +426,7 @@ export function PromotionsManagementPage() {
               <Select
                 value={scopeFilter || undefined}
                 onChange={(val) => setScopeFilter(val || "")}
-                className="h-10 select-premium-antd min-w-[140px]"
+                className="h-10 select-premium-antd min-w-[140px] shrink-0"
                 popupClassName="select-premium-dropdown"
                 placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả phạm vi" : "All scopes"}
                 allowClear
@@ -448,7 +439,7 @@ export function PromotionsManagementPage() {
               <Select
                 value={discountTypeFilter || undefined}
                 onChange={(val) => setDiscountTypeFilter(val || "")}
-                className="h-10 select-premium-antd min-w-[140px]"
+                className="h-10 select-premium-antd min-w-[140px] shrink-0"
                 popupClassName="select-premium-dropdown"
                 placeholder={t("userManagement.table.actions") === "Thao tác" ? "Tất cả giảm giá" : "All discounts"}
                 allowClear
@@ -458,15 +449,15 @@ export function PromotionsManagementPage() {
                 }))}
               />
             </div>
-          </div>
 
-          <Link
-            to={ROUTES.adminPromotionsCreate}
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] h-10"
-          >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("promotions.btnCreate")}
-          </Link>
+            <Link
+              to={ROUTES.adminPromotionsCreate}
+              className="inline-flex h-10 w-full shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)] sm:w-auto"
+            >
+              <Plus size={13} className="mr-1.5 shrink-0" />
+              {t("promotions.btnCreate")}
+            </Link>
+          </div>
         </div>
 
         <section className="overflow-hidden rounded-lg border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.07)]">
@@ -557,11 +548,11 @@ export function PromotionsManagementPage() {
         <ActionConfirmModal
           open
           intent="danger"
-          title="Delete Promotion"
-          subtitle="This will remove the promotion from backend."
-          description={`You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
-          confirmText="Delete Promotion"
-          cancelText="Keep Promotion"
+          title={language === "vi" ? "Xóa khuyến mãi" : "Delete Promotion"}
+          subtitle={language === "vi" ? "Xóa khuyến mãi" : "This will remove the promotion from backend."}
+          description={language === "vi" ? `Bạn sắp xóa ${deleteTarget.name}. Hành động này không thể hoàn tác từ trang này.` : `You are about to delete ${deleteTarget.name}. This action cannot be undone from this page.`}
+          confirmText={language === "vi" ? "Xóa khuyến mãi" : "Delete Promotion"}
+          cancelText={language === "vi" ? "Giữ khuyến mãi" : "Keep Promotion"}
           confirmIcon={Trash2}
           loading={isDeleting}
           onConfirm={handleDeletePromotion}

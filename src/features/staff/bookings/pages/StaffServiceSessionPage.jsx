@@ -53,16 +53,15 @@ import {
   uploadImageAfterService,
   updateStaffBooking,
   updateBookingProcedureStatus,
+  fetchNailDesignCatalog,
 } from "../services/staffBookingService";
-import {
-  simulateOnsiteAddon,
-  confirmOnsiteAddon,
-} from "../../../manager/bookings/services/bookingProceduresService";
 import { useDispatch, useSelector } from "react-redux";
 import { setServiceSession } from "../../../../store/serviceSessionSlice";
 import { Button, Image, Modal } from "antd";
 import { useNotifications } from "../../../core/notifications/context/NotificationContext";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { OnsiteAddonConflictModal } from "../../../receptionist/bookings/components/OnsiteAddonConflictModal";
+import { simulateOnsiteAddon, confirmOnsiteAddon } from "../../../manager/bookings/services/bookingProceduresService";
 
 const DEFAULT_CUSTOMER_AVATAR =
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=140&q=80";
@@ -931,6 +930,7 @@ export function StaffServiceSessionPage() {
         serviceDetailMap,
         nailVariantDetailMap: bookingNailVariantDetailMap,
         customerNailDetailMap: bookingCustomerNailDetailMap,
+        customerDetail,
       });
     }
 
@@ -983,7 +983,6 @@ export function StaffServiceSessionPage() {
     const summaryAmountDue = fallbackData?.amountDue || payload?.amountDue;
     const summaryAmountPaid = fallbackData?.amountPaid || payload?.amountPaid;
     const summaryOriginalServicePrice = fallbackData?.originalServicePrice || payload?.originalServicePrice;
-
     return {
       ...fallbackData,
       ...payload,
@@ -1070,6 +1069,9 @@ export function StaffServiceSessionPage() {
   const [showStartConfirm, setShowStartConfirm] = useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [showExtraServiceModal, setShowExtraServiceModal] = useState(false);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
   const [serviceCatalog, setServiceCatalog] = useState([]);
   const [serviceCatalogMeta, setServiceCatalogMeta] = useState({
     currentPage: 1,
@@ -1084,7 +1086,9 @@ export function StaffServiceSessionPage() {
   const [serviceSearchInput, setServiceSearchInput] = useState("");
   const [serviceSearchKeyword, setServiceSearchKeyword] = useState("");
   const [serviceCatalogPage, setServiceCatalogPage] = useState(1);
+  const [extraServiceTab, setExtraServiceTab] = useState("services"); // "services" | "variants"
   const [selectedExtraServiceQuantities, setSelectedExtraServiceQuantities] = useState({});
+  const [selectedVariantQuantities, setSelectedVariantQuantities] = useState({});
   const [isLoadingServiceCatalog, setIsLoadingServiceCatalog] = useState(false);
   const [isSavingExtraService, setIsSavingExtraService] = useState(false);
   const [started, setStarted] = useState(() => persistedSession?.started ?? Boolean(payload?.started));
@@ -1237,7 +1241,7 @@ export function StaffServiceSessionPage() {
           stepOrder: index + 1,
           checked: ["completed", "done"].includes(normalizedStatus),
           label: `${isVi ? "Bước" : "Step"} ${index + 1}: ${procedureName}`,
-          statusLabel: (function(status, lang) {
+          statusLabel: (function (status, lang) {
             const norm = String(status || "").trim();
             const lower = norm.toLowerCase();
             if (lang === "vi") {
@@ -1320,16 +1324,16 @@ export function StaffServiceSessionPage() {
         estimatedStartTime: estStart,
         estimatedEndTime: estEnd,
         stepOrder: index + 1,
-        statusLabel: (function(status, lang) {
-            const norm = String(status || "").trim();
-            const lower = norm.toLowerCase();
-            if (lang === "vi") {
-              if (lower === "pending" || lower === "waiting") return "Đang chờ";
-              if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
-              if (lower === "completed" || lower === "done") return "Hoàn thành";
-              if (lower === "skipped") return "Đã bỏ qua";
-            }
-            return norm;
+        statusLabel: (function (status, lang) {
+          const norm = String(status || "").trim();
+          const lower = norm.toLowerCase();
+          if (lang === "vi") {
+            if (lower === "pending" || lower === "waiting") return "Đang chờ";
+            if (lower === "inprogress" || lower === "in progress") return "Đang tiến hành";
+            if (lower === "completed" || lower === "done") return "Hoàn thành";
+            if (lower === "skipped") return "Đã bỏ qua";
+          }
+          return norm;
         })(procedure.status, language),
         canClaim: isPendingStatus && !isBlocked && !isAssignedToAnyone,
         canStart: isPendingStatus && !isBlocked && isAssignedToCurrentArtist,
@@ -1489,18 +1493,47 @@ export function StaffServiceSessionPage() {
       setIsLoadingServiceCatalog(true);
 
       try {
-        const response = await fetchServiceCatalog({
-          pageNumber: serviceCatalogPage,
-          pageSize: 10,
-          name: serviceSearchKeyword.trim() || undefined,
-        });
+        let mappedItems = [];
+        let metaData = {};
+
+        if (extraServiceTab === "services") {
+          const response = await fetchServiceCatalog({
+            pageNumber: serviceCatalogPage,
+            pageSize: 10,
+            name: serviceSearchKeyword.trim() || undefined,
+          });
+          mappedItems = response.items;
+          metaData = response.metaData ?? {};
+        } else {
+          const response = await fetchNailDesignCatalog({
+            pageNumber: serviceCatalogPage,
+            pageSize: 10,
+            name: serviceSearchKeyword.trim() || undefined,
+          });
+
+          mappedItems = response.items.map(design => ({
+            serviceId: String(design.nailDesignId || design.id).trim(),
+            name: String(design.name || design.title).trim(),
+            description: String(design.description || "Nail Art").trim(),
+            price: Number(design.minPrice || design.price || 0),
+            duration: 0,
+            status: String(design.status || "Active"),
+            isVariant: true,
+            isDesign: true,
+            imageUrl: String(design.imageUrl || "").trim(),
+            categories: Array.isArray(design.categories) ? design.categories : [],
+            nailVariants: Array.isArray(design.nailVariants) ? design.nailVariants : [],
+          }));
+
+          metaData = response.metaData ?? {};
+        }
 
         if (!isMounted) {
           return;
         }
 
-        setServiceCatalog(response.items);
-        setServiceCatalogMeta(response.metaData ?? {});
+        setServiceCatalog(mappedItems);
+        setServiceCatalogMeta(metaData);
       } catch (error) {
         if (!isMounted) {
           return;
@@ -1517,7 +1550,7 @@ export function StaffServiceSessionPage() {
           firstRowOnPage: 0,
           lastRowOnPage: 0,
         });
-        const message = getErrorMessage(error, "Failed to load services.");
+        const message = getErrorMessage(error, "Failed to load catalog.");
         toast.error(message);
       } finally {
         if (isMounted) {
@@ -1531,7 +1564,7 @@ export function StaffServiceSessionPage() {
     return () => {
       isMounted = false;
     };
-  }, [serviceCatalogPage, serviceSearchKeyword, showExtraServiceModal]);
+  }, [serviceCatalogPage, serviceSearchKeyword, showExtraServiceModal, extraServiceTab, isVi]);
 
   const reloadBookingProcedures = useCallback(async (bookingItemIds, options = {}) => {
     const normalizedBookingItemIds = getSessionBookingItemIds(
@@ -1808,8 +1841,11 @@ export function StaffServiceSessionPage() {
     return <Navigate to={ROUTES.staffBookings} replace />;
   }
 
+  const bookingStaffArtistId = bookingDetail?.nailArtistId || bookingDetail?.artistId || bookingDetail?.staffId;
+  const isAssignedStaff = !bookingStaffArtistId || !currentStaffArtistId || String(bookingStaffArtistId).trim() === currentStaffArtistId;
+
   const allConfirmed = displayConfirmations.every((item) => item.checked);
-  const canStartService = allConfirmed && Boolean(effectiveBeforePhoto);
+  const canStartService = allConfirmed && Boolean(effectiveBeforePhoto) && isAssignedStaff;
   const hasAfterPhotoFile = Boolean(afterPhoto?.file);
   const canCompleteSession =
     displayCompletionChecks.every((item) => item.checked)
@@ -2251,6 +2287,23 @@ export function StaffServiceSessionPage() {
     setClaimingProcedureId("");
   };
 
+  const handleRefreshDataAfterAddon = async () => {
+    const refreshedBookingDetail = await fetchStaffBookingDetail(bookingId).catch(() => null);
+    if (refreshedBookingDetail) {
+      setBookingDetail(refreshedBookingDetail);
+
+      await reloadBookingProcedures(
+        getSessionBookingItemIds(
+          refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
+        ).length
+          ? getSessionBookingItemIds(
+            refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
+          )
+          : data?.bookingItemIds,
+      );
+    }
+  };
+
   const handleCloseExtraServiceModal = () => {
     if (isSavingExtraService) {
       return;
@@ -2262,7 +2315,6 @@ export function StaffServiceSessionPage() {
   const handleSearchExtraServices = (event) => {
     event.preventDefault();
     setServiceCatalogPage(1);
-    setSelectedExtraServiceQuantities({});
     setServiceSearchKeyword(serviceSearchInput.trim());
   };
 
@@ -2271,24 +2323,22 @@ export function StaffServiceSessionPage() {
     const normalizedSelectedServices = Object.entries(selectedExtraServiceQuantities).filter(([, quantity]) => (
       Number(quantity || 0) > 0
     ));
+    const normalizedSelectedVariants = Object.entries(selectedVariantQuantities).filter(([, quantity]) => (
+      Number(quantity || 0) > 0
+    ));
 
-    if (!normalizedBookingId || normalizedSelectedServices.length === 0 || !bookingDetail || isSavingExtraService) {
+    const addonItems = [
+      ...normalizedSelectedServices.flatMap(([id, qty]) => Array.from({ length: qty }, () => ({ serviceId: id }))),
+      ...normalizedSelectedVariants.flatMap(([id, qty]) => Array.from({ length: qty }, () => ({ nailVariantId: Number(id) })))
+    ];
+
+    if (!normalizedBookingId || addonItems.length === 0 || !bookingDetail || isSavingExtraService) {
       return;
     }
 
     setIsSavingExtraService(true);
 
     try {
-      // Calculate total extra duration from selected services
-      const totalExtraMinutes = normalizedSelectedServices.reduce((sum, [serviceId, qty]) => {
-        const item = serviceCatalog.find((s) => s.serviceId === serviceId);
-        return sum + (Number(item?.duration || 15) * Number(qty));
-      }, 0);
-
-      // Build addonItems array from selected extra services
-      const addonItems = normalizedSelectedServices.flatMap(([serviceId, qty]) => (
-        Array.from({ length: Number(qty) || 1 }, () => ({ serviceId }))
-      ));
 
       // Run real-time simulation check (BR-03.1)
       const simResult = await simulateOnsiteAddon({
@@ -2296,99 +2346,31 @@ export function StaffServiceSessionPage() {
         addonItems,
       });
 
-      let assignedArtistId = null;
-
       if (simResult?.hasConflict) {
-        if (simResult?.canMultiArtistSplit) {
-          // Can split
-          const userConfirmed = await new Promise((resolve) => {
-            Modal.confirm({
-              title: isVi ? "Xung đột lịch làm việc" : "Schedule Conflict",
-              content: (
-                <div>
-                  <p className="font-semibold text-red-600">{simResult.warningMessage}</p>
-                  <p className="mt-2 text-gray-700">
-                    {isVi ? "Hệ thống gợi ý Thợ phụ " : "System suggests secondary artist "}
-                    <span className="font-bold text-[#ea4f93]">{simResult.suggestedSecondaryArtistName}</span>
-                    {isVi ? " hỗ trợ công đoạn này. Bạn có đồng ý bàn giao không?" : " to support this task. Do you agree?"}
-                  </p>
-                </div>
-              ),
-              okText: isVi ? "Đồng ý phân công 2 thợ" : "Agree to split",
-              cancelText: isVi ? "Hủy" : "Cancel",
-              okButtonProps: { className: "bg-[#ea4f93] border-none" },
-              onOk: () => resolve(true),
-              onCancel: () => resolve(false),
-            });
-          });
-
-          if (!userConfirmed) {
-            setIsSavingExtraService(false);
-            return;
-          }
-
-          assignedArtistId = simResult.suggestedSecondaryArtistId || simResult.primaryArtistId;
-        } else {
-          // Cannot split
-          Modal.warning({
-            title: isVi ? "Không thể thêm dịch vụ" : "Cannot add extra service",
-            content: (
-              <div>
-                <p className="font-semibold text-red-600">{simResult.warningMessage}</p>
-                <p className="mt-2 text-gray-700">
-                  {isVi ? "Gợi ý: " : "Recommendation: "}
-                  <span className="font-medium text-[#bd8517]">
-                    {simResult.recommendationMessage}
-                  </span>
-                </p>
-              </div>
-            ),
-            okText: isVi ? "Đã hiểu" : "Got it",
-          });
-          setIsSavingExtraService(false);
-          return;
-        }
+        setConflictData(simResult);
+        setAddonItemsForConflict(addonItems);
+        setIsOnsiteConflictModalOpen(true);
+        setShowExtraServiceModal(false);
+        setIsSavingExtraService(false);
+        return;
       }
 
       await confirmOnsiteAddon({
         bookingId: normalizedBookingId,
         addonItems,
-        assignedArtistId: assignedArtistId
+        assignedArtistId: null
       });
 
-      const refreshedBookingDetail = await fetchStaffBookingDetail(normalizedBookingId).catch(() => null);
-      if (refreshedBookingDetail) {
-        setBookingDetail(refreshedBookingDetail);
-
-        await reloadBookingProcedures(
-          getSessionBookingItemIds(
-            refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
-          ).length
-            ? getSessionBookingItemIds(
-              refreshedBookingDetail?.bookingItems?.map((item) => item?.bookingItemId || item?.id),
-            )
-            : data?.bookingItemIds,
-        );
-      }
+      await handleRefreshDataAfterAddon();
 
       setShowExtraServiceModal(false);
       setSelectedExtraServiceQuantities({});
+      setSelectedVariantQuantities({});
+      setServiceSearchInput("");
+      setServiceSearchKeyword("");
+      setServiceCatalogPage(1);
 
-      const selectedServiceNames = normalizedSelectedServices
-        .map(([serviceId, quantity]) => {
-          const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
-          if (!matchedService?.name) return "";
-          return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
-        })
-        .filter(Boolean);
-
-      setFlashMessage(selectedServiceNames.length
-        ? (isVi ? `Đã thêm dịch vụ: ${selectedServiceNames.join(", ")}.` : `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`)
-        : (isVi ? "Đã thêm dịch vụ vào lịch hẹn." : "Extra services have been added to this booking."));
-
-      toast.success(normalizedSelectedServices.length
-        ? (isVi ? `Đã thêm ${normalizedSelectedServices.length} loại dịch vụ.` : `Added ${normalizedSelectedServices.length} service type${normalizedSelectedServices.length > 1 ? "s" : ""} to the booking.`)
-        : (isVi ? "Thêm dịch vụ thành công." : "Extra services added successfully."));
+      toast.success(isVi ? "Thêm dịch vụ/mẫu móng thành công." : "Extra items added successfully.");
     } catch (error) {
       const message = getErrorMessage(error, isVi ? "Thêm dịch vụ thất bại." : "Failed to add extra service.");
       toast.error(message);
@@ -2549,7 +2531,7 @@ export function StaffServiceSessionPage() {
 
   if (isSessionFinalized) {
     return (
-      <section className="flex min-h-full flex-col gap-4 bg-[linear-gradient(180deg,#fff9fc_0%,#fff3f8_100%)]">
+      <section className="flex min-h-full flex-col gap-4">
         <article className="rounded-[26px] border border-[#d8f0e2] bg-[linear-gradient(180deg,#ffffff_0%,#f5fff8_100%)] p-6 shadow-[0_18px_40px_rgba(22,163,74,0.10)]">
           <div className="flex flex-col items-center text-center">
             <span className="flex h-16 w-16 items-center justify-center rounded-full border border-[#b7e6c8] bg-[linear-gradient(180deg,#e9fff1_0%,#d8f8e5_100%)] text-[#16975f] shadow-[0_18px_35px_rgba(22,151,95,0.18)]">
@@ -2574,44 +2556,17 @@ export function StaffServiceSessionPage() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setCompleted(false);
-                  setIsSessionFinalized(false);
-                }}
-                className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[#f3d5e2] bg-white px-5 py-3 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
+                disabled={!canOpenComparison}
+                onClick={handleOpenComparison}
+                className={`flex gap-2 min-h-11 items-center justify-center rounded-2xl border border-[#f2bfd4] bg-white px-5 py-3 text-sm font-bold text-[#16975f] transition hover:bg-[#f3fff7]"
+                  }`}
               >
-                {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
+                <span className="flex shrink-0 items-center justify-center text-[#ea4f93]">
+                  <Camera size={19} />
+                </span>
+                <span className="block text-base font-medium text-[#ea4f93]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
               </button>
             </div>
-          </div>
-        </article>
-
-        <article className="rounded-[26px] border border-[#f3d5e2] bg-white p-6 shadow-[0_18px_40px_rgba(236,72,153,0.06)]">
-          <SectionTitle
-            icon={Sparkles}
-            title={isVi ? "Bước tiếp theo" : "Next Step"}
-            subtitle={isVi ? "Các hành động sau khi hoàn thành dịch vụ." : "Handoff actions after the staff session is finished."}
-          />
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-
-            <button
-              type="button"
-              disabled={!canOpenComparison}
-              onClick={handleOpenComparison}
-              className={`flex min-h-24 items-start gap-4 rounded-lg border px-5 py-5 text-left transition ${canOpenComparison
-                ? "border-[#f2bfd4] bg-[#fff7fb] hover:bg-[#fff2f8]"
-                : "cursor-not-allowed border-[#f4dbe7] bg-[#fffafb] opacity-70"
-                }`}
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#ffe7f1] text-[#ea4f93]">
-                <Camera size={19} />
-              </span>
-              <span>
-                <span className="block text-base font-bold text-[#3f2b3f]">{isVi ? "Đối chiếu ảnh" : "Compare Before & After"}</span>
-                <span className="mt-1 block text-sm text-[#a88a9d]">{isVi ? "Xem ảnh trước và sau khi làm dịch vụ." : "Open the side-by-side transformation view after both photos are uploaded."}</span>
-              </span>
-            </button>
           </div>
         </article>
         {comparisonModal}
@@ -2621,9 +2576,6 @@ export function StaffServiceSessionPage() {
 
   return (
     <section className="flex min-h-full flex-col gap-4 p-4">
-
-
-
       <div ref={setProgressSentinel} className="h-[1px] w-full bg-transparent shrink-0 pointer-events-none opacity-0" />
       <article
         style={{ top: `${STICKY_HEADER_OFFSET_PX}px` }}
@@ -2767,6 +2719,13 @@ export function StaffServiceSessionPage() {
                   ))}
                 </div>
 
+                {!isAssignedStaff && (
+                  <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100 flex items-start gap-2">
+                    <ShieldCheck size={18} className="mt-0.5 shrink-0" />
+                    <p>{isVi ? "Bạn không phải thợ chính của lịch hẹn này nên không thể bắt đầu dịch vụ." : "You are not the assigned staff for this booking and cannot start the service."}</p>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   disabled={!canStartService}
@@ -2867,8 +2826,8 @@ export function StaffServiceSessionPage() {
                               <th className="px-4 py-3 font-bold">{isVi ? "Bước" : "Step"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Quy trình" : "Procedure"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Thợ" : "Artist"}</th>
-                              <th className="px-4 py-3 font-bold">{isVi ? "Thời lượng & Hẹn" : "Duration & Time"}</th>
-                              <th className="px-4 py-3 font-bold">{isVi ? "Thực tế" : "Start & End Time"}</th>
+                              {/* <th className="px-4 py-3 font-bold">{isVi ? "Thời lượng & Hẹn" : "Duration & Time"}</th> */}
+                              <th className="px-4 py-3 font-bold">{isVi ? "Thời gian" : "Time"}</th>
                               <th className="px-4 py-3 font-bold">{isVi ? "Trạng thái" : "Status"}</th>
                               <th className="px-4 py-3 font-bold text-center">{isVi ? "Thao tác" : "Action"}</th>
                             </tr>
@@ -2898,14 +2857,14 @@ export function StaffServiceSessionPage() {
                                 <td className="px-4 py-4 text-[#8a7082]">
                                   {procedure.artist}
                                 </td>
-                                <td className="px-4 py-4">
+                                {/* <td className="px-4 py-4">
                                   <div className="flex flex-col items-start">
                                     <span className="rounded bg-purple-100 px-2 py-0.5 text-sm font-bold text-purple-900">{procedure.time}</span>
                                     <span className="mt-1 text-[11px] font-semibold text-green-500">
                                       {formatDurationMinutes(procedure.duration, language)}
                                     </span>
                                   </div>
-                                </td>
+                                </td> */}
                                 <td className="px-4 py-4">
                                   <div className="flex flex-col items-start">
                                     <span className="rounded bg-indigo-50 px-2 py-0.5 text-sm font-bold text-indigo-700">{procedure.actualTime}</span>
@@ -2974,16 +2933,21 @@ export function StaffServiceSessionPage() {
                     label={isVi ? "Thêm dịch vụ phụ" : "Add Extra Service"}
                     onClick={handleOpenExtraServiceModal}
                   />
-                  <ActionGhostButton
-                    icon={FilePenLine}
-                    label={isVi ? "Ghi chú" : "Add Session Note"}
-                    onClick={() =>
-                      handleSessionAction(isVi ? "Ghi lại lưu ý đặc biệt cho phiên làm móng này ở mục bên dưới." : "Use the staff notes area below to record the latest session update.")
-                    }
-                  />
+                  <button
+                    type="button"
+                    onClick={handleMarkServiceDone}
+                    disabled={isMarkingServiceDone || !areAllProceduresCompleted}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold ${isMarkingServiceDone || !areAllProceduresCompleted
+                      ? "cursor-not-allowed bg-[#f6dbe7] text-[#b895a9]"
+                      : "bg-[image:var(--gradient-accent)] text-white shadow-[0_16px_28px_rgba(236,72,153,0.25)]"
+                      }`}
+                  >
+                    <CheckCircle2 size={16} />
+                    {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
+                  </button>
                 </div>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handleMarkServiceDone}
                   disabled={isMarkingServiceDone || !areAllProceduresCompleted}
@@ -2994,15 +2958,15 @@ export function StaffServiceSessionPage() {
                 >
                   <CheckCircle2 size={16} />
                   {isMarkingServiceDone ? (isVi ? "Đang mở đánh giá..." : "Opening Final Review...") : (isVi ? "Đánh dấu là đã xong" : "Mark Service as Done")}
-                </button>
+                </button> */}
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setStarted(false)}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
                 >
                   {isVi ? "Quay lại trạng thái Chưa bắt đầu (Undo)" : "Back to Preparation (Undo)"}
-                </button>
+                </button> */}
               </article>
 
 
@@ -3299,16 +3263,16 @@ export function StaffServiceSessionPage() {
                   {isCompletingSession ? (isVi ? "Đang hoàn tất..." : "Completing Session...") : (isVi ? "Hoàn thành phiên" : "Complete Session")}
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setCompleted(false)}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#f3d5e2] bg-white px-5 py-4 text-sm font-bold text-[#ea4f93] transition hover:bg-[#fff7fb]"
                 >
                   {isVi ? "Quay lại trạng thái Trong quá trình (Undo)" : "Back to In Progress (Undo)"}
-                </button>
+                </button> */}
               </article>
 
-              <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
+              {/* <article className="rounded-lg border border-[#f3d5e2] bg-white p-5 shadow-[0_14px_30px_rgba(236,72,153,0.05)]">
                 <SectionTitle
                   icon={Sparkles}
                   title={isVi ? "Bước tiếp theo" : "Next Step"}
@@ -3336,7 +3300,7 @@ export function StaffServiceSessionPage() {
                     </span>
                   </button>
                 </div>
-              </article>
+              </article> */}
             </>
           )}
         </div>
@@ -3491,6 +3455,7 @@ export function StaffServiceSessionPage() {
         confirmText={isVi ? "Bắt đầu" : "Start Service"}
         cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={Play}
+        loading={isStartingService}
         onConfirm={handleStartService}
         onCancel={() => setShowStartConfirm(false)}
         highlights={[data.customerName, data.serviceLabel, data.chair]}
@@ -3512,6 +3477,7 @@ export function StaffServiceSessionPage() {
         confirmText={isVi ? "Hoàn tất" : "Complete Session"}
         cancelText={isVi ? "Xem lại" : "Review Again"}
         confirmIcon={CheckCircle2}
+        loading={isCompletingSession}
         onConfirm={handleCompleteSession}
         onCancel={() => setShowCompleteConfirm(false)}
         highlights={[data.customerName, data.serviceLabel]}
@@ -3525,7 +3491,18 @@ export function StaffServiceSessionPage() {
       <ExtraServiceModal
         open={showExtraServiceModal}
         services={serviceCatalog}
-        selectedServiceQuantities={selectedExtraServiceQuantities}
+        activeTab={extraServiceTab}
+        onTabChange={(tab) => {
+          setExtraServiceTab(tab);
+          setServiceCatalogPage(1);
+          setServiceSearchInput("");
+          setServiceSearchKeyword("");
+        }}
+        totalSelectedCount={
+          Object.values(selectedExtraServiceQuantities).reduce((a, b) => a + (Number(b) || 0), 0) +
+          Object.values(selectedVariantQuantities).reduce((a, b) => a + (Number(b) || 0), 0)
+        }
+        selectedServiceQuantities={extraServiceTab === "services" ? selectedExtraServiceQuantities : selectedVariantQuantities}
         searchValue={serviceSearchInput}
         isLoading={isLoadingServiceCatalog}
         isSaving={isSavingExtraService}
@@ -3533,39 +3510,52 @@ export function StaffServiceSessionPage() {
         onClose={handleCloseExtraServiceModal}
         onSearchChange={(event) => setServiceSearchInput(event.target.value)}
         onSearchSubmit={handleSearchExtraServices}
-        onDecreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => {
-            const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
-
+        onDecreaseQuantity={(id) => {
+          const setter = extraServiceTab === "services" ? setSelectedExtraServiceQuantities : setSelectedVariantQuantities;
+          setter((current) => {
+            const nextQuantity = Math.max(0, Number(current?.[id] || 0) - 1);
             if (nextQuantity <= 0) {
               const nextState = { ...current };
-              delete nextState[serviceId];
+              delete nextState[id];
               return nextState;
             }
-
-            return {
-              ...current,
-              [serviceId]: nextQuantity,
-            };
-          })
-        }
-        onIncreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => ({
+            return { ...current, [id]: nextQuantity };
+          });
+        }}
+        onIncreaseQuantity={(id) => {
+          const setter = extraServiceTab === "services" ? setSelectedExtraServiceQuantities : setSelectedVariantQuantities;
+          setter((current) => ({
             ...current,
-            [serviceId]: Number(current?.[serviceId] || 0) + 1,
-          }))
-        }
+            [id]: Number(current?.[id] || 0) + 1,
+          }));
+        }}
         onPageChange={(page) => {
           if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) {
             return;
           }
-
-          setSelectedExtraServiceQuantities({});
           setServiceCatalogPage(page);
         }}
         onConfirm={handleAddExtraService}
         title={isVi ? "Cập nhật dịch vụ làm thêm" : "Add Extra Services"}
         description={isVi ? "Thêm nhanh dịch vụ phát sinh vào lịch của khách." : "Select extra services to add into the current booking before starting the service session."}
+      />
+
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={bookingDetail?.bookingId || bookingId || ""}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          handleRefreshDataAfterAddon();
+          setIsOnsiteConflictModalOpen(false);
+          setSelectedExtraServiceQuantities({});
+          setFlashMessage(isVi ? "Đã thêm dịch vụ phát sinh thành công." : "Extra services have been added successfully.");
+        }}
       />
 
       <ServiceProceduresViewerModal

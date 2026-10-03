@@ -56,6 +56,7 @@ import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/servi
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { BOOKING_STATUS } from "../../../../shared/utils/statusFormatters";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -184,85 +185,26 @@ InfoItem.propTypes = {
 };
 
 function StatusPill({ status, compact = false }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
-  const getStyle = () => {
-    switch (status) {
-      case "Checked In":
-      case "CheckedIn":
-        return "bg-[#EEF2FF] text-[#4338CA] border-[#A5B4FC] shadow-2xs";
-      case "In Progress":
-      case "InProgress":
-        return "bg-[#F5F3FF] text-[#6D28D9] border-[#C4B5FD] shadow-2xs";
-      case "Pending":
-        return "bg-[#FFFBEB] text-[#B45309] border-[#FCD34D] shadow-2xs";
-      case "Confirmed":
-      case "Approved":
-        return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
-      case "Completed":
-        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
-      case "ServiceCompleted":
-        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
-      case "Rejected":
-        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
-      case "RescheduleReq":
-      case "Reschedule Req":
-      case "ReschedulePending":
-        return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
-      case "RescheduleSuggested":
-        return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
-      case "Cancelled":
-        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
-      case "Repaired":
-        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+  let normalizedStatus = status;
+  if (status === "Checked In") normalizedStatus = "CheckedIn";
+  if (status === "In Progress") normalizedStatus = "InProgress";
+  if (status === "Confirmed") normalizedStatus = "Approved";
+  if (status === "Canceled") normalizedStatus = "Cancelled";
+  if (status === "Reschedule Req" || status === "RescheduleReq") normalizedStatus = "ReschedulePending";
 
-      default:
-        return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
-    }
-  };
-
-  const formatDisplay = (s) => {
-    switch (s) {
-      case "Checked In":
-      case "CheckedIn":
-        return language === "vi" ? "Đã check in" : "Checked In";
-      case "In Progress":
-      case "InProgress":
-        return language === "vi" ? "Đang tiến hành" : "In Progress";
-      case "Pending":
-        return language === "vi" ? "Đang chờ" : "Pending";
-      case "Confirmed":
-      case "Approved":
-        return language === "vi" ? "Đã xác nhận" : "Confirmed";
-      case "Completed":
-        return language === "vi" ? "Đã hoàn thành" : "Completed";
-      case "ServiceCompleted":
-        return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
-      case "Rejected":
-        return language === "vi" ? "Đã từ chối" : "Rejected";
-      case "Cancelled":
-      case "Canceled":
-        return language === "vi" ? "Đã hủy" : "Cancelled";
-      case "ReschedulePending":
-        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-      case "RescheduleSuggested":
-        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-      case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
-      default:
-        return s;
-    }
-  };
+  const statusObj = BOOKING_STATUS[normalizedStatus] || { [language]: status, tone: "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]" };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${getStyle()}`}>
-      {(status === "InProgress" || status === "In Progress") && (
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${statusObj.tone}`}>
+      {normalizedStatus === "InProgress" && (
         <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
         </span>
       )}
-      <span>{formatDisplay(status)}</span>
+      <span>{statusObj[language]}</span>
     </span>
   );
 }
@@ -333,7 +275,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const totalEndMinutes = totalStartMinutes + (durationMinutes);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -456,7 +398,7 @@ function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
     date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
     time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
-    duration: formatDuration(apiBooking.totalDuration || 60, language),
+    duration: formatDuration(apiBooking.totalDuration, language),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
     customerName: customerName,
@@ -745,7 +687,7 @@ export function ManagerBookingListPage() {
     if (!draggedBooking) return;
 
     const formattedTime = `${String(targetHour).padStart(2, "0")}:00:00`;
-    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration || 60);
+    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration);
     const bookingIdToAssign = draggedBooking.id || draggedBooking.bookingId;
 
     const targetArtistName = typeof artistItem === "object" ? artistItem.name : artistItem;
@@ -1901,7 +1843,7 @@ export function ManagerBookingListPage() {
                                     </div>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
-                                      <span>{formatDuration(b.totalDuration || 60, language)}</span>
+                                      <span>{formatDuration(b.totalDuration, language)}</span>
                                     </div>
                                   </div>
                                 );
@@ -2035,7 +1977,7 @@ export function ManagerBookingListPage() {
       >
         {isLoadingDrawer ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Spin size="large" tip="Loading booking details..." />
+            <Spin size="large" tip={language === "vi" ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."} />
           </div>
         ) : selectedBookingForDrawer ? (
           <div className="bg-[#FAF6F8] h-full flex flex-col font-sans">

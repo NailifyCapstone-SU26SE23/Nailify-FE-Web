@@ -7,6 +7,7 @@ import {
   loadAuthSession,
   saveAuthSession,
 } from "./authStorage";
+import { ROLES } from "../../../../shared/constants/roles";
 
 const persistedSession = loadAuthSession();
 
@@ -65,14 +66,19 @@ const authSlice = createSlice({
         user: state.user,
       });
     },
-    logout(state) {
+    logout(state, action) {
+      // Don't show logout toast if they weren't fully authenticated anyway or if silent is requested
+      const wasAuth = state.isAuthenticated;
+      const silent = action.payload?.silent;
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
       state.status = AUTH_STATUS.idle;
       state.error = null;
       clearAuthSession();
-      toast.success(getIsVi() ? "Đăng xuất thành công." : "Signed out successfully.");
+      if (wasAuth && !silent) {
+        toast.success(getIsVi() ? "Đăng xuất thành công." : "Signed out successfully.", { id: "auth-toast" });
+      }
     },
   },
   extraReducers: (builder) => {
@@ -82,36 +88,54 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
+        const isInternalRole = Object.values(ROLES).includes(action.payload.user?.role?.toLowerCase());
+        if (!isInternalRole) {
+          state.status = AUTH_STATUS.failed;
+          state.error = getIsVi() ? "Tài khoản khách hàng không thể đăng nhập vào hệ thống nội bộ." : "Customer accounts cannot log in to the internal system.";
+          state.isAuthenticated = false;
+          toast.error(state.error, { id: "auth-toast", duration: 5000 });
+          return;
+        }
+
         state.status = AUTH_STATUS.succeeded;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.isAuthenticated = true;
         saveAuthSession(action.payload);
-        toast.success(getIsVi() ? "Đăng nhập thành công." : "Signed in successfully.");
+        toast.success(getIsVi() ? "Đăng nhập thành công." : "Signed in successfully.", { id: "auth-toast" });
       })
       .addCase(login.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
         state.error = action.payload ?? (getIsVi() ? "Đăng nhập thất bại." : "Sign-in failed.");
         state.isAuthenticated = false;
-        toast.error(state.error);
+        toast.error(state.error, { id: "auth-toast" });
       })
       .addCase(loginGoogle.pending, (state) => {
         state.status = AUTH_STATUS.loading;
         state.error = null;
       })
       .addCase(loginGoogle.fulfilled, (state, action) => {
+        const isInternalRole = Object.values(ROLES).includes(action.payload.user?.role?.toLowerCase());
+        if (!isInternalRole) {
+          state.status = AUTH_STATUS.failed;
+          state.error = getIsVi() ? "Tài khoản khách hàng không thể đăng nhập vào hệ thống nội bộ." : "Customer accounts cannot log in to the internal system.";
+          state.isAuthenticated = false;
+          toast.error(state.error, { id: "auth-toast", duration: 5000 });
+          return;
+        }
+
         state.status = AUTH_STATUS.succeeded;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.isAuthenticated = true;
         saveAuthSession(action.payload);
-        toast.success(getIsVi() ? "Đăng nhập với Google thành công." : "Signed in with Google successfully.");
+        toast.success(getIsVi() ? "Đăng nhập với Google thành công." : "Signed in with Google successfully.", { id: "auth-toast" });
       })
       .addCase(loginGoogle.rejected, (state, action) => {
         state.status = AUTH_STATUS.failed;
         state.error = action.payload ?? (getIsVi() ? "Đăng nhập với Google thất bại." : "Google Sign-in failed.");
         state.isAuthenticated = false;
-        toast.error(state.error);
+        toast.error(state.error, { id: "auth-toast" });
       });
   },
 });

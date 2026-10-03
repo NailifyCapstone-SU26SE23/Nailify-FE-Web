@@ -19,13 +19,16 @@ import {
   Clock,
   ArrowLeft,
   ArrowRight,
-  Sparkle
+  Sparkle,
+  Trash2
 } from "lucide-react";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
-import { fetchBookingRatingsBySalonId, fetchUserById } from "../../../manager/bookings/services/bookingsService";
+import { fetchBookingRatingsBySalonId, fetchUserById, deleteBookingRating } from "../../../manager/bookings/services/bookingsService";
 import { fetchAllSalonStaff } from "../../../manager/staff-artist-management/services/nailArtistsService";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import toast from "react-hot-toast";
 import { formatDate } from "../../../../shared/utils/formatDate";
-import { Spin, Alert, Select } from "antd";
+import { Spin, Alert, Select, Popover } from "antd";
 import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
@@ -109,6 +112,26 @@ export function AdminSalonBookingRatingPage() {
   const [reviewScoreFilter, setReviewScoreFilter] = useState("all");
   const [reviewSortBy, setReviewSortBy] = useState("recent");
   const [reviewFilterDate, setReviewFilterDate] = useState(null);
+
+  // Deletion state
+  const [deletingRating, setDeletingRating] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingRating) return;
+    setIsDeleting(true);
+    try {
+      await deleteBookingRating(deletingRating.bookingRatingId);
+      toast.success(language === "vi" ? "Đã xóa đánh giá thành công" : "Review deleted successfully");
+      loadReviewsForSelectedSalon();
+      loadSalons(); // refresh metrics
+      setDeletingRating(null);
+    } catch (error) {
+      toast.error(error.message || (language === "vi" ? "Không thể xóa đánh giá" : "Failed to delete review"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Load Salons list
   const loadSalons = async () => {
@@ -380,8 +403,8 @@ export function AdminSalonBookingRatingPage() {
         color: "#ea4f93",
       },
       {
-        label: isVi ? "Đánh giá đã duyệt" : "Audited Reviews",
-        value: loadingMetrics ? <Spin size="small" /> : `${totalNetworkReviews} logs`,
+        label: isVi ? "Đánh giá Đã xác nhận" : "Audited Reviews",
+        value: loadingMetrics ? <Spin size="small" /> : (isVi ? `${totalNetworkReviews} đánh giá` : `${totalNetworkReviews} reviews`),
         note: "Audited reviews",
         icon: MessageSquare,
         color: "#4f46e5",
@@ -558,19 +581,51 @@ export function AdminSalonBookingRatingPage() {
                           </h3>
                           <div className="space-y-1 text-xs text-[#a88a9f] pb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2">
-                              <MapPin size={12} className="shrink-0 text-slate-400" />
+                              <MapPin size={13} className="shrink-0 text-[#ea4f93]" />
                               <span className="truncate">{salon.address}</span>
                             </div>
                             {salon.phone && (
                               <div className="flex items-center gap-2">
-                                <Phone size={12} className="shrink-0 text-slate-400" />
+                                <Phone size={13} className="shrink-0 text-[#ea4f93]" />
                                 <span>{salon.phone}</span>
                               </div>
                             )}
-                            {/* <div className="flex items-center gap-2">
-                              <Clock size={12} className="shrink-0 text-slate-400" />
-                              <span>{salon.hours || (isVi ? "Chưa có thông tin giờ mở cửa" : "Operating hours not listed")}</span>
-                            </div> */}
+                            <Popover
+                              content={
+                                <div className="flex flex-col gap-1.5 text-xs w-48">
+                                  {salon.operatingHours && salon.operatingHours.length > 0 ? [...salon.operatingHours].sort((a, b) => (a.dayOfWeek === 0 ? 7 : a.dayOfWeek) - (b.dayOfWeek === 0 ? 7 : b.dayOfWeek)).map(h => (
+                                    <div key={h.dayOfWeek} className="flex justify-between gap-4">
+                                      <span className="font-medium text-[#2d1b35]">{language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][h.dayOfWeek] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][h.dayOfWeek]}</span>
+                                      <span className="text-[#a88a9f]">
+                                        {h.isClosed ? (language === "vi" ? "Đóng cửa" : "Closed") : `${h.openTime.slice(0, 5)} - ${h.closeTime.slice(0, 5)}`}
+                                      </span>
+                                    </div>
+                                  )) : (
+                                    <span className="text-[#a88a9f]">{language === "vi" ? "Chưa cập nhật" : "Not updated"}</span>
+                                  )}
+                                </div>
+                              }
+                              title={language === "vi" ? "Giờ hoạt động" : "Operating Hours"}
+                              trigger="hover"
+                              placement="bottomLeft"
+                            >
+                              <div className="flex items-center gap-2 cursor-pointer transition-colors group/hours">
+                                <Clock size={13} className="shrink-0 text-[#ea4f93]" />
+                                <p className="truncate">{language === "vi" ? "Giờ hoạt động" : "Operating Hours"}: </p>
+                                <span className="truncate border-b border-dashed border-[#a88a9f] group-hover/hours:text-[#ea4f93] group-hover/hours:border-[#ea4f93]">
+                                  {(() => {
+                                    const today = new Date().getDay();
+                                    const todayHours = salon.operatingHours?.find(h => h.dayOfWeek === today);
+                                    if (todayHours) {
+                                      return todayHours.isClosed
+                                        ? (language === "vi" ? "Đóng cửa hôm nay" : "Closed today")
+                                        : `${todayHours.openTime.slice(0, 5)} - ${todayHours.closeTime.slice(0, 5)}`;
+                                    }
+                                    return language === "vi" ? "Chưa cập nhật giờ mở cửa" : "Hours not updated";
+                                  })()}
+                                </span>
+                              </div>
+                            </Popover>
                           </div>
 
                           {/* Audit Metrics Panel inside Card */}
@@ -715,14 +770,12 @@ export function AdminSalonBookingRatingPage() {
                       className="space-y-6"
                     >
                       {processedRatings.map((rating) => {
+                        console.log("rating", rating);
                         const cName = rating.customerName || usersMap[rating.customerId]?.name || "Customer";
                         const avatarUrl = usersMap[rating.customerId]?.avatarUrl || "";
                         const score = rating.overallScore || 5;
                         const dateFormatted = formatDate(rating.createdAt);
                         const artistName = rating.nailArtistName || usersMap[rating.nailArtistId]?.name || (isVi ? "Thợ làm móng" : "Staff Artist");
-
-                        // Check if there is an operational comment response in the API/mock
-                        const responseContent = rating.commentResponse || "Cảm ơn quý khách đã tin tưởng và đánh giá dịch vụ của tiệm. Chúng tôi luôn ghi nhận ý kiến để nâng cấp chất lượng tốt hơn nữa.";
 
                         return (
                           <motion.div
@@ -731,36 +784,38 @@ export function AdminSalonBookingRatingPage() {
                             className="bg-white border border-[#ea4f93]/10 hover:border-[#ea4f93]/20 shadow-[0_12px_32px_rgba(0,0,0,0.02)] rounded-lg p-6 lg:p-8 flex flex-col space-y-5 transition-all duration-300"
                           >
                             {/* Upper row: User Info (circular avatar, name, subtitle & stars) */}
-                            <div className="flex items-start gap-4">
-                              {avatarUrl ? (
-                                <img
-                                  src={avatarUrl}
-                                  alt={cName}
-                                  className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-100 shadow-2xs"
-                                />
-                              ) : (
-                                <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${getAvatarColor(cName)}`}>
-                                  {getInitials(cName)}
-                                </div>
-                              )}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                {avatarUrl ? (
+                                  <img
+                                    src={avatarUrl}
+                                    alt={cName}
+                                    className="h-12 w-12 rounded-full object-cover shrink-0 border border-slate-100 shadow-2xs"
+                                  />
+                                ) : (
+                                  <div className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${getAvatarColor(cName)}`}>
+                                    {getInitials(cName)}
+                                  </div>
+                                )}
 
-                              <div className="space-y-1">
-                                <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
-                                <p className="text-xs text-[#a88a9f] font-semibold leading-none">
-                                  Nail Service · {dateFormatted}
-                                </p>
-                                {/* Stars */}
-                                <div className="flex items-center gap-0.5 pt-1">
-                                  {[1, 2, 3, 4, 5].map((sIndex) => (
-                                    <Star
-                                      key={sIndex}
-                                      size={15}
-                                      className={`${sIndex <= Math.round(score)
-                                        ? "text-amber-400 fill-amber-400"
-                                        : "text-slate-200"
-                                        }`}
-                                    />
-                                  ))}
+                                <div className="space-y-1">
+                                  <h4 className="text-base font-bold text-[#2d1b35] leading-tight">{cName}</h4>
+                                  <p className="text-xs text-[#a88a9f] font-semibold leading-none">
+                                    {language === 'vi' ? 'Ngày: ' : 'Date: '} {dateFormatted}
+                                  </p>
+                                  {/* Stars */}
+                                  <div className="flex items-center gap-0.5 pt-1">
+                                    {[1, 2, 3, 4, 5].map((sIndex) => (
+                                      <Star
+                                        key={sIndex}
+                                        size={15}
+                                        className={`${sIndex <= Math.round(score)
+                                          ? "text-amber-400 fill-amber-400"
+                                          : "text-slate-200"
+                                          }`}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -819,7 +874,7 @@ export function AdminSalonBookingRatingPage() {
                             </div>
 
                             {/* Staff Attribution & Response auditing */}
-                            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                            {/* <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
                               <div className="flex items-center gap-2">
                                 <div className="h-6 w-6 rounded-lg bg-pink-50 text-[#ea4f93] flex items-center justify-center">
                                   <User size={12} />
@@ -828,23 +883,7 @@ export function AdminSalonBookingRatingPage() {
                                   {isVi ? "Kỹ thuật viên:" : "Assigned Artist:"} <span className="font-bold text-[#2d1b35]">{artistName}</span>
                                 </span>
                               </div>
-
-                              <span className="text-[10px] font-bold text-[#ea4f93] uppercase tracking-wider bg-[#ea4f93]/5 border border-[#ea4f93]/15 px-3 py-1 rounded-full flex items-center gap-1 select-none">
-                                <Sparkle size={10} className="fill-[#ea4f93]" />
-                                {isVi ? "Bản ghi đã kiểm toán" : "Audited Record"}
-                              </span>
-                            </div>
-
-                            {/* Read-Only Manager Response Auditing Box */}
-                            <div className="bg-[#f0fdf4]/50 border border-emerald-500/10 rounded-2xl p-4.5 space-y-2">
-                              <div className="flex items-center gap-1.5 text-[10px] text-emerald-800 font-bold uppercase tracking-wider">
-                                <ShieldCheck size={12} />
-                                {isVi ? "Nhật ký kiểm toán quản lý (Phản hồi)" : "Manager Audit Trail (Response)"}
-                              </div>
-                              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                                "{responseContent}"
-                              </p>
-                            </div>
+                            </div> */}
                           </motion.div>
                         );
                       })}
@@ -992,6 +1031,21 @@ export function AdminSalonBookingRatingPage() {
           </div>
         )}
       </div>
+
+      <ActionConfirmModal
+        open={!!deletingRating}
+        intent="danger"
+        title={isVi ? "Xóa đánh giá" : "Delete Review"}
+        subtitle={isVi ? "Bạn có chắc chắn muốn xóa đánh giá này?" : "Are you sure you want to delete this review?"}
+        description={isVi ? "Hành động này không thể hoàn tác và sẽ xóa vĩnh viễn đánh giá khỏi hệ thống." : "This action cannot be undone and will permanently remove the review from the system."}
+        confirmText={isVi ? "Xóa đánh giá" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        confirmIcon={Trash2}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => !isDeleting && setDeletingRating(null)}
+        loading={isDeleting}
+        highlights={deletingRating ? [deletingRating.customerName || usersMap[deletingRating.customerId]?.name || "Customer", deletingRating.overallScore ? `${deletingRating.overallScore} Stars` : ""] : []}
+      />
     </div>
   );
 }

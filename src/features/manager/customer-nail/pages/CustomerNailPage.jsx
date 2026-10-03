@@ -56,13 +56,6 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     config = {};
   }
 
-  // 🐛 DEBUG: Log surface config
-  console.log("🎨 Surface Debug:", {
-    name,
-    effectsConfigJson,
-    parsedConfig: config
-  });
-
   // 🪞 CHROME / MIRROR - Ultra metallic
   if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương")) {
     // Backend format: {"reflectivity":0.9, "metallic":1.0}
@@ -723,7 +716,7 @@ export function CustomerNailPage() {
         color: "#4755b8",
       },
       {
-        label: language === "vi" ? "Đã duyệt" : "Approved",
+        label: language === "vi" ? "Đã xác nhận" : "Approved",
         value: approvedCount,
         note: language === "vi" ? "Xác nhận bởi quản lý" : "confirmed by manager",
         icon: CheckCircle2,
@@ -800,7 +793,7 @@ export function CustomerNailPage() {
                   { value: "Assigned", label: language === "vi" ? "Đã phân thợ" : "Assigned" },
                   { value: "Reviewed", label: language === "vi" ? "Đã đánh giá" : "Reviewed" },
                   { value: "Quoted", label: language === "vi" ? "Đã báo giá" : "Quoted" },
-                  { value: "Approved", label: language === "vi" ? "Đã duyệt" : "Approved" },
+                  { value: "Approved", label: language === "vi" ? "Đã xác nhận" : "Approved" },
                   { value: "Rejected", label: language === "vi" ? "Đã từ chối" : "Rejected" },
                 ]}
               />

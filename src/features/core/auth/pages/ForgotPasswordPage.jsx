@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Mail, ShieldCheck, CheckCircle, Lock, KeyRound, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -208,7 +208,7 @@ export function ForgotPasswordPage() {
   return (
     <main className="h-dvh overflow-hidden bg-[linear-gradient(180deg,#f7d9e8_0%,#f9efcf_100%)] px-4 py-4 text-[var(--color-ink)] md:px-6 md:py-6">
       <div className="mx-auto grid h-full max-h-full w-full max-w-6xl overflow-hidden rounded-[36px] border border-white/60 bg-white/40 shadow-[0_32px_90px_rgba(170,108,96,0.18)] backdrop-blur md:grid-cols-[1.15fr_0.85fr]">
-        
+
         {/* Left Banner */}
         <section className="relative overflow-hidden bg-[linear-gradient(135deg,#ef5db4_0%,#f59b6c_58%,#ffd95a_100%)] px-8 py-8 text-white md:px-10 md:py-10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_30%,rgba(255,255,255,0.18),transparent_22%),radial-gradient(circle_at_76%_70%,rgba(255,255,255,0.14),transparent_26%),linear-gradient(145deg,transparent_0%,rgba(160,60,126,0.16)_48%,rgba(255,255,255,0.08)_100%)]" />
@@ -375,7 +375,7 @@ export function ForgotPasswordPage() {
                 </div>
 
                 <form className="space-y-4" onSubmit={handleSubmitPassword(onSubmitPassword)}>
-                  
+
                   {/* New Password */}
                   <label className="block space-y-2">
                     <span className="text-sm font-medium text-[var(--color-ink)]">

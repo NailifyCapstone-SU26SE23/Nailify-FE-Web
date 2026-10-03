@@ -3,6 +3,7 @@ import { Modal, Form, Input, Select, Button, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { chairManagementService } from '../services/chairManagementService';
 import toast from 'react-hot-toast';
+import { CHAIR_STATUS } from '../../../../shared/utils/statusFormatters';
 
 const { Option } = Select;
 
@@ -147,26 +148,17 @@ export default function ChairFormModal({
           <Select
             className="[&_.ant-select-selector]:rounded-xl [&_.ant-select-selector]:border-slate-200 hover:[&_.ant-select-selector]:border-[#ea4f93] focus:[&_.ant-select-selector]:border-[#ea4f93]"
             size="large"
-          >
-            <Option value="Active">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                <span className="font-semibold text-emerald-700">{t("adminChairs.active")}</span>
-              </span>
-            </Option>
-            <Option value="Inactive">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-                <span className="font-semibold text-slate-600">{t("adminChairs.inactive")}</span>
-              </span>
-            </Option>
-            {/* <Option value="Maintenance">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                <span className="font-semibold text-amber-700">{t("adminChairs.maintenance")}</span>
-              </span>
-            </Option> */}
-          </Select>
+            options={["Active", "Inactive", "Maintenance"].map(status => ({
+              value: status,
+              label: (
+                <span className="flex items-center gap-2">
+                  <span className={`px-2 py-1 rounded-md text-xs font-semibold border ${CHAIR_STATUS[status].tone}`}>
+                    {language === "vi" ? CHAIR_STATUS[status].vi : CHAIR_STATUS[status].en}
+                  </span>
+                </span>
+              )
+            }))}
+          />
         </Form.Item>
       </Form>
     </Modal>

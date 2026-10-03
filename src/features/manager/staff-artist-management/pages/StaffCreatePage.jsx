@@ -14,6 +14,8 @@ import {
   Sparkles,
   Star,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +85,7 @@ export function StaffCreatePage() {
 
   const [skillTypes, setSkillTypes] = useState([]);
   const [imagePreview, setImagePreview] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -207,8 +210,7 @@ export function StaffCreatePage() {
       setIsSaving(false);
       setShowSaveModal(false);
       setSaveResult({
-        success: true,
-        message: `${formData.firstName} ${formData.lastName} has been added successfully.`,
+        success: true
       });
     } catch (err) {
       console.error("Error creating artist:", err);
@@ -237,6 +239,8 @@ export function StaffCreatePage() {
     setShowCancelModal(false);
     navigate(ROUTES.managerStaffArtists);
   };
+
+  const roleLabel = isVi ? "Thợ làm móng" : "Staff Artist";
 
   return (
     <section className="mx-auto w-full min-w-0 max-w-[1300px] text-slate-700">
@@ -357,13 +361,21 @@ export function StaffCreatePage() {
                 <div className={inputWrapperClassName}>
                   <Lock size={14} className="shrink-0 text-rose-300" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     placeholder={isVi ? "Ít nhất 6 ký tự" : "Min. 6 characters"}
                     className={inputClassName}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="flex shrink-0 items-center justify-center text-rose-300 hover:text-rose-500 focus:outline-none transition-colors"
+                    title={showPassword ? (isVi ? "Ẩn mật khẩu" : "Hide password") : (isVi ? "Hiện mật khẩu" : "Show password")}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </label>
 
@@ -374,7 +386,7 @@ export function StaffCreatePage() {
                 <div className={inputWrapperClassName}>
                   <input
                     type="text"
-                    value="Staff_Artist"
+                    value={roleLabel}
                     readOnly
                     className={inputClassName}
                   />

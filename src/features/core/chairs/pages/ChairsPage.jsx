@@ -9,6 +9,7 @@ import { AssignBookingModal } from "../components/AssignBookingModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { CHAIRS_QUERY_KEYS } from "../hooks/useChairs";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { CHAIR_STATUS } from "../../../../shared/utils/statusFormatters";
 
 export function ChairsPage() {
   const { user } = useAuth();
@@ -158,8 +159,8 @@ export function ChairsPage() {
 
             <div className="flex justify-between items-center py-2 border-b border-[#f7e0ea]">
               <span className="font-semibold text-[#aa8a99]">{language === "vi" ? "Trạng thái hệ thống" : "System Status"}</span>
-              <span className="font-bold">
-                {language === "vi" ? (selectedChair.status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : selectedChair.status}
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${CHAIR_STATUS[selectedChair.status]?.tone || "bg-gray-100 text-gray-600 border-gray-200"}`}>
+                {CHAIR_STATUS[selectedChair.status]?.[language] || selectedChair.status}
               </span>
             </div>
 

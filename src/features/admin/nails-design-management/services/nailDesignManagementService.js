@@ -118,6 +118,7 @@ function normalizeAdminNailVariantDetail(variant) {
   const nailComponents = Array.isArray(variant?.nailComponents) ? variant.nailComponents : [];
 
   return {
+    status: String(variant?.status || "").trim(),
     id: String(variant?.nailVariantId || ""),
     nailVariantId: normalizeIntegerId(variant?.nailVariantId),
     name: String(variant?.name || "").trim(),
@@ -131,6 +132,7 @@ function normalizeAdminNailVariantDetail(variant) {
     durationLabel: formatDurationMinutes(normalizedDuration),
     imageUrl: String(variant?.imageUrl || "").trim(),
     colorJson: String(variant?.colorJson || "").trim(),
+    status: String(variant?.status || "").trim(),
     description: buildVariantDescription(variant),
     nailShape: variant?.nailShape
       ? {
@@ -733,6 +735,9 @@ export async function updateAdminNailVariant(variantId, variantFormValues) {
     formData.append("ImageUrl", String(variantFormValues?.imageUrl || "").trim());
   }
   formData.append("ColorJson", String(variantFormValues?.colorJson || "").trim());
+  if (variantFormValues?.status) {
+    formData.append("Status", String(variantFormValues.status).trim());
+  }
 
   const response = await axiosClient.put(`/NailVariants/${normalizedVariantId}`, formData, {
     headers: {
@@ -798,6 +803,9 @@ export async function updateAdminNailDesign(designId, designFormValues) {
   const formData = new FormData();
   formData.append("Name", String(designFormValues?.name || "").trim());
   formData.append("Description", String(designFormValues?.description || "").trim());
+  if (designFormValues?.status) {
+    formData.append("Status", String(designFormValues.status).trim());
+  }
 
   const categoryIds = Array.isArray(designFormValues?.categoryIds)
     ? designFormValues.categoryIds

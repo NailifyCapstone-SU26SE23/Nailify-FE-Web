@@ -40,6 +40,7 @@ import {
   approveRejectBreakRequest,
   fetchNailArtists,
 } from "../../../core/breaks/services/breakService";
+import { BREAK_STATUS } from "../../../../shared/utils/statusFormatters";
 
 export function ManagerArtistBreakPage() {
   const { t, language } = useLanguage();
@@ -131,7 +132,7 @@ export function ManagerArtistBreakPage() {
       // Status filter
       let matchesStatus = true;
       if (filterStatus === "pending") matchesStatus = st === "pending" || st === "chờ duyệt";
-      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "đã duyệt";
+      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "Đã xác nhận";
       else if (filterStatus === "rejected") matchesStatus = st === "rejected" || st === "từ chối";
 
       if (!matchesStatus) return false;
@@ -226,7 +227,7 @@ export function ManagerArtistBreakPage() {
     breaks.forEach((b) => {
       const st = String(b.status || "").toLowerCase();
       if (st === "pending" || st === "chờ duyệt") pending++;
-      else if (st === "approved" || st === "đã duyệt") approved++;
+      else if (st === "approved" || st === "Đã xác nhận") approved++;
       else if (st === "rejected" || st === "từ chối") rejected++;
     });
     return { pending, approved, rejected, total: breaks.length };
@@ -321,37 +322,19 @@ export function ManagerArtistBreakPage() {
   };
 
   const getStatusBadge = (status) => {
-    const s = String(status || "Pending").trim().toLowerCase();
-    switch (s) {
-      case "approved":
-      case "đã duyệt":
-      case "đồng ý":
-      case "active":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            {language === 'vi' ? 'Đã duyệt' : 'Approved'}
-          </span>
-        );
-      case "rejected":
-      case "từ chối":
-      case "không đồng ý":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 border border-rose-200/90 shadow-2xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {language === 'vi' ? 'Từ chối' : 'Rejected'}
-          </span>
-        );
-      case "pending":
-      case "chờ duyệt":
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/90 shadow-2xs">
-            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-            {language === 'vi' ? 'Chờ duyệt' : 'Pending'}
-          </span>
-        );
-    }
+    let normalized = "Pending";
+    const s = String(status || "").trim().toLowerCase();
+    if (s === "approved" || s === "đã xác nhận" || s === "đồng ý" || s === "active") normalized = "Approved";
+    else if (s === "rejected" || s === "từ chối" || s === "không đồng ý") normalized = "Rejected";
+
+    const statusObj = BREAK_STATUS[normalized] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${statusObj.tone}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${normalized === 'Pending' ? 'bg-amber-500 animate-ping h-2 w-2' : normalized === 'Approved' ? 'bg-green-500' : 'bg-rose-500'}`}></span>
+        {statusObj[language]}
+      </span>
+    );
   };
 
   // Calculate break duration from the slot boundaries.

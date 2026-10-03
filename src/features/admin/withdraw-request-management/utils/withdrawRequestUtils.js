@@ -12,7 +12,7 @@ export function getWithdrawRequestStatusLabel(status, language = "vi") {
       en: "Pending",
     },
     [WITHDRAW_REQUEST_STATUSES.APPROVED]: {
-      vi: "Đã duyệt",
+      vi: "Đã xác nhận",
       en: "Approved",
     },
     [WITHDRAW_REQUEST_STATUSES.REJECTED]: {

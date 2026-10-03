@@ -28,6 +28,7 @@ import {
   deleteAdminNailShape,
 } from "../services/nailShapesManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
@@ -234,15 +235,11 @@ export function NailShapesManagementPage() {
   return (
     <>
       <section className="flex min-h-full flex-col gap-4">
-
-
-
-
         <div className="mb-4">
           <TopMetricsRow metrics={summaryCards} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" />
         </div>
 
-        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[#f8deea] bg-white/70 p-2 shadow-[0_12px_26px_rgba(236,72,153,0.05)] xl:flex-row xl:items-center">
           <div className="flex w-full flex-col gap-3 xl:max-w-5xl xl:flex-row xl:items-center">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative flex-1">
@@ -276,10 +273,12 @@ export function NailShapesManagementPage() {
 
           <Link
             to={ROUTES.adminNailShapesCreate}
-            className="inline-flex items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-4 py-2 text-xs font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
           >
-            <Plus size={13} className="mr-1.5 shrink-0" />
-            {t("adminNailShapesManagement.addNailShape")}
+            <button
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]">
+              <Plus size={13} className="mr-1.5 shrink-0" />
+              {t("adminNailShapesManagement.addNailShape")}
+            </button>
           </Link>
         </div>
 
@@ -314,11 +313,8 @@ export function NailShapesManagementPage() {
 
                     <div className="flex flex-1 flex-col items-center justify-center border-t border-[#f6dbe7] p-3 text-center gap-2">
                       <h3 className="text-xs font-bold text-[#432744] line-clamp-2">{shape.name}</h3>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${shape.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#ea4f93]"
-                        }`}>
-                        {language === "vi"
-                          ? (shape.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
-                          : shape.status || "Inactive"}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${BASIC_STATUS[shape.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                        {BASIC_STATUS[shape.status]?.[language] || shape.status}
                       </span>
                       <ActionButtons
                         onView={() => navigate(getAdminNailShapeDetailRoute(shape.nailShapeId))}

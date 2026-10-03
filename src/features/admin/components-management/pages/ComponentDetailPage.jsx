@@ -11,7 +11,9 @@ import {
   Wallet,
   X,
   Trash2,
+  Power,
 } from "lucide-react";
+import { Select, Image } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
@@ -25,7 +27,6 @@ import {
   formatComponentDuration,
   updateAdminComponent,
 } from "../services/componentsManagementService";
-import { Image } from "antd";
 
 function validateForm(formValues, t) {
   if (!String(formValues.name || "").trim()) {
@@ -98,6 +99,7 @@ export function ComponentDetailPage() {
           componentType: response.componentType,
           price: String(response.price),
           duration: String(response.duration),
+          status: response.status || "Active",
           image: null,
         });
         setImagePreview(response.imageUrl || "");
@@ -170,6 +172,7 @@ export function ComponentDetailPage() {
       componentType: component.componentType,
       price: String(component.price),
       duration: String(component.duration),
+      status: component.status || "Active",
       image: null,
     });
     setImagePreview(component.imageUrl || "");
@@ -225,6 +228,7 @@ export function ComponentDetailPage() {
         componentType: updatedComponent.componentType,
         price: String(updatedComponent.price),
         duration: String(updatedComponent.duration),
+        status: updatedComponent.status || "Active",
         image: null,
       });
       setImagePreview(updatedComponent.imageUrl || imagePreview);
@@ -362,20 +366,17 @@ export function ComponentDetailPage() {
 
               <label className="space-y-2.5">
                 <span className="text-[13px] font-semibold text-slate-600">{t("adminComponents.componentType")}</span>
-                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-3.5">
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5">
                   <Gem size={14} className="shrink-0 text-rose-300" />
-                  <select
+                  <Select
                     value={draft?.componentType || COMPONENT_TYPE_OPTIONS[0]}
-                    onChange={(event) => handleFieldChange("componentType", event.target.value)}
+                    onChange={(val) => handleFieldChange("componentType", val)}
                     disabled={!isEditing}
-                    className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
-                  >
-                    {COMPONENT_TYPE_OPTIONS.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                    variant="borderless"
+                    className="w-full -ml-3 bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    dropdownStyle={{ borderRadius: '12px', padding: '4px' }}
+                    options={COMPONENT_TYPE_OPTIONS.map((type) => ({ value: type, label: type }))}
+                  />
                 </div>
               </label>
 
@@ -407,6 +408,25 @@ export function ComponentDetailPage() {
                     onChange={(event) => handleFieldChange("duration", event.target.value)}
                     disabled={!isEditing}
                     className="w-full bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                  />
+                </div>
+              </label>
+
+              <label className="space-y-2.5">
+                <span className="text-[13px] font-semibold text-slate-600">{language === "vi" ? "Trạng thái" : "Status"}</span>
+                <div className="flex items-center gap-2 rounded-2xl border border-rose-100 bg-[#fff8fb] px-4 py-2.5">
+                  <Power size={14} className="shrink-0 text-rose-300" />
+                  <Select
+                    value={draft?.status || "Active"}
+                    onChange={(val) => handleFieldChange("status", val)}
+                    disabled={!isEditing}
+                    variant="borderless"
+                    className="w-full -ml-3 bg-transparent text-[14px] font-medium text-slate-800 outline-none disabled:cursor-default"
+                    dropdownStyle={{ borderRadius: '12px', padding: '4px' }}
+                    options={[
+                      { value: "Active", label: language === "vi" ? "Hoạt động" : "Active" },
+                      { value: "Inactive", label: language === "vi" ? "Ngừng hoạt động" : "Inactive" },
+                    ]}
                   />
                 </div>
               </label>

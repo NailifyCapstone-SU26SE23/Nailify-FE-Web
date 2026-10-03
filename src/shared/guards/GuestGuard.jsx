@@ -2,11 +2,16 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../../features/core/auth/hooks/useAuth";
 import { getDashboardRouteByRole } from "../../features/core/auth/utils/getDashboardRouteByRole";
 import { PropTypes } from "../utils/propTypes";
+import { ROLES } from "../constants/roles";
 
 export function GuestGuard({ children }) {
   const { isAuthenticated, user } = useAuth();
 
   if (isAuthenticated) {
+    const isInternalRole = Object.values(ROLES).includes(user?.role?.toLowerCase());
+    if (!isInternalRole) {
+      return children;
+    }
     return <Navigate to={getDashboardRouteByRole(user?.role)} replace />;
   }
 

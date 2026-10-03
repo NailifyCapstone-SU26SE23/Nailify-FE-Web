@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys */
 import { custom } from "zod";
 
 export const translations = {
@@ -821,7 +822,7 @@ export const translations = {
       networkSalons: "Network Salons",
       networkRevenue: "Network Revenue",
       auditedLogs: "Audited Logs",
-      filesCount: "{{count}} files",
+      filesCount: "{{count}} transactions",
       avgSuccessRate: "Avg Success Rate",
       searchSalons: "Search salons by name, address...",
       sort: "Sort:",
@@ -2250,8 +2251,8 @@ export const translations = {
         scannerTitle: "Scan QR Code",
         scannerStarting: "Initializing camera...",
         scannerError: "Unable to access camera.",
-        checkoutBtn: "Checkout",
-        checkinBtn: "Check In",
+        checkoutBtn: "Check-out",
+        checkinBtn: "Check-in",
         assignArtistBtn: "Assign Artist",
         bookingQueueNote: "Salon booking queue",
         frontDeskActionNote: "Need front desk action",
@@ -3497,7 +3498,7 @@ export const translations = {
       networkSalons: "Chi nhánh Mạng lưới",
       networkRevenue: "Doanh thu Mạng lưới",
       auditedLogs: "Bản ghi Kiểm toán",
-      filesCount: "{{count}} tệp",
+      filesCount: "{{count}} giao dịch",
       avgSuccessRate: "Tỷ lệ Thành công TB",
       searchSalons: "Tìm kiếm chi nhánh theo tên, địa chỉ...",
       sort: "Sắp xếp:",
@@ -4849,7 +4850,7 @@ export const translations = {
       description: "Quản lý các chương trình khuyến mãi, mã giảm giá và chiến dịch đang chạy.",
       btnCreate: "Tạo khuyến mãi mới",
       filter: {
-        searchPlaceholder: "Tìm khuyến mãi theo tên, mô tả..."
+        searchPlaceholder: "Tìm khuyến mãi theo tên..."
       },
       table: {
         promotion: "Khuyến mãi",
@@ -4926,7 +4927,7 @@ export const translations = {
         scannerTitle: "Quét mã QR",
         scannerStarting: "Đang khởi động camera...",
         scannerError: "Không thể truy cập camera.",
-        checkoutBtn: "Thanh toán",
+        checkoutBtn: "Check-out",
         checkinBtn: "Nhận khách",
         assignArtistBtn: "Phân công thợ",
         bookingQueueNote: "Hàng chờ đặt lịch",
@@ -4960,14 +4961,14 @@ export const translations = {
         selectChair: "Chọn ghế cho lịch hẹn này",
         assignArtistTitle: "Phân thợ",
         selectArtist: "Chọn thợ móng đang trống",
-        checkoutConfirm: "Tiến hành thanh toán cho lịch hẹn {{id}}?",
+        checkoutConfirm: "Tiến hành check-out cho lịch hẹn {{id}}?",
         checkinSuccess: "Đã nhận khách thành công!",
-        checkoutSuccess: "Đã thanh toán thành công!",
+        checkoutSuccess: "Đã check-out thành công!",
         changeArtist: "Đổi thợ móng",
         reschedule: "Đổi lịch hẹn",
         editBooking: "Sửa lịch hẹn",
         assignToSeat: "Xếp chỗ ngồi",
-        reassignArtist: "Phân công lại thợ",
+        reassignArtist: "Phân công lại thợ chính",
         changeStaff: "Thay đổi nhân viên",
         moveSchedule: "Đổi lịch hẹn",
         rescheduleTime: "Thay đổi thời gian",
@@ -5038,8 +5039,8 @@ export const translations = {
         updateSuccess: "Đã cập nhật thông tin thành công!"
       },
       payments: {
-        checkoutTitle: "Thanh toán",
-        checkoutDesc: "Hoàn tất thanh toán và ghi nhận hóa đơn dịch vụ.",
+        checkoutTitle: "Check-out",
+        checkoutDesc: "Hoàn tất lịch hẹn và ghi nhận hóa đơn dịch vụ.",
         summaryTitle: "Tóm tắt dịch vụ",
         customerInfo: "Thông tin khách",
         artistInfo: "Thợ móng thực hiện",
@@ -5052,8 +5053,8 @@ export const translations = {
         payMethod: "Phương thức thanh toán",
         payCash: "Tiền mặt",
         payCard: "Thẻ / Chuyển khoản QR",
-        completeCheckout: "Hoàn tất thanh toán",
-        completing: "Đang xử lý thanh toán...",
+        completeCheckout: "Hoàn tất check-out",
+        completing: "Đang xử lý check-out...",
         successTitle: "Thanh toán thành công",
         successDesc: "Hóa đơn đã được thanh toán thành công. Bạn có thể đóng trang này.",
         failTitle: "Thanh toán thất bại",
@@ -5084,7 +5085,7 @@ export const translations = {
         startTime: "Giờ bắt đầu",
         endTime: "Giờ kết thúc",
         reason: "Lý do",
-        statusApproved: "Đã duyệt",
+        statusApproved: "Đã xác nhận",
         statusPending: "Chờ duyệt",
         statusRejected: "Bị từ chối",
         submitRequest: "Gửi yêu cầu",
@@ -5243,7 +5244,7 @@ export const translations = {
         startTime: "Giờ bắt đầu",
         endTime: "Giờ kết thúc",
         reason: "Lý do",
-        statusApproved: "Đã duyệt",
+        statusApproved: "Đã xác nhận",
         statusPending: "Chờ duyệt",
         statusRejected: "Bị từ chối",
         reject: "Từ chối"

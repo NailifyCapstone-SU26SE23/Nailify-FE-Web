@@ -24,6 +24,7 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 // import { LoadingSpinner } from "../../../../shared/components/ui/LoadingSpinner";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
@@ -66,6 +67,7 @@ function normalizeDesign(design, index, t) {
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
   const estimatedPrice = getDesignEstimatedPrice(design);
+  const { language } = useLanguage();
 
   return {
     ...design,
@@ -76,10 +78,8 @@ function normalizeDesign(design, index, t) {
       : [],
     uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
     uiEstimatedPrice: estimatedPrice,
-    uiStatus: design.status === "Active"
-      ? (t("adminNailsDesignManagement.active"))
-      : (t("adminNailsDesignManagement.inactive")),
-    uiStatusTone: design.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
+    uiStatus: BASIC_STATUS[design.status]?.[language] || design.status,
+    uiStatusTone: BASIC_STATUS[design.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -107,7 +107,6 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
-  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
       {design.imageUrl ? (
@@ -546,8 +545,7 @@ export function NailDesignManagementPage() {
         from-[#ea4f93]
         to-[#ff8ebb]
         px-4
-        text-xs
-        font-semibold
+        text-md
         text-white
         shadow-[0_5px_14px_rgba(234,79,147,0.20)]
         transition-all
@@ -694,7 +692,7 @@ export function NailDesignManagementPage() {
             ? {
               title: pendingDeleteDesign.name,
               image: pendingDeleteDesign.imageUrl || undefined,
-              meta: pendingDeleteDesign.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive"),
+              meta: BASIC_STATUS[pendingDeleteDesign.status]?.[language] || pendingDeleteDesign.status,
               note: pendingDeleteDesign.description || "Nail design",
             }
             : undefined

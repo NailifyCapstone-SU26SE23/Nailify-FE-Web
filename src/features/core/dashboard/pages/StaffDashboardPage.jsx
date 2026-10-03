@@ -50,6 +50,7 @@ import {
 import { useStaffDashboard, useStaffSkills } from "../hooks/useAdminDashboard";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 const DEFAULT_BOOKING_PAGE_SIZE = 10;
 
@@ -188,56 +189,12 @@ function formatBookingWindow(booking) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#e9fbef] text-[#2ca865]";
-    case "In Progress":
-    case "CheckedIn":
-      return "bg-[#eaf2ff] text-[#5e8df7]";
-    case "Confirmed":
-      return "bg-[#eefcf3] text-[#35b56b]";
-    case "Pending":
-      return "bg-[#fff4df] text-[#df8e1d]";
-    case "Cancelled":
-      return "bg-[#fff1f5] text-[#f06292]";
-    default:
-      return "bg-[#f4f5f7] text-[#8b95a7]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#f4f5f7] text-[#8b95a7] border-[#d1d5db]";
 }
 
 function formatDisplay(s, language) {
-  switch (s) {
-    case "Checked In":
-    case "CheckedIn":
-      return language === "vi" ? "Đã check in" : "Checked In";
-    case "In Progress":
-    case "InProgress":
-      return language === "vi" ? "Đang tiến hành" : "In Progress";
-    case "Pending":
-      return language === "vi" ? "Đang chờ" : "Pending";
-    case "Confirmed":
-    case "Approved":
-      return language === "vi" ? "Đã xác nhận" : "Confirmed";
-    case "Completed":
-      return language === "vi" ? "Đã hoàn thành" : "Completed";
-    case "ServiceCompleted":
-      return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
-    case "Rejected":
-      return language === "vi" ? "Đã từ chối" : "Rejected";
-    case "Cancelled":
-    case "Canceled":
-      return language === "vi" ? "Đã hủy" : "Cancelled";
-    case "ReschedulePending":
-      return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-    case "RescheduleSuggested":
-      return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-    case "Repaired":
-      return language === "vi" ? "Đã sửa chữa" : "Repaired";
-    case "All":
-      return language === "vi" ? "Tất cả" : "All";
-    default:
-      return s;
-  }
+  if (s === "All") return language === "vi" ? "Tất cả" : "All";
+  return getStatusLabel(s, BOOKING_STATUS, language);
 }
 
 function StatusChip({ label, className }) {
@@ -973,14 +930,14 @@ export function StaffDashboardPage() {
 
     return [
       { key: "view", label: language === "vi" ? "Xem lịch hẹn" : "View Booking", icon: Eye, onSelect: () => navigate(detailRoute) },
-      ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
-        ? [{
-          key: "start",
-          label: language === "vi" ? "Bắt đầu làm" : "Start Service",
-          icon: Play,
-          onSelect: () => void startService(),
-        }]
-        : []),
+      // ...(!isCancelledBooking && !isPendingBooking && !isCompletedBooking && !isServiceCompletedBooking
+      //   ? [{
+      //     key: "start",
+      //     label: language === "vi" ? "Bắt đầu làm" : "Start Service",
+      //     icon: Play,
+      //     onSelect: () => void startService(),
+      //   }]
+      //   : []),
       ...(!isCancelledBooking && !isPendingBooking && !isCheckedInBooking && !isCompletedBooking && !isServiceCompletedBooking
         ? [{
           key: "complete",
@@ -989,12 +946,12 @@ export function StaffDashboardPage() {
           onSelect: () => navigate(detailRoute, { state: { staffAction: "complete" } }),
         }]
         : []),
-      {
-        key: "notes",
-        label: language === "vi" ? "Ghi chú" : "View Notes",
-        icon: FileText,
-        onSelect: () => setSelectedStaffNotesBooking(booking),
-      },
+      // {
+      //   key: "notes",
+      //   label: language === "vi" ? "Ghi chú" : "View Notes",
+      //   icon: FileText,
+      //   onSelect: () => setSelectedStaffNotesBooking(booking),
+      // },
     ];
   };
 

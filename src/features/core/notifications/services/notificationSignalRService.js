@@ -136,7 +136,7 @@ export const notificationSignalRService = {
 
           onNotificationReceived && onNotificationReceived({
             title,
-            message: arg2.Message || arg2.message || "Đã có cập nhật từ hệ thống",
+            message: arg2.Message || arg2.message,
             ...arg2,
           });
         } else {

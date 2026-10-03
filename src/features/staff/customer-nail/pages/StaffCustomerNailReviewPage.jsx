@@ -653,7 +653,6 @@ export function StaffCustomerNailReviewPage() {
         setError("");
       }
 
-      console.log("Loading custom nail request detail for ID:", customerNailId);
       const data = await fetchCustomerNailRequestById(customerNailId);
       setRequest(data);
 

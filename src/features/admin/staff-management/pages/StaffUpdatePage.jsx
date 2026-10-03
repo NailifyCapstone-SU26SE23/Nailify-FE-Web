@@ -132,8 +132,6 @@ export function StaffUpdatePage() {
     };
 
     const loadStaff = async () => {
-      console.log("=== StaffUpdatePage: Loading staff ===");
-      console.log("staffId from params:", staffId);
       setIsLoading(true);
       setIsNotFound(false);
 
@@ -162,7 +160,6 @@ export function StaffUpdatePage() {
         const baseForm = createEmptyStaffForm();
 
         let nailArtistId = userData.staffId || userData.nailArtistId || userData.id;
-        console.log("StaffUpdatePage: Determined nailArtistId:", nailArtistId);
 
         const staffForm = {
           ...baseForm,
@@ -180,8 +177,6 @@ export function StaffUpdatePage() {
           salonId: userData.salonId || "",
           assignedSalon: matchingSalon?.name || "",
         };
-
-        console.log("StaffUpdatePage mapped staffForm:", staffForm);
 
         if (userData.avatarUrl) {
           setImagePreview(userData.avatarUrl);
@@ -310,17 +305,15 @@ export function StaffUpdatePage() {
         imageFile: formData.imageFile,
       };
 
-      console.log("Updating user with data:", userUpdateData);
       await updateUser(formData.userId, userUpdateData);
 
       if (formData.role === "Staff_Artist" && formData.staffId) {
         const skillsPayload = Object.entries(selectedSkills)
           .map(([skillTypeId, level]) => ({ skillTypeId, level: level || 0 }));
-        
+
         if (skillsPayload.length > 0) {
           try {
             await assignNailArtistSkills(formData.staffId, skillsPayload);
-            console.log("Assigned/Updated skills successfully.");
           } catch (err) {
             console.error("Failed to assign/update skills:", err);
           }
@@ -423,12 +416,6 @@ export function StaffUpdatePage() {
             <TopMetricsRow
               metrics={[
                 {
-                  label: t("adminStaffManagement.currentTeam"),
-                  value: t("adminStaffManagement.activeProfiles", { count: 84 }),
-                  icon: Users,
-                  color: "#ea4f93"
-                },
-                {
                   label: t("adminStaffManagement.assignedSalon"),
                   value: formData.assignedSalon || t("adminStaffManagement.unknown"),
                   icon: BriefcaseBusiness,
@@ -447,7 +434,7 @@ export function StaffUpdatePage() {
                   color: "#10b981"
                 }
               ]}
-              className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
             />
           </div>
 
@@ -459,17 +446,34 @@ export function StaffUpdatePage() {
                 </h2>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <span className="text-[13px] font-semibold text-slate-600">
-                      {t("adminStaffManagement.fullName")} <span className="text-rose-500">*</span>
+                      {language === 'vi' ? 'Tên' : 'First Name'} <span className="text-rose-500">*</span>
                     </span>
                     <div className={inputWrapperClassName}>
                       <User size={14} className="shrink-0 text-rose-300" />
                       <input
                         type="text"
-                        value={formData.fullName}
-                        onChange={(event) => handleInputChange("fullName", event.target.value)}
-                        placeholder={t("adminStaffManagement.enterFullName")}
+                        value={formData.firstName}
+                        onChange={(event) => handleInputChange("firstName", event.target.value)}
+                        placeholder={language === 'vi' ? 'Nhập tên' : 'Enter first name'}
+                        className={inputClassName}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-semibold text-slate-600">
+                      {language === 'vi' ? 'Họ' : 'Last Name'} <span className="text-rose-500">*</span>
+                    </span>
+                    <div className={inputWrapperClassName}>
+                      <User size={14} className="shrink-0 text-rose-300" />
+                      <input
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(event) => handleInputChange("lastName", event.target.value)}
+                        placeholder={language === 'vi' ? 'Nhập họ' : 'Enter last name'}
                         className={inputClassName}
                         required
                       />
@@ -503,7 +507,7 @@ export function StaffUpdatePage() {
                         type="tel"
                         value={formData.phone}
                         onChange={(event) => handleInputChange("phone", event.target.value)}
-                        placeholder="+1 (555) 123-4567"
+                        placeholder="+84 XXX XXX XXX"
                         className={inputClassName}
                         required
                       />
@@ -611,7 +615,7 @@ export function StaffUpdatePage() {
                     <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
                     {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
                   </h2>
-                  
+
                   <div className="grid gap-6 md:grid-cols-2">
                     {skillTypes.map((skill) => (
                       <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
@@ -745,7 +749,7 @@ export function StaffUpdatePage() {
         loading={isSaving}
         onConfirm={handleConfirmSave}
         onCancel={() => !isSaving && setShowSaveModal(false)}
-        highlights={[formData.fullName || (t("adminStaffManagement.staffProfile")), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role, t("adminStaffManagement." + (formData.status === "active" ? "workingToday" : "inactive"))]}
+        highlights={[formData.fullName || (t("adminStaffManagement.staffProfile")), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role]}
         details={[
           { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}

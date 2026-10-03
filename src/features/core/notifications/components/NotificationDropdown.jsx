@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import {
@@ -142,58 +144,80 @@ export function NotificationDropdown({ isOpen, onClose }) {
             </div>
           ) : (
             notifications.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => !item.isRead && markAsRead(item.id)}
-                className={`group relative p-4 flex gap-3 transition cursor-pointer ${item.isRead
-                  ? "bg-white hover:bg-[#fff9fc]"
-                  : "bg-[#fffcfd] hover:bg-[#fff9fc]"
-                  }`}
-              >
-                {/* Unread indicator dot */}
-                {!item.isRead && (
-                  <span className="absolute top-4 left-2.5 h-2 w-2 rounded-full bg-[#ea4f93]" />
-                )}
-
-                <div className="flex-1 min-w-0 pl-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className={`text-xs truncate ${item.isRead ? "font-semibold text-slate-700" : "font-bold text-[#3f2b3f]"}`}>
-                      {item.title}
-                    </p>
-                    <span className="text-[10px] text-slate-400 shrink-0 font-medium mt-0.5">
-                      {formatTime(item.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed break-words font-medium">
-                    {item.message}
-                  </p>
-                  {item.type === "AppointmentNextStep" && item.data?.appointmentId && (
-                    <Link
-                      to={`/thanh-toan-thanh-cong/${item.data.appointmentId}`}
-                      onClick={onClose} // Close dropdown when navigating
-                      className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-[#ea4f93] to-[#f387b0] text-white text-[10px] font-bold rounded-xl hover:shadow-[0_4px_12px_rgba(234,79,147,0.4)] transition duration-300"
-                    >
-                      {isVi ? "Xem chi tiết đơn hàng" : "View order details"}
-                    </Link>
-                  )}
-                </div>
-
-                {/* Delete button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(item.id);
-                  }}
-                  className="h-6 w-6 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition"
-                  title={isVi ? "Xóa thông báo" : "Delete notification"}
-                >
-                  <X size={12} />
-                </button>
-              </div>
+              <NotificationItem 
+                key={item.id} 
+                item={item} 
+                markAsRead={markAsRead} 
+                deleteNotification={deleteNotification} 
+                onClose={onClose} 
+                isVi={isVi} 
+                formatTime={formatTime} 
+              />
             ))
           )}
         </div>
       </motion.div>
     </>
+  );
+}
+
+function NotificationItem({ item, markAsRead, deleteNotification, onClose, isVi, formatTime }) {
+  const [displayMessage, setDisplayMessage] = useState(item.message);
+  
+  useEffect(() => {
+    import("../utils/notificationFormatter").then(({ formatNotificationMessage }) => {
+      formatNotificationMessage(item.message, isVi).then((formattedMsg) => {
+        setDisplayMessage(formattedMsg);
+      });
+    });
+  }, [item.message, isVi]);
+
+  return (
+    <div
+      onClick={() => !item.isRead && markAsRead(item.id)}
+      className={`group relative p-4 flex gap-3 transition cursor-pointer ${item.isRead
+        ? "bg-white hover:bg-[#fff9fc]"
+        : "bg-[#fffcfd] hover:bg-[#fff9fc]"
+        }`}
+    >
+      {/* Unread indicator dot */}
+      {!item.isRead && (
+        <span className="absolute top-4 left-2.5 h-2 w-2 rounded-full bg-[#ea4f93]" />
+      )}
+
+      <div className="flex-1 min-w-0 pl-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className={`text-xs truncate ${item.isRead ? "font-semibold text-slate-700" : "font-bold text-[#3f2b3f]"}`}>
+            {item.title}
+          </p>
+          <span className="text-[10px] text-slate-400 shrink-0 font-medium mt-0.5">
+            {formatTime(item.createdAt)}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 mt-1.5 leading-relaxed break-words font-medium">
+          {displayMessage}
+        </p>
+        {item.type === "AppointmentNextStep" && item.data?.appointmentId && (
+          <Link
+            to={`/thanh-toan-thanh-cong/${item.data.appointmentId}`}
+            onClick={onClose}
+            className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-[#ea4f93] to-[#f387b0] text-white text-[10px] font-bold rounded-xl hover:shadow-[0_4px_12px_rgba(234,79,147,0.4)] transition duration-300"
+          >
+            {isVi ? "Xem chi tiết đơn hàng" : "View order details"}
+          </Link>
+        )}
+      </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteNotification(item.id);
+        }}
+        className="h-6 w-6 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition"
+        title={isVi ? "Xóa thông báo" : "Delete notification"}
+      >
+        <X size={12} />
+      </button>
+    </div>
   );
 }
