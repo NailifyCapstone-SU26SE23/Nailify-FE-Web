@@ -38,8 +38,6 @@ export const QUICK_ACTIONS = [
   { label: "Transfer Staff", labelVi: "Chuyển thợ", icon: "arrow" },
 ];
 
-export const STAFF_FILTER_TABS = ["All", "Active", "Inactive"];
-
 export const STAFF_STATUS_STYLES = {
   Active: "bg-[#eaf9ee] text-[#2fa25f]",
   Inactive: "bg-[#fff0dd] text-[#db8520]",

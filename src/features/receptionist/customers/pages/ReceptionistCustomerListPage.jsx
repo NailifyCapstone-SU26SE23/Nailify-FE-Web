@@ -78,36 +78,25 @@ function getAvatarGradient(userId) {
   return gradients[charCode % gradients.length];
 }
 
+import { BASIC_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
+
 function getStatusBadge(status, language) {
-  const norm = String(status || "").trim().toLowerCase();
-  switch (norm) {
-    case "active":
-    case "current":
-      return {
-        label: language === "vi" ? "Hoạt động" : "Active",
-        tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        dot: "bg-emerald-500",
-      };
-    case "prospective":
-      return {
-        label: language === "vi" ? "Tiềm năng" : "Prospective",
-        tone: "bg-purple-50 text-purple-700 border-purple-200",
-        dot: "bg-purple-500",
-      };
-    case "inactive":
-    case "non-active":
-      return {
-        label: language === "vi" ? "Tạm khóa" : "Inactive",
-        tone: "bg-gray-100 text-gray-600 border-gray-200",
-        dot: "bg-gray-400",
-      };
-    default:
-      return {
-        label: language === "vi" ? "Hoạt động" : "Active",
-        tone: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        dot: "bg-emerald-500",
-      };
-  }
+  let normStatus = "Active";
+  const raw = String(status || "").trim().toLowerCase();
+  if (raw === "inactive" || raw === "non-active") normStatus = "Inactive";
+  else if (raw === "blocked") normStatus = "Blocked";
+
+  const matched = BASIC_STATUS[normStatus] || BASIC_STATUS["Active"];
+  
+  let dot = "bg-emerald-500";
+  if (normStatus === "Inactive") dot = "bg-gray-400";
+  if (normStatus === "Blocked") dot = "bg-rose-500";
+
+  return {
+    label: getStatusLabel(normStatus, BASIC_STATUS, language),
+    tone: matched.tone,
+    dot,
+  };
 }
 
 export function ReceptionistCustomerListPage() {
@@ -903,7 +892,7 @@ export function ReceptionistCustomerListPage() {
         color: "#10b981",
       },
       {
-        label: language === "vi" ? "Hàng Chờ Walk-In" : "Walk-in Queue",
+        label: language === "vi" ? "Hàng Chờ Khách Vãng Lai" : "Walk-in Queue",
         value: walkInGuests.filter((g) => g.status !== "completed").length,
         note: language === "vi" ? "Lượt khách trong ngày" : "Daily check-ins",
         icon: Clock,
@@ -1047,7 +1036,7 @@ export function ReceptionistCustomerListPage() {
                 }`}
             >
               <Clock size={14} />
-              {language === "vi" ? "Hàng Chờ Walk-In" : "Live Walk-In Queue"}
+              {language === "vi" ? "Hàng Chờ Khách Vãng Lai" : "Live Walk-In Queue"}
               <span className="ml-1 px-1.5 py-0.2 rounded-full bg-[#FAF0F5] text-[#C97A9E] text-[10px] border border-[#F2D6E3]">
                 {walkInGuests.length}
               </span>
@@ -1060,7 +1049,7 @@ export function ReceptionistCustomerListPage() {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#C97A9E] hover:bg-[#B86B8E] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <Plus size={15} />
-            Check-In Walk-In
+            {language === "vi" ? "Check-in Khách vãng lai" : "Check-In Walk-In"}
           </button>
         </div>
       </div>
@@ -1157,11 +1146,11 @@ export function ReceptionistCustomerListPage() {
                           <img
                             src={c.avatarUrl}
                             alt=""
-                            className="w-11 h-11 rounded-xl object-cover border border-gray-200"
+                            className="w-11 h-11 rounded-full object-cover border border-gray-200"
                           />
                         ) : (
                           <div
-                            className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${getAvatarGradient(
+                            className={`w-11 h-11 rounded-full bg-gradient-to-tr ${getAvatarGradient(
                               c.userId
                             )} flex items-center justify-center text-white font-bold text-xs shadow-xs`}
                           >
@@ -2031,7 +2020,7 @@ export function ReceptionistCustomerListPage() {
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               {totalCalculatedPrice > 0 ? (
                 <div className="flex items-center gap-2.5 bg-[#FAF0F5] px-3.5 py-1.5 rounded-xl border border-[#F2D6E3] text-xs font-bold text-[#C97A9E]">
-                  <span>{language === "vi" ? "✨ Tổng dịch vụ & mẫu móng:" : "✨ Total services & variants:"}</span>
+                  <span>{language === "vi" ? "Tổng dịch vụ & mẫu móng:" : "Total services & variants:"}</span>
                   <span className="font-bold text-[#B86B8E] text-sm">
                     {totalCalculatedPrice.toLocaleString("vi-VN")}đ
                   </span>
@@ -2237,7 +2226,7 @@ export function ReceptionistCustomerListPage() {
             customerName: assignChairGuest?.customerName || "Khách",
             bookingDate: new Date().toISOString().split('T')[0],
             startTime: new Date().toLocaleTimeString('en-US', { hour12: false }).substring(0, 5),
-            totalDuration: parseInt(assignChairGuest?.duration) || 60,
+            totalDuration: parseInt(assignChairGuest?.duration),
           }}
           onAssign={handleConfirmAssignChair}
         />

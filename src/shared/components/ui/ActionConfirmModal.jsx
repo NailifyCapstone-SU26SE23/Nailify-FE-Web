@@ -91,6 +91,7 @@ export function ActionConfirmModal({
   item = null,
   width = 480,
   compact = false,
+  zIndex = 1000,
 }) {
   const palette = INTENT_STYLES[intent] ?? INTENT_STYLES.info;
   const HeaderIcon = ICON_BY_TONE[intent] ?? ICON_BY_TONE.info;
@@ -111,6 +112,7 @@ export function ActionConfirmModal({
         keyboard={!loading}
         width={modalWidth}
         styles={MODAL_STYLES}
+        zIndex={zIndex}
       >
         <div className="flex items-start gap-3">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${palette.panelIconClassName}`}>
@@ -156,6 +158,7 @@ export function ActionConfirmModal({
       keyboard={!loading}
       width={modalWidth}
       styles={MODAL_STYLES}
+      zIndex={zIndex}
     >
       <div>
         <div className={`px-6 py-5 text-white ${palette.headerClassName}`}>
@@ -232,7 +235,7 @@ export function ActionConfirmModal({
           ) : null}
 
           {details.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className={`grid gap-3 ${details.length > 1 ? "sm:grid-cols-2" : "grid-cols-1"}`}>
               {details.map((detail) => (
                 <div key={detail.label} className="rounded-[18px] border border-slate-200 bg-white p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">

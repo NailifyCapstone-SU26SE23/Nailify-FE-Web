@@ -23,10 +23,14 @@ import { Pagination } from "../../../../shared/components/common/Pagination";
 import { fetchTransactions, fetchBookingById } from "../services/transactionService";
 import dayjs from "dayjs";
 import { RefundConfirmModal } from "../components/RefundConfirmModal";
+import { TRANSACTION_STATUS } from "../../../../shared/utils/statusFormatters";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { getManagerBookingDetailRoute } from "../../../../shared/constants/routes";
+import { TransactionBadge } from "../../../../shared/utils/transactions";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 15 },
@@ -90,6 +94,7 @@ export function TransactionManagementPage() {
   const [pageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState(null);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
@@ -139,7 +144,7 @@ export function TransactionManagementPage() {
   // Reset page when search or status filter changes to prevent offset bugs
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, dateRangeFilter]);
 
   // Load booking details when selected transaction changes
   useEffect(() => {
@@ -194,8 +199,19 @@ export function TransactionManagementPage() {
       );
     }
 
+    // Filter by date range
+    if (dateRangeFilter && Array.isArray(dateRangeFilter) && dateRangeFilter.length === 2) {
+      const [start, end] = dateRangeFilter;
+      if (start && end) {
+        items = items.filter(t => {
+          const d = dayjs(t.createdAt);
+          return d.isAfter(start.startOf('day')) && d.isBefore(end.endOf('day'));
+        });
+      }
+    }
+
     return items;
-  }, [transactionsData.items, searchQuery, statusFilter]);
+  }, [transactionsData.items, searchQuery, statusFilter, dateRangeFilter]);
 
   const sortedTransactions = useMemo(() => {
     const [sortKey, sortOrder] = selectedSort.split("-");
@@ -303,51 +319,23 @@ export function TransactionManagementPage() {
 
   // Render Status Badge
   const renderStatusBadge = (status) => {
-    const normStatus = String(status || "").toLowerCase();
-    switch (normStatus) {
-      case "paid":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            {language === "vi" ? "Đã thanh toán" : "Paid"}
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-bounce"></span>
-            {language === "vi" ? "Chờ xử lý" : "Pending"}
-          </span>
-        );
-      case "refunded":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-500/20 px-2.5 py-1 text-xs font-semibold text-blue-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-            {language === "vi" ? "Đã hoàn tiền" : "Refunded"}
-          </span>
-        );
-      case "expired":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
-            {language === "vi" ? "Hết hạn" : "Expired"}
-          </span>
-        );
-      case "canceled":
-      case "cancelled":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {language === "vi" ? "Đã hủy" : "Canceled"}
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            {status}
-          </span>
-        );
-    }
+    let normalized = status || "Pending";
+    const s = String(status || "").trim().toLowerCase();
+    
+    if (s === "paid") normalized = "Paid";
+    else if (s === "pending") normalized = "Pending";
+    else if (s === "refunded") normalized = "Refunded";
+    else if (s === "expired" || s === "overdue") normalized = "Overdue";
+    else if (s === "canceled" || s === "cancelled") normalized = "Cancelled";
+
+    const statusObj = TRANSACTION_STATUS[normalized] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusObj.tone}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${normalized === 'Paid' ? 'bg-green-500 animate-pulse' : normalized === 'Pending' ? 'bg-amber-500 animate-bounce' : normalized === 'Refunded' ? 'bg-purple-500' : 'bg-rose-500'}`}></span>
+        {statusObj[language]}
+      </span>
+    );
   };
 
   return (
@@ -414,34 +402,50 @@ export function TransactionManagementPage() {
         />
 
         {/* Filters Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center bg-white/90 backdrop-blur-sm p-4 rounded-lg border border-slate-200/75 shadow-[0_8px_30px_rgba(0,0,0,0.02)]">
           {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
-            <input
-              type="text"
-              placeholder={t("manager.bookings.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+          <div className="flex flex-col items-start gap-2 w-full">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">
+              {language === "vi" ? "Tìm kiếm" : "Search"}
+            </div>
+            <div className="relative flex-1 w-full h-9">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+              <input
+                type="text"
+                placeholder={t("manager.bookings.searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-4 py-2 rounded-full border border-slate-200 text-xs md:text-sm text-[#2d1b35] placeholder-[#a88a9f] bg-[#fafaf9]/30 focus:outline-hidden focus:bg-white focus:border-[#ea4f93] focus:ring-4 focus:ring-[#ea4f93]/10 transition-all duration-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+
+          {/* Date Filter */}
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Khoảng thời gian" : "Date Range"}:</div>
+            <DateRangePicker
+              value={dateRangeFilter}
+              onChange={(dates) => setDateRangeFilter(dates)}
+              className="h-9 min-w-[260px] rounded-xl border border-slate-200"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a88a9f] hover:text-[#2d1b35]"
-              >
-                <X size={13} />
-              </button>
-            )}
           </div>
 
           {/* Status Dropdown */}
-          <div className="flex items-center gap-3 self-end sm:self-auto">
-            <span className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Trạng thái" : "Status"}:</span>
+          <div className="flex flex-col items-start gap-2 self-end sm:self-auto">
+            <div className="text-[10px] font-bold text-[#a88a9f] uppercase tracking-wider">{language === "vi" ? "Trạng thái" : "Status"}:</div>
             <Select
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
-              className="w-40 h-11 select-premium-antd"
+              className="w-40 h-9 select-premium-antd !rounded-lg"
               popupClassName="select-premium-dropdown"
               options={[
                 { value: "all", label: language === "vi" ? "Tất cả trạng thái" : "All Statuses" },
@@ -608,21 +612,28 @@ export function TransactionManagementPage() {
                       render: (_, tx) => renderStatusBadge(tx.status)
                     },
                     {
+                      title: language === "vi" ? "Phương thức" : "Payment Method",
+                      key: "paymentMethod",
+                      render: (_, tx) => (
+                        <TransactionBadge
+                          walletId={tx.walletId}
+                          paymentLinkId={tx.paymentLinkId}
+                          language={language}
+                        />
+                      ),
+                    },
+                    {
                       title: language === "vi" ? "Hành động" : "Actions",
                       key: "actions",
-                      align: "right",
+                      align: "center",
                       render: (_, tx) => (
-                        <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
-                          <button
-                            onClick={() => {
+                        <div onClick={(e) => e.stopPropagation()} className="flex justify-center">
+                          <ActionButtons
+                            onView={() => {
                               setSelectedTransaction(tx);
                               setDrawerVisible(true);
                             }}
-                            title="View receipt detail"
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] hover:text-white hover:bg-[#ea4f93] hover:border-[#ea4f93] shadow-xs transition-all duration-300 active:scale-95"
-                          >
-                            <Eye size={13} className="stroke-[2]" />
-                          </button>
+                          />
                         </div>
                       )
                     }
@@ -701,14 +712,13 @@ export function TransactionManagementPage() {
         destroyOnClose
         closeIcon={<X size={15} className="text-[#a88a9f] hover:text-[#ea4f93] transition-colors" />}
         styles={{
-          content: { borderRadius: "1.75rem", padding: 0, overflow: "hidden" },
-          header: { borderBottom: "1px solid #f1e7ed", padding: "1.25rem 1.5rem 1rem", marginBottom: 0 },
-          body: { padding: 0, backgroundColor: "#fcf9fb" },
+          content: { overflow: "hidden" },
+          header: { borderBottom: "1px solid #f1e7ed", padding: "1rem" },
         }}
       >
         {selectedTransaction && (
           <div className="receipt-scroll max-h-[78vh] overflow-y-auto">
-            <div className="p-6 space-y-5">
+            <div className="p-2 space-y-5">
 
               {/* Unified summary: status + amount + order code in one place, no repeat further down */}
               <div className="text-center space-y-2.5 pb-1">
@@ -789,6 +799,14 @@ export function TransactionManagementPage() {
                     <span className="text-[#db8520] font-semibold">{dayjs(selectedTransaction.expiresAt).format("DD MMM YYYY, HH:mm:ss")}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#a88a9f]">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                  <TransactionBadge
+                    walletId={selectedTransaction.walletId}
+                    paymentLinkId={selectedTransaction.paymentLinkId}
+                    language={language}
+                  />
+                </div>
               </div>
 
               {/* Interactive payment area for Pending state */}

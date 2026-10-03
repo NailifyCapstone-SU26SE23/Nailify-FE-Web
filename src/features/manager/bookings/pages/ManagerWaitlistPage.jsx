@@ -751,7 +751,7 @@ export function ManagerWaitlistPage() {
             <span className="font-bold text-[#402542]">{language === "vi" ? "Chi Tiết Đề Nghị Slot Trống" : "Slot Offer Details"}</span>
           </div>
         }
-        placement="right"
+        placement="center"
         onClose={() => setIsDrawerOpen(false)}
         open={isDrawerOpen}
         width={420}

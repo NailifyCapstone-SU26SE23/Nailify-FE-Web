@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 import { notificationSignalRService } from "../../../core/notifications/services/notificationSignalRService";
@@ -621,102 +622,48 @@ export function RescheduleBooking() {
       </motion.div>
 
       {/* Approve / Reject Confirmation Modal */}
-      <Modal
+      <ActionConfirmModal
         open={isConfirmModalOpen}
+        title={
+          confirmAction?.type === "approve"
+            ? language === "vi" ? "Phê duyệt dời lịch" : "Approve Reschedule"
+            : language === "vi" ? "Từ chối dời lịch" : "Reject Reschedule"
+        }
+        description={
+          confirmAction?.type === "approve"
+            ? language === "vi"
+              ? "Lịch hẹn sẽ được dời sang thời gian khách hàng yêu cầu. Hành động này không thể hoàn tác."
+              : "The booking will be moved to the customer's requested time. This cannot be undone."
+            : language === "vi"
+              ? "Khách hàng sẽ nhận được thông báo rằng yêu cầu dời lịch của họ đã bị từ chối."
+              : "The customer will be notified that their reschedule request was declined."
+        }
+        intent={confirmAction?.type === "approve" ? "success" : "danger"}
+        confirmText={
+          confirmAction?.type === "approve"
+            ? language === "vi" ? "Xác nhận duyệt" : "Confirm Approve"
+            : language === "vi" ? "Xác nhận từ chối" : "Confirm Reject"
+        }
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        onConfirm={handleConfirmAction}
         onCancel={() => !isActionLoading && setIsConfirmModalOpen(false)}
-        footer={null}
-        closable={false}
-        centered
-        width={400}
-        styles={{
-          content: { padding: 0, borderRadius: 28, overflow: "hidden" },
-          mask: { backdropFilter: "blur(4px)" },
+        loading={isActionLoading}
+        confirmIcon={confirmAction?.type === "approve" ? CheckCircle : AlertTriangle}
+        item={{
+          title: confirmAction?.booking?.customerName || (language === "vi" ? "Khách hàng" : "Customer"),
+          meta: confirmAction?.booking?.serviceName || (language === "vi" ? "Dịch vụ" : "Service"),
         }}
-      >
-        {confirmAction && (
-          <div>
-            {/* Accent header bar */}
-            <div
-              className={`h-1.5 w-full ${confirmAction.type === "approve"
-                ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
-                : "bg-gradient-to-r from-rose-400 to-rose-600"
-                }`}
-            />
-            <div className="p-6">
-              <div className="flex flex-col items-center text-center">
-                <motion.div
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 18 }}
-                  className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full mb-4 ${confirmAction.type === "approve" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                    }`}
-                >
-                  {confirmAction.type === "approve" ? <CheckCircle size={26} /> : <AlertTriangle size={26} />}
-                </motion.div>
-                <h3 className="text-base font-bold text-[#2d1b35]">
-                  {confirmAction.type === "approve" ? "Approve Reschedule" : "Reject Reschedule"}
-                </h3>
-                <p className="mt-1.5 text-xs text-[#a88a9f] leading-relaxed max-w-[280px]">
-                  {confirmAction.type === "approve"
-                    ? "The booking will be moved to the customer's requested time. This cannot be undone."
-                    : "The customer will be notified that their reschedule request was declined."}
-                </p>
-              </div>
-
-              {/* Booking summary card */}
-              <div className="mt-5 rounded-2xl border border-[#f1e7ed] bg-[#fbfafc] p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#ffc5de] to-[#ea4f93] text-white">
-                    <User size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-[#2d1b35]">{confirmAction.booking?.customerName}</p>
-                    <p className="text-[10px] text-[#a88a9f]">{confirmAction.booking?.serviceName || "Nail Service"}</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="rounded-xl bg-white border border-[#f1e7ed] px-2.5 py-2">
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-[#c8b0bf]">Current</p>
-                    <p className="mt-0.5 font-semibold text-[#5c4559]">
-                      {formatDate(confirmAction.booking?.bookingDate)}
-                    </p>
-                    <p className="text-[#a88a9f]">{formatTime(confirmAction.booking?.startTime)}</p>
-                  </div>
-                  <div className="rounded-xl bg-indigo-50/60 border border-indigo-100 px-2.5 py-2">
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-indigo-400">Requested</p>
-                    <p className="mt-0.5 font-semibold text-indigo-700">
-                      {formatDate(confirmAction.booking?.suggestedDate || confirmAction.booking?.bookingDate)}
-                    </p>
-                    <p className="text-indigo-500">
-                      {formatTime(confirmAction.booking?.suggestedTime || confirmAction.booking?.startTime)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-center gap-3">
-                <button
-                  disabled={isActionLoading}
-                  onClick={() => setIsConfirmModalOpen(false)}
-                  className="h-10 flex-1 rounded-xl border border-[#f1e7ed] bg-white text-xs font-bold text-[#7f6478] hover:bg-[#fff9fb] transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  disabled={isActionLoading}
-                  onClick={handleConfirmAction}
-                  className={`h-10 flex-1 rounded-xl text-xs font-bold text-white shadow-sm transition-all disabled:opacity-60 ${confirmAction.type === "approve"
-                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/15"
-                    : "bg-rose-600 hover:bg-rose-700 shadow-rose-600/15"
-                    }`}
-                >
-                  {isActionLoading ? "Processing..." : confirmAction.type === "approve" ? "Confirm Approve" : "Confirm Reject"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+        details={[
+          {
+            label: language === "vi" ? "Hiện tại" : "Current",
+            value: `${formatDate(confirmAction?.booking?.bookingDate)} - ${formatTime(confirmAction?.booking?.startTime)}`
+          },
+          {
+            label: language === "vi" ? "Yêu cầu" : "Requested",
+            value: `${formatDate(confirmAction?.booking?.suggestedDate || confirmAction?.booking?.bookingDate)} - ${formatTime(confirmAction?.booking?.suggestedTime || confirmAction?.booking?.startTime)}`
+          }
+        ]}
+      />
 
       {/* Suggest Time Modal */}
       <Modal

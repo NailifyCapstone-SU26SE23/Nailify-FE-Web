@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, DatePicker, Select, Table, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
-import { Calendar, Eye, RefreshCw, Search, WalletCards, X } from "lucide-react";
+import { Calendar, Download, Eye, RefreshCw, Search, WalletCards } from "lucide-react";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatCurrency } from "../../../../shared/utils/formatCurrency";
@@ -20,8 +21,9 @@ import {
   getWalletTransactionTypeColor,
   getWalletTransactionTypeLabel,
 } from "../utils/walletTransactionUtils";
+import { WALLET_TRANSACTION_STATUS, WALLET_TRANSACTION_TYPE } from "../../../../shared/utils/statusFormatters";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
-const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
 export function WalletTransactionsManagementPage() {
@@ -41,29 +43,72 @@ export function WalletTransactionsManagementPage() {
   const [walletOwner, setWalletOwner] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const loadTransactions = useCallback(async (pageNumber = 1) => {
-    setLoading(true);
-    setError("");
+  // walletId -> owner object
+  const [walletOwnersMap, setWalletOwnersMap] = useState({});
+  // Track in-flight fetches so we don't duplicate requests across pages
+  const ownersCacheRef = useRef(new Map());
 
-    try {
-      const response = await fetchAdminWalletTransactions({
-        pageNumber,
-        pageSize: 10,
-        type: filters.type,
-        status: filters.status,
-        fromDate: filters.dateRange?.[0]?.format("YYYY-MM-DD"),
-        toDate: filters.dateRange?.[1]?.format("YYYY-MM-DD"),
-      });
+  const loadTransactions = useCallback(
+    async (pageNumber = 1) => {
+      setLoading(true);
+      setError("");
 
-      setTransactions(response.items);
-      setMetaData(response.metaData);
-    } catch (err) {
-      setError(err.message || t("walletTransactions.loadFailed"));
-      setTransactions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters.dateRange, filters.status, filters.type, t]);
+      try {
+        const response = await fetchAdminWalletTransactions({
+          pageNumber,
+          pageSize: 10,
+          type: filters.type,
+          status: filters.status,
+          fromDate: filters.dateRange?.[0]?.format("YYYY-MM-DD"),
+          toDate: filters.dateRange?.[1]?.format("YYYY-MM-DD"),
+        });
+
+        setTransactions(response.items);
+        setMetaData(response.metaData);
+
+        // Batch-fetch owners for this page, skipping any already cached
+        const uniqueWalletIds = [
+          ...new Set(response.items.map((tx) => tx.walletId).filter(Boolean)),
+        ];
+
+        const missingIds = uniqueWalletIds.filter(
+          (id) => !ownersCacheRef.current.has(id)
+        );
+
+        if (missingIds.length > 0) {
+          const fetched = await Promise.all(
+            missingIds.map(async (id) => {
+              try {
+                const owner = await fetchAdminWalletById(id);
+                return [id, owner];
+              } catch (ownerErr) {
+                console.error("Failed to load wallet owner", id, ownerErr);
+                return [id, null];
+              }
+            })
+          );
+
+          fetched.forEach(([id, owner]) => {
+            ownersCacheRef.current.set(id, owner);
+          });
+        }
+
+        // Build a fresh map for the current page only
+        const pageMap = {};
+        uniqueWalletIds.forEach((id) => {
+          pageMap[id] = ownersCacheRef.current.get(id) ?? null;
+        });
+        setWalletOwnersMap(pageMap);
+      } catch (err) {
+        setError(err.message || t("walletTransactions.loadFailed"));
+        setTransactions([]);
+        setWalletOwnersMap({});
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters.dateRange, filters.status, filters.type, t]
+  );
 
   useEffect(() => {
     // Loading server data is the intended synchronization for filter changes.
@@ -96,6 +141,11 @@ export function WalletTransactionsManagementPage() {
     }
   };
 
+  const getOwnerForRow = (walletId) => {
+    if (!walletId) return undefined;
+    return walletOwnersMap[walletId];
+  };
+
   const filteredTransactions = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
 
@@ -103,17 +153,25 @@ export function WalletTransactionsManagementPage() {
       return transactions;
     }
 
-    return transactions.filter((transaction) =>
-      [
+    return transactions.filter((transaction) => {
+      const owner = walletOwnersMap[transaction.walletId];
+      const ownerName = [owner?.firstName, owner?.lastName]
+        .filter(Boolean)
+        .join(" ");
+
+      return [
         transaction.walletTransactionId,
         transaction.walletId,
         transaction.referenceId,
         transaction.description,
+        ownerName,
+        owner?.email,
+        owner?.phone,
       ]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(search))
-    );
-  }, [filters.search, transactions]);
+        .some((value) => String(value).toLowerCase().includes(search));
+    });
+  }, [filters.search, transactions, walletOwnersMap]);
 
   const metrics = useMemo(() => {
     const completed = filteredTransactions.filter((item) => item.status === "Completed").length;
@@ -143,16 +201,39 @@ export function WalletTransactionsManagementPage() {
 
   const columns = [
     {
-      title: t("walletTransactions.referenceId"),
-      dataIndex: "referenceId",
-      key: "referenceId",
-      width: 220,
-      sorter: (a, b) => String(a.referenceId || "").localeCompare(String(b.referenceId || "")),
-      render: (value) => (
-        <Text copyable className="font-mono text-xs font-bold text-[#ea4f93]">
-          {value || "-"}
-        </Text>
-      ),
+      title: t("walletTransactions.customer"),
+      key: "customer",
+      width: 240,
+      render: (_, record) => {
+        const owner = getOwnerForRow(record.walletId);
+
+        if (!owner) {
+          // Fallback while the owner is loading / not found
+          return (
+            <div className="flex flex-col">
+              <span className="font-mono text-[11px] font-semibold text-[#a88a9f]">
+                {record.walletId ? `${record.walletId.slice(0, 8)}…` : "-"}
+              </span>
+            </div>
+          );
+        }
+
+        const fullName =
+          [owner.firstName, owner.lastName].filter(Boolean).join(" ") || "-";
+
+        return (
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-[#2d1b35]">
+              {fullName}
+            </span>
+            {owner.email && (
+              <span className="truncate text-[11px] text-[#a88a9f]">
+                {owner.email}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: t("walletTransactions.amount"),
@@ -161,7 +242,11 @@ export function WalletTransactionsManagementPage() {
       width: 140,
       sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
       render: (value) => (
-        <Text strong className={`font-mono text-sm ${Number(value) < 0 ? "!text-rose-600" : "!text-emerald-600"}`}>
+        <Text
+          strong
+          className={`font-mono text-sm ${Number(value) < 0 ? "!text-rose-600" : "!text-emerald-600"
+            }`}
+        >
           {formatCurrency(value)}
         </Text>
       ),
@@ -172,18 +257,30 @@ export function WalletTransactionsManagementPage() {
       key: "type",
       width: 170,
       sorter: (a, b) => String(a.type || "").localeCompare(String(b.type || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionTypeColor(value)}>
-          {getWalletTransactionTypeLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const key = value === "Withdraw" ? "Withdrawal" : value;
+        const typeObj = WALLET_TRANSACTION_TYPE[key];
+        if (typeObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${typeObj.tone}`}>
+              {language === "vi" ? typeObj.vi : typeObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionTypeColor(value)}>
+            {getWalletTransactionTypeLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.referenceType"),
       dataIndex: "referenceType",
       key: "referenceType",
       width: 160,
-      sorter: (a, b) => String(a.referenceType || "").localeCompare(String(b.referenceType || "")),
+      sorter: (a, b) =>
+        String(a.referenceType || "").localeCompare(String(b.referenceType || "")),
       render: (value) => getWalletReferenceTypeLabel(value, language),
     },
     {
@@ -192,44 +289,51 @@ export function WalletTransactionsManagementPage() {
       key: "status",
       width: 140,
       sorter: (a, b) => String(a.status || "").localeCompare(String(b.status || "")),
-      render: (value) => (
-        <Tag color={getWalletTransactionStatusColor(value)}>
-          {getWalletTransactionStatusLabel(value, language)}
-        </Tag>
-      ),
+      render: (value) => {
+        const statusObj = WALLET_TRANSACTION_STATUS[value];
+        if (statusObj) {
+          return (
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold border ${statusObj.tone}`}>
+              {language === "vi" ? statusObj.vi : statusObj.en}
+            </span>
+          );
+        }
+        return (
+          <Tag color={getWalletTransactionStatusColor(value)}>
+            {getWalletTransactionStatusLabel(value, language)}
+          </Tag>
+        );
+      },
     },
     {
       title: t("walletTransactions.createdAt"),
       dataIndex: "createdAt",
       key: "createdAt",
       width: 180,
-      sorter: (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
+      sorter: (a, b) =>
+        new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime(),
       render: (value) => (
         <div className="flex items-center gap-1.5 text-xs text-[#7f6478]">
           <Calendar size={13} className="text-[#a88a9f]" />
-          <span className="font-medium">{value ? dayjs(value).format("YYYY-MM-DD HH:mm") : "-"}</span>
+          <span className="font-medium">
+            {value ? dayjs(value).format("YYYY-MM-DD HH:mm") : "-"}
+          </span>
         </div>
       ),
     },
     {
       title: t("walletTransactions.actions"),
       key: "actions",
-      fixed: "right",
+      fixed: "center",
       width: 90,
       render: (_, record) => (
         <div className="flex justify-center">
-          <Tooltip title={language === "vi" ? "Xem chi tiết" : "View detail"}>
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#7f6478] shadow-xs transition-all duration-300 hover:border-[#ea4f93] hover:bg-[#ea4f93] hover:text-white active:scale-95"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleViewDetail(record.walletTransactionId);
-              }}
-            >
-              <Eye size={13} className="stroke-[2]" />
-            </button>
-          </Tooltip>
+          <ActionButtons
+            onView={(event) => {
+              event.stopPropagation();
+              handleViewDetail(record.walletTransactionId);
+            }}
+          />
         </div>
       ),
     },
@@ -238,45 +342,22 @@ export function WalletTransactionsManagementPage() {
   return (
     <div className="min-h-full pb-10 font-sans">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-8">
-        <div className="flex flex-col gap-4 border-b border-slate-200/60 pb-6 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="rounded-xl bg-[#ea4f93]/10 p-2 text-[#ea4f93]">
-                <WalletCards size={18} className="stroke-[2]" />
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#ea4f93]">
-                {language === "vi" ? "Quản trị ví" : "Wallet Admin"}
-              </span>
-            </div>
-            <Title level={2} className="!mb-0 !text-3xl !font-bold !tracking-tight !text-[#2d1b35] md:!text-4xl">
-              {t("walletTransactions.title")}
-            </Title>
-            <Text className="block max-w-[65ch] !text-xs !leading-relaxed !text-[#a88a9f] md:!text-sm">
-              {t("walletTransactions.subtitle")}
-            </Text>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => loadTransactions(1)}
-            className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            {t("walletTransactions.refresh")}
-          </button>
-        </div>
-
         <TopMetricsRow metrics={metrics} className="grid gap-6 md:grid-cols-3" />
 
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200/75 bg-white/90 p-4 shadow-[0_8px_30px_rgba(0,0,0,0.02)] backdrop-blur-sm">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="relative w-full xl:max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]" size={15} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#a88a9f]"
+                size={15}
+              />
               <input
                 type="text"
                 value={filters.search}
                 placeholder={t("walletTransactions.searchPlaceholder")}
-                onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, search: event.target.value }))
+                }
                 className="w-full rounded-2xl border border-slate-200 bg-[#fafaf9]/30 py-3 pl-11 pr-10 text-xs text-[#2d1b35] transition-all duration-300 placeholder:text-[#a88a9f] focus:border-[#ea4f93] focus:bg-white focus:outline-hidden focus:ring-4 focus:ring-[#ea4f93]/10 md:text-sm"
               />
               {filters.search && (
@@ -295,10 +376,14 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-48"
                 placeholder={t("walletTransactions.filterType")}
-                options={WALLET_TRANSACTION_TYPES.map((type) => ({
-                  value: type,
-                  label: getWalletTransactionTypeLabel(type, language),
-                }))}
+                options={WALLET_TRANSACTION_TYPES.map((type) => {
+                  const key = type === "Withdraw" ? "Withdrawal" : type;
+                  const typeObj = WALLET_TRANSACTION_TYPE[key];
+                  return {
+                    value: type,
+                    label: typeObj ? (language === "vi" ? typeObj.vi : typeObj.en) : getWalletTransactionTypeLabel(type, language),
+                  };
+                })}
                 value={filters.type}
                 onChange={(type) => setFilters((prev) => ({ ...prev, type }))}
               />
@@ -306,23 +391,31 @@ export function WalletTransactionsManagementPage() {
                 allowClear
                 className="!h-11 !w-full sm:!w-44"
                 placeholder={t("walletTransactions.filterStatus")}
-                options={WALLET_TRANSACTION_STATUSES.map((status) => ({
-                  value: status,
-                  label: getWalletTransactionStatusLabel(status, language),
-                }))}
+                options={WALLET_TRANSACTION_STATUSES.map((status) => {
+                  const statusObj = WALLET_TRANSACTION_STATUS[status];
+                  return {
+                    value: status,
+                    label: statusObj ? (language === "vi" ? statusObj.vi : statusObj.en) : getWalletTransactionStatusLabel(status, language),
+                  };
+                })}
                 value={filters.status}
                 onChange={(status) => setFilters((prev) => ({ ...prev, status }))}
               />
-              <RangePicker
+              <DateRangePicker
                 className="!h-11 !w-full sm:!w-auto"
                 value={filters.dateRange}
-                placeholder={[
-                  t("walletTransactions.startDate"),
-                  t("walletTransactions.endDate"),
-                ]}
                 onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
                 disabledDate={(date) => date && date > dayjs().endOf("day").add(365, "day")}
               />
+
+              <button
+                type="button"
+                onClick={() => loadTransactions(1)}
+                className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-[#2d1b35] shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:border-[#ea4f93]/30 hover:shadow-[0_4px_20px_rgba(234,79,147,0.08)] active:scale-[0.98] md:self-auto"
+              >
+                <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+                {t("walletTransactions.refresh")}
+              </button>
             </div>
           </div>
 
@@ -352,11 +445,12 @@ export function WalletTransactionsManagementPage() {
                 pageSize: 10,
                 total: metaData.totalItems || filteredTransactions.length,
                 showSizeChanger: false,
-                showTotal: (total, range) => t("walletTransactions.paginationTotal", {
-                  start: range[0],
-                  end: range[1],
-                  total,
-                }),
+                showTotal: (total, range) =>
+                  t("walletTransactions.paginationTotal", {
+                    start: range[0],
+                    end: range[1],
+                    total,
+                  }),
                 onChange: (page) => loadTransactions(page),
               }}
               locale={{

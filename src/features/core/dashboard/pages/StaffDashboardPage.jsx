@@ -30,6 +30,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { PropTypes } from "../../../../shared/utils/propTypes";
+import DateRangePicker from "../../../../shared/components/ui/DateRangePicker";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { StaffBookingNotesModal } from "../../../staff/bookings/components/StaffBookingNotesModal";
@@ -49,6 +50,7 @@ import {
 import { useStaffDashboard, useStaffSkills } from "../hooks/useAdminDashboard";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 const DEFAULT_BOOKING_PAGE_SIZE = 10;
 
@@ -187,24 +189,13 @@ function formatBookingWindow(booking) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#e9fbef] text-[#2ca865]";
-    case "In Progress":
-    case "CheckedIn":
-      return "bg-[#eaf2ff] text-[#5e8df7]";
-    case "Confirmed":
-      return "bg-[#eefcf3] text-[#35b56b]";
-    case "Pending":
-      return "bg-[#fff4df] text-[#df8e1d]";
-    case "Cancelled":
-      return "bg-[#fff1f5] text-[#f06292]";
-    default:
-      return "bg-[#f4f5f7] text-[#8b95a7]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#f4f5f7] text-[#8b95a7] border-[#d1d5db]";
 }
 
-
+function formatDisplay(s, language) {
+  if (s === "All") return language === "vi" ? "Tất cả" : "All";
+  return getStatusLabel(s, BOOKING_STATUS, language);
+}
 
 function StatusChip({ label, className }) {
   return (
@@ -214,7 +205,7 @@ function StatusChip({ label, className }) {
   );
 }
 
-function MobileBookingCard({ booking, actions }) {
+function MobileBookingCard({ booking, actions, language }) {
   return (
     <article className="w-full min-w-0 rounded-[18px] border border-[#f8dce8] bg-[#fff9fc] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -225,7 +216,7 @@ function MobileBookingCard({ booking, actions }) {
             <span className="text-[11px] text-[#c28ca6]">{formatBookingWindow(booking)}</span>
           </div>
         </div>
-        <StatusChip label={booking.status} className={getStatusTone(booking.status)} />
+        <StatusChip label={formatDisplay(booking.status, language)} className={getStatusTone(booking.status)} />
       </div>
 
       <div className="mt-4 flex min-w-0 items-center gap-3">
@@ -635,6 +626,7 @@ export function StaffDashboardPage() {
                         key={booking.id}
                         booking={booking}
                         actions={getActionItems(booking)}
+                        language={language}
                       />
                     ))}
                     {!sortedBookings.length ? (
@@ -1025,7 +1017,7 @@ export function StaffDashboardPage() {
       dataIndex: "status",
       key: "status",
       sorter: (a, b) => (a.status || "").localeCompare(b.status || ""),
-      render: (value) => <StatusChip label={value} className={getStatusTone(value)} />,
+      render: (value) => <StatusChip label={formatDisplay(value, language)} className={getStatusTone(value)} />,
     },
     {
       title: language === "vi" ? "Hành động" : "Action",
@@ -1089,7 +1081,7 @@ export function StaffDashboardPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex h-[32px] items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+              className="inline-flex h-[32px] w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
             >
               <RefreshCcw size={16} />
               {language === "vi" ? "Làm mới" : "Refresh"}
@@ -1112,14 +1104,13 @@ export function StaffDashboardPage() {
               }}
               className="rounded-md bg-slate-100 p-1 font-semibold"
             />
-            <DatePicker.RangePicker
+            <DateRangePicker
               value={dateRange}
               onChange={(dates) => {
                 setDateRange(dates || [dayjs(), dayjs()]);
                 setFilterMode("Custom");
               }}
-              className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
-              format="YYYY-MM-DD"
+              className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500 h-[32px]"
             />
           </div>
         </div>

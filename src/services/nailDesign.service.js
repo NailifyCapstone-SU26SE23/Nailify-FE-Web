@@ -8,8 +8,8 @@ function getAuthHeaders() {
 
   return token
     ? {
-        Authorization: `Bearer ${token}`,
-      }
+      Authorization: `Bearer ${token}`,
+    }
     : {};
 }
 
@@ -38,20 +38,21 @@ export async function getNailVariant(id) {
     name: detail.name,
     nailShape: detail.nailShape
       ? {
-          id: String(detail.nailShape.nailShapeId),
-          name: detail.nailShape.name,
-          imageUrl: detail.nailShape.imageUrl,
-        }
+        id: String(detail.nailShape.nailShapeId),
+        name: detail.nailShape.name,
+        imageUrl: detail.nailShape.imageUrl,
+      }
       : null,
     nailSurface: detail.nailSurface
       ? {
-          id: String(detail.nailSurface.nailSurfaceId),
-          name: detail.nailSurface.name,
-          shaderParam: detail.nailSurface.shaderParam || "standard",
-        }
+        id: String(detail.nailSurface.nailSurfaceId),
+        name: detail.nailSurface.name,
+        shaderParam: detail.nailSurface.shaderParam || "standard",
+      }
       : null,
     colorJson: detail.colorJson,
     imageUrl: detail.imageUrl,
+    status: detail.status,
   };
 }
 

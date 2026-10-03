@@ -21,8 +21,11 @@ import {
   Sparkles,
   Clock,
   UserCog,
+  Trash2,
 } from "lucide-react";
 import { Modal, Spin, Alert, DatePicker, Drawer, message, Select, TimePicker as AntdTimePicker } from "antd";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { deleteAdminUser } from "../../../admin/user-management/services/userManagementService";
 import { Link } from "react-router-dom";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ROUTES, getManagerStaffUpdateRoute } from "../../../../shared/constants/routes";
@@ -60,6 +63,7 @@ import { TimePicker } from "../../../../shared/components/ui/TimePicker.jsx";
 import { StaffAvatar } from "../../../../shared/components/common/StaffAvatar.jsx";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow.jsx";
 import dayjs from "dayjs";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 // Import separated modals
 import { EditScheduleModal } from "../components/EditScheduleModal";
@@ -404,14 +408,12 @@ function formatShiftStatus(status, language) {
 
 function StatusPill({ status }) {
   const { language } = useLanguage();
-  const isActive = status === "Active";
-  const displayStatus = language === "vi"
-    ? (isActive ? "Hoạt động" : (status === "Inactive" ? "Ngừng hoạt động" : status))
-    : status;
+  const normalizedStatus = status === "Open" ? "Active" : status === "Closed" ? "Inactive" : status;
+  const statusObj = BASIC_STATUS[normalizedStatus] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${isActive ? "bg-[#eaf9ee] text-[#2fa25f] border-transparent" : "bg-[#fff0dd] text-[#db8520] border-transparent"}`}>
-      {displayStatus}
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold whitespace-nowrap ${statusObj.tone}`}>
+      {statusObj[language]}
     </span>
   );
 }
@@ -911,7 +913,7 @@ function TimelineSchedule({
                               {isLeave ? (
                                 <div className="flex flex-col items-center gap-1">
                                   <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500">{language === "vi" ? "Đang Nghỉ" : "On Leave"}</span>
-                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã Duyệt" : "Approved"}</span>
+                                  <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[8px] font-bold text-amber-600">{language === "vi" ? "Đã xác nhận" : "Approved"}</span>
                                 </div>
                               ) : (
                                 <>
@@ -1001,6 +1003,28 @@ export function StaffManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  // Delete state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingStaffId, setDeletingStaffId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteStaff = async () => {
+    if (!deletingStaffId) return;
+    try {
+      setIsDeleting(true);
+      await deleteAdminUser(deletingStaffId);
+      toast.success(language === "vi" ? "Đã xóa nhân viên thành công" : "Artist deleted successfully");
+      setIsDeleteModalOpen(false);
+      setDeletingStaffId(null);
+      if (isDrawerOpen) setIsDrawerOpen(false);
+      loadNailArtists();
+    } catch (err) {
+      toast.error(err.message || (language === "vi" ? "Xóa nhân viên thất bại" : "Failed to delete artist"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const [schedules, setSchedules] = useState([]);
   const [breaks, setBreaks] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
@@ -1069,7 +1093,6 @@ export function StaffManagementPage() {
       ]);
 
       const list = Array.isArray(schedulesData) ? schedulesData : schedulesData?.items || [];
-      console.log("Timeline loaded salon schedules:", list);
       setSchedules(list);
       setBreaks(Array.isArray(breaksData?.items) ? breaksData.items : (Array.isArray(breaksData) ? breaksData : []));
     } catch (err) {
@@ -1106,23 +1129,49 @@ export function StaffManagementPage() {
   };
 
   // Handle opening staff detail drawer
-  const handleOpenDrawer = useCallback((artistId) => {
+  const handleOpenDrawer = useCallback(async (artistId) => {
     setIsDrawerOpen(true);
-    setIsLoadingDrawer(false);
+    setIsLoadingDrawer(true);
     setIsLoadingSkills(false);
 
-    // Find the staff in our already loaded list
-    const staff = staffArtists.find(s => s.id === artistId);
-    console.log("Opening drawer for staff:", staff);
+    // Find the staff in our already loaded list as a fallback/base
+    const baseStaff = staffArtists.find(s => s.id === artistId);
 
-    if (staff) {
-      setSelectedStaff(staff);
-      setStaffSkills(staff.skills); // Use skills we already have!
-    } else {
-      setSelectedStaff(null);
-      setStaffSkills([]);
+    try {
+      // Use userId from baseStaff if available, otherwise fallback to artistId
+      const targetUserId = baseStaff?.userId || baseStaff?.accountId || artistId;
+
+      // Fetch latest details from the API as requested
+      const response = await axiosClient.get(`/Users/${targetUserId}`);
+      const userData = response.data?.data || response.data;
+
+      // Merge fetched data with the existing staff format
+      const updatedStaff = {
+        ...(baseStaff || {}),
+        ...mapApiArtistToUiFormat(userData),
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        skills: baseStaff?.skills || [], // Keep existing skills
+        stats: baseStaff?.stats || { today: 0, month: 0, revenue: "$0" },
+      };
+
+      setSelectedStaff(updatedStaff);
+      setStaffSkills(updatedStaff.skills);
+    } catch (err) {
+      console.error("Failed to fetch user details:", err);
+      // Fallback to base data if API fails
+      if (baseStaff) {
+        setSelectedStaff(baseStaff);
+        setStaffSkills(baseStaff.skills);
+      } else {
+        setSelectedStaff(null);
+        setStaffSkills([]);
+      }
+      toast.error(isVi ? "Không thể tải thông tin nhân viên" : "Failed to load artist details");
+    } finally {
+      setIsLoadingDrawer(false);
     }
-  }, [staffArtists]);
+  }, [staffArtists, isVi]);
 
   const handleEditSchedule = (staff, dayKey, dayData) => {
     setEditingSchedule({
@@ -1379,8 +1428,9 @@ export function StaffManagementPage() {
   }, [staffArtists, schedules, breaks, monday]);
 
 
-  const mapApiArtistToUiFormat = (apiArtist) => {
-    console.log("Mapping API artist:", apiArtist);
+  function mapApiArtistToUiFormat(apiArtist) {
+    console.log("Mapping artist:", apiArtist);
+
     const fullName =
       apiArtist.account?.fullName ||
       (apiArtist.firstName && apiArtist.lastName
@@ -1398,7 +1448,7 @@ export function StaffManagementPage() {
       userId: accountId,
       name: fullName,
       role: apiArtist.role || "Staff_Artist",
-      rating: apiArtist.averageRating || apiArtist.rating || 4.5,
+      rating: apiArtist.averageRating || apiArtist.rating,
       status: apiArtist.status || "Active",
       skills: apiArtist.skills || [],
       stats: {
@@ -1411,13 +1461,12 @@ export function StaffManagementPage() {
       email: apiArtist.account?.email || apiArtist.email || "",
       phone: apiArtist.account?.phone || apiArtist.phone || "",
     };
-  };
+  }
 
   const fetchArtistDetail = async (artistId) => {
     try {
       setLoadingDetail(true);
       const detail = await fetchNailArtistById(artistId);
-      console.log("Fetched artist detail:", detail);
       const mappedDetail = mapApiArtistToUiFormat(detail);
       setViewingStaffDetail(mappedDetail);
       setViewingStaff(mappedDetail);
@@ -1438,7 +1487,17 @@ export function StaffManagementPage() {
         setSalonId(activeSalonId);
       }
 
-      const data = await fetchNailArtists(activeSalonId);
+      // Use the new API for getting salon staff
+      const response = await axiosClient.get(`/Users/salon/${activeSalonId}/staff`, {
+        params: {
+          pageNumber: 1,
+          pageSize: 100,
+          role: 'Staff_Artist',
+          status: 'Active'
+        }
+      });
+      const data = response.data?.data?.items || [];
+
       const mappedDataPromises = Array.isArray(data)
         ? data.map(async (apiArtist) => {
           const artist = mapApiArtistToUiFormat(apiArtist);
@@ -1881,6 +1940,7 @@ export function StaffManagementPage() {
         maskClosable={true}
         destroyOnClose
         closable={false}
+        zIndex={900}
       >
         {isLoadingDrawer ? (
           <div className="flex min-h-[400px] items-center justify-center">
@@ -1932,19 +1992,26 @@ export function StaffManagementPage() {
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Personal Information */}
-              <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
-                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin cá nhân" : "Personal Information"}</h3>
+              <div className="rounded-2xl bg-white p-5 shadow-sm border border-[#f0d9e8]">
+                <h3 className="text-sm font-bold text-[#2d1b35] mb-4">
+                  {t("adminStaffManagement.personalInfo")}
+                </h3>
                 <div className="space-y-4">
-                  <InfoItem label={language === "vi" ? "Tên" : "Name"}>{selectedStaff.name || '-'}</InfoItem>
-                  <InfoItem label={language === "vi" ? "Email" : "Email"}>{selectedStaff.email || '-'}</InfoItem>
-                  <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone Number"}>{selectedStaff.phone || '-'}</InfoItem>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label={t("adminStaffManagement.firstName")}>{selectedStaff.firstName || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.lastName")}>{selectedStaff.lastName || '-'}</InfoItem>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InfoItem label="Email">{selectedStaff.email || '-'}</InfoItem>
+                    <InfoItem label={t("adminStaffManagement.phoneNumber")}>{selectedStaff.phone || '-'}</InfoItem>
+                  </div>
                 </div>
               </div>
 
               {/* Account Information */}
               <div className="rounded-lg bg-white p-5 shadow-sm border border-[#f1e7ed]">
                 <h3 className="text-sm font-bold text-[#2d1b35] mb-4">{language === "vi" ? "Thông tin tài khoản" : "Account Information"}</h3>
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <InfoItem label={language === "vi" ? "Vai trò" : "Role"}>{formatRole(selectedStaff.role, language) || '-'}</InfoItem>
                   <InfoItem label={language === "vi" ? "Trạng thái" : "Status"}>
                     <StatusPill status={selectedStaff.status || 'Active'} />
@@ -1993,16 +2060,31 @@ export function StaffManagementPage() {
 
               {/* Update Button + Create Shift */}
               <div className="pt-4 border-t border-[#f1e7ed] space-y-3">
-                <Link
-                  to={getManagerStaffUpdateRoute(selectedStaff.id || selectedStaff.userId || selectedStaff.staffId)}
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold !text-pink-400 shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
-                >
-                  <UserPlus size={14} />
-                  {language === "vi" ? "Cập nhật thông tin" : "Update Profile"}
-                </Link>
+                <div className="flex gap-2">
+                  <Link
+                    to={getManagerStaffUpdateRoute(selectedStaff.userId || selectedStaff.accountId || selectedStaff.id)}
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                    }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#ea4f93] bg-white px-4 py-3 text-xs font-bold !text-pink-400 shadow-lg transition-all hover:bg-[#fff0f8] hover:border-[#ea4f93] hover:scale-[1.02]"
+                  >
+                    <UserPlus size={14} />
+                    {language === "vi" ? "Cập nhật thông tin" : "Update Profile"}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const deleteId = selectedStaff.userId || selectedStaff.accountId || selectedStaff.id;
+                      setDeletingStaffId(deleteId);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 w-12 shrink-0 items-center justify-center rounded-full border-2 border-red-50 bg-red-50 text-red-500 shadow-lg transition-all hover:border-red-100 hover:bg-red-100 hover:scale-[1.02]"
+                    title={language === "vi" ? "Xóa nhân viên" : "Delete Artist"}
+                  >
+                    <Trash2 size={16} />
+                    {language === "vi" ? "Xóa nhân viên" : "Delete Artist"}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={handleOpenCreateShiftModal}
@@ -2317,6 +2399,26 @@ export function StaffManagementPage() {
         onClose={() => setIsTransferStaffModalOpen(false)}
         salonId={salonId}
         onSuccess={() => loadNailArtists()}
+      />
+
+      <ActionConfirmModal
+        open={isDeleteModalOpen}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingStaffId(null);
+        }}
+        onConfirm={handleDeleteStaff}
+        title={language === "vi" ? "Xác nhận xóa nhân viên" : "Confirm Delete Artist"}
+        description={
+          language === "vi"
+            ? "Bạn có chắc chắn muốn xóa nhân viên này? Hành động này sẽ chuyển trạng thái của họ thành Không hoạt động."
+            : "Are you sure you want to delete this artist? This will change their status to Inactive."
+        }
+        confirmText={language === "vi" ? "Xóa nhân viên" : "Delete Artist"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
+        intent="danger"
+        loading={isDeleting}
+        zIndex={1050}
       />
     </section>
   );

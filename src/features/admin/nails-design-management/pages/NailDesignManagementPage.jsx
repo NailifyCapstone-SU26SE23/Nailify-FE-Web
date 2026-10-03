@@ -24,7 +24,10 @@ import {
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminNailDesigns, fetchAdminCategories, deleteAdminNailDesign } from "../services/nailDesignManagementService";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
+// import { LoadingSpinner } from "../../../../shared/components/ui/LoadingSpinner";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 
 const DESIGN_CARD_PRESETS = [
@@ -64,20 +67,19 @@ function normalizeDesign(design, index, t) {
   const tags = Array.isArray(design.categoryNames) ? design.categoryNames : [];
   const hasTryOnAsset = Boolean(design.previewImage);
   const estimatedPrice = getDesignEstimatedPrice(design);
+  const { language } = useLanguage();
 
   return {
     ...design,
     uiTitle: design.name || preview.title,
     uiTags: tags.length ? tags.slice(0, 3) : preview.tags,
-    uiTones: hasTryOnAsset 
+    uiTones: hasTryOnAsset
       ? [(t("adminNailsDesignManagement.tryonReady"))]
       : [],
     uiPrice: estimatedPrice ? formatPriceVND(estimatedPrice) : "",
     uiEstimatedPrice: estimatedPrice,
-    uiStatus: design.status === "Active"
-      ? (t("adminNailsDesignManagement.active"))
-      : (t("adminNailsDesignManagement.inactive")),
-    uiStatusTone: design.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]",
+    uiStatus: BASIC_STATUS[design.status]?.[language] || design.status,
+    uiStatusTone: BASIC_STATUS[design.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200",
     uiTagsAll: tags,
     initials: design.name
       .split(" ")
@@ -105,7 +107,6 @@ SmallTag.propTypes = {
 };
 
 function DesignPreview({ design }) {
-  console.log('design', design);
   return (
     <div className="h-52 overflow-hidden rounded-t-[16px] bg-[#f6edf2]">
       {design.imageUrl ? (
@@ -143,17 +144,12 @@ export function NailDesignManagementPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [designs, setDesigns] = useState([]);
   const [metaData, setMetaData] = useState({
     currentPage: 1,
     totalPages: 1,
     pageSize: 8,
-    totalItems: 0,
-    hasPrevious: false,
-    hasNext: false,
-    firstRowOnPage: 0,
-    lastRowOnPage: 0,
   });
+  const [allFetchedDesigns, setAllFetchedDesigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -196,29 +192,35 @@ export function NailDesignManagementPage() {
 
   useEffect(() => {
     let isMounted = true;
-    const loadGlobalMetrics = async () => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      setError("");
       try {
         const response = await fetchAdminNailDesigns({
           pageNumber: 1,
           pageSize: 10000,
-          name: debouncedQuery,
-          categoryIds: selectedCategoryIds,
+          name: "",
+          categoryIds: [],
         });
 
         if (!isMounted) return;
 
         const allItems = response.items || [];
+        setAllFetchedDesigns(allItems);
         setGlobalMetrics({
           activeDesigns: allItems.filter(d => d.status === "Active").length,
           tryOnReady: allItems.filter(d => !!d.previewImage).length,
         });
       } catch (err) {
-        console.error("Failed to load global metrics", err);
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : "Failed to load nail designs.");
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
-    void loadGlobalMetrics();
+    void fetchAllData();
     return () => { isMounted = false; };
-  }, [debouncedQuery, selectedCategoryIds]);
+  }, [refreshKey]);
 
   useEffect(() => {
     let isMounted = true;
@@ -267,71 +269,52 @@ export function NailDesignManagementPage() {
     return () => window.clearTimeout(timerId);
   }, [query]);
 
-  useEffect(() => {
-    let isMounted = true;
+  const filteredAndSortedAllDesigns = useMemo(() => {
+    let result = allFetchedDesigns;
 
-    const loadDesigns = async () => {
-      setIsLoading(true);
-      setError("");
+    // Filter by query
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      result = result.filter(d => (d.name || "").toLowerCase().includes(q) || (d.description || "").toLowerCase().includes(q));
+    }
 
-      try {
-        const response = await fetchAdminNailDesigns({
-          pageNumber: metaData.currentPage,
-          pageSize: metaData.pageSize,
-          name: debouncedQuery,
-          categoryIds: selectedCategoryIds,
-        });
+    // Filter by categories (OR Logic)
+    if (selectedCategoryIds.length > 0) {
+      result = result.filter(d => {
+        const catIds = d.categoryIds || [];
+        return selectedCategoryIds.some(selectedId => catIds.includes(selectedId));
+      });
+    }
 
-        if (!isMounted) {
-          return;
-        }
-
-        setDesigns((prev) => metaData.currentPage === 1 ? response.items : [...prev, ...response.items]);
-        setMetaData(response.metaData);
-      } catch (loadError) {
-        if (!isMounted) {
-          return;
-        }
-
-        setDesigns([]);
-        setError(loadError instanceof Error ? loadError.message : "Failed to load nail designs.");
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadDesigns();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [debouncedQuery, metaData.currentPage, metaData.pageSize, selectedCategoryIds, refreshKey]);
-
-  const normalizedDesigns = useMemo(
-    () => designs.map((design, index) => normalizeDesign(design, index, t)),
-    [designs, t],
-  );
-
-  const sortedDesigns = useMemo(() => {
-    let result = [...normalizedDesigns];
-
+    // Sort
     if (sortBy === "name-asc") {
-      result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      result = [...result].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     } else if (sortBy === "name-desc") {
-      result.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+      result = [...result].sort((a, b) => (b.name || "").localeCompare(a.name || ""));
     }
 
     return result;
-  }, [normalizedDesigns, sortBy]);
+  }, [allFetchedDesigns, debouncedQuery, selectedCategoryIds, sortBy]);
+
+  const visibleDesigns = useMemo(() => {
+    return filteredAndSortedAllDesigns.slice(0, metaData.currentPage * metaData.pageSize);
+  }, [filteredAndSortedAllDesigns, metaData.currentPage, metaData.pageSize]);
+
+  const normalizedDesigns = useMemo(
+    () => visibleDesigns.map((design, index) => normalizeDesign(design, index, t)),
+    [visibleDesigns, t],
+  );
+
+  const totalItemsCount = filteredAndSortedAllDesigns.length;
+  const totalPagesCount = Math.max(1, Math.ceil(totalItemsCount / metaData.pageSize));
+  const hasNextPage = (metaData.currentPage * metaData.pageSize) < totalItemsCount;
 
   const summaryCards = useMemo(
     () => [
       {
         label: t("adminNailsDesignManagement.totalDesigns"),
-        value: metaData.totalItems.toLocaleString(),
-        note: `${metaData.totalPages} ${t("adminNailsDesignManagement.pages")}`,
+        value: totalItemsCount.toLocaleString(),
+        note: `${totalPagesCount} ${t("adminNailsDesignManagement.pages")}`,
         icon: Tag,
         color: "#ea4f93",
       },
@@ -357,7 +340,7 @@ export function NailDesignManagementPage() {
         color: "#f5a623",
       },
     ],
-    [metaData.totalItems, metaData.totalPages, normalizedDesigns, language, t],
+    [totalItemsCount, totalPagesCount, normalizedDesigns, globalMetrics, language, t],
   );
 
   const filterItems = useMemo(() => {
@@ -562,8 +545,7 @@ export function NailDesignManagementPage() {
         from-[#ea4f93]
         to-[#ff8ebb]
         px-4
-        text-xs
-        font-semibold
+        text-md
         text-white
         shadow-[0_5px_14px_rgba(234,79,147,0.20)]
         transition-all
@@ -591,7 +573,7 @@ export function NailDesignManagementPage() {
                 </div>
               </div>
             ) : (
-              sortedDesigns.map((design) => (
+              normalizedDesigns.map((design) => (
                 <article
                   key={design.id}
                   className="relative flex h-full flex-col overflow-hidden rounded-[18px] border border-[#f8dce8] bg-white shadow-[0_12px_28px_rgba(236,72,153,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(236,72,153,0.12)]"
@@ -638,39 +620,22 @@ export function NailDesignManagementPage() {
 
                     <div className="mt-auto flex items-center justify-center gap-3 border-t border-[#fdf2f7] pt-4">
                       <div className="flex gap-3">
-                        <Tooltip title={t("adminNailsDesignManagement.view")} placement="bottom">
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-white text-[#8c7085] hover:bg-[#fbf4f8] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Eye size={14} />
-                          </Link>
-                        </Tooltip>
-                        <Tooltip title={t("adminNailsDesignManagement.edit")} placement="bottom">
-                          <Link
-                            to={getAdminNailDesignDetailRoute(design.id)}
-                            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff7fb] text-[#ea4f93] hover:bg-[#ffe1ee] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Pen size={14} />
-                          </Link>
-                        </Tooltip>
-                        {design?.status === "Active" && (
-                          <Tooltip title={language === "vi" ? "Xóa" : "Delete"} placement="bottom">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setPendingDeleteDesign(design);
-                              }}
-                              className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-[#f4c6da] bg-[#fff0f6] text-[#d14c84] hover:bg-[#ffe1ee] transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </Tooltip>
-                        )}
+                        <ActionButtons
+                          onView={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id));
+                          }}
+                          onEdit={(e) => {
+                            e.stopPropagation();
+                            navigate(getAdminNailDesignDetailRoute(design.id)); // The original code goes to the same detail page for edit
+                          }}
+                          onDelete={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPendingDeleteDesign(design);
+                          }}
+                          showDelete={design?.status === "Active"}
+                        />
                       </div>
                     </div>
                   </div>
@@ -688,11 +653,11 @@ export function NailDesignManagementPage() {
           <div className="mt-4 flex flex-col items-center justify-center pt-2">
             <p className="text-[11px] text-[#c694ad] mb-3">
               {language === "vi"
-                ? `Hiển thị ${normalizedDesigns.length} trong số ${metaData.totalItems} thiết kế`
-                : `Showing ${normalizedDesigns.length} of ${metaData.totalItems} designs`
+                ? `Hiển thị ${normalizedDesigns.length} trong số ${totalItemsCount} thiết kế`
+                : `Showing ${normalizedDesigns.length} of ${totalItemsCount} designs`
               }
             </p>
-            {metaData.hasNext && (
+            {hasNextPage && (
               <button
                 type="button"
                 disabled={isLoading}
@@ -727,7 +692,7 @@ export function NailDesignManagementPage() {
             ? {
               title: pendingDeleteDesign.name,
               image: pendingDeleteDesign.imageUrl || undefined,
-              meta: pendingDeleteDesign.status === "Active" ? t("adminNailsDesignManagement.active") : t("adminNailsDesignManagement.inactive"),
+              meta: BASIC_STATUS[pendingDeleteDesign.status]?.[language] || pendingDeleteDesign.status,
               note: pendingDeleteDesign.description || "Nail design",
             }
             : undefined

@@ -218,7 +218,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  //GLOSSY (Default) - Natural shine
   const shine = config.shine || 0.45;
   const blur = config.blur || 0;
   const effectiveBlur = Math.max(4, blur * 20);
@@ -290,7 +290,7 @@ function formatVND(amount, status) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-  }).format(amount);
+  }).format(amount).replace(/₫/g, "VND");
 }
 
 function formatDuration(duration, status, language = "en") {
@@ -310,7 +310,7 @@ function formatOptionalVND(amount, emptyLabel = "N/A") {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-  }).format(amount);
+  }).format(amount).replace(/₫/g, "VND");
 }
 
 function formatOptionalDuration(duration, emptyLabel = "N/A", language = "en") {
@@ -449,21 +449,21 @@ function parseComponentConfig(configJson) {
   }
 }
 
-function getFingerName(fingerIndex) {
-  switch (Number(fingerIndex)) {
-    case 1:
-      return "Thumb";
-    case 2:
-      return "Index";
-    case 3:
-      return "Middle";
-    case 4:
-      return "Ring";
-    case 5:
-      return "Pinky";
-    default:
-      return `Finger ${fingerIndex}`;
+function getFingerName(fingerIndex, language = "en") {
+  const index = Number(fingerIndex);
+  const labels = language === "vi"
+    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"]
+    : ["Thumb", "Index", "Middle", "Ring", "Pinky"];
+
+  if (index >= 1 && index <= 5) {
+    return labels[index - 1];
   }
+
+  if (index >= 0 && index <= 4) {
+    return labels[index];
+  }
+
+  return language === "vi" ? `Ngón ${index}` : `Finger ${index}`;
 }
 
 function renderNailTip(style, shapeName, sizeClass = "w-12 h-20") {
@@ -598,10 +598,8 @@ export function CustomerNailDetailPage() {
         setErrorType("");
       }
 
-      console.log("[Page] Loading nail detail for ID:", customerNailId);
       const data = await fetchCustomerNailById(customerNailId);
 
-      console.log("[Page] Successfully loaded:", data);
       let assignedStaff = null;
 
       // Nếu có approvedArtist, lấy trực tiếp từ data để tránh call API fetchSalonStaff liên tục
@@ -1160,9 +1158,9 @@ export function CustomerNailDetailPage() {
             {/* Right side: Stats Cards & Actions */}
             <div className="flex min-w-0 flex-col gap-3 xl:w-full">
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              <div className="flex flex-wrap gap-3">
                 {/* System Price card */}
-                <div className="rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-amber-100 bg-[#fffdfa] p-3 shadow-[0_10px_25px_rgba(217,119,6,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#d97706]">
                     {language === "vi" ? "Giá hệ thống" : "System Price"}
                   </span>
@@ -1171,7 +1169,7 @@ export function CustomerNailDetailPage() {
                   </span>
                 </div>
                 {/* System Duration card */}
-                <div className="rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-purple-100 bg-[#fbfaff] p-3 shadow-[0_10px_25px_rgba(139,92,246,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#7c3aed]">
                     {language === "vi" ? "Thời gian hệ thống" : "System Duration"}
                   </span>
@@ -1179,26 +1177,31 @@ export function CustomerNailDetailPage() {
                     {formatDuration(getSystemDuration(nail), nail?.status, language)}
                   </span>
                 </div>
-                {/* Additional Price card */}
-                <div className="rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2fa25f]">
-                    {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
-                  </span>
-                  <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
-                    {formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}
-                  </span>
-                </div>
-                {/* Additional Duration card */}
-                <div className="rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#0369a1]">
-                    {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
-                  </span>
-                  <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
-                    {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}
-                  </span>
-                </div>
+
+                {getRequestPrice(nail) != null && (
+                  <div className=" flex-1 rounded-2xl border border-emerald-100 bg-[#f8fffa] p-3 shadow-[0_10px_25px_rgba(47,162,95,0.03)] flex min-h-[86px] flex-col justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#2fa25f]">
+                      {language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}
+                    </span>
+                    <span className="mt-2 text-base font-bold text-[#2fa25f] truncate">
+                      {formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}
+                    </span>
+                  </div>
+                )}
+
+                {getRequestDuration(nail) != null && (
+                  <div className="flex-1 rounded-2xl border border-sky-100 bg-[#f7fcff] p-3 shadow-[0_10px_25px_rgba(14,165,233,0.03)] flex min-h-[86px] flex-col justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#0369a1]">
+                      {language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}
+                    </span>
+                    <span className="mt-2 text-base font-bold text-[#0369a1] truncate">
+                      {formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Created Date card */}
-                <div className="rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
+                <div className="flex-1 rounded-2xl border border-pink-100 bg-[#fffafc] p-3 shadow-[0_10px_25px_rgba(236,72,153,0.03)] flex min-h-[86px] flex-col justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#db2777]">
                     {language === "vi" ? "Ngày tạo" : "Created"}
                   </span>
@@ -1296,7 +1299,7 @@ export function CustomerNailDetailPage() {
               title={language === "vi" ? "Thông tin thiết kế" : "Design Information"}
               subtitle={language === "vi" ? "Tóm tắt thông tin về thiết kế móng khách yêu cầu." : "High-level summary of the requested customer nail design."}
             />
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {/* Nail Shape Visual Tile */}
               <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 {nail?.nailShape?.imageUrl ? (
@@ -1311,8 +1314,8 @@ export function CustomerNailDetailPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Kiểu móng" : "Nail Shape"}</p>
-                  <p className="mt-1 text-sm font-bold text-[#3f2240]">{nail?.nailShape?.name || language === "vi" ? "Kiểu móng tùy chỉnh" : "Custom Shape"}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Dáng móng" : "Nail Shape"}</p>
+                  <p className="mt-1 text-sm font-bold text-[#3f2240]">{nail?.nailShape?.name ? nail?.nailShape?.name : language === "vi" ? "Dáng móng tùy chỉnh" : "Custom Shape"}</p>
                 </div>
               </div>
 
@@ -1336,7 +1339,7 @@ export function CustomerNailDetailPage() {
               </div>
 
               {/* System Price Tile */}
-              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+              {/* <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#fef3c7] flex items-center justify-center text-[#d97706] font-bold text-lg shrink-0">
                   VND
                 </div>
@@ -1344,10 +1347,10 @@ export function CustomerNailDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Giá hệ thống" : "System Price"}</p>
                   <p className="mt-1 text-sm font-bold text-green-700">{formatVND(getSystemPrice(nail), nail?.status)}</p>
                 </div>
-              </div>
+              </div> */}
 
               {/* System Duration Tile */}
-              <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
+              {/* <div className="rounded-2xl border border-[#f6d4e3] bg-gradient-to-br from-white to-[#fff9fb] p-5 shadow-[0_10px_24px_rgba(236,72,153,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#e0f2fe] flex items-center justify-center text-[#0369a1] font-bold text-lg shrink-0">
                   ⏱
                 </div>
@@ -1355,10 +1358,10 @@ export function CustomerNailDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c08aa4]">{language === "vi" ? "Thời gian hệ thống" : "System Duration"}</p>
                   <p className="mt-1 text-sm font-bold text-[#3f2240]">{formatDuration(getSystemDuration(nail), nail?.status, language)}</p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Additional Price Tile */}
-              <div className="rounded-2xl border border-[#d8efdf] bg-gradient-to-br from-white to-[#f8fffa] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.04)] flex items-center gap-4">
+              {/* <div className="rounded-2xl border border-[#d8efdf] bg-gradient-to-br from-white to-[#f8fffa] p-5 shadow-[0_10px_24px_rgba(47,162,95,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#dcfce7] flex items-center justify-center text-[#15803d] font-bold text-lg shrink-0">
                   +
                 </div>
@@ -1366,10 +1369,10 @@ export function CustomerNailDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7aa98a]">{language === "vi" ? "Chi phí gia công thêm" : "Extra Labor Cost"}</p>
                   <p className="mt-1 text-sm font-bold text-[#15803d]">{formatOptionalVND(getRequestPrice(nail), language === "vi" ? "Chưa có" : "N/A")}</p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Additional Duration Tile */}
-              <div className="rounded-2xl border border-[#cfe8f6] bg-gradient-to-br from-white to-[#f7fcff] p-5 shadow-[0_10px_24px_rgba(14,165,233,0.04)] flex items-center gap-4">
+              {/* <div className="rounded-2xl border border-[#cfe8f6] bg-gradient-to-br from-white to-[#f7fcff] p-5 shadow-[0_10px_24px_rgba(14,165,233,0.04)] flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[#e0f2fe] flex items-center justify-center text-[#0369a1] font-bold text-lg shrink-0">
                   +
                 </div>
@@ -1377,7 +1380,7 @@ export function CustomerNailDetailPage() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#6b9db8]">{language === "vi" ? "Thời gian đề xuất thêm" : "Extra Proposed Time"}</p>
                   <p className="mt-1 text-sm font-bold text-[#0369a1]">{formatOptionalDuration(getRequestDuration(nail), language === "vi" ? "Chưa có" : "N/A", language)}</p>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -1419,9 +1422,10 @@ export function CustomerNailDetailPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-bold text-[#3f2240] truncate font-serif">{comp.name || "Custom Accessory"}</p>
+                          <p className="text-sm font-bold text-[#3f2240] truncate ">{comp.name || "Custom Accessory"}</p>
                           <p className="mt-0.5 text-xs text-[#a18560]">
-                            Type: {comp.componentType || "Sticker/Gem"} • Finger: {itemComponent.fingerIndex}
+                            {language === "vi" ? "Loại" : "Type"}: {comp.componentType || "Sticker/Gem"} •{" "}
+                            {language === "vi" ? "Ngón" : "Finger"}: {getFingerName(itemComponent.fingerIndex, language)}
                           </p>
                           {comp.price ? (
                             <p className="mt-1 text-xs text-[#d4af37] font-semibold">+{formatVND(comp.price)}</p>
@@ -1580,7 +1584,7 @@ export function CustomerNailDetailPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
                               {colorData.fingers.map((finger, index) => {
-                                const fingerName = getFingerName(finger.fingerIndex || index + 1);
+                                const fingerName = getFingerName(finger.fingerIndex || index + 1, language);
                                 let fingerStyle = { backgroundColor: '#f3f4f6' };
                                 let colorLabel = "N/A";
                                 const isGradient = finger.mode === 'gradient' || (finger.gradient && finger.gradient.enabled);

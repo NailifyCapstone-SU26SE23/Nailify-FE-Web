@@ -427,7 +427,7 @@ export function WalkInQueuePage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h1 className="text-xl font-bold text-[#2f2430] tracking-tight flex items-center gap-2">
-              {language === "vi" ? "Sảnh Hàng Chờ Walk-In" : "Salon Lobby Queue"}
+              {language === "vi" ? "Sảnh Hàng Chờ Khách Vãng Lai" : "Salon Lobby Queue"}
               <Sparkle size={16} className="text-[#e85d9b] fill-[#e85d9b] animate-spin" style={{ animationDuration: '6s' }} />
             </h1>
             <p className="text-[11px] text-[#7d6d78] mt-1 font-semibold max-w-xl">

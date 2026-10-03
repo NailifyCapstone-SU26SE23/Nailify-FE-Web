@@ -18,20 +18,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Select, Table, Tooltip } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   ROUTES,
   getAdminUserDetailRoute,
 } from "../../../../shared/constants/routes";
 import { PropTypes } from "../../../../shared/utils/propTypes";
-import {
-  USER_STATUS_STYLES,
-  USER_ROLE_OPTIONS,
-} from "../services/mockUsers";
+
+import { USER_STATUS } from "../../../../shared/utils/statusFormatters";
 import { fetchAdminUsers, deleteAdminUser } from "../services/userManagementService";
 import { toast } from "react-hot-toast";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { USER_ROLE_OPTIONS } from "../services/mockUsers";
 
 const ALL_FILTER_VALUE = "__all__";
 
@@ -68,19 +68,8 @@ const getRoleLabel = (role, t) => {
   }
 };
 
-const getStatusLabel = (status, t) => {
-  switch (status) {
-    case "Active":
-      return t("userManagement.detail.statusActive");
-    case "Inactive":
-      return t("userManagement.detail.statusInactive");
-    case "Pending":
-      return t("userManagement.detail.statusPending");
-    case "Suspended":
-      return t("userManagement.detail.statusSuspended");
-    default:
-      return status;
-  }
+const getUserStatusObj = (status) => {
+  return USER_STATUS[status] || { vi: status, en: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
 };
 
 
@@ -124,7 +113,7 @@ function FilterSelect({
         options={options}
         placeholder={placeholder}
         disabled={disabled}
-        bordered={false}
+        variant="borderless"
         suffixIcon={<ChevronDownIcon />}
         popupMatchSelectWidth
         className="h-full min-w-0 flex-1 [&_.ant-select-arrow]:!right-0 [&_.ant-select-arrow]:!text-[#d3a0b8] [&_.ant-select-selection-item]:!leading-[42px] [&_.ant-select-selection-item]:!text-[15px] [&_.ant-select-selection-item]:!font-semibold [&_.ant-select-selection-item]:!text-[#4b3148] [&_.ant-select-selection-placeholder]:!leading-[42px] [&_.ant-select-selection-placeholder]:!text-[#cf9ab3] [&_.ant-select-selector]:!h-full [&_.ant-select-selector]:!rounded-[16px] [&_.ant-select-selector]:!bg-transparent [&_.ant-select-selector]:!px-0 [&_.ant-select-selector]:!shadow-none"
@@ -213,8 +202,8 @@ export function UserManagementPage() {
       return;
     }
 
-    toast.success(location.state.flashMessage);
-    navigate(location.pathname, { replace: true, state: null });
+    toast.success(location.state.flashMessage, { id: "user-mgmt-flash" });
+    navigate(location.pathname, { replace: true, state: {} });
   }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
@@ -437,7 +426,7 @@ export function UserManagementPage() {
       key: "user",
       sorter: (a, b) => (a.name || "").localeCompare(b.name || ""),
       render: (_, user) => (
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ffd4e4_0%,#ea4f93_100%)] text-xs font-bold text-white">
             {user.avatar}
           </div>
@@ -484,11 +473,14 @@ export function UserManagementPage() {
       dataIndex: "statusLabel",
       key: "statusLabel",
       sorter: (a, b) => (a.statusLabel || "").localeCompare(b.statusLabel || ""),
-      render: (value, user) => (
-        <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[value] ?? "bg-[#f5f0f4] text-[#8a7082]"}`}>
-          {getStatusLabel(user.status || value, t)}
-        </span>
-      ),
+      render: (value, user) => {
+        const statusObj = getUserStatusObj(user.status || value);
+        return (
+          <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold border ${statusObj.tone}`}>
+            {language === "vi" ? statusObj.vi : statusObj.en}
+          </span>
+        );
+      },
     },
     // {
     //   title: t("userManagement.table.lastActive"),
@@ -507,44 +499,20 @@ export function UserManagementPage() {
         const deleteLabel = language === "vi" ? "Xóa" : "Delete";
 
         return (
-          <div className="flex items-center justify-end gap-2 duration-300">
-            <Tooltip title={viewLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(detailRoute);
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
-              >
-                <Eye size={15} />
-              </button>
-            </Tooltip>
-            <Tooltip title={editLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(detailRoute, { state: { requestEdit: true } });
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#ea4f93] hover:shadow-[0_4px_12px_rgba(234,79,147,0.08)]"
-              >
-                <PencilLine size={15} />
-              </button>
-            </Tooltip>
-            <Tooltip title={deleteLabel} placement="top">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setUserToDelete(user);
-                }}
-                className="border border-[#ea4f93] flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a88a9f] shadow-[0_2px_8px_rgba(45,27,53,0.04)] transition-all hover:bg-[#fff0f7] hover:text-[#e53e3e] hover:shadow-[0_4px_12px_rgba(229,62,62,0.08)]"
-              >
-                <Trash2 size={15} />
-              </button>
-            </Tooltip>
-          </div>
+          <ActionButtons
+            onView={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute);
+            }}
+            onEdit={(e) => {
+              e.stopPropagation();
+              navigate(detailRoute, { state: { requestEdit: true } });
+            }}
+            onDelete={(e) => {
+              e.stopPropagation();
+              setUserToDelete(user);
+            }}
+          />
         );
       },
     },
@@ -622,7 +590,7 @@ export function UserManagementPage() {
             <div className="flex flex-wrap gap-2 xl:justify-end">
               <Link
                 to={ROUTES.adminUsersCreate}
-                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-sm font-bold text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
+                className="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[image:var(--gradient-accent)] px-5 text-md text-white shadow-[0_12px_24px_rgba(236,72,153,0.18)]"
               >
                 <UserPlus size={15} className="mr-2" />
                 {t("userManagement.table.addUser")}
@@ -681,11 +649,14 @@ export function UserManagementPage() {
                         <p className="mt-1 text-sm text-[#8a7082]">{user.lastActive}</p>
                       </div>
                       <div className="text-right">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold ${USER_STATUS_STYLES[user.statusLabel]}`}
-                        >
-                          {getStatusLabel(user.status || user.statusLabel, t)}
-                        </span>
+                        {(() => {
+                          const statusObj = getUserStatusObj(user.status || user.statusLabel);
+                          return (
+                            <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold border ${statusObj.tone}`}>
+                              {language === "vi" ? statusObj.vi : statusObj.en}
+                            </span>
+                          );
+                        })()}
                         <div className="mt-4 flex items-center justify-end gap-2">
                           <Tooltip title={language === "vi" ? "Xem" : "View"} placement="top">
                             <button

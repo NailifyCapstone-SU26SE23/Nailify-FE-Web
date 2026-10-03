@@ -140,6 +140,10 @@ export function normalizeAdminSalon(salon) {
 
   const realId = salon?.id || salon?.salonId || "";
 
+  const uniqueOperatingHours = Array.isArray(salon?.operatingHours)
+    ? Array.from(new Map(salon.operatingHours.map(h => [h.dayOfWeek, h])).values())
+    : [];
+
   return {
     id: realId,
     salonId: realId,
@@ -147,7 +151,7 @@ export function normalizeAdminSalon(salon) {
     address: String(salon?.address || "").trim(),
     manager: salon?.manager || "Unassigned",
     staffCount: salon?.staffCount || 0,
-    hours: formatOperatingHours(salon?.operatingHours),
+    hours: formatOperatingHours(uniqueOperatingHours),
     status,
     statusColor: getSalonStatusColor(status),
     image: getSalonImage(imageUrl, salon?.name || realId),
@@ -156,7 +160,7 @@ export function normalizeAdminSalon(salon) {
     reviews: salon?.reviewCount || "0",
     latitude: Number(salon?.latitude || 0),
     longitude: Number(salon?.longitude || 0),
-    operatingHours: Array.isArray(salon?.operatingHours) ? salon.operatingHours : [],
+    operatingHours: uniqueOperatingHours,
     depositConfig: salon?.depositConfig != null ? Math.round(Number(salon.depositConfig) * 100) : "",
   };
 }

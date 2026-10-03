@@ -127,5 +127,5 @@ export async function fetchNailArtistBreaks(params = {}) {
       status,
     },
   });
-  return unwrapResponse(response, "Failed to load nail artist breaks.");
+  return unwrapResponse(response, "Failed to load staff artist breaks.");
 }

@@ -22,10 +22,7 @@ import {
   fetchWalletById,
   fetchCustomerById,
 } from "../services/withdrawRequestService";
-import {
-  getWithdrawRequestStatusColor,
-  getWithdrawRequestStatusLabel,
-} from "../utils/withdrawRequestUtils";
+import { WITHDRAWAL_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -112,7 +109,7 @@ export function WithdrawRequestDetailPage() {
         adminNote: values.adminNote || "",
         transactionReference: values.transactionReference || "",
       });
-      toast.success(isVi ? "Đã duyệt yêu cầu rút tiền thành công." : "Withdrawal request approved successfully.");
+      toast.success(isVi ? "Đã xác nhận yêu cầu rút tiền thành công." : "Withdrawal request approved successfully.");
       setIsApproveModalVisible(false);
       form.resetFields();
       loadDetail(); // Reload data
@@ -184,9 +181,17 @@ export function WithdrawRequestDetailPage() {
             </Title>
           </div>
         </div>
-        <Tag color={getWithdrawRequestStatusColor(detail.status)} className="text-sm px-4 py-1.5 rounded-full font-medium border-0 m-0 text-center">
-          {getWithdrawRequestStatusLabel(detail.status, language)}
-        </Tag>
+        {(() => {
+          const statusObj = WITHDRAWAL_STATUS[detail.status];
+          if (statusObj) {
+            return (
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-bold border ${statusObj.tone}`}>
+                {language === "vi" ? statusObj.vi : statusObj.en}
+              </span>
+            );
+          }
+          return <Tag className="text-sm px-4 py-1.5 rounded-full font-medium border-0 m-0 text-center">{detail.status}</Tag>;
+        })()}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-stretch">
@@ -484,7 +489,7 @@ export function WithdrawRequestDetailPage() {
             </p>
           </div>
 
-          <Form form={form} layout="vertical" onFinish={handleApprove} requiredMark={false}>
+          {/* <Form form={form} layout="vertical" onFinish={handleApprove} requiredMark={false}>
             <Form.Item
               name="transactionReference"
               label={
@@ -515,7 +520,7 @@ export function WithdrawRequestDetailPage() {
                 style={{ resize: "none" }}
               />
             </Form.Item>
-          </Form>
+          </Form> */}
         </div>
 
         {/* Footer */}

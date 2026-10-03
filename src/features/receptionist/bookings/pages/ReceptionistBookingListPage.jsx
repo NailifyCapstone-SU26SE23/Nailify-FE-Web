@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   Table,
   Modal,
-  DatePicker,
   Select,
   Input,
   Button,
@@ -12,6 +11,7 @@ import {
   Spin,
   ConfigProvider,
 } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -39,6 +39,7 @@ import {
   updateBookingLocally,
   setAllFilters,
 } from "../../../../store/receptionistBookingsSlice";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 function formatCurrency(value) {
   return `${new Intl.NumberFormat("vi-VN", {
@@ -66,6 +67,32 @@ function formatTime(value) {
   return value.slice(0, 5);
 }
 
+function calculateEndTime(startTime, durationMinutes) {
+  if (!startTime) return "--";
+  const parts = startTime.split(':');
+  if (parts.length < 2) return "--";
+  let hours = parseInt(parts[0], 10);
+  let minutes = parseInt(parts[1], 10);
+
+
+  if (isNaN(hours) || isNaN(minutes)) return "--";
+
+
+  const totalDur = durationMinutes ? parseInt(durationMinutes, 10) : 0;
+  if (isNaN(totalDur)) return formatTime(startTime);
+
+
+  minutes += totalDur;
+  hours += Math.floor(minutes / 60);
+  minutes = minutes % 60;
+  hours = hours % 24;
+
+
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 function toDateInputValue(value) {
   if (!value) {
     return "";
@@ -85,23 +112,7 @@ function getTodayDateParam() {
 }
 
 function getStatusTone(status) {
-  const norm = String(status || "").trim().toLowerCase();
-  switch (norm) {
-    case "completed":
-    case "servicecompleted":
-      return "bg-[#e8f8ef] text-[#1f9d61] border border-[#b8f0d0]";
-    case "confirmed":
-    case "approved":
-    case "checkedin":
-      return "bg-[#eaf1ff] text-[#4c71d9] border border-[#c4d7ff]";
-    case "pending":
-      return "bg-[#fff3e5] text-[#d98b1d] border border-[#ffe0b3]";
-    case "cancelled":
-    case "rejected":
-      return "bg-[#ffe8ef] text-[#df4e86] border border-[#ffc2d5]";
-    default:
-      return "bg-[#f5ecff] text-[#7c63d8] border border-[#dcd0ff]";
-  }
+  return BOOKING_STATUS[status]?.tone || "bg-[#f5ecff] text-[#7c63d8] border border-[#dcd0ff]";
 }
 
 
@@ -123,38 +134,7 @@ const STATUS_OPTIONS = ["All", "Pending", "Approved", "Rejected", "Cancelled", "
 export function ReceptionistBookingListPage() {
   const { t, language } = useLanguage();
   const formatDisplay = (s) => {
-    switch (s) {
-      case "Checked In":
-      case "CheckedIn":
-        return language === "vi" ? "Đã check in" : "Checked In";
-      case "In Progress":
-      case "InProgress":
-        return language === "vi" ? "Đang tiến hành" : "In Progress";
-      case "Pending":
-        return language === "vi" ? "Đang chờ" : "Pending";
-      case "Confirmed":
-      case "Approved":
-        return language === "vi" ? "Đã xác nhận" : "Approved";
-      case "Completed":
-        return language === "vi" ? "Đã hoàn thành" : "Completed";
-      case "ServiceCompleted":
-        return language === "vi" ? "Dịch vụ đã hoàn thành" : "Service Completed";
-      case "Rejected":
-        return language === "vi" ? "Đã từ chối" : "Rejected";
-      case "Cancelled":
-      case "Canceled":
-        return language === "vi" ? "Đã hủy" : "Cancelled";
-      case "ReschedulePending":
-        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-      case "RescheduleSuggested":
-        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-      case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
-      case "All":
-        return language === "vi" ? "Tất cả" : "All";
-      default:
-        return s;
-    }
+    return getStatusLabel(s, BOOKING_STATUS, language);
   };
   const location = useLocation();
   const navigate = useNavigate();
@@ -187,6 +167,7 @@ export function ReceptionistBookingListPage() {
   const appliedStaffFilter = filters.staffFilter;
 
   const [assignArtistBooking, setAssignArtistBooking] = useState(null);
+  const [realEndTimes, setRealEndTimes] = useState({});
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isScannerStarting, setIsScannerStarting] = useState(false);
@@ -207,6 +188,44 @@ export function ReceptionistBookingListPage() {
   const scannerSupportMessage = hasCameraSupport
     ? ""
     : "Camera access requires a secure browser context with webcam support.";
+
+  useEffect(() => {
+    const fetchEndTimes = async () => {
+      if (!bookings || bookings.length === 0) return;
+
+
+      const newEndTimes = { ...realEndTimes };
+      let changed = false;
+
+
+      for (const b of bookings) {
+        if (!b.bookingItems || b.bookingItems.length === 0 || newEndTimes[b.bookingId]) continue;
+
+
+        let sumDuration = 0;
+        for (const item of b.bookingItems) {
+          try {
+            const procs = await fetchReceptionistBookingProcedures(item.bookingItemId);
+            if (Array.isArray(procs)) {
+              sumDuration += procs.reduce((acc, p) => acc + (p.duration || 0), 0);
+            }
+          } catch (e) {
+            console.error('fetchReceptionistBookingProcedures error', item.bookingItemId, e);
+          }
+        }
+        if (sumDuration > 0) {
+          newEndTimes[b.bookingId] = calculateEndTime(b.startTime, sumDuration);
+          changed = true;
+        }
+      }
+
+
+      if (changed) setRealEndTimes(newEndTimes);
+    };
+
+
+    fetchEndTimes();
+  }, [bookings]);
 
   const loadBookings = useCallback(() => {
     dispatch(fetchReceptionistBookingsThunk({ startDate: appliedDateFrom, endDate: appliedDateTo }));
@@ -254,6 +273,8 @@ export function ReceptionistBookingListPage() {
           booking.artistName,
           booking.salonName,
           booking.status,
+          booking.phone,
+          booking.email,
           booking.services.join(" "),
         ]
           .join(" ")
@@ -331,7 +352,12 @@ export function ReceptionistBookingListPage() {
       dataIndex: "customerName",
       key: "customerName",
       sorter: (a, b) => (a.customerName || "").localeCompare(b.customerName || ""),
-      render: (value) => <span className="text-sm font-bold text-[#412643]">{value}</span>,
+      render: (value, booking) => (
+        <div>
+          <p className="text-sm font-bold text-[#412643]">{value}</p>
+          {booking.phone && <p className="mt-1 text-xs text-[#a68b98]">{booking.phone}</p>}
+        </div>
+      ),
     },
     {
       title: t("receptionist.bookings.salon") || "Salon",
@@ -355,12 +381,18 @@ export function ReceptionistBookingListPage() {
         const timeB = new Date(`${b.bookingDate?.split('T')[0] || ''}T${b.startTime || '00:00:00'}`).getTime() || 0;
         return timeA - timeB;
       },
-      render: (_, booking) => (
-        <div>
-          <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-          <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
-        </div>
-      ),
+      render: (_, booking) => {
+        const start = formatTime(booking.startTime);
+        const end = (realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration));
+        return (
+          <div>
+            <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
+            <p className="mt-1 text-[11px] text-[#b38a9f]">
+              {start} {start !== "--" && end !== "--" && `- ${end}`}
+            </p>
+          </div>
+        );
+      },
     },
     {
       title: t("receptionist.bookings.price") || "Price",
@@ -385,6 +417,7 @@ export function ReceptionistBookingListPage() {
       key: "action",
       render: (_, booking) => (
         <ActionDropdown
+          label={language === "vi" ? "Thao tác" : "Actions"}
           items={[
             {
               key: "view",
@@ -427,7 +460,7 @@ export function ReceptionistBookingListPage() {
         />
       ),
     },
-  ]), [handleCheckout, handleManualCheckIn, navigate, t]);
+  ]), [handleCheckout, handleManualCheckIn, navigate, t, realEndTimes]);
 
   useEffect(() => {
     if (!isScannerOpen) {
@@ -633,7 +666,7 @@ export function ReceptionistBookingListPage() {
             { label: t("receptionist.dashboard.todayBookings") || "Today Bookings", value: summary.total, note: t("receptionist.dashboard.bookingQueueNote") || "Salon booking queue", color: "#ea4f93", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusWaiting") || "Waiting", value: summary.waiting, note: t("receptionist.dashboard.frontDeskActionNote") || "Need front desk action", color: "#d98b1d", icon: CalendarDays },
             { label: t("receptionist.dashboard.statusCheckedIn") || "Checked In", value: summary.checkedIn, note: t("receptionist.dashboard.arrivedNote") || "Arrived customers", color: "#1f9d61", icon: CalendarDays },
-            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total loaded from API", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
+            { label: t("receptionist.dashboard.todayRevenue") || "Revenue", value: summary.revenue, note: t("receptionist.dashboard.revenueNote") || "Total revenue", color: "#7c63d8", icon: CalendarDays, unit: "VND" },
           ]}
           className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
         />
@@ -645,7 +678,7 @@ export function ReceptionistBookingListPage() {
                 {salonName === "Receptionist Booking Management" ? t("receptionist.bookings.title") : salonName}
               </p>
               <p className="mt-1 text-sm text-[#b38a9f]">
-                {salonMeta === "Bookings are loaded from salon API." ? t("receptionist.bookings.desc") : salonMeta}
+                {salonMeta === "Bookings Management" ? t("receptionist.bookings.desc") : salonMeta}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -679,45 +712,61 @@ export function ReceptionistBookingListPage() {
           </div>
 
           <div className="mt-4 rounded-lg border border-[#F7D8E6] bg-white p-4">
-            <div className="grid gap-3 grid-cols-3">
-
-              <div>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+              <div className="w-full lg:flex-1 lg:min-w-[200px]">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
-                  {t("receptionist.bookings.dateFrom")}
+                  {language === "vi" ? "Tìm kiếm" : "Search"}
                 </p>
-
-                <DatePicker
-                  value={dateFrom ? dayjs(dateFrom) : null}
-                  onChange={(date) =>
-                    setDateFrom(date ? date.format("YYYY-MM-DD") : "")
-                  }
-                  format="DD/MM/YYYY"
-                  className="w-full"
+                <Input
                   size="large"
+                  prefix={<Search size={17} color="#D47AA8" />}
+                  placeholder={language === "vi" ? "Tìm khách hàng, thợ..." : "Search customer, staff..."}
+                  value={draftQuery}
+                  onChange={(e) => setDraftQuery(e.target.value)}
+                  allowClear
                 />
               </div>
 
-              <div>
+              {/* Date Range */}
+              <div className="w-full lg:flex-1 lg:min-w-[150px]">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
-                  {t("receptionist.bookings.dateTo")}
+                  {t("receptionist.bookings.dateFrom")} - {t("receptionist.bookings.dateTo")}
                 </p>
-
-                <DatePicker
-                  value={dateTo ? dayjs(dateTo) : null}
-                  onChange={(date) =>
-                    setDateTo(date ? date.format("YYYY-MM-DD") : "")
-                  }
-                  format="DD/MM/YYYY"
-                  className="w-full"
-                  size="large"
+                <DateRangePicker
+                  value={dateFrom || dateTo ? [
+                    dateFrom ? dayjs(dateFrom) : null,
+                    dateTo ? dayjs(dateTo) : null
+                  ] : null}
+                  onChange={(dates) => {
+                    setDateFrom(dates?.[0] ? dates[0].format("YYYY-MM-DD") : "");
+                    setDateTo(dates?.[1] ? dates[1].format("YYYY-MM-DD") : "");
+                  }}
+                  className="w-full h-10 border-[#F7D8E6] focus:border-[#E84F93] hover:border-[#F0B7CF] text-[12px] rounded-xl"
                 />
               </div>
 
-              <div>
+              {/* Staff */}
+              <div className="w-full lg:w-[200px] lg:shrink-0">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
+                  {language === "vi" ? "Nhân viên" : "Staff"}
+                </p>
+                <Select
+                  value={staffFilter}
+                  onChange={setStaffFilter}
+                  size="large"
+                  className="w-full"
+                  options={staffOptions.map((item) => ({
+                    value: item,
+                    label: item === "All staff" ? t("receptionist.bookings.allStaff") : item,
+                  }))}
+                />
+              </div>
+
+              {/* Status */}
+              <div className="w-full lg:w-[150px] lg:shrink-0">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#C896AF]">
                   {language === "vi" ? "Trạng thái" : "Status"}
                 </p>
-
                 <Select
                   value={statusFilter}
                   onChange={setStatusFilter}
@@ -729,33 +778,9 @@ export function ReceptionistBookingListPage() {
                   }))}
                 />
               </div>
-            </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr_auto]">
-
-              <Select
-                value={staffFilter}
-                onChange={setStaffFilter}
-                size="large"
-                options={staffOptions.map((item) => ({
-                  value: item,
-                  label:
-                    item === "All staff"
-                      ? t("receptionist.bookings.allStaff")
-                      : item,
-                }))}
-              />
-
-              <Input
-                size="large"
-                prefix={<Search size={17} color="#D47AA8" />}
-                placeholder="Search booking ID, customer, artist..."
-                value={draftQuery}
-                onChange={(e) => setDraftQuery(e.target.value)}
-                allowClear
-              />
-
-              <div className="flex gap-2">
+              {/* Actions */}
+              <div className="flex w-full gap-2 lg:w-auto lg:shrink-0">
                 <Button
                   type="primary"
                   size="large"
@@ -806,10 +831,6 @@ export function ReceptionistBookingListPage() {
             </div>
           </div>
 
-
-
-
-
           {isLoading ? (
             <div className="mt-6 flex min-h-56 items-center justify-center rounded-lg border border-[#f7dce8] bg-[#fffafd]">
               <div className="flex items-center gap-3 text-sm font-medium text-[#b38a9f]">
@@ -847,9 +868,12 @@ export function ReceptionistBookingListPage() {
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-[#412643]">{formatDate(booking.bookingDate)}</p>
-                        <p className="mt-1 text-[11px] text-[#b38a9f]">{formatTime(booking.startTime)}</p>
+                        <p className="mt-1 text-[11px] text-[#b38a9f]">
+                          {formatTime(booking.startTime)} {formatTime(booking.startTime) !== "--" && (realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration)) !== "--" && `- ${(realEndTimes[booking.bookingId] || calculateEndTime(booking.startTime, booking.totalDuration))}`}
+                        </p>
                       </div>
                       <ActionDropdown
+                        label={language === "vi" ? "Thao tác" : "Actions"}
                         items={[
                           {
                             key: "view",

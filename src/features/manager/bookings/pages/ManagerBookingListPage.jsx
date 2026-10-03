@@ -28,12 +28,14 @@ import {
   Image as ImageIcon,
   Edit3,
   ArrowUpDown,
+  RefreshCcw,
 } from "lucide-react";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilter, setAllFilters, updateBookingLocally, removeBookingLocally, fetchManagerBookingsThunk, fetchManagerSalonStaffThunk } from "../../../../store/managerBookingsSlice";
-import { Spin, Alert, DatePicker, Drawer, Modal, Tooltip, Table } from "antd";
+import { Spin, Alert, Drawer, Modal, Tooltip, Table } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
@@ -52,7 +54,9 @@ import { CancelBookingModal } from "../components/CancelBookingModal";
 import { Pagination } from "../../../../shared/components/common/Pagination";
 import { getSalonId, getSalonIdAsync } from "../../staff-artist-management/services/nailArtistsService";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { BOOKING_STATUS } from "../../../../shared/utils/statusFormatters";
 
 import { loadAuthSession } from "../../../core/auth/model/authStorage";
 
@@ -181,85 +185,26 @@ InfoItem.propTypes = {
 };
 
 function StatusPill({ status, compact = false }) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
-  const getStyle = () => {
-    switch (status) {
-      case "Checked In":
-      case "CheckedIn":
-        return "bg-[#EEF2FF] text-[#4338CA] border-[#A5B4FC] shadow-2xs";
-      case "In Progress":
-      case "InProgress":
-        return "bg-[#F5F3FF] text-[#6D28D9] border-[#C4B5FD] shadow-2xs";
-      case "Pending":
-        return "bg-[#FFFBEB] text-[#B45309] border-[#FCD34D] shadow-2xs";
-      case "Confirmed":
-      case "Approved":
-        return "bg-[#ECFDF5] text-[#047857] border-[#6EE7B7] shadow-2xs";
-      case "Completed":
-        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
-      case "ServiceCompleted":
-        return "bg-[#ECFDF5] text-[#065F46] border-[#34D399] shadow-2xs";
-      case "Rejected":
-        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
-      case "RescheduleReq":
-      case "Reschedule Req":
-      case "ReschedulePending":
-        return "bg-[#FFF7ED] text-[#C2410C] border-[#FDBA74] shadow-2xs";
-      case "RescheduleSuggested":
-        return "bg-[#EFF6FF] text-[#1D4ED8] border-[#93C5FD] shadow-2xs";
-      case "Cancelled":
-        return "bg-[#FEF2F2] text-[#B91C1C] border-[#FCA5A5] shadow-2xs";
-      case "Repaired":
-        return "bg-[#FFD1DC] text-[#ff0055] border-[#34D399] shadow-2xs";
+  let normalizedStatus = status;
+  if (status === "Checked In") normalizedStatus = "CheckedIn";
+  if (status === "In Progress") normalizedStatus = "InProgress";
+  if (status === "Confirmed") normalizedStatus = "Approved";
+  if (status === "Canceled") normalizedStatus = "Cancelled";
+  if (status === "Reschedule Req" || status === "RescheduleReq") normalizedStatus = "ReschedulePending";
 
-      default:
-        return "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]";
-    }
-  };
-
-  const formatDisplay = (s) => {
-    switch (s) {
-      case "Checked In":
-      case "CheckedIn":
-        return language === "vi" ? "Đã check in" : "Checked In";
-      case "In Progress":
-      case "InProgress":
-        return language === "vi" ? "Đang tiến hành" : "In Progress";
-      case "Pending":
-        return language === "vi" ? "Đang chờ" : "Pending";
-      case "Confirmed":
-      case "Approved":
-        return language === "vi" ? "Đã xác nhận" : "Confirmed";
-      case "Completed":
-        return language === "vi" ? "Đã hoàn thành" : "Completed";
-      case "ServiceCompleted":
-        return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
-      case "Rejected":
-        return language === "vi" ? "Đã từ chối" : "Rejected";
-      case "Cancelled":
-      case "Canceled":
-        return language === "vi" ? "Đã hủy" : "Cancelled";
-      case "ReschedulePending":
-        return language === "vi" ? "Đang chờ dời lịch" : "Reschedule Pending";
-      case "RescheduleSuggested":
-        return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
-      case "Repaired":
-        return language === "vi" ? "Đã sửa chữa" : "Repaired";
-      default:
-        return s;
-    }
-  };
+  const statusObj = BOOKING_STATUS[normalizedStatus] || { [language]: status, tone: "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]" };
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${getStyle()}`}>
-      {(status === "InProgress" || status === "In Progress") && (
+    <span className={`inline-flex items-center gap-1 rounded-full border ${compact ? "px-2 py-0.5 text-[9px]" : "px-3 py-1 text-xs"} font-bold transition-all whitespace-nowrap ${statusObj.tone}`}>
+      {normalizedStatus === "InProgress" && (
         <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7C3AED]"></span>
         </span>
       )}
-      <span>{formatDisplay(status)}</span>
+      <span>{statusObj[language]}</span>
     </span>
   );
 }
@@ -330,7 +275,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const totalEndMinutes = totalStartMinutes + (durationMinutes);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -453,7 +398,7 @@ function mapApiBookingToUiFormat(apiBooking, index, language = "en") {
     date: formatDate(apiBooking.bookingDate || apiBooking.createdAt),
     time: formatTimeRange(apiBooking.startTime, apiBooking.totalDuration, apiBooking.bookingDate || apiBooking.createdAt),
     startTime: apiBooking.startTime,
-    duration: formatDuration(apiBooking.totalDuration || 60, language),
+    duration: formatDuration(apiBooking.totalDuration, language),
     totalDuration: apiBooking.totalDuration,
     customer: customerName,
     customerName: customerName,
@@ -618,8 +563,8 @@ export function ManagerBookingListPage() {
   const { bookings: rawBookings, salonStaffList, isLoading, error, filters, hasLoadedOnce } = useSelector((state) => state.managerBookings);
   const { query, activeFilter, dateFrom: dateFromISO, dateTo: dateToISO, viewMode, currentPage } = filters;
 
-  const dateFrom = useMemo(() => dayjs(dateFromISO), [dateFromISO]);
-  const dateTo = useMemo(() => dayjs(dateToISO), [dateToISO]);
+  const dateFrom = useMemo(() => dateFromISO ? dayjs(dateFromISO) : null, [dateFromISO]);
+  const dateTo = useMemo(() => dateToISO ? dayjs(dateToISO) : null, [dateToISO]);
 
   // Compute UI bookings from raw Redux bookings
   const bookings = useMemo(() => {
@@ -742,7 +687,7 @@ export function ManagerBookingListPage() {
     if (!draggedBooking) return;
 
     const formattedTime = `${String(targetHour).padStart(2, "0")}:00:00`;
-    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration || 60);
+    const formattedRange = formatTimeRange(formattedTime, draggedBooking.totalDuration);
     const bookingIdToAssign = draggedBooking.id || draggedBooking.bookingId;
 
     const targetArtistName = typeof artistItem === "object" ? artistItem.name : artistItem;
@@ -768,7 +713,7 @@ export function ManagerBookingListPage() {
     if (!isUnassigned && staffArtistId && bookingIdToAssign) {
       try {
         await assignArtistToBookingOld(bookingIdToAssign, staffArtistId);
-        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`, { icon: "✨" });
+        toast.success(`Đã phân công Thợ ${targetArtistName} cho lịch hẹn!`);
         loadBookings();
       } catch (err) {
         console.error("Failed to assign artist via drag & drop:", err);
@@ -777,8 +722,7 @@ export function ManagerBookingListPage() {
       }
     } else {
       toast.success(
-        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`,
-        { icon: "✨" }
+        `Reassigned ${activeDragged.customer}'s booking to ${formatHourLabel(targetHour)} (${targetArtistName || activeDragged.artist})`
       );
     }
   };
@@ -1085,14 +1029,7 @@ export function ManagerBookingListPage() {
       align: "center",
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <Tooltip title={t("manager.common.view")}>
-            <button
-              onClick={() => handleViewBooking(row.id)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF0F8] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs"
-            >
-              <Eye size={14} />
-            </button>
-          </Tooltip>
+          <ActionButtons onView={() => handleViewBooking(row.id)} />
         </div>
       ),
     },
@@ -1186,7 +1123,7 @@ export function ManagerBookingListPage() {
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
   return (
-    <section className="flex min-h-[100dvh] flex-col gap-6 p-4 lg:p-8 font-sans">
+    <section className="flex min-h-[100dvh] flex-col gap-6 font-sans">
       {/* Luxury Hero Banner */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="relative overflow-hidden rounded-lg border border-[#F3D6E5]/80 bg-gradient-to-r from-[#FFF0F5] via-[#FFF6FA] to-[#FFF0F5] p-4 lg:p-4 shadow-[0_16px_36px_-10px_rgba(234,79,147,0.12)]">
@@ -1394,9 +1331,9 @@ export function ManagerBookingListPage() {
                     </div>
 
                     {/* Search + Date filters */}
-                    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_130px_130px_auto]">
+                    <div className="mt-4 flex flex-wrap items-end gap-3">
                       {/* Search */}
-                      <div>
+                      <div className="w-full flex-1 min-w-[200px]">
                         <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
                           {t("manager.common.search")}
                         </span>
@@ -1411,50 +1348,36 @@ export function ManagerBookingListPage() {
                         </div>
                       </div>
 
-                      {/* Date From */}
+                      {/* Date Range */}
                       <div>
                         <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
-                          {t("manager.bookings.dateFrom")}
+                          {t("manager.bookings.dateFrom")} - {t("manager.bookings.dateTo")}
                         </span>
-                        <DatePicker
-                          value={dateFrom}
-                          onChange={handleDateFromChange}
-                          placeholder={t("manager.bookings.dateFrom")}
-                          format="DD/MM/YYYY"
-                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
-                        />
-                      </div>
-
-                      {/* Date To */}
-                      <div>
-                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">
-                          {t("manager.bookings.dateTo")}
-                        </span>
-                        <DatePicker
-                          value={dateTo}
-                          onChange={(d) => setDateTo(d)}
+                        <DateRangePicker
+                          value={dateFrom || dateTo ? [dateFrom, dateTo] : null}
+                          onChange={(dates) => {
+                            setDateFrom(dates?.[0] || null);
+                            setDateTo(dates?.[1] || null);
+                          }}
                           disabled={viewMode !== "table"}
-                          placeholder={t("manager.bookings.dateTo")}
-                          format="DD/MM/YYYY"
-                          className="h-9 w-full rounded-xl border border-[#F3D7E4] bg-white px-2.5 text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
-                          suffixIcon={<Calendar size={13} className="text-[#9E8497]" />}
+                          className="h-9 w-full min-w-[260px] rounded-xl border border-[#F3D7E4] bg-white text-[12px] text-[#2B182B] outline-none transition-all hover:border-[#F0B7CF] focus:border-[#E84F93]"
                         />
                       </div>
 
                       {/* Reset */}
-                      <div className="flex items-end">
+                      <div className="w-auto">
                         <motion.button
                           whileHover={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 1.02 } : {}}
                           whileTap={query.trim() || dateFrom || dateTo || activeFilter !== "All" ? { scale: 0.98 } : {}}
                           onClick={handleResetFilters}
                           disabled={!query.trim() && !dateFrom && !dateTo && activeFilter === "All"}
-                          className={`h-9 rounded-xl border px-4 text-[12px] font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
+                          className={`flex items-center justify-center gap-2 h-9 w-auto rounded-xl border px-4 font-bold transition-all ${query.trim() || dateFrom || dateTo || activeFilter !== "All"
                             ? "border-[#E84F93] bg-white text-[#E84F93] hover:bg-[#FFF5FA]"
                             : "cursor-not-allowed border-[#F5E8EF] bg-[#FAFAFA] text-[#D6B9C8]"
                             }`}
                         >
-                          {t("manager.common.reset")}
+                          <RefreshCcw size={16} />
+                          {language === 'vi' ? "Đặt lại" : "Reset"}
                         </motion.button>
                       </div>
                     </div>
@@ -1688,7 +1611,11 @@ export function ManagerBookingListPage() {
                         </div>
 
                         <div className="grid grid-cols-7 gap-1.5">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
+                          {language === "vi" ? ["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((dayName) => (
+                            <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
+                              {dayName}
+                            </div>
+                          )) : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
                             <div key={dayName} className="text-center text-[11px] font-bold text-[#9E8497] uppercase py-2 bg-[#FFF5F8] rounded-xl">
                               {dayName}
                             </div>
@@ -1916,7 +1843,7 @@ export function ManagerBookingListPage() {
                                     </div>
                                     <div className="mt-1 flex items-center justify-between text-[10px] font-bold">
                                       <span>{artistName === "Unassigned" ? "Unassigned" : artistName}</span>
-                                      <span>{formatDuration(b.totalDuration || 60, language)}</span>
+                                      <span>{formatDuration(b.totalDuration, language)}</span>
                                     </div>
                                   </div>
                                 );
@@ -2050,7 +1977,7 @@ export function ManagerBookingListPage() {
       >
         {isLoadingDrawer ? (
           <div className="flex min-h-[400px] items-center justify-center">
-            <Spin size="large" tip="Loading booking details..." />
+            <Spin size="large" tip={language === "vi" ? "Đang tải thông tin chi tiết đơn hàng..." : "Loading booking detail..."} />
           </div>
         ) : selectedBookingForDrawer ? (
           <div className="bg-[#FAF6F8] h-full flex flex-col font-sans">

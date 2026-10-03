@@ -5,10 +5,13 @@ import {
   User,
   X,
   Upload,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Select, Rate } from "antd";
+import { Select, Rate, message } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { StaffSaveResultModal } from "../components/StaffSaveResultModal";
@@ -36,6 +39,7 @@ export function StaffCreatePage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
   const location = useLocation();
   const [formData, setFormData] = useState({
@@ -59,9 +63,14 @@ export function StaffCreatePage() {
         const salonList = await fetchAdminSalons({ pageSize: 100 });
         const fetchedSalons = salonList.items || [];
         setSalons(fetchedSalons);
-        
-        if (!location.state?.selectedSalonId && fetchedSalons.length > 0) {
-          setFormData(prev => ({ ...prev, salonId: fetchedSalons[0].id }));
+
+        if (location.state?.selectedSalonId) {
+          const preSelected = fetchedSalons.find(s => s.id === location.state.selectedSalonId);
+          setFormData(prev => ({
+            ...prev,
+            salonId: location.state.selectedSalonId,
+            assignedSalon: preSelected ? preSelected.name : ""
+          }));
         }
       } catch (err) {
         console.error("Failed to load salons", err);
@@ -109,6 +118,10 @@ export function StaffCreatePage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!formData.salonId) {
+      message.error(language === "vi" ? "Vui lòng chọn một chi nhánh phân bổ." : "Please select an assigned salon.");
+      return;
+    }
     setShowSaveModal(true);
   };
 
@@ -128,12 +141,7 @@ export function StaffCreatePage() {
         salonId: formData.salonId || salons[0]?.id || "",
       };
 
-      console.log("StaffCreatePage - userData to send:", userData);
-      console.log("StaffCreatePage - available salons:", salons);
-
       const createdUser = await createUser(userData);
-
-      console.log("Created user:", createdUser);
 
       if (formData.role === "Staff_Artist") {
         let targetArtistId = createdUser?.staffId || createdUser?.nailArtistId;
@@ -156,11 +164,10 @@ export function StaffCreatePage() {
         const skillsPayload = Object.entries(selectedSkills)
           .filter(([_, level]) => level > 0)
           .map(([skillTypeId, level]) => ({ skillTypeId, level }));
-        
+
         if (skillsPayload.length > 0 && targetArtistId) {
           try {
             await assignNailArtistSkills(targetArtistId, skillsPayload);
-            console.log("Assigned skills successfully.");
           } catch (err) {
             console.error("Failed to assign skills:", err);
           }
@@ -244,7 +251,7 @@ export function StaffCreatePage() {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+      <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-3 lg:gap-5" autoComplete="off">
         <div className="space-y-4 lg:col-span-2 lg:space-y-5">
           <div className="rounded-[28px] bg-white/80 p-6 shadow-[0_24px_60px_rgba(226,93,143,0.1)] backdrop-blur border border-rose-50">
             <h2 className="mb-6 text-[20px] font-bold text-slate-800 flex items-center gap-2">
@@ -297,9 +304,10 @@ export function StaffCreatePage() {
                     type="email"
                     value={formData.email}
                     onChange={(event) => handleInputChange("email", event.target.value)}
-                    placeholder="staff@nailify.com"
+                    placeholder="nguyenvana@gmail.com"
                     className={inputClassName}
                     required
+                    autoComplete="new-email"
                   />
                 </div>
               </div>
@@ -314,10 +322,36 @@ export function StaffCreatePage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(event) => handleInputChange("phone", event.target.value)}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+84 XXX XXX XXX"
                     className={inputClassName}
                     required
+                    autoComplete="none"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {language === "vi" ? "Mật khẩu" : "Password"} <span className="text-rose-500">*</span>
+                </span>
+                <div className={inputWrapperClassName}>
+                  <Lock size={14} className="shrink-0 text-rose-300" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(event) => handleInputChange("password", event.target.value)}
+                    placeholder="••••••••"
+                    className={inputClassName}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-100 hover:text-rose-500 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
                 </div>
               </div>
 
@@ -410,7 +444,7 @@ export function StaffCreatePage() {
                 <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-[#eb5b92] to-[#cf3d74]"></div>
                 {language === "vi" ? "Kỹ năng & Chuyên môn" : "Skills & Specialties"}
               </h2>
-              
+
               <div className="grid gap-6 md:grid-cols-2">
                 {skillTypes.map((skill) => (
                   <div key={skill.skillTypeId || skill.id} className="space-y-2 bg-gradient-to-br from-[#fffafc] to-[#fff8fb] p-4 rounded-2xl border border-rose-100">
@@ -476,7 +510,7 @@ export function StaffCreatePage() {
                     {formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New Staff Member")}
                   </h3>
                   <p className="text-xs text-slate-400 mb-3">
-                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))} · #{formData.staffId || "NF-NEW"}
+                    {selectedRole ? (t("adminStaffManagement." + (selectedRole.value === "Staff_Artist" ? "staffArtist" : selectedRole.value === "Manager" ? "manager" : "receptionist"))) : (t("adminStaffManagement.role"))}
                   </p>
                   <p className="text-[11px] font-medium text-slate-400 text-center">
                     {language === "vi" ? "Chi nhánh phân bổ:" : "Assigned Salon:"}{" "}
@@ -549,7 +583,7 @@ export function StaffCreatePage() {
         onCancel={() => !isSaving && setShowSaveModal(false)}
         highlights={[formData.fullName || formData.firstName + " " + formData.lastName || (language === "vi" ? "Nhân viên mới" : "New staff member"), language === "vi" ? { Staff_Artist: "Nhân viên làm móng", Manager: "Quản lý", Receptionist: "Lễ tân" }[formData.role] || formData.role : formData.role]}
         details={[
-          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
+          { label: t("adminStaffManagement.assignedSalon"), value: formData.assignedSalon || salons.find(s => s.id === formData.salonId)?.name || (language === "vi" ? "Chưa chọn chi nhánh" : "No salon selected") },
         ]}
       />
 

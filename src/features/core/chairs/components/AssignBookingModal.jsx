@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import { chairsService } from "../services/chairsService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
+import { BOOKING_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -151,34 +152,53 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
       title: language === "vi" ? "Trạng thái" : "Status",
       dataIndex: "status",
       key: "status",
-      render: (status) => (
-        <span className={`px-3 py-1 text-[10px] font-bold rounded-full border ${getStatusColor(status)} tracking-wider`}>
-          {status}
-        </span>
-      ),
+      render: (status) => {
+        let normalizedStatus = status;
+        if (status === "Checked In") normalizedStatus = "CheckedIn";
+        if (status === "In Progress") normalizedStatus = "InProgress";
+        if (status === "Confirmed") normalizedStatus = "Approved";
+        if (status === "Canceled") normalizedStatus = "Cancelled";
+        if (status === "Reschedule Req" || status === "RescheduleReq") normalizedStatus = "ReschedulePending";
+
+        const statusObj = BOOKING_STATUS[normalizedStatus] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+
+        return (
+          <span className={`px-3 py-1 text-[10px] font-bold rounded-full border ${statusObj.tone} tracking-wider whitespace-nowrap`}>
+            {statusObj[language]}
+          </span>
+        );
+      },
     },
     {
       title: language === "vi" ? "Thao tác" : "Action",
       key: "action",
-      align: "right",
+      align: "center",
       render: (_, record) => {
-        const hasChair = record.chairId && 
+        const hasChair = record.chairId &&
           record.chairId !== "00000000-0000-0000-0000-000000000000";
 
         const now = dayjs();
         const bookingDate = dayjs(record.bookingDate);
         const isToday = now.isSame(bookingDate, 'day');
-        
+
         let isCurrentTime = false;
         if (isToday && record.startTime) {
           const [hours, minutes] = record.startTime.split(':').map(Number);
           const start = dayjs().hour(hours).minute(minutes).second(0).millisecond(0);
           const duration = record.totalDuration || 30;
           const end = start.add(duration, 'minute');
-          
+
           // Allow assignment from 30 minutes before booking starts up to its end
           const graceStart = start.subtract(30, 'minute');
           isCurrentTime = now.isAfter(graceStart) && now.isBefore(end);
+        }
+
+        if (record.status !== "CheckedIn" && record.status !== "Checked In") {
+          return (
+            <span className="text-xs text-rose-400 font-medium tracking-wide">
+              {language === "vi" ? "Không thể phân ghế" : "Cannot assign"}
+            </span>
+          );
         }
 
         if (!isCurrentTime) {
@@ -197,8 +217,8 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
             onClick={() => handleAssign(record.bookingId)}
             className="!bg-[#ea4f93] hover:!bg-[#d63d7e] border-none !font-semibold !text-[11px] !text-white !px-5 !rounded-md !shadow-sm !shadow-pink-200/50"
           >
-            {hasChair 
-              ? (language === "vi" ? "Đổi ghế" : "Reassign") 
+            {hasChair
+              ? (language === "vi" ? "Đổi ghế" : "Reassign")
               : (language === "vi" ? "Chỉ định" : "Assign")}
           </Button>
         );
@@ -235,14 +255,14 @@ export function AssignBookingModal({ isOpen, onClose, salonId, chair, onSuccess 
           style={{ width: 180 }}
           options={[
             { label: language === "vi" ? "Đang chờ" : "Pending", value: 'Pending' },
-            { label: language === "vi" ? "Đã duyệt" : "Approved", value: 'Approved' },
+            { label: language === "vi" ? "Đã xác nhận" : "Approved", value: 'Approved' },
             { label: language === "vi" ? "Đã từ chối" : "Rejected", value: 'Rejected' },
             { label: language === "vi" ? "Đã hủy" : "Cancelled", value: 'Cancelled' },
             { label: language === "vi" ? "Đã check-in" : "CheckedIn", value: 'CheckedIn' },
             { label: language === "vi" ? "Đang thực hiện" : "InProgress", value: 'InProgress' },
             { label: language === "vi" ? "Đã hoàn thành dịch vụ" : "ServiceCompleted", value: 'ServiceCompleted' },
             { label: language === "vi" ? "Đã hoàn thành" : "Completed", value: 'Completed' },
-            { label: language === "vi" ? "Đã sửa chữa" : "Repaired", value: 'Repaired' },
+            { label: language === "vi" ? "Đã bảo hành" : "Repaired", value: 'Repaired' },
             { label: language === "vi" ? "Đang chờ sắp xếp lại" : "ReschedulePending", value: 'ReschedulePending' },
             { label: language === "vi" ? "Đang đề xuất sắp xếp lại" : "RescheduleSuggested", value: 'RescheduleSuggested' },
           ]}

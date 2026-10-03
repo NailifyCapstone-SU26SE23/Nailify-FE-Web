@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { DatePicker, Spin, Select, Modal, Input, Tooltip, Table } from "antd";
+import { Spin, Select, Modal, Input, Tooltip, Table } from "antd";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 import {
@@ -27,7 +27,9 @@ import {
   CircleX, Eye
 } from "lucide-react";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { Pagination } from "../../../../shared/components/common/Pagination";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { EmptyState } from "../../../../shared/components/common/EmptyState";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
@@ -38,6 +40,7 @@ import {
   approveRejectBreakRequest,
   fetchNailArtists,
 } from "../../../core/breaks/services/breakService";
+import { BREAK_STATUS } from "../../../../shared/utils/statusFormatters";
 
 export function ManagerArtistBreakPage() {
   const { t, language } = useLanguage();
@@ -52,7 +55,7 @@ export function ManagerArtistBreakPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterArtistId, setFilterArtistId] = useState(undefined);
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDateRange, setFilterDateRange] = useState(null);
   const [selectedSort, setSelectedSort] = useState("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
@@ -84,8 +87,7 @@ export function ManagerArtistBreakPage() {
       const response = await fetchBreaks({
         pageNumber: currentPage,
         pageSize,
-        artistId: filterArtistId || undefined,
-        date: filterDate ? dayjs(filterDate).toISOString() : undefined,
+        artistId: filterArtistId,
       });
 
       if (response) {
@@ -104,7 +106,7 @@ export function ManagerArtistBreakPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filterArtistId, filterDate, language]);
+  }, [currentPage, filterArtistId, language]);
 
   useEffect(() => {
     loadArtists();
@@ -130,15 +132,20 @@ export function ManagerArtistBreakPage() {
       // Status filter
       let matchesStatus = true;
       if (filterStatus === "pending") matchesStatus = st === "pending" || st === "chờ duyệt";
-      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "đã duyệt";
+      else if (filterStatus === "approved") matchesStatus = st === "approved" || st === "Đã xác nhận";
       else if (filterStatus === "rejected") matchesStatus = st === "rejected" || st === "từ chối";
 
       if (!matchesStatus) return false;
 
       // Date filter
-      if (filterDate) {
-        const breakDateStr = dayjs(b.breakDate).format("YYYY-MM-DD");
-        if (breakDateStr !== filterDate) return false;
+      if (filterDateRange && Array.isArray(filterDateRange) && filterDateRange.length === 2) {
+        const [start, end] = filterDateRange;
+        if (start && end) {
+          const d = dayjs(b.breakDate?.endsWith('Z') ? b.breakDate : b.breakDate + 'Z');
+          if (d.isBefore(start.startOf('day')) || d.isAfter(end.endOf('day'))) {
+            return false;
+          }
+        }
       }
 
       // Search query filter (artist name, reason)
@@ -152,7 +159,7 @@ export function ManagerArtistBreakPage() {
 
       return true;
     });
-  }, [breaks, filterStatus, filterDate, searchQuery, getArtistName]);
+  }, [breaks, filterStatus, filterDateRange, searchQuery, getArtistName]);
 
   const sortedBreaks = useMemo(() => {
     const [sortKey, sortOrder] = selectedSort.split("-");
@@ -165,8 +172,8 @@ export function ManagerArtistBreakPage() {
           valB = getArtistName(b.nailArtistId).toLowerCase();
           break;
         case "date":
-          valA = new Date(a.breakDate).getTime();
-          valB = new Date(b.breakDate).getTime();
+          valA = new Date(a.breakDate?.endsWith('Z') ? a.breakDate : a.breakDate + 'Z').getTime();
+          valB = new Date(b.breakDate?.endsWith('Z') ? b.breakDate : b.breakDate + 'Z').getTime();
           break;
         case "time":
           valA = new Date(`1970-01-01T${a.startTime || "00:00:00"}`).getTime();
@@ -188,7 +195,7 @@ export function ManagerArtistBreakPage() {
   // Reset page when filters change to prevent out of bounds
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStatus, searchQuery, filterArtistId, filterDate]);
+  }, [filterStatus, searchQuery, filterArtistId, filterDateRange]);
 
   // Determine if server is returning paginated data or a flat array of all records
   const isServerPaginated = useMemo(() => {
@@ -220,7 +227,7 @@ export function ManagerArtistBreakPage() {
     breaks.forEach((b) => {
       const st = String(b.status || "").toLowerCase();
       if (st === "pending" || st === "chờ duyệt") pending++;
-      else if (st === "approved" || st === "đã duyệt") approved++;
+      else if (st === "approved" || st === "Đã xác nhận") approved++;
       else if (st === "rejected" || st === "từ chối") rejected++;
     });
     return { pending, approved, rejected, total: breaks.length };
@@ -315,37 +322,19 @@ export function ManagerArtistBreakPage() {
   };
 
   const getStatusBadge = (status) => {
-    const s = String(status || "Pending").trim().toLowerCase();
-    switch (s) {
-      case "approved":
-      case "đã duyệt":
-      case "đồng ý":
-      case "active":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/90 shadow-2xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            {language === 'vi' ? 'Đã duyệt' : 'Approved'}
-          </span>
-        );
-      case "rejected":
-      case "từ chối":
-      case "không đồng ý":
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 border border-rose-200/90 shadow-2xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
-            {language === 'vi' ? 'Từ chối' : 'Rejected'}
-          </span>
-        );
-      case "pending":
-      case "chờ duyệt":
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200/90 shadow-2xs">
-            <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping"></span>
-            {language === 'vi' ? 'Chờ duyệt' : 'Pending'}
-          </span>
-        );
-    }
+    let normalized = "Pending";
+    const s = String(status || "").trim().toLowerCase();
+    if (s === "approved" || s === "đã xác nhận" || s === "đồng ý" || s === "active") normalized = "Approved";
+    else if (s === "rejected" || s === "từ chối" || s === "không đồng ý") normalized = "Rejected";
+
+    const statusObj = BREAK_STATUS[normalized] || { [language]: status, tone: "bg-gray-100 text-gray-600 border-gray-200" };
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold shadow-2xs ${statusObj.tone}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${normalized === 'Pending' ? 'bg-amber-500 animate-ping h-2 w-2' : normalized === 'Approved' ? 'bg-green-500' : 'bg-rose-500'}`}></span>
+        {statusObj[language]}
+      </span>
+    );
   };
 
   // Calculate break duration from the slot boundaries.
@@ -417,22 +406,23 @@ export function ManagerArtistBreakPage() {
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
 
           {/* Search Query Input */}
-          <div className="relative min-w-[200px] flex-1">
+          <div className="flex flex-col items-start gap-2 min-w-[200px] flex-1">
+            <span className="text-xs font-bold text-gray-500">{t("manager.common.search")}:</span>
             <Input
               prefix={<Search size={14} className="text-gray-400 mr-1" />}
               placeholder={t("manager.bookings.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
-              className="!rounded-full border-gray-200 text-xs py-1.5 px-3"
+              className="!rounded-full border-gray-200 text-xs py-1.5 px-3 !h-[38px]"
             />
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Artist Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-500">{t("manager.bookings.artist")}:</span>
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-xs font-bold text-gray-500">{t("manager.bookings.artist")}:</div>
             <Select
               allowClear
               placeholder={language === "vi" ? "Tất cả nhân viên" : "All Staff Artists"}
@@ -443,7 +433,7 @@ export function ManagerArtistBreakPage() {
                 setCurrentPage(1);
               }}
               style={{ width: 170 }}
-              className="rounded-xl text-xs font-medium"
+              className="rounded-xl text-xs font-medium !h-[38px]"
             >
               {artists.map((artist) => (
                 <Select.Option key={artist.id} value={artist.id}>
@@ -454,26 +444,24 @@ export function ManagerArtistBreakPage() {
           </div>
 
           {/* Date Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-gray-500">{language === "vi" ? "Ngày yêu cầu" : "Request Date"}:</span>
-            <DatePicker
-              value={filterDate ? dayjs(filterDate) : null}
-              onChange={(date, dateString) => {
-                setFilterDate(dateString || "");
+          <div className="flex flex-col items-start gap-2">
+            <div className="text-xs font-bold text-gray-500">{language === "vi" ? "Khoảng thời gian" : "Date Range"}:</div>
+            <DateRangePicker
+              value={filterDateRange}
+              onChange={(dates) => {
+                setFilterDateRange(dates);
                 setCurrentPage(1);
               }}
-              className="rounded-xl border-gray-200 text-xs"
-              format="YYYY-MM-DD"
-              placeholder={language === "vi" ? "Chọn ngày" : "Select date"}
+              className="h-10"
             />
           </div>
 
           {/* Clear Filters */}
-          {(filterArtistId || filterDate || filterStatus !== "all" || searchQuery) && (
+          {(filterArtistId || filterDateRange || filterStatus !== "all" || searchQuery) && (
             <button
               onClick={() => {
                 setFilterArtistId(undefined);
-                setFilterDate("");
+                setFilterDateRange(null);
                 setFilterStatus("all");
                 setSearchQuery("");
                 setCurrentPage(1);
@@ -496,7 +484,7 @@ export function ManagerArtistBreakPage() {
         <EmptyState
           title={language === "vi" ? "Không tìm thấy yêu cầu nghỉ" : "No break requests found"}
           description={
-            searchQuery || filterArtistId || filterDate || filterStatus !== "all"
+            searchQuery || filterArtistId || filterDateRange || filterStatus !== "all"
               ? language === "vi" ? "Không tìm thấy yêu cầu nghỉ phù hợp với tiêu chí tìm kiếm và lọc hiện tại." : "No break requests match your current search and filter criteria."
               : language === "vi" ? "Chưa có yêu cầu nghỉ giải lao nào được gửi." : "There are no Staff Artist break requests submitted yet."
           }
@@ -549,9 +537,9 @@ export function ManagerArtistBreakPage() {
                     sorter: true,
                     sortOrder: selectedSort === "date-asc" ? "ascend" : selectedSort === "date-desc" ? "descend" : null,
                     render: (_, item) => (
-                      <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 inline-flex">
-                        <CalendarDays size={14} className="text-[#C97A9E]" />
-                        <span className="font-bold text-gray-800">{dayjs(item.breakDate).format("DD/MM/YYYY")}</span>
+                      <div className="flex justify-between items-center bg-gray-50/50 p-2 rounded-lg">
+                        <span className="text-gray-500 font-medium flex items-center gap-2"><CalendarDays size={13} /> {language === "vi" ? "Ngày nghỉ" : "Break Date"}:</span>
+                        <span className="font-bold text-gray-800">{dayjs(item.breakDate?.endsWith('Z') ? item.breakDate : item.breakDate + 'Z').format("DD/MM/YYYY")}</span>
                       </div>
                     )
                   },
@@ -620,70 +608,34 @@ export function ManagerArtistBreakPage() {
                   {
                     title: language === "vi" ? "Thao tác" : "Actions",
                     key: "actions",
-                    align: "right",
+                    align: "center",
                     render: (_, item) => {
                       const st = String(item.status || "").toLowerCase();
                       const isPending = st === "pending" || st === "chờ duyệt";
                       return (
-                        <div className="flex items-center justify-end gap-2">
-                          {isPending ? (
-                            <>
-                              <Tooltip title={language === "vi" ? "Xem chi tiết" : "View details"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setIsViewModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all cursor-pointer"
-                                >
-                                  <Eye size={15} />
-                                </button>
-                              </Tooltip>
-
-                              <Tooltip title={language === "vi" ? "Phê duyệt" : "Approve"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setIsApproveModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <Check size={16} strokeWidth={2.5} />
-                                </button>
-                              </Tooltip>
-
-                              <Tooltip title={language === "vi" ? "Từ chối" : "Reject"}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedBreak(item);
-                                    setRejectReasonInput("");
-                                    setIsRejectModalOpen(true);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md shadow-rose-600/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                                >
-                                  <X size={16} strokeWidth={2.5} />
-                                </button>
-                              </Tooltip>
-                            </>
-                          ) : (
-                            null
-                          )}
-
-                          <Tooltip title={language === "vi" ? "Xóa yêu cầu" : "Delete request"}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedBreak(item);
-                                setIsDeleteOpen(true);
-                              }}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all cursor-pointer shadow-2xs"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </Tooltip>
+                        <div className="flex items-center justify-center gap-2">
+                          <ActionButtons
+                            onView={() => {
+                              setSelectedBreak(item);
+                              setIsViewModalOpen(true);
+                            }}
+                            onApprove={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsApproveModalOpen(true);
+                            } : undefined}
+                            onReject={isPending ? () => {
+                              setSelectedBreak(item);
+                              setRejectReasonInput("");
+                              setIsRejectModalOpen(true);
+                            } : undefined}
+                            onDelete={isPending ? () => {
+                              setSelectedBreak(item);
+                              setIsDeleteOpen(true);
+                            } : undefined}
+                            showApprove={isPending}
+                            showReject={isPending}
+                            showDelete={isPending}
+                          />
                         </div>
                       );
                     }
@@ -726,8 +678,9 @@ export function ManagerArtistBreakPage() {
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
           },
           {
-            label: language === "vi" ? "Ngày yêu cầu nghỉ" : "Break Date",
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : "",
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : "",
+            icon: CalendarDays,
           },
           {
             label: "Time Slot",
@@ -769,9 +722,10 @@ export function ManagerArtistBreakPage() {
               <p className="font-bold text-rose-950">
                 {language === "vi" ? "Nhân viên" : "Staff Artist"}: {getArtistName(selectedBreak.nailArtistId)}
               </p>
-              <p className="text-rose-800 font-semibold">
-                {language === "vi" ? "Ca" : "Slot"}: {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
-              </p>
+              <div className="text-[11px] text-gray-500 font-medium uppercase tracking-wider flex items-center gap-1">
+                <Clock3 size={12} className="text-rose-400" />
+                {language === "vi" ? "Ca" : "Slot"}: {dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")} ({selectedBreak.startTime?.substring(0, 5)} - {selectedBreak.endTime?.substring(0, 5)})
+              </div>
               <p className="text-gray-600 italic">{language === "vi" ? "Lý do" : "Reason"}: &quot;{selectedBreak.reason || "Shift break"}&quot;</p>
             </div>
           )}
@@ -848,13 +802,12 @@ export function ManagerArtistBreakPage() {
             <div className="grid grid-cols-2 gap-4">
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs text-gray-400">
-                  {language === "vi" ? "Ngày nghỉ" : "Break Date"}
+                <p className="text-xs text-gray-400 mb-1">
+                  <span className="text-gray-500">{language === "vi" ? "Ngày nghỉ:" : "Date:"}</span>
                 </p>
-
-                <p className="mt-1 font-bold">
-                  {dayjs(selectedBreak.breakDate).format("DD/MM/YYYY")}
-                </p>
+                <span className="font-bold text-gray-900 bg-gray-100/80 px-2 py-0.5 rounded text-sm">
+                  {dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY")}
+                </span>
               </div>
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
@@ -921,10 +874,10 @@ export function ManagerArtistBreakPage() {
       <ActionConfirmModal
         open={isDeleteOpen}
         intent="danger"
-        title="Delete Break Request?"
-        description="This action will permanently delete this break request record."
-        confirmText="Delete Request"
-        cancelText="Cancel"
+        title={language === "vi" ? "Xóa yêu cầu nghỉ?" : "Delete Break Request?"}
+        description={language === "vi" ? "Hành động này sẽ xóa vĩnh viễn bản ghi yêu cầu nghỉ này." : "This action will permanently delete this break request record."}
+        confirmText={language === "vi" ? "Xóa yêu cầu" : "Delete Request"}
+        cancelText={language === "vi" ? "Hủy" : "Cancel"}
         onConfirm={handleDeleteConfirm}
         onCancel={() => {
           setIsDeleteOpen(false);
@@ -937,8 +890,9 @@ export function ManagerArtistBreakPage() {
             value: selectedBreak ? getArtistName(selectedBreak.nailArtistId) : "",
           },
           {
-            label: "Break Date",
-            value: selectedBreak ? dayjs(selectedBreak.breakDate).format("DD/MM/YYYY") : "",
+            label: language === "vi" ? "Ngày nghỉ" : "Break Date",
+            value: selectedBreak ? dayjs(selectedBreak.breakDate?.endsWith('Z') ? selectedBreak.breakDate : selectedBreak.breakDate + 'Z').format("DD/MM/YYYY") : "",
+            icon: CalendarDays,
           },
         ]}
       />

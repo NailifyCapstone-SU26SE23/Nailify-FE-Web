@@ -3,7 +3,6 @@ import {
     Award,
     Plus,
     Search,
-    Trash2,
     Edit3,
     Info,
     Check,
@@ -17,7 +16,8 @@ import {
     TrendingUp,
     Image as ImageIcon,
     Layers,
-    Upload
+    Upload,
+    Trash
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,9 +29,13 @@ import {
 } from "../services/loyaltyTiersManagementService";
 import LoyaltyTierDetailModal from "../components/LoyaltyTierDetailModal";
 import { DeleteConfirmModal } from "../../quiz-management/components/DeleteConfirmModal";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { Trash2 } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { toast } from "react-hot-toast";
+import { Tooltip } from "antd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 // Presentation-only helper: renders a tier's rank as a roman numeral stamp.
 // Purely derived from sortOrder at render time — does not touch any state.
@@ -162,11 +166,6 @@ export function LoyaltyTierManagement() {
         }
     };
 
-    // Badge image upload handling.
-    // NOTE: this reads the file locally and previews it as a base64 data URL so the
-    // drawer + card preview update instantly. Wire this up to your real upload
-    // endpoint (e.g. Cloudinary) and swap `reader.result` for the returned URL
-    // once that endpoint is available.
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -230,7 +229,7 @@ export function LoyaltyTierManagement() {
             description: tier.description,
             minLifetimePoints: tier.minLifetimePoints,
             maxLifetimePoints: tier.maxLifetimePoints,
-            discountRate: tier.discountRate,
+            discountRate: parseFloat((tier.discountRate * 100).toFixed(2)),
             imageUrl: tier.imageUrl,
             imageFile: null,
             backgroundColor: tier.backgroundColor,
@@ -290,14 +289,14 @@ export function LoyaltyTierManagement() {
         setIsDeleting(true);
         try {
             await deleteLoyaltyTier(deleteTarget.id);
-            setTiers(prev => prev.filter(t => t.id !== deleteTarget.id));
-            showNotification("Loyalty tier deleted successfully.");
+            setTiers(prev => prev.map(t => t.id === deleteTarget.id ? { ...t, status: 'Inactive' } : t));
+            showNotification(language === "vi" ? "Xóa cấp độ thành công." : "Loyalty tier deleted successfully.");
             if (activeTierId === deleteTarget.id) {
                 handleCancelForm();
             }
         } catch (err) {
             console.error(err);
-            showNotification(err instanceof Error ? err.message : "Failed to delete loyalty tier.", "error");
+            showNotification(err instanceof Error ? err.message : (language === "vi" ? "Xóa cấp độ thất bại." : "Failed to delete loyalty tier."), "error");
         } finally {
             setIsDeleting(false);
             setDeleteTarget(null);
@@ -361,14 +360,19 @@ export function LoyaltyTierManagement() {
         setIsSaving(true);
         setIsLoading(true);
         try {
+            const formDataToSubmit = {
+                ...formData,
+                discountRate: parseFloat((formData.discountRate / 100).toFixed(4))
+            };
+
             if (activeTierId) {
                 // Edit mode
-                const updated = await updateLoyaltyTier(activeTierId, formData);
+                const updated = await updateLoyaltyTier(activeTierId, formDataToSubmit);
                 setTiers(prev => prev.map(t => t.id === activeTierId ? updated : t).sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
                 showNotification(isVi ? `Cấp độ '${formData.name}' đã được cập nhật thành công.` : `Tier '${formData.name}' updated successfully.`);
             } else {
                 // Create mode
-                const created = await createLoyaltyTier(formData);
+                const created = await createLoyaltyTier(formDataToSubmit);
                 setTiers(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder || a.minLifetimePoints - b.minLifetimePoints));
                 showNotification(isVi ? `Cấp độ thành viên '${formData.name}' đã được tạo thành công.` : `Loyalty tier '${formData.name}' created successfully.`);
             }
@@ -388,34 +392,12 @@ export function LoyaltyTierManagement() {
 
             {/* Page Header + compact stat strip (replaces generic 4-box KPI grid) */}
             <div className="flex flex-col gap-5 border-b border-[#f5e3ed] pb-6">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div>
-                        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#c9799f]">
-                            {t("adminLoyaltyTiersManagement.nailifyMembershipProgram")}
-                        </span>
-                        <h1 className="mt-1 text-4xl font-bold tracking-tight text-[#3f2034]">
-                            {t("menus.admin-loyalty-tiers") || "Loyalty Tier Catalog"}
-                        </h1>
-                        <p className="mt-1 text-sm text-[#8c7484]">
-                            {t("adminLoyaltyTiersManagement.everyRankBelowIsRenderedExactl")}
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={handleStartCreate}
-                        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(235,90,153,0.18)] transition-all hover:opacity-95 active:scale-[0.98]"
-                    >
-                        <Plus size={15} className="mr-2" />
-                        {t("adminLoyaltyTiersManagement.createLoyaltyTier")}
-                    </button>
-                </div>
-
                 <TopMetricsRow
                     metrics={[
                         { label: t("adminLoyaltyTiersManagement.membersEnrolled"), value: String(totalMembers.toLocaleString()), icon: Users, color: "#ea4f93" },
                         { label: t("adminLoyaltyTiersManagement.activeTiers"), value: String(activeTiersCount), icon: Layers, color: "#ea4f93" },
-                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${maxDiscount}%`, icon: Percent, color: "#7c5cff" },
-                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${averageDiscount}%`, icon: TrendingUp, color: "#ff7a59" }
+                        { label: t("adminLoyaltyTiersManagement.topDiscount"), value: `${parseFloat((maxDiscount * 100).toFixed(2))}%`, icon: Percent, color: "#7c5cff" },
+                        { label: t("adminLoyaltyTiersManagement.averageDiscount"), value: `${parseFloat((averageDiscount * 100).toFixed(2))}%`, icon: TrendingUp, color: "#ff7a59" }
                     ]}
                     className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                 />
@@ -423,7 +405,7 @@ export function LoyaltyTierManagement() {
 
             {/* Control Bar: Search input, points filter, Status filter */}
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-1 flex-col gap-2 sm:flex-row ">
+                <div className="flex flex-1 flex-col gap-2 md:flex-row ">
                     <div className="relative flex-1">
                         <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#c099b2]" />
                         <input
@@ -463,6 +445,13 @@ export function LoyaltyTierManagement() {
                             </button>
                         ))}
                     </div>
+                    <button
+                        onClick={handleStartCreate}
+                        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-[image:var(--gradient-accent)] px-6 text-sm font-bold text-white shadow-[0_10px_20px_rgba(235,90,153,0.18)] transition-all hover:opacity-95 active:scale-[0.98]"
+                    >
+                        <Plus size={15} className="mr-2" />
+                        {t("adminLoyaltyTiersManagement.createLoyaltyTier")}
+                    </button>
                 </div>
             </div>
 
@@ -608,7 +597,7 @@ export function LoyaltyTierManagement() {
                                                             {t("adminLoyaltyTiersManagement.threshold")}
                                                         </span>
                                                         <span className="nailify-mono text-xs font-bold">
-                                                            {tier.minLifetimePoints.toLocaleString()}–{tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
+                                                            {tier.minLifetimePoints.toLocaleString()} – {tier.maxLifetimePoints.toLocaleString() === "0" ? "∞" : tier.maxLifetimePoints.toLocaleString()} {t("adminLoyaltyTiersManagement.pts")}
                                                         </span>
                                                     </div>
                                                     <div className="text-right">
@@ -616,7 +605,7 @@ export function LoyaltyTierManagement() {
                                                             {t("adminLoyaltyTiersManagement.discount")}
                                                         </span>
                                                         <span className="text-lg font-bold">
-                                                            {tier.discountRate > 0 ? `${tier.discountRate}%` : (t("adminLoyaltyTiersManagement.standard"))}
+                                                            {tier.discountRate > 0 ? `${parseFloat((tier.discountRate * 100).toFixed(2))}%` : (t("adminLoyaltyTiersManagement.standard"))}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -633,57 +622,56 @@ export function LoyaltyTierManagement() {
                                             </div>
 
                                             <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleStatus(tier.id);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    title={language === "vi" ? `Đổi trạng thái thành ${tier.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${tier.status === "Active" ? "Inactive" : "Active"}`}
-                                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${tier.status === "Active"
-                                                        ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
-                                                        : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
-                                                        }`}
-                                                >
-                                                    {updatingStatusTierId === tier.id ? (
-                                                        <svg className="h-2.5 w-2.5 animate-spin text-current" viewBox="0 0 24 24" fill="none">
-                                                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
-                                                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-                                                        </svg>
-                                                    ) : (
-                                                        <Power size={9} />
-                                                    )}
-                                                    <span>
-                                                        {language === "vi"
-                                                            ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
-                                                            : tier.status
-                                                        }
-                                                    </span>
-                                                </button>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleStartEdit(tier);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={t("adminLoyaltyTiersManagement.editTierDetails")}
-                                                >
-                                                    <Edit3 size={11} />
-                                                </button>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteTier(tier.id);
-                                                    }}
-                                                    disabled={updatingStatusTierId === tier.id}
-                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    title={t("adminLoyaltyTiersManagement.deleteTier")}
-                                                >
-                                                    <Trash2 size={11} />
-                                                </button>
+                                                <Tooltip title={language === "vi" ? "Thay đổi trạng thái" : "Change status"}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleToggleStatus(tier.id);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        title={language === "vi" ? `Đổi trạng thái thành ${tier.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${tier.status === "Active" ? "Inactive" : "Active"}`}
+                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${BASIC_STATUS[tier.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                                                    >
+                                                        {updatingStatusTierId === tier.id ? (
+                                                            <svg className="h-2.5 w-2.5 animate-spin text-current" viewBox="0 0 24 24" fill="none">
+                                                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
+                                                                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                                                            </svg>
+                                                        ) : (
+                                                            <Power size={9} />
+                                                        )}
+                                                        <span>
+                                                            {language === "vi"
+                                                                ? (tier.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                                                                : tier.status
+                                                            }
+                                                        </span>
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip title={t("adminLoyaltyTiersManagement.editTierDetails")}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStartEdit(tier);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Edit3 size={11} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip title={t("adminLoyaltyTiersManagement.deleteTier")}>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteTier(tier.id);
+                                                        }}
+                                                        disabled={updatingStatusTierId === tier.id}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Trash size={11} />
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -1142,17 +1130,21 @@ export function LoyaltyTierManagement() {
             </AnimatePresence>
 
             {/* Delete Confirmation Modal */}
-            <DeleteConfirmModal
-                isOpen={!!deleteTarget}
-                isDeleting={isDeleting}
+            <ActionConfirmModal
+                open={!!deleteTarget}
+                intent="danger"
                 title={t("adminLoyaltyTiersManagement.deleteLoyaltyTier")}
                 description={
                     deleteTarget
                         ? (language === "vi"
-                            ? `Bạn có chắc chắn muốn xóa cấp độ "${deleteTarget.name}"? Hành động này không thể hoàn tác và tất cả cấu hình cấp độ sẽ bị loại bỏ vĩnh viễn.`
-                            : `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and all tier configuration will be permanently removed.`)
+                            ? `Bạn có chắc chắn muốn xóa cấp độ "${deleteTarget.name}"? Hành động này không thể hoàn tác và tất cả cấu hình cấp độ sẽ bị loại bỏ.`
+                            : `Are you sure you want to delete "${deleteTarget.name}"? This action cannot be undone and all tier configuration will be removed.`)
                         : ""
                 }
+                confirmText={language === "vi" ? "Xóa cấp độ" : "Delete Tier"}
+                cancelText={t("adminLoyaltyTiersManagement.cancel")}
+                confirmIcon={Trash2}
+                loading={isDeleting}
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />

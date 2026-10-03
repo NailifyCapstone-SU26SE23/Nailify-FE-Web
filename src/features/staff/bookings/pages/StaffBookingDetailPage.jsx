@@ -9,7 +9,8 @@ import { BookingFormFields } from "../components/BookingFormFields";
 import { BookingHeroCard } from "../components/BookingHeroCard";
 import { BookingSnapshotCard } from "../components/BookingSnapshotCard";
 import { StaffBookingConsultationDetail } from "../components/StaffBookingConsultationDetail";
-import { ExtraServiceModal } from "../components/ExtraServiceModal";
+import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { OnsiteAddonConflictModal } from "../../../receptionist/bookings/components/OnsiteAddonConflictModal";
 import { ServiceProceduresViewerModal } from "../../../../shared/components/common/ServiceProceduresViewerModal";
 import {
   BOOKING_ROLE_CONFIG,
@@ -154,7 +155,7 @@ function buildDefaultStaffNotes(booking, language) {
   return [
     {
       label: "Customer Requests",
-      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note from API."),
+      value: booking?.bookingItems?.find((item) => item.customerNailName)?.customerNailName || (isVi ? "Không có ghi chú từ khách." : "No customer note."),
     },
     {
       label: "Design Adjustments",
@@ -165,6 +166,26 @@ function buildDefaultStaffNotes(booking, language) {
       value: serviceNames || (isVi ? "Xác nhận dịch vụ, thời gian rồi bắt đầu." : "Verify services, confirm timing, then start session."),
     },
   ];
+}
+
+function translateStatus(status, language) {
+  const s = String(status || "").trim().toLowerCase();
+  if (language === "vi") {
+    switch (s) {
+      case "active": return "Đang hoạt động";
+      case "inactive": return "Ngừng hoạt động";
+      case "blocked": return "Đã khóa";
+      case "pending": return "Chờ xử lý";
+      case "approved": return "Đã xác nhận";
+      case "checkedin": return "Đã Check-in";
+      case "inprogress": return "Đang thực hiện";
+      case "servicecompleted": return "Đã xong dịch vụ";
+      case "completed": return "Hoàn thành";
+      case "cancelled": return "Đã hủy";
+      default: return status;
+    }
+  }
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : status;
 }
 
 function buildStaffExperienceFromBooking(
@@ -240,9 +261,11 @@ function buildStaffExperienceFromBooking(
         name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
-        price: formatCurrency(resolvedService?.price ?? item?.price ?? item?.finalPrice ?? 0),
-        duration: normalizeBookingItemDuration(resolvedService?.duration ?? item?.serviceDuration ?? item?.duration),
+        rawPrice: item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0,
+        price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedService?.price ?? 0),
+        duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedService?.duration),
         canViewProcedures: Boolean(bookingItemId) && !hasNailDetail,
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -259,9 +282,11 @@ function buildStaffExperienceFromBooking(
         name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? (language === "vi" ? "Móng của khách hàng" : "Customer Nail") : (language === "vi" ? "Biến thể móng" : "Nail Variant"),
         quantity,
-        price: formatCurrency(resolvedNailDetail?.price ?? 0),
-        duration: normalizeBookingItemDuration(resolvedNailDetail?.duration),
+        rawPrice: item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0,
+        price: formatCurrency(item?.price ?? item?.finalPrice ?? resolvedNailDetail?.price ?? 0),
+        duration: normalizeBookingItemDuration(item?.duration ?? item?.serviceDuration ?? resolvedNailDetail?.duration),
         canViewProcedures: Boolean(bookingItemId),
+        timeRangeDisplay: item?.timeRangeDisplay || null,
       });
     }
 
@@ -274,13 +299,19 @@ function buildStaffExperienceFromBooking(
     const key = `${entry.detailLabel}_${entry.name}_${entry.price}_${entry.duration}`;
     if (!serviceEntriesMap.has(key)) {
       const copy = { ...entry };
+      copy.totalPrice = formatCurrency(copy.rawPrice * copy.quantity);
       serviceEntriesMap.set(key, copy);
       bookingServiceEntries.push(copy);
     } else {
-      serviceEntriesMap.get(key).quantity += entry.quantity;
+      const existing = serviceEntriesMap.get(key);
+      existing.quantity += entry.quantity;
+      existing.totalPrice = formatCurrency(existing.rawPrice * existing.quantity);
     }
   });
-  const bookingItemsBasePrice = normalizedItems.reduce((sum, item) => {
+  const designItemsBasePrice = normalizedItems.reduce((sum, item) => {
+    if (!(Number(item?.customerNailId || 0) > 0) && !(Number(item?.nailVariantId || 0) > 0)) {
+      return sum;
+    }
     const quantity = Number(item?.quantity || 0) > 0 ? Number(item.quantity) : 1;
     const price = Number(item?.price || 0);
 
@@ -332,7 +363,7 @@ function buildStaffExperienceFromBooking(
       .map((item) => item?.component?.name)
       .filter(Boolean)
       .join(", ") || `${resolvedComponents.length} ${isVi ? "thành phần" : "component(s)"}`
-    : "--";
+    : (language === "vi" ? "Không có phụ kiện" : "No components");
   const customerDisplayName =
     customerDetail?.fullName ||
     booking?.customerName ||
@@ -363,7 +394,7 @@ function buildStaffExperienceFromBooking(
       facts: [
         { label: language === "vi" ? "Tiệm nails" : "Salon", value: booking?.salonName },
         { label: language === "vi" ? "Số lượng dịch vụ" : "Total Services", value: String(items.length || 0) },
-        { label: language === "vi" ? "Trạng thái" : "Status", value: customerStatus },
+        { label: language === "vi" ? "Trạng thái" : "Status", value: translateStatus(customerStatus, language) },
       ],
       allergyNote: customerDetail?.email,
       preferences: requestedDesign,
@@ -424,8 +455,8 @@ function buildStaffExperienceFromBooking(
         { label: language === "vi" ? "Bề mặt" : "Surface", value: resolvedSurface?.name },
         { label: "Customer Design", value: customerDesignNames[0] },
         { label: language === "vi" ? "Thời lượng" : "Duration", value: timeRange },
-        { label: language === "vi" ? "Giá" : "Price", value: bookingItemsBasePrice > 0 ? formatCurrency(bookingItemsBasePrice) : formatCurrency(booking?.price) },
-        { label: language === "vi" ? "Thành phần" : "Components", value: componentSummary },
+        { label: language === "vi" ? "Giá" : "Price", value: designItemsBasePrice > 0 ? formatCurrency(designItemsBasePrice) : formatCurrency(booking?.price) },
+        { label: language === "vi" ? "Phụ kiện" : "Components", value: componentSummary },
       ],
       tags: [
         { label: booking?.status || "Pending", className: "border-[#f4cada] bg-[#fff6fa] text-[#ea4f93]" },
@@ -442,6 +473,7 @@ function buildStaffExperienceFromBooking(
             customerNailDetail?.basedOnNailVariantId ||
             customerNailDetail?.customerNailId ||
             0,
+          shapeMethodConfigId: primaryDesignItem?.shapeMethodConfigId || 0,
           nailDesignId:
             resolvedDesignDetail.nailDesignId ||
             customerNailDetail?.basedOnNailVariant?.nailDesignId ||
@@ -494,9 +526,6 @@ function buildStaffExperienceFromBooking(
       })),
     staffNotes: staffNotesDraft,
     checklist: [
-      { label: language === 'vi' ? "Chi tiết lịch hẹn đã tải từ API" : "Booking detail loaded from API", checked: true },
-      { label: language === 'vi' ? "Thiết kế móng hiện tại đã được xác nhận" : "Current nail design confirmed", checked: false },
-      ...(hasCustomerNailSelected ? [{ label: language === 'vi' ? "Mẫu móng của khách hàng đã được xác nhận" : "Customer nail confirmed", checked: false }] : []),
       { label: language === 'vi' ? "Nghệ sĩ được chỉ định cho lịch hẹn" : "Artist assigned to booking", checked: Boolean(booking?.artistName) },
       {
         label: language === 'vi' ? "Có hình ảnh tham khảo thiết kế móng của khách hàng" : "Customer design reference available",
@@ -537,8 +566,12 @@ export function StaffBookingDetailPage() {
   const [staffBookingCustomerNailDetailMap, setStaffBookingCustomerNailDetailMap] = useState({});
   const [isStaffLoading, setIsStaffLoading] = useState(true);
   const [staffLoadError, setStaffLoadError] = useState("");
+  const [reloadTrigger, setReloadTrigger] = useState(0);
   const [staffNotesDraft, setStaffNotesDraft] = useState([]);
   const [showUpdateBookingModal, setShowUpdateBookingModal] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
   const [serviceCatalog, setServiceCatalog] = useState([]);
   const [serviceCatalogMeta, setServiceCatalogMeta] = useState({
     currentPage: 1,
@@ -564,6 +597,11 @@ export function StaffBookingDetailPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingServiceQuantity, setEditingServiceQuantity] = useState(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
+  const [itemsToDelete, setItemsToDelete] = useState([]);
+  const [isUpdatingBookingItems, setIsUpdatingBookingItems] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
   const isCurrentDesignConfirmed = useSelector((state) => (
     Boolean(state.booking.designConfirmations?.[normalizedBookingId])
@@ -634,7 +672,7 @@ export function StaffBookingDetailPage() {
 
     void loadBooking();
     return () => { isMounted = false; };
-  }, [bookingId, language, isVi]);
+  }, [bookingId, language, isVi, reloadTrigger]);
 
   useEffect(() => {
     const customerId = String(staffBookingDetail?.customerId || "").trim();
@@ -911,57 +949,6 @@ export function StaffBookingDetailPage() {
     setShowUpdateBookingModal(false);
   };
 
-  const handleSearchExtraServices = (event) => {
-    event.preventDefault();
-    setServiceCatalogPage(1);
-    setSelectedExtraServiceQuantities({});
-    setServiceSearchKeyword(serviceSearchInput.trim());
-  };
-
-  const handleAddExtraService = async () => {
-    const normalizedBookingId = String(bookingId || "").trim();
-    const normalizedSelectedServices = Object.entries(selectedExtraServiceQuantities).filter(([, quantity]) => (
-      Number(quantity || 0) > 0
-    ));
-
-    if (!normalizedBookingId || normalizedSelectedServices.length === 0 || !staffBookingDetail || isSavingExtraService) return;
-
-    setIsSavingExtraService(true);
-    try {
-      const bookingItems = Array.isArray(staffBookingDetail.bookingItems) ? staffBookingDetail.bookingItems : [];
-      const payloadBookingItems = buildStaffBookingItemsForUpdate(bookingItems, selectedExtraServiceQuantities);
-
-      const updatedBooking = await updateStaffBooking(normalizedBookingId, {
-        bookingDate: staffBookingDetail.bookingDate,
-        startTime: staffBookingDetail.startTime,
-        nailArtistId: toNullableBookingUuid(staffBookingDetail.nailArtistId || staffBookingDetail.artistId),
-        bookingItems: payloadBookingItems,
-      });
-
-      setStaffBookingDetail(updatedBooking);
-      setShowUpdateBookingModal(false);
-      setSelectedExtraServiceQuantities({});
-
-      const selectedServiceNames = normalizedSelectedServices
-        .map(([serviceId, quantity]) => {
-          const matchedService = serviceCatalog.find((item) => item.serviceId === serviceId);
-          if (!matchedService?.name) return "";
-          return quantity > 1 ? `${matchedService.name} x${quantity}` : matchedService.name;
-        }).filter(Boolean);
-
-      const message = selectedServiceNames.length
-        ? (isVi ? `Đã thêm ${selectedServiceNames.join(", ")} vào lịch hẹn.` : `${selectedServiceNames.join(", ")} ${selectedServiceNames.length > 1 ? "have" : "has"} been added to this booking.`)
-        : (isVi ? "Dịch vụ thêm đã được đưa vào lịch hẹn." : "Extra services have been added to this booking.");
-
-      setFlashMessage(message);
-      toast.success(message);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : (isVi ? "Cập nhật dịch vụ thất bại." : "Failed to update booking services.");
-      toast.error(message);
-    } finally {
-      setIsSavingExtraService(false);
-    }
-  };
 
   /* STREAMING_CHUNK: Rendering UI */
   if (isStaffLoading) {
@@ -1088,6 +1075,24 @@ export function StaffBookingDetailPage() {
     handleOpenDesignStudio();
   };
 
+  // Normalize bookingDate to "YYYY-MM-DD" for PUT payload per API spec
+  const getBookingDateStr = () => {
+    const raw = staffBookingDetail?.bookingDate || staffBookingDetail?.createdAt || "";
+    if (!raw) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    return raw.split("T")[0] || raw;
+  };
+
+  // Silent re-fetch: update booking data without showing loading spinner (no flicker)
+  const silentRefresh = async () => {
+    try {
+      const freshData = await fetchStaffBookingDetail(bookingId);
+      setStaffBookingDetail(freshData);
+    } catch {
+      // ignore — stale data is acceptable here
+    }
+  };
+
   const handleOpenServiceSession = () => {
     if (!isBookingReadyForService && !hasServiceStarted) {
       toast.error(
@@ -1110,6 +1115,163 @@ export function StaffBookingDetailPage() {
         },
       },
     });
+  };
+
+  const handleEnableEditQuantity = (service) => {
+    setEditingServiceQuantity(service);
+    setTempQuantity(service.quantity || 1);
+  };
+
+  const handleSelectService = (checked, serviceId) => {
+    setSelectedServiceIds(prev =>
+      checked ? [...prev, serviceId] : prev.filter(id => id !== serviceId)
+    );
+  };
+
+  const handleSelectAllServices = (checked, allServiceIds) => {
+    setSelectedServiceIds(checked ? allServiceIds : []);
+  };
+
+  const handleDeleteService = (service) => {
+    setItemsToDelete([service]);
+  };
+
+  const handleMultiDeleteServices = () => {
+    if (selectedServiceIds.length === 0) return;
+
+    const serviceInfo = resolvedStaffExperience?.bookingInfo?.find(info => info.label === "Service" || info.label === "Dịch vụ");
+    const breakdown = serviceInfo?.services || [];
+
+    const selectedItems = breakdown.filter(service => selectedServiceIds.includes(service.id));
+
+    // Fallback if none found for some reason, but we need names for UI
+    if (selectedItems.length === 0) {
+      setItemsToDelete([{
+        id: "multi-delete",
+        name: isVi ? "các dịch vụ đã chọn" : "selected services"
+      }]);
+      return;
+    }
+
+    setItemsToDelete(selectedItems);
+  };
+
+  const doUpdateServiceQuantity = async () => {
+    if (!staffBookingDetail || !editingServiceQuantity) return;
+    setIsUpdatingBookingItems(true);
+    try {
+      const groupedItems = new Map();
+      (staffBookingDetail.bookingItems || []).forEach((item) => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+
+        const isMatch = (() => {
+          const editSId = String(editingServiceQuantity.serviceId || "");
+          const editNId = String(editingServiceQuantity.nailVariantId || "");
+          if (!editSId && !editNId) {
+            return String(editingServiceQuantity.bookingItemId || editingServiceQuantity.id) === String(item.bookingItemId || item.id);
+          }
+          return editSId === sId && editNId === nId;
+        })();
+
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            shapeMethodConfigId: item.shapeMethodConfigId,
+            customerNailId: item.customerNailId,
+            customerNailRequestId: item.customerNailRequestId,
+            quantity: isMatch ? tempQuantity : (item.quantity || 1)
+          });
+        } else if (!isMatch) {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const payload = {
+        bookingDate: getBookingDateStr(),
+        startTime: staffBookingDetail.startTime,
+        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        secondaryArtistId: staffBookingDetail.secondaryArtistId || null,
+        selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
+        bookingItems: Array.from(groupedItems.values()).filter(i => i.serviceId || i.nailVariantId),
+      };
+
+      await updateStaffBooking(bookingId, payload);
+      toast.success(isVi ? "Đã cập nhật số lượng thành công." : "Quantity updated successfully.");
+      setEditingServiceQuantity(null);
+      void silentRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update quantity");
+    } finally {
+      setIsUpdatingBookingItems(false);
+    }
+  };
+
+  const doDeleteService = async () => {
+    if (!staffBookingDetail || itemsToDelete.length === 0) return;
+    setIsUpdatingBookingItems(true);
+    try {
+      const groupedItems = new Map();
+
+      (staffBookingDetail.bookingItems || []).forEach((item) => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+
+        const isMatch = itemsToDelete.some(delItem => {
+          const dsId = String(delItem.serviceId || "");
+          const dnId = String(delItem.nailVariantId || "");
+          if (!dsId && !dnId) {
+            return String(delItem.bookingItemId || delItem.id) === String(item.bookingItemId || item.id);
+          }
+          return dsId === sId && dnId === nId;
+        });
+
+        if (isMatch) return; // Skip deleted item
+
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            shapeMethodConfigId: item.shapeMethodConfigId,
+            customerNailId: item.customerNailId,
+            customerNailRequestId: item.customerNailRequestId,
+            quantity: item.quantity || 1
+          });
+        } else {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const resultingItems = Array.from(groupedItems.values());
+      if (resultingItems.length === 0) {
+        toast.error(isVi ? "Không thể xóa tất cả dịch vụ. Vui lòng giữ lại ít nhất 1 dịch vụ." : "Cannot delete all services. Please keep at least 1 service.");
+        setIsUpdatingBookingItems(false);
+        setItemsToDelete([]);
+        return;
+      }
+
+      const payload = {
+        bookingDate: getBookingDateStr(),
+        startTime: staffBookingDetail.startTime,
+        nailArtistId: staffBookingDetail.nailArtistId || staffBookingDetail.artistId || staffBookingDetail.staffId || null,
+        secondaryArtistId: staffBookingDetail.secondaryArtistId || null,
+        selectedPromotionIds: Array.isArray(staffBookingDetail.selectedPromotionIds) ? staffBookingDetail.selectedPromotionIds : [],
+        bookingItems: resultingItems.filter(i => i.serviceId || i.nailVariantId),
+      };
+
+      await updateStaffBooking(bookingId, payload);
+      toast.success(isVi ? "Đã xóa dịch vụ thành công." : "Services deleted successfully.");
+      setItemsToDelete([]);
+      setSelectedServiceIds([]);
+      void silentRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete service");
+    } finally {
+      setIsUpdatingBookingItems(false);
+    }
   };
 
   return (
@@ -1136,46 +1298,49 @@ export function StaffBookingDetailPage() {
         onDelete={handleDelete}
         onOpenDesignStudio={handleOpenDesignStudio}
         onOpenServiceProcedures={handleOpenServiceProcedures}
+        onEditQuantity={staffBookingDetail?.status === "CheckedIn" ? handleEnableEditQuantity : null}
+        onDeleteService={staffBookingDetail?.status === "CheckedIn" ? handleDeleteService : null}
+        selectedServiceIds={selectedServiceIds}
+        onSelectService={staffBookingDetail?.status === "CheckedIn" ? handleSelectService : null}
+        onSelectAllServices={staffBookingDetail?.status === "CheckedIn" ? handleSelectAllServices : null}
+        onMultiDelete={staffBookingDetail?.status === "CheckedIn" ? handleMultiDeleteServices : null}
         onOpenUpdateBooking={handleOpenUpdateBooking}
         onStaffNoteChange={handleStaffNoteChange}
         onStartServiceSession={() => void handleOpenServiceSession()}
+        canEditServices={staffBookingDetail?.status === "CheckedIn"}
       />
-      <ExtraServiceModal
+      <OnsiteAddonModal
         open={showUpdateBookingModal}
-        services={serviceCatalog}
-        selectedServiceQuantities={selectedExtraServiceQuantities}
-        searchValue={serviceSearchInput}
-        isLoading={isLoadingServiceCatalog}
-        isSaving={isSavingExtraService}
-        meta={serviceCatalogMeta}
         onClose={handleCloseUpdateBooking}
-        onSearchChange={(event) => setServiceSearchInput(event.target.value)}
-        onSearchSubmit={handleSearchExtraServices}
-        onDecreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => {
-            const nextQuantity = Math.max(0, Number(current?.[serviceId] || 0) - 1);
-            if (nextQuantity <= 0) {
-              const nextState = { ...current };
-              delete nextState[serviceId];
-              return nextState;
-            }
-            return { ...current, [serviceId]: nextQuantity };
-          })
-        }
-        onIncreaseQuantity={(serviceId) =>
-          setSelectedExtraServiceQuantities((current) => ({
-            ...current,
-            [serviceId]: Number(current?.[serviceId] || 0) + 1,
-          }))
-        }
-        onPageChange={(page) => {
-          if (page < 1 || page > (serviceCatalogMeta?.totalPages ?? 1)) return;
-          setSelectedExtraServiceQuantities({});
-          setServiceCatalogPage(page);
+        bookingId={bookingId}
+        booking={staffBookingDetail}
+        onSuccess={() => {
+          handleCloseUpdateBooking();
+          setReloadTrigger(prev => prev + 1);
         }}
-        onConfirm={handleAddExtraService}
-        title={isVi ? "Cập nhật dịch vụ cho lịch hẹn" : "Add Extra Services"}
-        description={isVi ? "Chọn các dịch vụ làm thêm vào lịch hẹn trước khi bắt đầu phiên dịch vụ." : "Select extra services to add into the current booking before starting the service session."}
+        onConflict={(data, items) => {
+          setConflictData(data);
+          setAddonItemsForConflict(items);
+          setIsOnsiteConflictModalOpen(true);
+        }}
+      />
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={bookingId}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          handleCloseUpdateBooking();
+          setReloadTrigger(prev => prev + 1);
+        }}
       />
       <ServiceProceduresViewerModal
         isOpen={Boolean(selectedProcedureService)}
@@ -1191,6 +1356,68 @@ export function StaffBookingDetailPage() {
         onClaimProcedure={(procedure) => void handleClaimProcedure(procedure)}
         claimingProcedureId={claimingProcedureId}
         showActions={staffBookingDetail?.status === "InProgress"}
+      />
+      <Modal
+        title={isVi ? "Sửa Số lượng" : "Edit Quantity"}
+        open={!!editingServiceQuantity}
+        onCancel={() => setEditingServiceQuantity(null)}
+        footer={null}
+        width={320}
+        centered
+      >
+        <div className="py-4 flex flex-col gap-4">
+          <p className="text-sm font-semibold text-[#2B182B]">{editingServiceQuantity?.name}</p>
+          <div className="flex items-center gap-4 border border-[#F3D6E5] rounded-full p-1 bg-[#FFF5FA]">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => Math.max(1, q - 1))}
+              disabled={tempQuantity <= 1 || isUpdatingBookingItems}
+            >
+              -
+            </button>
+            <span className="flex-1 text-center font-bold text-lg text-[#2B182B]">{tempQuantity}</span>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => q + 1)}
+              disabled={isUpdatingBookingItems}
+            >
+              +
+            </button>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-all disabled:opacity-50"
+              onClick={() => setEditingServiceQuantity(null)}
+              disabled={isUpdatingBookingItems}
+            >
+              {isVi ? "Hủy" : "Cancel"}
+            </button>
+            <button
+              className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#F43F5E] hover:from-[#D83A7E] hover:to-[#E11D48] rounded-full shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              onClick={doUpdateServiceQuantity}
+              disabled={isUpdatingBookingItems}
+            >
+              {isUpdatingBookingItems && <LoaderCircle size={16} className="animate-spin" />}
+              {isVi ? "Lưu" : "Save"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <ActionConfirmModal
+        open={itemsToDelete.length > 0}
+        title={isVi ? "Xác nhận xóa" : "Confirm Delete"}
+        description={
+          itemsToDelete.length > 1
+            ? (isVi ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn? Hành động này không thể hoàn tác.` : `Are you sure you want to delete ${itemsToDelete.length} selected services? This action cannot be undone.`)
+            : (isVi ? `Bạn có chắc chắn muốn xóa "${itemsToDelete[0]?.name}"? Hành động này không thể hoàn tác.` : `Are you sure you want to delete "${itemsToDelete[0]?.name}"? This action cannot be undone.`)
+        }
+        onConfirm={doDeleteService}
+        onCancel={() => setItemsToDelete([])}
+        loading={isUpdatingBookingItems}
+        confirmText={isVi ? "Xóa" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        intent="danger"
       />
     </>
   );

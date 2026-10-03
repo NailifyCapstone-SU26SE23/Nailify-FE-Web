@@ -417,7 +417,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h3 className="text-xl font-serif font-bold text-[#3f2240]">{language === "vi" ? "Quy trình thực hiện móng" : "Nail Implementation Procedure"}</h3>
+              <h3 className="text-xl  font-bold text-[#3f2240]">{language === "vi" ? "Quy trình thực hiện móng" : "Nail Implementation Procedure"}</h3>
               <span className="rounded-full bg-[#fff0f6] px-3 py-1 text-[11px] font-bold uppercase text-[#ea4f93] border border-[#fbcfe8] shadow-xs">
                 {procedures.length} {language === "vi" ? "Bước" : "Steps"}
               </span>
@@ -567,7 +567,7 @@ export function ProcedureBuilderSection({ nail, procedures = [], setProcedures, 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff0f6] text-[#ea4f93]">
               <PlusCircle size={18} />
             </div>
-            <span className="font-serif font-bold text-lg">{language === "vi" ? "Thêm bước quy trình mới" : "Add new procedure step"}</span>
+            <span className=" font-bold text-lg">{language === "vi" ? "Thêm bước quy trình mới" : "Add new procedure step"}</span>
           </div>
         }
         open={isModalOpen}

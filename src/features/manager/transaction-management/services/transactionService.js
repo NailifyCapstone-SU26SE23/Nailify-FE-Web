@@ -296,8 +296,6 @@ export async function fetchTransactions(options = {}) {
     queryParams.endDate = endDate;
   }
 
-  console.log("Fetching transactions with params:", queryParams);
-
   try {
     const response = await axiosClient.get("/Transactions", {
       headers: getAuthHeaders(),
@@ -403,7 +401,6 @@ export async function fetchBookingById(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching booking by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Bookings/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -451,8 +448,6 @@ export async function fetchTransactionById(id) {
   if (!normalizedId) {
     throw new Error("Transaction ID is required.");
   }
-
-  console.log("Fetching transaction by ID:", normalizedId);
   try {
     const response = await axiosClient.get(`/Transactions/${normalizedId}`, {
       headers: getAuthHeaders(),
@@ -481,9 +476,8 @@ export async function fetchTransactionsByBookingId(bookingId) {
     throw new Error("Booking ID is required.");
   }
 
-  console.log("Fetching transactions for booking:", normalizedId);
   try {
-    const response = await axiosClient.get(`/Transactions/booking/${normalizedId}`, {
+    const response = await axiosClient.get(`/Transactions/booking/${normalizedId}/payment-history`, {
       headers: getAuthHeaders(),
     });
 
@@ -499,6 +493,29 @@ export async function fetchTransactionsByBookingId(bookingId) {
     // Fallback to mock data filtering by bookingId
     const fallback = MOCK_TRANSACTIONS.filter(t => String(t.bookingId) === normalizedId);
     return fallback;
+  }
+}
+
+export async function fetchWalletTransactionById(walletTransactionId) {
+  const normalizedId = String(walletTransactionId || "").trim();
+  if (!normalizedId) {
+    throw new Error("Wallet Transaction ID is required.");
+  }
+
+  try {
+    const response = await axiosClient.get(`/Wallets/transactions/${normalizedId}`, {
+      headers: getAuthHeaders(),
+    });
+
+    const payload = response?.data;
+    if (!payload?.isSucceeded) {
+      throw new Error(payload?.message || "Failed to load wallet transaction details.");
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.warn("Failed to fetch wallet transaction details from API.", error?.message);
+    throw error;
   }
 }
 

@@ -14,42 +14,24 @@ import {
   UserRound,
   X,
   Clock,
-  Map, ChevronDown, ChevronUp
+  Map, ChevronDown, ChevronUp, Edit2, Trash2
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Table, List, Card, Image } from "antd";
+import { Table, List, Card, Image, Checkbox } from "antd";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { ReadOnlyNailPreview } from "../../../../shared/components/common/ReadOnlyNailPreview";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
 import { useQuery } from "@tanstack/react-query";
-import { fetchStaffCustomerDetail, fetchLoyaltyTiers } from "../services/staffBookingService";
+import { fetchStaffCustomerDetail, fetchLoyaltyTiers, fetchStaffShapeMethodConfigDetail } from "../services/staffBookingService";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Pending':
-      return '!border-slate-200 !bg-slate-50 !text-slate-600';
-    case 'Approved':
-      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
-    case 'Rejected':
-    case 'Cancelled':
-      return '!border-red-200 !bg-red-50 !text-red-600';
-    case 'CheckedIn':
-      return '!border-purple-200 !bg-purple-50 !text-purple-600';
-    case 'InProgress':
-      return '!border-blue-200 !bg-blue-50 !text-blue-600';
-    case 'ServiceCompleted':
-      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
-    case 'Completed':
-      return '!border-green-200 !bg-green-50 !text-green-700';
-    case 'Repaired':
-      return '!border-orange-200 !bg-orange-50 !text-orange-600';
-    case 'ReschedulePending':
-    case 'RescheduleSuggested':
-      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
-    default:
-      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
-  }
+  return BOOKING_STATUS[status]?.tone || 'bg-[#fff8df] border-[#f3ddab] text-[#d39a1d]';
+};
+
+const formatStatusDisplay = (status, language) => {
+  return getStatusLabel(status, BOOKING_STATUS, language);
 };
 
 function SectionTitle({ icon: Icon, title }) {
@@ -85,87 +67,164 @@ InfoCard.propTypes = {
   value: PropTypes.string.isRequired,
 };
 
-function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
-  const hasProcedureAction = typeof onOpenServiceProcedures === "function";
+function ServiceInfoCard({
+  services = [],
+  onOpenServiceProcedures = null,
+  onEditQuantity = null,
+  onDeleteService = null,
+  selectedServiceIds = [],
+  onSelectService = null,
+  onSelectAllServices = null,
+  onMultiDelete = null,
+  canEditServices = true
+}) {
+  const { language } = useLanguage();
+  const hasProcedureAction = typeof onOpenServiceProcedures === "function" || typeof onEditQuantity === "function" || typeof onDeleteService === "function";
+
+  const gridCols = canEditServices
+    ? (hasProcedureAction ? "grid-cols-[70px_130px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[70px_130px_minmax(0,1.8fr)_80px_120px_180px_110px]")
+    : (hasProcedureAction ? "grid-cols-[130px_minmax(0,1.5fr)_80px_120px_130px_150px_110px]" : "grid-cols-[130px_minmax(0,1.8fr)_80px_120px_180px_110px]");
 
   return (
     <article className="rounded-[16px] xl:col-span-3">
 
       {services.length ? (
         <div className="overflow-hidden rounded-lg border border-[#f2bfd4] bg-white">
-          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${hasProcedureAction ? "grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Service</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Qty</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Price</p>
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Duration</p>
+          <div className={`hidden items-center gap-3 border-b border-[#f8dce8] bg-[linear-gradient(180deg,#fff8fc_0%,#fff2f7_100%)] px-5 py-3 md:grid ${gridCols}`}>
+            {canEditServices && (
+              <div className="flex items-center justify-center gap-2">
+                <Checkbox
+                  checked={services.length > 0 && selectedServiceIds.length === services.length}
+                  indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < services.length}
+                  onChange={(e) => onSelectAllServices && onSelectAllServices(e.target.checked, services.map(s => s.id))}
+                />
+                {selectedServiceIds.length > 0 && (
+                  <button
+                    onClick={onMultiDelete}
+                    className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
+                    title={language === "vi" ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời gian" : "Time"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Dịch vụ" : "Service"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "SL" : "Qty"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Giá" : "Price"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Thời lượng dự kiến" : "Duration"}</p>
             {hasProcedureAction ? (
-              <p className="text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Action</p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] m-0">{language === "vi" ? "Thao tác" : "Action"}</p>
+              </div>
             ) : null}
           </div>
 
           <div className="divide-y divide-[#f9dfeb]">
-            {services.map((service, index) => (
-              <div
-                key={service.id || `${service.name}-${index}`}
-                className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${hasProcedureAction ? "md:grid-cols-[minmax(0,1.55fr)_110px_150px_120px_120px]" : "md:grid-cols-[minmax(0,1.8fr)_110px_150px_120px]"}`}
-              >
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
-                    {service.detailLabel || `Service ${index + 1}`}
-                  </p>
-                  <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
-                  {service.nailServiceName ? (
-                    <p className="mt-1 text-xs font-semibold text-[#7a6275]">
-                      Nail service: {service.nailServiceName}
+            {services.map((service, index) => {
+              const actionItems = [];
+              if (service.canViewProcedures && typeof onOpenServiceProcedures === "function") {
+                actionItems.push({
+                  key: `view-procedures-${service.id || index}`,
+                  label: language === "vi" ? "Xem Quy trình" : "View Procedures",
+                  icon: ClipboardList,
+                  onSelect: () => onOpenServiceProcedures(service),
+                });
+              }
+              if (typeof onEditQuantity === "function") {
+                actionItems.push({
+                  key: `edit-quantity-${service.id || index}`,
+                  label: language === "vi" ? "Sửa số lượng" : "Edit Quantity",
+                  icon: Edit2,
+                  onSelect: () => onEditQuantity(service),
+                });
+              }
+              if (typeof onDeleteService === "function") {
+                actionItems.push({
+                  key: `delete-service-${service.id || index}`,
+                  label: language === "vi" ? "Xóa" : "Delete",
+                  icon: Trash2,
+                  danger: true,
+                  onSelect: () => onDeleteService(service),
+                });
+              }
+
+              return (
+                <div
+                  key={service.id || `${service.name}-${index}`}
+                  className={`px-4 py-4 md:grid md:items-center md:gap-3 md:px-5 ${gridCols}`}
+                >
+                  {canEditServices && (
+                    <div className="hidden md:flex items-center justify-center">
+                      <Checkbox
+                        checked={selectedServiceIds.includes(service.id)}
+                        onChange={(e) => onSelectService && onSelectService(e.target.checked, service.id)}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-left">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời gian" : "Time"}</p>
+                    <span className="font-bold text-[#ea4f93] text-[13px]">
+                      {service.timeRangeDisplay || "-"}
+                    </span>
+                  </div>
+                  <div className="min-w-0 mt-3 md:mt-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">
+                      {service.detailLabel || `Service ${index + 1}`}
                     </p>
+                    <p className="mt-2 break-words text-sm font-bold text-[#ea4f93]">{service.name}</p>
+                    {service.nailServiceName ? (
+                      <p className="mt-1 text-xs font-semibold text-[#7a6275]">
+                        {service.nailServiceName}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "SL" : "Qty"}</p>
+                    <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
+                      {service.quantity || 1}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Giá" : "Price"}</p>
+                    <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                      {service.price}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thành tiền" : "Total Price"}</p>
+                    <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
+                      {service.totalPrice || service.price}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thời lượng dự kiến" : "Duration"}</p>
+                    <span className="inline-flex rounded-full bg-[#f4efff] px-3 py-1 text-[11px] font-bold text-[#8c63ef]">
+                      {service.duration}
+                    </span>
+                  </div>
+
+                  {hasProcedureAction ? (
+                    <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">{language === "vi" ? "Thao tác" : "Action"}</p>
+                      {actionItems.length > 0 ? (
+                        <ActionDropdown
+                          items={actionItems}
+                        />
+                      ) : (
+                        null
+                      )}
+                    </div>
                   ) : null}
                 </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Qty</p>
-                  <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#6f5c6b]">
-                    {service.quantity || 1}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Price</p>
-                  <span className="inline-flex rounded-full border border-[#d8f0df] bg-[#f1fcf4] px-3 py-1 text-[11px] font-bold text-[#16975f]">
-                    {service.price}
-                  </span>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Duration</p>
-                  <span className="inline-flex rounded-full bg-[#f4efff] px-4 py-2 text-sm font-bold text-[#8c63ef]">
-                    {service.duration}
-                  </span>
-                </div>
-
-                {hasProcedureAction ? (
-                  <div className="mt-3 flex items-center justify-between gap-3 md:mt-0 md:block md:text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae] md:hidden">Action</p>
-                    {service.canViewProcedures ? (
-                      <ActionDropdown
-                        label="Actions"
-                        items={[
-                          {
-                            key: `view-procedures-${service.id || index}`,
-                            label: "View Procedures",
-                            icon: ClipboardList,
-                            onSelect: () => onOpenServiceProcedures(service),
-                          },
-                        ]}
-                      />
-                    ) : (
-                      <span className="inline-flex rounded-full border border-[#f6dbe7] bg-[#fff9fc] px-3 py-1 text-[11px] font-bold text-[#bca0ae]">
-                        --
-                      </span>
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}
@@ -175,6 +234,8 @@ function ServiceInfoCard({ services = [], onOpenServiceProcedures = null }) {
 
 ServiceInfoCard.propTypes = {
   onOpenServiceProcedures: PropTypes.func,
+  onEditQuantity: PropTypes.func,
+  onDeleteService: PropTypes.func,
   services: PropTypes.arrayOf(
     PropTypes.shape({
       bookingItemId: PropTypes.string,
@@ -203,19 +264,27 @@ function formatVariantCurrency(value) {
 }
 
 function formatVariantDuration(value) {
+  const { language } = useLanguage();
   const duration = Number(value || 0);
 
   if (!Number.isFinite(duration) || duration <= 0) {
     return "--";
   }
 
-  return `${duration} min`;
+  return `${duration} ${language === "vi" ? "phút" : "min"}`;
 }
 
 function VariantDetailModal({ open, variantDetail, onClose }) {
+  const { language } = useLanguage();
   if (!open || !variantDetail) {
     return null;
   }
+
+  const { data: shapeMethodConfig } = useQuery({
+    queryKey: ["shapeMethodConfig", variantDetail?.shapeMethodConfigId],
+    queryFn: () => fetchStaffShapeMethodConfigDetail(variantDetail.shapeMethodConfigId),
+    enabled: Boolean(variantDetail?.shapeMethodConfigId),
+  });
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2f1322]/45 p-4 backdrop-blur-[2px]">
@@ -223,7 +292,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
         <div className="flex items-start justify-between gap-4 border-b border-[#f7dfeb] px-6 py-5">
           <div>
             <p className="text-[15px] font-bold uppercase tracking-[0.16em] text-pink-500">
-              Nail Variant Detail
+              {language === "vi" ? "Chi tiết phiên bản" : "Nail Variant Detail"}
             </p>
             <h3 className="mt-2 text-2xl font-bold text-black">{variantDetail.name}</h3>
 
@@ -249,8 +318,16 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 compact={true}
               />
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <InfoCard label="Price" value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
-                <InfoCard label="Duration" value={formatVariantDuration(variantDetail.duration)} note="" />
+                <InfoCard label={language === "vi" ? "Giá cơ bản" : "Base Price"} value={formatVariantCurrency(variantDetail.price)} note="" tone="success" />
+                {shapeMethodConfig && (
+                  <InfoCard
+                    label={shapeMethodConfig.name}
+                    value={formatVariantCurrency(shapeMethodConfig.price)}
+                    note=""
+                    tone="success"
+                  />
+                )}
+                <InfoCard label={language === "vi" ? "Thời lượng dự kiến" : "Duration"} value={formatVariantDuration(variantDetail.duration)} note="" />
               </div>
             </div>
 
@@ -258,7 +335,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Shape</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Kiểu móng" : "Nail Shape"}</p>
                   <div className="mt-3 flex items-start gap-3">
                     <Image
                       style={{ height: "40px", width: "40px", borderRadius: "20%", objectFit: "cover" }}
@@ -278,7 +355,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                 </article>
 
                 <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Surface</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Bề mặt móng" : "Nail Surface"}</p>
                   <div className="mt-3">
                     <p className="text-base font-bold text-[#3f2b3f]">
                       {variantDetail.nailSurface?.name}
@@ -289,9 +366,9 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
 
               <article className="rounded-lg border border-[#f3d5e2] bg-[#fff9fc] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">Nail Components</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#bca0ae]">{language === "vi" ? "Phụ kiện móng" : "Nail Components"}</p>
                   <span className="rounded-full border border-[#d8cbff] bg-[#f6f2ff] px-3 py-1 text-[10px] font-bold text-[#8c63ef]">
-                    {variantDetail.nailComponents?.length || 0} item(s)
+                    {variantDetail.nailComponents?.length || 0} {language === "vi" ? "phụ kiện" : "item(s)"}
                   </span>
                 </div>
                 <div className="mt-4 space-y-3">
@@ -317,14 +394,23 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                                 {item.component?.name}
                               </p>
                               <p className="mt-1 text-xs text-[#a88a9d]">
-                                Type: {item.component?.componentType}
+                                {language === "vi" ? "Loại" : "Type"}: {item.component?.componentType}
                               </p>
                             </div>
                           </div>
 
                           {item.fingerIndex !== undefined && item.fingerIndex !== null && item.fingerIndex !== -1 && (
                             <span className="rounded-full border border-[#f2bfd4] bg-[#fff5f9] px-3 py-1 text-[10px] font-bold text-[#ea4f93]">
-                              Finger #{item.fingerIndex}
+                              {(() => {
+                                const idx = Number(item.fingerIndex);
+                                const arrayIdx = idx - 1;
+                                if (arrayIdx >= 0 && arrayIdx <= 4) {
+                                  return language === "vi"
+                                    ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][arrayIdx]
+                                    : ["Thumb", "Index", "Middle", "Ring", "Pinky"][arrayIdx];
+                                }
+                                return language === "vi" ? `Ngón tay #${idx}` : `Finger #${idx}`;
+                              })()}
                             </span>
                           )}
                         </div>
@@ -332,7 +418,7 @@ function VariantDetailModal({ open, variantDetail, onClose }) {
                     ))
                   ) : (
                     <div className="rounded-[16px] border border-dashed border-[#f1cade] bg-white px-4 py-6 text-sm text-[#a88a9d]">
-                      This variant does not have any nail components.
+                      {language === "vi" ? "Phiên bản này không có phụ kiện móng." : "This variant does not have any nail components."}
                     </div>
                   )}
                 </div>
@@ -448,9 +534,16 @@ export function StaffBookingConsultationDetail({
   onOpenDesignStudio,
   onOpenUpdateBooking,
   onOpenServiceProcedures,
+  onEditQuantity,
+  onDeleteService,
+  selectedServiceIds,
+  onSelectService,
+  onSelectAllServices,
+  onMultiDelete,
   onStaffNoteChange,
   onStartServiceSession,
   onConfirmCustomerNail,
+  canEditServices = true,
 }) {
   const canProceedToService =
     (requiresCustomerNailConfirmation ? isCustomerNailConfirmed : isCurrentDesignConfirmed) &&
@@ -462,7 +555,8 @@ export function StaffBookingConsultationDetail({
     (
       String(data.design.name || "").trim() &&
       String(data.design.name || "").trim() !== "--" &&
-      String(data.design.name || "").trim() !== "Selected design not specified"
+      String(data.design.name || "").trim() !== "Selected design not specified" &&
+      String(data.design.name || "").trim() !== "Chưa chọn mẫu thiết kế"
     ),
   );
   const canViewVariantDetail = Boolean(
@@ -475,8 +569,8 @@ export function StaffBookingConsultationDetail({
   );
   const consultationQuestion = hasSelectedNailDesign
     ? (language === "vi" ? `Khách có muốn tiếp tục với thiết kế móng - ${data.design.name}?` : `Does the customer want to continue with the selected nail design - ${data.design.name}?`)
-    : (language === "vi" ? "Khách có muốn tiếp tục không có thiết kế móng?" : "Does the customer want to continue with no nail design ?");
-  const confirmButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Xác nhận thiết kế hiện tại" : "Confirm Current Design") : (language === "vi" ? "Xác nhận lịch hẹn" : "Confirm booking");
+    : (language === "vi" ? "Khách có muốn tiếp tục với dịch vụ không? - Chưa chọn mẫu thiết kế?" : "Does the customer want to continue with the service? - Selected design not specified?");
+  const confirmButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Xác nhận thiết kế hiện tại" : "Confirm Current Design") : (language === "vi" ? "Xác nhận" : "Confirm");
   const confirmCustomerNailButtonLabel = isCustomerNailConfirmed
     ? (language === "vi" ? "Đã xác nhận thiết kế khách" : "Customer Nail Confirmed")
     : (language === "vi" ? "Xác nhận thiết kế khách" : "Confirm Customer Nail");
@@ -484,8 +578,8 @@ export function StaffBookingConsultationDetail({
     ? (language === "vi" ? "Dịch vụ hoàn thành" : "Service Completed")
     : hasSelectedNailDesign
       ? (language === "vi" ? "Đã xác nhận thiết kế" : "Current Design Confirmed")
-      : (language === "vi" ? "Lịch hẹn đã xác nhận" : "Booking Confirmed");
-  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Chọn thiết kế khác" : "Choose Another Design") : (language === "vi" ? "Chọn thiết kế" : "Choose Design");
+      : (language === "vi" ? "Đã xác nhận" : "Confirmed");
+  const chooseAnotherDesignButtonLabel = hasSelectedNailDesign ? (language === "vi" ? "Chọn thiết kế khác" : "Choose Another Design") : (language === "vi" ? "Chọn thiết kế móng" : "Choose Nail Design");
 
   const [customerExpanded, setCustomerExpanded] = useState(true);
   const [bookingExpanded, setBookingExpanded] = useState(true);
@@ -520,8 +614,7 @@ export function StaffBookingConsultationDetail({
   }, [customerData, loyaltyTiers]);
 
   return (
-    <section className="flex min-h-full flex-col gap-6 bg-slate-50/50 p-2 sm:p-6 lg:p-8  bg-[#fff9fb]
-                      bg-[radial-gradient(circle_at_top_right,rgba(255,191,73,.55),transparent_38%),radial-gradient(circle_at_top_left,rgba(255,121,198,.35),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,163,196,.45),transparent_35%),linear-gradient(to_right,#f3c7db_1px,transparent_1px),linear-gradient(to_bottom,#f3c7db_1px,transparent_1px)]">
+    <section className="flex min-h-full flex-col gap-6">
       <div className="mt-2 space-y-6">
         <article className="rounded-lg border border-white/60 bg-white/70 p-6 shadow-sm backdrop-blur-xl md:p-8 transition-all hover:shadow-md">
 
@@ -645,7 +738,7 @@ export function StaffBookingConsultationDetail({
               <div className="flex items-center gap-2">
                 <Tag className={`m-0 ${getStatusColor(data.statusLabel)}`}>
                   <Clock size={11} className="mr-1 inline-block fill-current" />
-                  {data.statusLabel}
+                  {formatStatusDisplay(data.statusLabel, language)}
                 </Tag>
                 <button
                   type="button"
@@ -682,6 +775,13 @@ export function StaffBookingConsultationDetail({
                     <ServiceInfoCard
                       services={data.bookingInfo.find(item => item.label === "Service").services}
                       onOpenServiceProcedures={onOpenServiceProcedures}
+                      onEditQuantity={onEditQuantity}
+                      onDeleteService={onDeleteService}
+                      selectedServiceIds={selectedServiceIds}
+                      onSelectService={onSelectService}
+                      onSelectAllServices={onSelectAllServices}
+                      onMultiDelete={onMultiDelete}
+                      canEditServices={canEditServices}
                     />
                   </div>
                 )}
@@ -713,7 +813,7 @@ export function StaffBookingConsultationDetail({
           </div>
         </article>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className={`grid gap-4 ${!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? 'xl:grid-cols-[minmax(0,1fr)_280px]' : ''}`}>
           <div className="space-y-4">
             {hasSelectedNailDesign ? (
               <article className="relative overflow-hidden rounded-lg border border-[#fdebf3] bg-gradient-to-b from-white/95 to-[#fffafb]/95 p-4 backdrop-blur-2xl shadow-[0_12px_40px_rgba(236,72,153,0.08)]">
@@ -924,8 +1024,8 @@ export function StaffBookingConsultationDetail({
             ) : null}
           </div>
 
-          <aside className="space-y-4 border-t border-[#f3d5e2] bg-transparent pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-            {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+          {!isCancelledBooking && !isPendingBooking && !isServiceCompleted ? (
+            <aside className="space-y-4 border-t border-[#f3d5e2] bg-transparent pt-4 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
               <article className="rounded-[18px] border border-[#f3d5e2] bg-white p-4 ">
                 <SectionTitle
                   icon={CheckCheck}
@@ -966,8 +1066,8 @@ export function StaffBookingConsultationDetail({
                   </button>
                 </div>
               </article>
-            ) : null}
-          </aside>
+            </aside>
+          ) : null}
         </div>
       </div>
 

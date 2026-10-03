@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Camera, User, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import {
   USER_BRANCH_OPTIONS,
@@ -7,6 +8,7 @@ import {
 } from "../services/mockUsers";
 import { PropTypes } from "../../../../shared/utils/propTypes";
 import { fetchAdminSalons } from "../../salon-management/services/salonManagementService";
+import { USER_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const isSalonRole = (role) => {
   const normalized = String(role || "").trim().toLowerCase();
@@ -29,25 +31,14 @@ const getRoleLabel = (role, t) => {
     case "staff":
     case "staff_artist":
       return t("nailArtist");
+    case "customer":
+      return t("customer");
     default:
       return role;
   }
 };
 
-const getStatusLabel = (status, t) => {
-  switch (status) {
-    case "Active":
-      return t("userManagement.detail.statusActive");
-    case "Inactive":
-      return t("userManagement.detail.statusInactive");
-    case "Pending":
-      return t("userManagement.detail.statusPending");
-    case "Suspended":
-      return t("userManagement.detail.statusSuspended");
-    default:
-      return status;
-  }
-};
+
 
 export function UserManagementFormFields({
   formValues,
@@ -59,6 +50,7 @@ export function UserManagementFormFields({
 }) {
   const { t, language } = useLanguage();
   const [salons, setSalons] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,7 +72,36 @@ export function UserManagementFormFields({
   if (createApiFieldsOnly) {
     return (
       <>
-        <label className="space-y-2">
+        <label className="md:col-span-3 flex flex-col items-center justify-center space-y-3 pb-4 pt-2">
+          <div className="relative group cursor-pointer">
+            <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-white shadow-[0_8px_20px_rgba(234,79,147,0.15)] bg-[#fff0f6] flex items-center justify-center transition-transform group-hover:scale-105">
+              {formValues.imageFile ? (
+                <img src={URL.createObjectURL(formValues.imageFile)} alt="Avatar Preview" className="h-full w-full object-cover" />
+              ) : (
+                <User size={48} className="text-[#ea4f93] opacity-60" />
+              )}
+            </div>
+            <div className="absolute bottom-1 right-1 rounded-full bg-[#ea4f93] p-2 text-white shadow-md transition-transform group-hover:scale-110">
+              <Camera size={16} />
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file) {
+                  onFieldChange("imageFile")({ target: { value: file } });
+                }
+              }}
+              disabled={disabled}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </div>
+          <span className="text-[14px] font-bold text-slate-700">
+            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
+          </span>
+        </label>
+        <label className="space-y-">
           <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.firstName")}</span>
           <input
             value={formValues.firstName}
@@ -108,6 +129,7 @@ export function UserManagementFormFields({
             value={formValues.email}
             onChange={onFieldChange("email")}
             disabled={disabled}
+            autoComplete="off"
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
             placeholder={t("userManagement.detail.enterEmail")}
           />
@@ -115,14 +137,24 @@ export function UserManagementFormFields({
 
         <label className="space-y-2">
           <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.password")}</span>
-          <input
-            type="password"
-            value={formValues.password}
-            onChange={onFieldChange("password")}
-            disabled={disabled}
-            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-            placeholder={t("userManagement.detail.enterPassword")}
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={formValues.password}
+              onChange={onFieldChange("password")}
+              disabled={disabled}
+              autoComplete="new-password"
+              className={`${INPUT_CLASSNAME} pr-10 ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
+              placeholder={t("userManagement.detail.enterPassword")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-rose-100 hover:text-rose-500 focus:outline-none"
+            >
+              {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
         </label>
 
         <label className="space-y-2">
@@ -137,22 +169,6 @@ export function UserManagementFormFields({
         </label>
 
         <label className="space-y-2">
-          <span className="text-[13px] font-bold text-slate-700">
-            {language === "vi" ? "Chọn ảnh đại diện" : t("userManagement.detail.avatarUrl")}
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              onFieldChange("imageFile")({ target: { value: file } });
-            }}
-            disabled={disabled}
-            className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
-          />
-        </label>
-
-        <label className="space-y-2 md:col-span-2">
           <span className="text-[13px] font-bold text-slate-700">{t("userManagement.detail.role")}</span>
           <select
             value={formValues.role}
@@ -169,7 +185,7 @@ export function UserManagementFormFields({
         </label>
 
         {isSalonRole(formValues.role) && (
-          <label className="space-y-2 md:col-span-2">
+          <label className="space-y-2">
             <span className="text-[13px] font-bold text-slate-700">
               {language === "vi" ? "Chi nhánh Salon" : "Salon Branch"}
             </span>
@@ -249,11 +265,14 @@ export function UserManagementFormFields({
             disabled={disabled}
             className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
           >
-            {FORM_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>
-                {getStatusLabel(status, t)}
-              </option>
-            ))}
+            {FORM_STATUS_OPTIONS.map((status) => {
+              const statusObj = USER_STATUS[status] || { vi: status, en: status };
+              return (
+                <option key={status} value={status}>
+                  {language === "vi" ? statusObj.vi : statusObj.en}
+                </option>
+              );
+            })}
           </select>
         </label>
 
@@ -422,11 +441,14 @@ export function UserManagementFormFields({
           disabled={disabled}
           className={`${INPUT_CLASSNAME} ${disabled ? DISABLED_INPUT_CLASSNAME : ""}`}
         >
-          {FORM_STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {getStatusLabel(status, t)}
-            </option>
-          ))}
+          {FORM_STATUS_OPTIONS.map((status) => {
+            const statusObj = USER_STATUS[status] || { vi: status, en: status };
+            return (
+              <option key={status} value={status}>
+                {language === "vi" ? statusObj.vi : statusObj.en}
+              </option>
+            );
+          })}
         </select>
       </label>
 

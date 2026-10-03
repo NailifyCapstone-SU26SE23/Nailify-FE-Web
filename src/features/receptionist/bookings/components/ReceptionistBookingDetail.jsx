@@ -412,14 +412,6 @@ export function ReceptionistBookingDetail({ booking }) {
                   <CreditCard size={14} />
                   {t("receptionist.payments.checkoutTitle") || "Add Payment"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Print Receipt")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#f3d7e2] bg-[#fff3f8] px-4 py-3 text-xs font-bold text-[#eb5b92]"
-                >
-                  <Printer size={14} />
-                  {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
-                </button>
               </div>
             </div>
           </SectionCard>

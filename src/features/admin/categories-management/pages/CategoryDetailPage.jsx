@@ -346,7 +346,7 @@ export function CategoryDetailPage() {
                   >
                     {CATEGORY_STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
-                        {status}
+                        {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngưng hoạt động") : status}
                       </option>
                     ))}
                   </select>

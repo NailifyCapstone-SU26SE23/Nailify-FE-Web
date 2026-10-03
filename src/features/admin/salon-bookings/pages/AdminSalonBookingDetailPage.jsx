@@ -25,12 +25,18 @@ import { Spin, Input, Empty, Tag, Table, DatePicker, Button, Select, Tooltip as 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { useDebounce } from "../../../../shared/hooks/useDebounce";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import dayjs from "dayjs";
 
 import { fetchBookingsBySalonId } from "../../../manager/bookings/services/bookingsService";
 import { fetchAdminSalonDetail } from "../../salon-management/services/salonManagementService";
-import { getAdminBookingDetailRoute, ROUTES } from "../../../../shared/constants/routes";
+import {
+  ROUTES,
+  getAdminBookingDetailRoute,
+} from "../../../../shared/constants/routes";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { BOOKING_STATUS } from "../../../../shared/utils/statusFormatters";
 
 const SALON_PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><rect width="400" height="200" rx="28" fill="#fde7ef"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#8f365c" font-family="Arial, sans-serif" font-size="30" font-weight="700">Salon</text></rect></svg>'
@@ -60,32 +66,14 @@ function SectionHeading({ title, subtitle }) {
 }
 const getStatusDisplay = (status, isVi) => {
   const s = status || "";
-  switch (s) {
-    case "Pending":
-      return { text: isVi ? "Chờ xác nhận" : "Pending", color: "bg-yellow-50 text-yellow-700 border-yellow-200" };
-    case "Approved":
-      return { text: isVi ? "Đã duyệt" : "Approved", color: "bg-blue-50 text-blue-700 border-blue-200" };
-    case "Rejected":
-      return { text: isVi ? "Đã từ chối" : "Rejected", color: "bg-red-50 text-red-700 border-red-200" };
-    case "Cancelled":
-      return { text: isVi ? "Đã hủy" : "Cancelled", color: "bg-gray-50 text-gray-700 border-gray-200" };
-    case "CheckedIn":
-      return { text: isVi ? "Đã Check-in" : "Checked In", color: "bg-purple-50 text-purple-700 border-purple-200" };
-    case "InProgress":
-      return { text: isVi ? "Đang thực hiện" : "In Progress", color: "bg-indigo-50 text-indigo-700 border-indigo-200" };
-    case "ServiceCompleted":
-      return { text: isVi ? "Dịch vụ hoàn tất" : "Service Completed", color: "bg-teal-50 text-teal-700 border-teal-200" };
-    case "Completed":
-      return { text: isVi ? "Hoàn thành" : "Completed", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
-    case "Repaired":
-      return { text: isVi ? "Đã bảo hành" : "Repaired", color: "bg-cyan-50 text-cyan-700 border-cyan-200" };
-    case "ReschedulePending":
-      return { text: isVi ? "Chờ đổi lịch" : "Reschedule Pending", color: "bg-orange-50 text-orange-700 border-orange-200" };
-    case "RescheduleSuggested":
-      return { text: isVi ? "Đề xuất đổi lịch" : "Reschedule Suggested", color: "bg-orange-50 text-orange-700 border-orange-200" };
-    default:
-      return { text: s, color: "bg-slate-50 text-slate-700 border-slate-200" };
+  const statusObj = BOOKING_STATUS[s];
+  if (statusObj) {
+    return {
+      text: isVi ? statusObj.vi : statusObj.en,
+      color: statusObj.tone
+    };
   }
+  return { text: s, color: "bg-slate-50 text-slate-700 border-slate-200" };
 };
 
 function BookingCard({ booking, index }) {
@@ -248,6 +236,8 @@ export function AdminSalonBookingDetailPage() {
   const [bookings, setBookings] = useState([]);
   const [isLoadingSalon, setIsLoadingSalon] = useState(true);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+  const [allStatsBookings, setAllStatsBookings] = useState([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [error, setError] = useState("");
   useEffect(() => {
     if (error) {
@@ -259,13 +249,44 @@ export function AdminSalonBookingDetailPage() {
   const debouncedSearch = useDebounce(searchQuery, 500);
   const [dateRange, setDateRange] = useState(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [chartView, setChartView] = useState("day"); // "day", "week", "month", "year"
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
+  useEffect(() => {
+    const loadAllStatsBookings = async () => {
+      if (!salonId) return;
+
+      setIsLoadingStats(true);
+
+      try {
+        let options = {
+          pageNumber: 1,
+          pageSize: 10000,
+          isAdmin: true,
+        };
+
+        if (dateRange && dateRange.length === 2) {
+          options.startDate = dayjs(dateRange[0]).toISOString();
+          options.endDate = dayjs(dateRange[1]).toISOString();
+        }
+
+        const bookingsData = await fetchBookingsBySalonId(salonId, options);
+        setAllStatsBookings(bookingsData?.items || []);
+      } catch (err) {
+        console.error("Error loading stats bookings:", err);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    loadAllStatsBookings();
+  }, [salonId, dateRange]);
+
   const stats = useMemo(() => {
-    const completedBookings = bookings.filter(
+    const completedBookings = allStatsBookings.filter(
       (booking) => booking?.status?.toLowerCase() === "completed"
     );
 
@@ -277,16 +298,45 @@ export function AdminSalonBookingDetailPage() {
       ? totalRevenue / completedBookings.length
       : 0;
 
-    const revenueByDate = completedBookings.reduce((acc, booking) => {
-      const date = dayjs(booking?.bookingDate).format("MMM D");
-      acc[date] = (acc[date] || 0) + Number(booking?.totalPrice || booking?.totalAmount || 0);
+    const groupedData = completedBookings.reduce((acc, booking) => {
+      const bDate = dayjs(booking?.bookingDate || booking?.createdAt);
+      let sortKey = "";
+      let displayLabel = "";
+
+      if (chartView === "day") {
+        sortKey = bDate.format("YYYY-MM-DD");
+        displayLabel = bDate.format("MMM D");
+      } else if (chartView === "week") {
+        const start = bDate.startOf("week");
+        sortKey = start.format("YYYY-MM-DD");
+        displayLabel = `${start.format("MMM D")} - ${bDate.endOf("week").format("MMM D")}`;
+      } else if (chartView === "month") {
+        sortKey = bDate.format("YYYY-MM");
+        displayLabel = bDate.format("MMM YYYY");
+      } else if (chartView === "year") {
+        sortKey = bDate.format("YYYY");
+        displayLabel = bDate.format("YYYY");
+      }
+
+      if (!acc[sortKey]) {
+        acc[sortKey] = { label: displayLabel, revenue: 0 };
+      }
+      acc[sortKey].revenue += Number(booking?.totalPrice || booking?.totalAmount || 0);
       return acc;
     }, {});
 
-    let chartData = Object.entries(revenueByDate)
-      .map(([date, revenue]) => ({ date, revenue }))
-      .slice(-14)
-      .reverse();
+    let chartData = Object.entries(groupedData)
+      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+      .map(([_, data]) => ({ date: data.label, revenue: data.revenue }));
+
+    // Limit to last 30 points if it's day, otherwise let it show all if it's month/year
+    if (chartView === "day" && chartData.length > 30) {
+      chartData = chartData.slice(-30);
+    } else if (chartView === "week" && chartData.length > 12) {
+      chartData = chartData.slice(-12);
+    } else if (chartView === "month" && chartData.length > 12) {
+      chartData = chartData.slice(-12);
+    }
 
     if (chartData.length === 0) {
       if (dateRange && dateRange.length === 2) {
@@ -304,11 +354,11 @@ export function AdminSalonBookingDetailPage() {
 
     return {
       totalRevenue,
-      totalBookings: totalCount || bookings.length,
+      totalBookings: totalCount,
       avgBookingValue,
       chartData,
     };
-  }, [bookings, dateRange, totalCount]);
+  }, [allStatsBookings, dateRange, totalCount, chartView]);
 
   const bookingColumns = useMemo(() => {
     return [
@@ -330,44 +380,6 @@ export function AdminSalonBookingDetailPage() {
         key: "bookingDate",
         width: "20%",
         sorter: (a, b) => dayjs(a.bookingDate).valueOf() - dayjs(b.bookingDate).valueOf(),
-        filteredValue: dateRange ? [dateRange] : null,
-        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
-          <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-            <DatePicker.RangePicker
-              value={selectedKeys[0] ? [dayjs(selectedKeys[0][0]), dayjs(selectedKeys[0][1])] : null}
-              onChange={(dates) => {
-                setSelectedKeys(dates ? [[dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()]] : []);
-              }}
-              style={{ marginBottom: 8, display: 'flex' }}
-            />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button
-                type="primary"
-                onClick={() => {
-                  setDateRange(selectedKeys[0] || null);
-                  confirm();
-                }}
-                size="small"
-                className="bg-[#ea4f93] flex-1"
-              >
-                {isVi ? "Lọc" : "Filter"}
-              </Button>
-              <Button
-                onClick={() => {
-                  clearFilters();
-                  setSelectedKeys([]);
-                  setDateRange(null);
-                  confirm();
-                }}
-                size="small"
-                className="flex-1"
-              >
-                {isVi ? "Xoá" : "Reset"}
-              </Button>
-            </div>
-          </div>
-        ),
-        onFilter: () => true, // Already filtered in statsBookings
         render: (value) => <span className="text-sm font-medium text-[#2d1b35]">{value ? dayjs(value).format("MMM D, YYYY") : "--"}</span>,
       },
       {
@@ -398,7 +410,7 @@ export function AdminSalonBookingDetailPage() {
               placeholder={isVi ? "Chọn trạng thái" : "Select status"}
               options={[
                 { value: "Pending", label: isVi ? "Chờ xác nhận" : "Pending" },
-                { value: "Approved", label: isVi ? "Đã duyệt" : "Approved" },
+                { value: "Approved", label: isVi ? "Đã xác nhận" : "Approved" },
                 { value: "Rejected", label: isVi ? "Đã từ chối" : "Rejected" },
                 { value: "Cancelled", label: isVi ? "Đã hủy" : "Cancelled" },
                 { value: "CheckedIn", label: isVi ? "Đã Check-in" : "Checked In" },
@@ -450,27 +462,20 @@ export function AdminSalonBookingDetailPage() {
       {
         title: isVi ? "Thao tác" : "Actions",
         key: "actions",
-        align: "right",
+        align: "center",
         width: "10%",
         render: (_, booking) => {
           const bookingId = booking?.bookingId || booking?.id;
 
           return (
-            <AntTooltip title={isVi ? "Xem chi tiết" : "View details"}>
-              <button
-                type="button"
-                disabled={!bookingId}
-                aria-label={isVi ? "Xem chi tiết lịch hẹn" : "View booking details"}
-                onClick={() =>
-                  navigate(getAdminBookingDetailRoute(bookingId), {
-                    state: { from: `/admin/bookings/${salonId}` },
-                  })
-                }
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#f0b7cf] bg-white text-[#ea4f93] transition-all duration-300 hover:bg-[#fff5fb] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Eye size={16} />
-              </button>
-            </AntTooltip>
+            <ActionButtons
+              onView={() =>
+                navigate(getAdminBookingDetailRoute(bookingId), {
+                  state: { from: `/admin/bookings/${salonId}` },
+                })
+              }
+              showView={!!bookingId}
+            />
           );
         },
       },
@@ -645,11 +650,25 @@ export function AdminSalonBookingDetailPage() {
       <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-4">
           <PremiumCard className="rounded-lg">
-            <SectionHeading
-              title={t(`adminDashboard.widgets.revenueTrend`)}
-              subtitle={t("adminSalonBookings.revenueFromCompletedBookingsOv")}
-            />
-            {isLoadingBookings ? (
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+              <SectionHeading
+                title={t(`adminDashboard.widgets.revenueTrend`)}
+                subtitle={t("adminSalonBookings.revenueFromCompletedBookingsOv")}
+              />
+              <Select
+                value={chartView}
+                onChange={(val) => setChartView(val)}
+                className="w-[120px]"
+                size="middle"
+                options={[
+                  { value: "day", label: isVi ? "Theo Ngày" : "By Day" },
+                  { value: "week", label: isVi ? "Theo Tuần" : "By Week" },
+                  { value: "month", label: isVi ? "Theo Tháng" : "By Month" },
+                  { value: "year", label: isVi ? "Theo Năm" : "By Year" },
+                ]}
+              />
+            </div>
+            {isLoadingStats ? (
               <div className="h-64 bg-[#fde7ef] rounded-2xl animate-pulse mt-6" />
             ) : (
               <div className="mt-6">
@@ -721,14 +740,14 @@ export function AdminSalonBookingDetailPage() {
                         {salon?.phone}
                       </p>
                     </div>
-                    <div>
+                    {/* <div>
                       <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
                         <Clock size={12} /> {t("adminSalonBookings.operatingHours")}
                       </p>
                       <p className="text-[13px] font-medium text-[#5b4256]">
                         {salon?.hours}
                       </p>
-                    </div>
+                    </div> */}
                     <div>
                       <p className="text-[10px] flex items-center gap-1 font-bold uppercase tracking-[0.14em] text-slate-400 mb-2">
                         <MapPin size={12} /> {t("adminSalonBookings.location")}
@@ -755,8 +774,19 @@ export function AdminSalonBookingDetailPage() {
                 : `Showing ${totalCount} booking${totalCount !== 1 ? "s" : ""}${searchQuery ? ` • Search: "${searchQuery}"` : ""}`
             }
           />
-          <div className="flex-1 max-w-md">
-            <div className="flex w-full items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-4 shadow-inner shadow-[#fff0f8]">
+          <div className="flex flex-1 items-center gap-3 max-w-2xl justify-end">
+            <DateRangePicker
+              value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+              onChange={(dates) => {
+                if (dates) {
+                  setDateRange([dates[0].startOf('day').valueOf(), dates[1].endOf('day').valueOf()]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="min-w-[260px] h-10 rounded-full border-[#f0b7cf] px-4 shadow-inner shadow-[#fff0f8] !bg-white hover:border-[#ea4f93] focus:border-[#ea4f93]"
+            />
+            <div className="flex w-full max-w-md items-center gap-3 rounded-full border border-[#f0b7cf] bg-white px-4 shadow-inner shadow-[#fff0f8]">
               <Search size={18} className="text-[#ea4f93]" />
               <Input
                 placeholder={t("adminSalonBookings.searchCustomerNameEmailOrPhone")}

@@ -36,18 +36,30 @@ import {
   fetchCustomerProfileById,
   fetchLoyaltyTiers,
 } from "../services/bookingsService";
-import { fetchTransactionsByBookingId, fetchTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
+import { fetchTransactionsByBookingId, fetchTransactionById, fetchWalletTransactionById, processRefund, checkPaymentStatus } from "../../transaction-management/services/transactionService";
 import { Spin, Alert, Modal, Input, Image, Select, Table } from "antd";
 import toast from "react-hot-toast";
 import { ConfirmBookingModal } from "../components/ConfirmBookingModal";
 import { RejectBookingModal } from "../components/RejectBookingModal";
 import { CancelBookingModal } from "../components/CancelBookingModal";
 import { AssignArtistModal } from "../components/AssignArtistModal";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const toVN = (date) => dayjs.utc(date).tz("Asia/Ho_Chi_Minh");
+const formatVNDate = (date) => {
+  const d = toVN(date);
+  if (!d.isValid()) return "N/A";
+  return d.format("DD/MM/YYYY HH:mm");
+};
 import { ProposeRescheduleModal } from "../components/ProposeRescheduleModal";
 import { motion } from "framer-motion";
 import { getSalonId } from "../../staff-artist-management/services/nailArtistsService";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
-
+import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { fetchBookingProceduresByBookingItemId } from "../services/bookingProceduresService";
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } },
@@ -152,7 +164,7 @@ function formatStatusDisplay(status, language) {
       return language === "vi" ? "Đã xác nhận" : "Confirmed";
     case "Completed":
     case "ServiceCompleted":
-      return language === "vi" ? "Đã hoàn thành" : "Completed";
+      return language === "vi" ? "Đã hoàn thành dịch vụ" : "Service Completed";
     case "Rejected":
       return language === "vi" ? "Đã từ chối" : "Rejected";
     case "Cancelled":
@@ -163,7 +175,7 @@ function formatStatusDisplay(status, language) {
     case "RescheduleSuggested":
       return language === "vi" ? "Đã đề xuất dời lịch" : "Reschedule Proposed";
     case "Repaired":
-      return language === "vi" ? "Đã sửa chữa" : "Repaired";
+      return language === "vi" ? "Đã bảo hành" : "Repaired";
     default:
       return status;
   }
@@ -263,7 +275,7 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return formattedStart;
 
   const totalStartMinutes = hours * 60 + minutes;
-  const totalEndMinutes = totalStartMinutes + (durationMinutes || 60);
+  const totalEndMinutes = totalStartMinutes + (durationMinutes);
   const endHours = Math.floor(totalEndMinutes / 60) % 24;
   const endMinutes = totalEndMinutes % 60;
 
@@ -277,10 +289,11 @@ function formatTimeRange(startTime, durationMinutes, fallbackDateTime) {
 
 function formatVND(amount) {
   if (amount === null || amount === undefined) return "N/A";
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount);
+  const num = Number(amount);
+  if (Number.isNaN(num)) return "--";
+  return `${new Intl.NumberFormat('vi-VN', {
+    maximumFractionDigits: 0,
+  }).format(num)} VND`;
 }
 
 function formatDuration(totalMinutes, language = "en") {
@@ -304,8 +317,6 @@ function getQrCodeSrc(qrCode) {
   return trimmed;
 }
 
-// Module-level set to track which booking IDs have already shown the warning.
-// Using module-level variable so it survives React StrictMode's double-mount in dev.
 const _shownRefundWarningForBookings = new Set();
 
 export function ManagerBookingDetailPage() {
@@ -315,6 +326,7 @@ export function ManagerBookingDetailPage() {
   const navigate = useNavigate();
   const backRoute = location.state?.from || (location.pathname.startsWith("/admin/") ? ROUTES.adminBookings : ROUTES.managerBookings);
   const [booking, setBooking] = useState(null);
+  console.log("booking: ", booking)
   const [customer, setCustomer] = useState(null);
   const [loyaltyTiers, setLoyaltyTiers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -423,6 +435,8 @@ export function ManagerBookingDetailPage() {
     );
   }, [customer, loyaltyTiers]);
 
+  const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
+
   const mapBooking = useCallback((rawBooking) => {
     const artistName = getArtistDisplayName(rawBooking);
     const artistId =
@@ -498,6 +512,55 @@ export function ManagerBookingDetailPage() {
       }
       const rawBooking = await fetchBookingById(bookingId);
       const mappedBooking = mapBooking(rawBooking);
+
+      // Fetch actual times if ServiceCompleted
+      if (mappedBooking.status === "ServiceCompleted" || mappedBooking.status === "�� ho�n th�nh d?ch v?" || rawBooking.status === "ServiceCompleted") {
+        try {
+          if (mappedBooking.bookingItems && mappedBooking.bookingItems.length > 0) {
+            let allProcedures = [];
+            for (const item of mappedBooking.bookingItems) {
+              const itemId = item.id || item.bookingItemId;
+              if (itemId) {
+                const procedures = await fetchBookingProceduresByBookingItemId(itemId);
+                if (procedures && Array.isArray(procedures)) {
+                  allProcedures = allProcedures.concat(procedures);
+                }
+              }
+            }
+
+            if (allProcedures.length > 0) {
+              const actualStartTimes = allProcedures
+                .filter(p => p.actualStartTime)
+                .map(p => new Date(`1970-01-01T${p.actualStartTime}Z`).getTime())
+                .filter(time => !isNaN(time));
+
+              const actualEndTimes = allProcedures
+                .filter(p => p.actualEndTime)
+                .map(p => new Date(`1970-01-01T${p.actualEndTime}Z`).getTime())
+                .filter(time => !isNaN(time));
+
+
+              if (actualStartTimes.length > 0 && actualEndTimes.length > 0) {
+                const minStart = new Date(Math.min(...actualStartTimes));
+                const maxEnd = new Date(Math.max(...actualEndTimes));
+                const totalActualDuration = Math.round((maxEnd - minStart) / 60000);
+
+                const formatTimeOnly = (date) => {
+                  const h = String(date.getUTCHours()).padStart(2, "0");
+                  const m = String(date.getUTCMinutes()).padStart(2, "0");
+                  return `${h}:${m}`;
+                };
+
+                mappedBooking.actualTimeStr = `${formatTimeOnly(minStart)} - ${formatTimeOnly(maxEnd)}`;
+                mappedBooking.actualDuration = totalActualDuration;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to fetch booking procedures for actual times:", e);
+        }
+      }
+
       setBooking(mappedBooking);
       setBookingNotesText(mappedBooking.notes);
 
@@ -513,7 +576,20 @@ export function ManagerBookingDetailPage() {
       // Fetch transactions for this booking
       try {
         const txs = await fetchTransactionsByBookingId(bookingId);
-        setTransactions(txs);
+        const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+          if (tx.paymentMethod === 'Ví' && tx.id) {
+            try {
+              const walletData = await fetchWalletTransactionById(tx.id);
+              if (walletData?.type) {
+                return { ...tx, walletType: walletData.type };
+              }
+            } catch (e) {
+              console.warn("Failed to fetch wallet transaction detail:", e);
+            }
+          }
+          return tx;
+        }));
+        setTransactions(enhancedTxs);
       } catch (err) {
         console.warn("Failed to load transactions:", err);
       }
@@ -559,12 +635,21 @@ export function ManagerBookingDetailPage() {
     setIsEditNotesModalOpen(false);
   };
 
+  const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
+
   const handleTransactionClick = async (txId) => {
     setIsTransactionModalOpen(true);
     setIsFetchingTransaction(true);
     setSelectedTransactionDetail(null);
     try {
-      const details = await fetchTransactionById(txId);
+      let details;
+      if (isUUID(txId)) {
+        details = await fetchWalletTransactionById(txId);
+        details.isWallet = true;
+      } else {
+        details = await fetchTransactionById(txId);
+        details.isWallet = false;
+      }
       setSelectedTransactionDetail(details);
     } catch (err) {
       toast.error(language === "vi" ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
@@ -578,11 +663,11 @@ export function ManagerBookingDetailPage() {
     try {
       setIsRefreshing(true);
       await managerApproveReschedule(normalizedBookingId);
-      toast.success("Customer's reschedule request approved!", { icon: "✅" });
+      toast.success(language === "vi" ? "Yêu cầu đổi lịch của khách đã được chấp thuận" : "Customer's reschedule request approved!");
       await loadBooking({ silent: true });
     } catch (err) {
-      console.error("Failed to approve reschedule:", err);
-      toast.error(err.message || "Failed to approve reschedule.");
+      console.error(language === "vi" ? "Không thể chấp thuận yêu cầu đổi lịch" : "Failed to approve reschedule:", err);
+      toast.error(err.message || (language === "vi" ? "Không thể chấp thuận yêu cầu đổi lịch" : "Failed to approve reschedule."));
     } finally {
       setIsRefreshing(false);
     }
@@ -592,11 +677,11 @@ export function ManagerBookingDetailPage() {
     try {
       setIsRefreshing(true);
       await managerRejectReschedule(normalizedBookingId);
-      toast.success("Customer's reschedule request rejected.", { icon: "❌" });
+      toast.success(language === "vi" ? "Yêu cầu đổi lịch của khách đã bị từ chối." : "Customer's reschedule request rejected.");
       await loadBooking({ silent: true });
     } catch (err) {
-      console.error("Failed to reject reschedule:", err);
-      toast.error(err.message || "Failed to reject reschedule.");
+      console.error(language === "vi" ? "Không thể từ chối yêu cầu đổi lịch" : "Failed to reject reschedule:", err);
+      toast.error(err.message || (language === "vi" ? "Không thể từ chối yêu cầu đổi lịch" : "Failed to reject reschedule."));
     } finally {
       setIsRefreshing(false);
     }
@@ -643,30 +728,39 @@ export function ManagerBookingDetailPage() {
           <div className="pointer-events-none absolute -top-12 -right-12 h-48 w-48 rounded-full bg-[#E84F93]/10 blur-3xl" />
 
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
-            <div>
-              <button
-                type="button"
-                onClick={() => navigate(backRoute)}
-                className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
-              >
-                <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                <span>{t("manager.common.back")}</span>
-              </button>
+            <div className="flex flex-col gap-2 item-center">
+              <div className="flex flex-row gap-2 item-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate(backRoute)}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#F3D6E5] bg-white px-3.5 py-1.5 text-xs font-bold text-[#E84F93] hover:bg-[#FFF0F5] hover:border-[#E84F93] transition shadow-xs mb-3 group"
+                >
+                  <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                  <span>{t("manager.common.back")}</span>
+                </button>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
-                  {t("manager.bookings.bookingDetails")}
-                </h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl lg:text-3xl font-bold text-[#2B182B] tracking-tight ">
+                    {t("manager.bookings.bookingDetails")}
+                  </h1>
+                </div>
 
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
+              </div>
+              <div className="flex flex-row gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-md font-bold shadow-2xs ${getStatusTone(booking?.status)}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {formatStatusDisplay(booking?.status, language)}
                 </span>
+
+                {isWarrantyBooking && <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3.5 py-1 text-md font-bold text-purple-700 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {language === "vi" ? "Đơn bảo hành" : "Nail Maintenance"}
+                </span>}
               </div>
             </div>
 
             {/* Header Action Buttons Bar */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-row items-center gap-2">
               {/* Refund Button */}
               {(booking?.status === "Rejected" || booking?.status === "Cancelled" || booking?.status === "Canceled") && booking?.amountPaid > 0 && !booking?.isRefunded && (
                 <motion.button
@@ -695,7 +789,7 @@ export function ManagerBookingDetailPage() {
               )}
 
               {/* Propose Reschedule Button */}
-              {!isFinalStatus && (
+              {!isFinalStatus && booking?.status !== "CheckedIn" && booking?.status !== "InProgress" && booking?.status !== "Repaired" && (
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -709,11 +803,7 @@ export function ManagerBookingDetailPage() {
                 </motion.button>
               )}
 
-              {!isFinalStatus &&
-                booking?.status !== "CheckedIn" &&
-                booking?.status !== "Checked In" &&
-                booking?.status !== "InProgress" &&
-                booking?.status !== "In Progress" ? (
+              {!isFinalStatus && booking?.status !== "CheckedIn" && booking?.status !== "InProgress" && booking?.status !== "Repaired" ? (
                 <>
                   {(booking?.status === "Pending") && (
                     <motion.button
@@ -777,15 +867,15 @@ export function ManagerBookingDetailPage() {
         {/* Left Section: Customer Info, Service Appointment & Items */}
         <div className="space-y-6">
           {/* Customer Reschedule Request Alert Banner */}
-          {(booking?.status === "ReschedulePending" || booking?.status === "RescheduleReq" || booking?.proposedBy === "Customer") && (
+          {(booking?.status === "ReschedulePending" || booking?.status === "RescheduleReq") && (
             <motion.div variants={fadeInUp} className="rounded-lg border-2 border-[#6366F1]/50 bg-gradient-to-r from-[#EEF2FF] via-[#F5F3FF] to-[#EEF2FF] p-5 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#4F46E5]">
-                    <Calendar size={14} /> {t("manager.bookings.customerRequestedReschedule") || "Customer Requested Reschedule"}
+                    <Calendar size={14} /> {language === "vi" ? "Yêu cầu dời lịch" : "Customer Requested Reschedule"}
                   </span>
                   <p className="text-sm font-bold text-[#1E1B4B] mt-1">
-                    {t("manager.bookings.bookingDate") || "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {t("manager.bookings.time") || "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
+                    {language === "vi" ? "Ngày" : "Date"}: <span className="text-[#4F46E5]">{booking.proposedBookingDate || "N/A"}</span> · {language === "vi" ? "Thời gian" : "Time"}: <span className="text-[#4F46E5]">{booking.proposedStartTime || "N/A"}</span>
                   </p>
                   {booking.rescheduleReason && (
                     <p className="text-xs text-[#4338CA] italic mt-0.5">"{booking.rescheduleReason}"</p>
@@ -798,7 +888,7 @@ export function ManagerBookingDetailPage() {
                     disabled={isRefreshing}
                     className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#10B981] to-[#047857] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition disabled:opacity-50"
                   >
-                    <CheckCircle2 size={15} /> {t("manager.breaks.approve") || "Accept Request"}
+                    <CheckCircle2 size={15} /> {language === "vi" ? "Chấp nhận" : "Accept Request"}
                   </button>
                   <button
                     type="button"
@@ -858,7 +948,7 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="flex items-center gap-4 mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/60">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-bold text-white shadow-md">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FF7AB8] to-[#E84F93] text-base font-bold text-white shadow-md">
                 {(customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : booking?.customerName || "C").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -874,7 +964,7 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label={language === "vi" ? "Số điện thoại" : "Phone"}>
                   <a
                     href={`tel:${customer?.phone || booking?.phone}`}
-                    className="inline-flex items-center gap-2 font-bold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
+                    className="py-4 inline-flex items-center gap-2 font-bold text-[#E84F93] hover:underline bg-[#FFF5FA] px-3 py-1.5 rounded-xl border border-[#F3D6E5]/60 text-xs w-full"
                   >
                     <Phone size={13} className="shrink-0 text-[#E84F93]" />
                     <span>{customer?.phone || booking?.phone}</span>
@@ -886,33 +976,13 @@ export function ManagerBookingDetailPage() {
                 <InfoItem label={language === "vi" ? "Email" : "Email"}>
                   <a
                     href={`mailto:${customer?.email || booking?.email}`}
-                    className="inline-flex items-center gap-2 font-medium text-[#2B182B] hover:text-[#E84F93] bg-[#FAF6F8] px-3 py-1.5 rounded-xl border border-[#F3E2EC] text-xs w-full truncate"
+                    className="py-4 inline-flex items-center gap-2 font-medium text-[#2B182B] hover:text-[#E84F93] bg-[#FAF6F8] px-3 py-1.5 rounded-xl border border-[#F3E2EC] text-xs w-full truncate"
                   >
                     <Mail size={13} className="shrink-0 text-[#9E8497]" />
                     <span className="truncate">{customer?.email || booking?.email}</span>
                   </a>
                 </InfoItem>
               )}
-            </div>
-
-            {/* Customer Notes & Special Requests */}
-            <div className="mt-5 pt-4 border-t border-[#F3E2EC]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E8497] flex items-center gap-1.5">
-                  <NotebookPen size={13} className="text-[#E84F93]" />
-                  {language === "vi" ? "Ghi chú" : "Notes"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsEditNotesModalOpen(true)}
-                  className="text-xs font-bold text-[#E84F93] hover:underline flex items-center gap-1"
-                >
-                  <Edit3 size={12} /> {t("manager.common.edit")}
-                </button>
-              </div>
-              <div className="rounded-2xl border-l-4 border-l-[#E84F93] border-y border-r border-[#F3D6E5]/60 bg-gradient-to-r from-[#FFF5FA]/70 to-[#FFF0F5]/30 p-4 text-xs text-[#2B182B] leading-relaxed italic shadow-2xs">
-                "{booking?.notes || language === "vi" ? "Không có ghi chú" : "No notes"}"
-              </div>
             </div>
 
             {/* Check-in Photo */}
@@ -978,7 +1048,7 @@ export function ManagerBookingDetailPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">{language === "vi" ? "Thời lượng" : "Duration"}</p>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
                   <Clock3 size={15} className="text-[#E84F93] shrink-0" />
-                  <span>{formatDuration(booking?.totalDuration || 60, language)}</span>
+                  <span>{formatDuration(booking?.totalDuration, language)}</span>
                 </div>
               </div>
             </div>
@@ -994,36 +1064,25 @@ export function ManagerBookingDetailPage() {
                 <Table
                   columns={[
                     {
+                      title: language === "vi" ? "Thời gian" : "Time",
+                      key: 'time',
+                      render: (_, item) => <span className="font-bold text-[#E84F93] text-[14px]">{item.timeRangeDisplay || "-"}</span>,
+                    },
+                    {
                       title: language === "vi" ? "Dịch vụ" : "Service",
                       dataIndex: 'serviceName',
                       key: 'serviceName',
                       render: (text, item) => (
-                        <div className="flex items-start gap-4">
-                          {(item.nailVariantImageUrl || item.customerNailImageUrl) && (
-                            <div
-                              className="group relative w-[72px] h-[72px] rounded-xl border border-[#F3D6E5] overflow-hidden cursor-pointer hover:border-[#E84F93] transition-colors shrink-0 shadow-sm"
-                              onClick={() => setActiveImageModalUrl((item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, ''))}
-                            >
-                              <img
-                                src={(item.nailVariantImageUrl || item.customerNailImageUrl).replace(/`/g, '')}
-                                alt="Design"
-                                className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                <Maximize2 size={16} />
-                              </div>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-4">
                           <div className="py-1">
-                            <h4 className="text-[15px] font-bold text-[#2B182B] mb-1">{text || "Nail Service"}</h4>
+                            <h4 className="text-[15px] font-bold text-[#2B182B] mb-1">{text || ""}</h4>
                             {item.nailVariantName && (
-                              <p className="text-xs font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
+                              <p className="text-[15px] font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
                                 <Sparkles size={13} /> {item.nailVariantName}
                               </p>
                             )}
                             {item.customerNailName && (
-                              <p className="text-xs font-medium text-[#9E8497] flex items-center gap-1.5">
+                              <p className="text-[15px] font-bold text-[#E84F93] flex items-center gap-1.5 mb-0.5">
                                 <Edit3 size={12} /> Custom: {item.customerNailName}
                               </p>
                             )}
@@ -1044,7 +1103,7 @@ export function ManagerBookingDetailPage() {
                       dataIndex: 'duration',
                       key: 'duration',
                       align: 'center',
-                      width: 120,
+
                       render: (dur) => <span className="font-bold text-[#4B5563] text-sm">{dur !== undefined ? formatDuration(dur, language) : "-"}</span>,
                     },
                     {
@@ -1074,7 +1133,7 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#FFF5FA] to-[#FFF0F5]/40 border border-[#F3D6E5]/70">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-bold text-white shadow-xs">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#818CF8] to-[#4F46E5] text-sm font-bold text-white shadow-xs">
                 {(booking?.artistName && booking.artistName !== "Unassigned" ? booking.artistName : "U").charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -1100,47 +1159,28 @@ export function ManagerBookingDetailPage() {
             </SectionTitle>
 
             <div className="space-y-5">
-              {(() => {
-                const depositTx = transactions && transactions.length > 0 ? transactions[0] : null;
-                const actualDeposit = depositTx?.amount || booking?.depositAmount || 0;
-                const isPaid = depositTx?.status === "Paid" || (booking?.amountPaid > 0 && booking?.amountPaid >= actualDeposit);
-
-                let depositText = "Pending";
-                let depositTone = "text-[#D97706] font-bold";
-
-                if (actualDeposit > 0) {
-                  depositText = formatVND(actualDeposit);
-                  depositTone = isPaid ? "text-[#059669] font-bold" : "text-[#D97706] font-bold";
-                }
-
-                return (
-                  <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
-                    {/* <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tiền cọc" : "Deposit"}:</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${depositTone}`}>{depositText}</span>
-                    </div> */}
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
-                      <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
-                    </div>
-
-                    {booking?.discountAmount > 0 && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
-                        <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
-                      </div>
-                    )}
-
-                    <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
-                      <span className="text-xl font-bold text-[#E84F93]">
-                        {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
-                      </span>
-                    </div>
+              {!(isWarrantyBooking && booking?.totalPrice === 0) && (
+                <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Tổng tiền" : "Subtotal"}:</span>
+                    <span className="font-bold text-[#2B182B]">{formatVND(booking?.totalPrice)}</span>
                   </div>
-                );
-              })()}
+
+                  {(booking?.discountAmount > 0) && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-[#9E8497]">{language === "vi" ? "Giảm giá" : "Discount"}:</span>
+                      <span className="font-bold text-[#059669]">-{formatVND(booking?.discountAmount)}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-[#F3E2EC] pt-3 flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#2B182B]">{language === "vi" ? "Tổng cộng" : "Total Amount"}:</span>
+                    <span className="text-xl font-bold text-[#E84F93]">
+                      {formatVND(booking?.discountAmount > 0 ? booking.finalPrice : booking.totalPrice)}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Transactions List */}
               <div className="pt-2">
@@ -1155,25 +1195,62 @@ export function ManagerBookingDetailPage() {
 
                       return (
                         <div
-                          key={tx.transactionId}
-                          onClick={() => handleTransactionClick(tx.transactionId)}
+                          key={tx.id || tx.transactionId}
+                          onClick={() => handleTransactionClick(tx.id || tx.transactionId)}
                           className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-[11px] font-bold text-[#2B182B]">{txLabel}</p>
-                               
-                              </div>
-                              <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                          <div className="flex items-center justify-between">
+
+                            <div className="flex items-center">
+                              <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(Math.abs(tx.amount))}</p>
                             </div>
+
                             <div className="text-right">
-                              <p className="text-[13px] font-bold text-[#E84F93]">{formatVND(tx.amount)}</p>
-                              <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${String(tx.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
-                                String(tx.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
-                                  'bg-[#F3F4F6] text-[#6B7280]'
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${(() => {
+                                const statusStr = String(tx.status).toLowerCase();
+                                if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
+                                if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
+                                if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
+                                if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
+                                return 'bg-[#F3F4F6] text-[#6B7280]';
+                              })()
                                 }`}>
-                                {tx.status}
+                                {(() => {
+                                  const statusStr = String(tx.status).toLowerCase();
+                                  if (tx.walletType === 'BookingRefund') {
+                                    if (language === "vi") {
+                                      if (statusStr === 'completed') return 'Hoàn tiền thành công';
+                                      if (statusStr === 'failed') return 'Hoàn tiền thất bại';
+                                      return 'Đang hoàn tiền';
+                                    } else {
+                                      if (statusStr === 'completed') return 'Refund Completed';
+                                      if (statusStr === 'failed') return 'Refund Failed';
+                                      return 'Refunding';
+                                    }
+                                  } else if (tx.walletType === 'BookingPayment') {
+                                    if (language === "vi") {
+                                      if (statusStr === 'completed') return 'Thanh toán thành công';
+                                      if (statusStr === 'failed') return 'Thanh toán thất bại';
+                                      return 'Chờ thanh toán';
+                                    } else {
+                                      if (statusStr === 'completed') return 'Payment Completed';
+                                      if (statusStr === 'failed') return 'Payment Failed';
+                                      return 'Pending Payment';
+                                    }
+                                  } else {
+                                    if (language === "vi") {
+                                      if (statusStr === 'paid' || statusStr === 'completed') return 'Đã thanh toán';
+                                      if (statusStr === 'pending') return 'Chờ thanh toán';
+                                      if (statusStr === 'overdue') return 'Quá hạn';
+                                      if (statusStr === 'cancelled') return 'Đã hủy';
+                                      if (statusStr === 'refunded') return 'Đã hoàn tiền';
+                                      return tx.status;
+                                    } else {
+                                      if (statusStr === 'completed') return 'Paid';
+                                      return tx.status;
+                                    }
+                                  }
+                                })()}
                               </span>
                             </div>
                           </div>
@@ -1182,21 +1259,32 @@ export function ManagerBookingDetailPage() {
                             {tx.createdAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
-                                <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                                <span className="font-medium text-[#2B182B]">{formatVNDate(tx.createdAt)}</span>
                               </div>
                             )}
                             {tx.paidAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
-                                <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                                <span className="font-medium text-[#059669]">{formatVNDate(tx.paidAt)}</span>
                               </div>
                             )}
                             {!tx.paidAt && tx.expiresAt && (
                               <div className="flex justify-between items-center text-[10px]">
                                 <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
-                                <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                                <span className="font-medium text-[#E11D48]">{formatVNDate(tx.expiresAt)}</span>
                               </div>
                             )}
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold 
+                                ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId)
+                                  ? 'bg-[#F3E8FF] text-[#7E22CE]'
+                                  : tx.paymentMethod === 'Tiền mặt'
+                                    ? 'bg-[#FFF3F3] text-[#C2410C]'
+                                    : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                                {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1350,7 +1438,7 @@ export function ManagerBookingDetailPage() {
       >
         <div className="bg-white p-6 text-center">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm font-bold text-[#2B182B]">Customer Check-in QR Code</p>
+            <p className="text-sm font-bold text-[#2B182B]">{language === "vi" ? "Mã QR Check-in Khách Hàng" : "Customer Check-In QR Code"}</p>
             <button type="button" onClick={() => setIsQrExpanded(false)} className="text-[#9E8497] hover:text-[#E84F93]">
               <X size={18} />
             </button>
@@ -1471,51 +1559,53 @@ export function ManagerBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatVND(selectedTransactionDetail.amount)}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatVND(Math.abs(selectedTransactionDetail.amount))}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {selectedTransactionDetail.status}
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === "paid" || String(selectedTransactionDetail.status).toLowerCase() === "completed" ? "Đã thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "pending" ? "Chờ thanh toán" : String(selectedTransactionDetail.status).toLowerCase() === "overdue" ? "Quá hạn" : String(selectedTransactionDetail.status).toLowerCase() === "cancelled" || String(selectedTransactionDetail.status).toLowerCase() === "canceled" ? "Đã hủy" : String(selectedTransactionDetail.status).toLowerCase() === "refunded" ? "Đã hoàn tiền" : selectedTransactionDetail.status)
+                      : (String(selectedTransactionDetail.status).toLowerCase() === "completed" ? "Paid" : selectedTransactionDetail.status)}
                   </span>
                 </div>
 
                 <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
-                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.isWallet ? selectedTransactionDetail.referenceId : selectedTransactionDetail.orderCode}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
-                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                    <span className="font-medium text-[#2B182B]">{formatVNDate(selectedTransactionDetail.createdAt, language)}</span>
                   </div>
 
                   {selectedTransactionDetail.paidAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
-                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                      <span className="font-medium text-[#059669]">{formatVNDate(selectedTransactionDetail.paidAt, language)}</span>
                     </div>
                   )}
 
-                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                  {/* {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
-                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                      <span className="font-medium text-[#E11D48]">{toVN(selectedTransactionDetail.expiresAt).format('DD/MM/YYYY HH:mm')}</span>
                     </div>
-                  )}
+                  )} */}
 
-                  {selectedTransactionDetail.customerName && (
+                  {(selectedTransactionDetail.customerName || booking?.customerName) && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName || booking?.customerName}</span>
                     </div>
                   )}
 
-                  {selectedTransactionDetail.salonName && (
+                  {(selectedTransactionDetail.salonName || booking?.salonName) && (
                     <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
                       <span className="text-[#9E8497] font-medium">Salon</span>
-                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName || booking?.salonName || "Salon Long Thành Mỹ"}</span>
                     </div>
                   )}
                 </div>

@@ -95,8 +95,8 @@ export async function fetchStaffBookings(filters = {}) {
   const {
     endDate,
     includePagination = false,
-    pageNumber,
-    pageSize,
+    pageNumber = 1,
+    pageSize = 1000,
     search,
     startDate,
     status,
@@ -136,7 +136,7 @@ export async function fetchStaffSalonBookings(filters = {}) {
     endDate,
     includePagination = false,
     pageNumber = 1,
-    pageSize = 100,
+    pageSize = 1000,
     search,
     startDate,
     status,
@@ -185,6 +185,7 @@ export async function fetchServiceCatalog(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -201,6 +202,40 @@ export async function fetchServiceCatalog(filters = {}) {
       createAt: String(item?.createAt || "").trim(),
     })) : [],
     metaData: data?.metaData ?? {
+      currentPage: 1,
+      totalPages: 1,
+      pageSize,
+      totalItems: 0,
+      hasPrevious: false,
+      hasNext: false,
+      firstRowOnPage: 0,
+      lastRowOnPage: 0,
+    },
+  };
+}
+
+export async function fetchNailDesignCatalog(filters = {}) {
+  const {
+    pageNumber = 1,
+    pageSize = 10,
+    name,
+  } = filters ?? {};
+
+  const response = await axiosClient.get("/NailDesigns", {
+    headers: getAuthHeaders(),
+    params: {
+      pageNumber,
+      pageSize,
+      ...(name ? { name } : {}),
+      status: "Active"
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load nail designs.");
+
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    metaData: data?.metaData ?? data?.pagination ?? {
       currentPage: 1,
       totalPages: 1,
       pageSize,
@@ -241,7 +276,7 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
   const {
     pageNumber = 1,
     pageSize = 100,
-    name,
+    name
   } = filters ?? {};
 
   const response = await axiosClient.get("/NailShapes", {
@@ -250,6 +285,7 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -266,11 +302,32 @@ export async function fetchStaffBuilderNailShapes(filters = {}) {
     : [];
 }
 
+export async function fetchStaffBuilderShapeMethodConfigs(nailShapeId) {
+  const response = await axiosClient.get(`/ShapeMethodConfigs/nail-shape/${nailShapeId}`, {
+    headers: getAuthHeaders(),
+    params: {
+      status: "Active",
+    },
+  });
+
+  const data = unwrapResponse(response, "Failed to load shape method configs.");
+  const items = Array.isArray(data) ? data : (data?.items || []);
+
+  return items.map((item) => ({
+    shapeMethodConfigId: Number(item?.shapeMethodConfigId || 0),
+    nailShapeId: Number(item?.nailShapeId || 0),
+    name: String(item?.name || "").trim(),
+    price: Number(item?.price || 0),
+    duration: Number(item?.duration || 0),
+    status: String(item?.status || "").trim(),
+  }));
+}
+
 export async function fetchStaffBuilderNailSurfaces(filters = {}) {
   const {
     pageNumber = 1,
     pageSize = 100,
-    name,
+    name
   } = filters ?? {};
 
   const response = await axiosClient.get("/NailSurfaces", {
@@ -279,6 +336,7 @@ export async function fetchStaffBuilderNailSurfaces(filters = {}) {
       pageNumber,
       pageSize,
       ...(name ? { name } : {}),
+      status: "Active"
     },
   });
 
@@ -325,6 +383,11 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
         return;
       }
 
+      const status = String(component?.status || item?.status || "").trim();
+      if (status && status !== "Active" && status !== "active") {
+        return;
+      }
+
       uniqueComponents.set(componentId, {
         componentId,
         name: String(component?.name || item?.name || "").trim(),
@@ -332,6 +395,7 @@ export async function fetchStaffBuilderNailComponents(filters = {}) {
         componentType: String(component?.componentType || item?.componentType || "").trim(),
         price: Number(component?.price || item?.price || 0),
         duration: Number(component?.duration || item?.duration || 0),
+        status,
       });
     });
   }
@@ -593,6 +657,20 @@ export async function fetchStaffCustomerComponentDetail(customerComponentId) {
   };
 }
 
+export async function fetchStaffShapeMethodConfigDetail(configId) {
+  const normalizedConfigId = Number(configId || 0);
+
+  if (!Number.isInteger(normalizedConfigId) || normalizedConfigId <= 0) {
+    throw new Error("Shape method config ID is required.");
+  }
+
+  const response = await axiosClient.get(`/ShapeMethodConfigs/${normalizedConfigId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  return unwrapResponse(response, "Failed to load shape method config detail.");
+}
+
 export async function fetchStaffNailVariantDetail(variantId) {
   const normalizedVariantId = Number(variantId || 0);
 
@@ -814,6 +892,20 @@ export async function fetchStaffCustomerNailDetail(customerNailId) {
     nailComponents: normalizedCustomerNailComponents,
     customerNailComponents: normalizedCustomerNailComponents,
   };
+}
+
+export async function fetchAllCustomers(pageNumber = 1, pageSize = 1000, searchTerm = "") {
+  const params = { pageNumber, pageSize };
+  if (searchTerm) params.searchTerm = searchTerm;
+  const response = await axiosClient.get("/Users/customers", {
+    headers: getAuthHeaders(),
+    params
+  });
+
+  if (response?.data?.isSucceeded) {
+    return response.data.data.items || [];
+  }
+  return [];
 }
 
 export async function fetchStaffCustomerDetail(userId) {
@@ -1102,6 +1194,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
       rows.push({
         id: `${bookingItemId || `service-${index}`}-service`,
         bookingItemId,
+        serviceId,
+        nailVariantId,
         name: resolvedServiceName,
         detailLabel: "Service",
         quantity,
@@ -1120,6 +1214,8 @@ function buildServiceSessionBreakdown(items = [], options = {}) {
       rows.push({
         id: `${bookingItemId || `service-${index}`}-nail`,
         bookingItemId,
+        serviceId,
+        nailVariantId,
         name: resolvedNailName,
         detailLabel: resolvedCustomerNail ? "Customer Nail" : "Nail Variant",
         quantity,
@@ -1317,11 +1413,11 @@ export function buildStaffServiceSessionPayload(booking, options = {}) {
     booking?.totalPriceLabel ||
     booking?.total ||
     formatCurrency(booking?.totalPrice);
-    
+
   const originalServicePriceVal = Number(booking?.price || booking?.totalPrice || 0);
   const discountAmountVal = Math.abs(Number(booking?.discount || 0));
-  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0 
-    ? booking.discounts.map(d => d.name || d.type).join(", ") 
+  const discountLabel = Array.isArray(booking?.discounts) && booking.discounts.length > 0
+    ? booking.discounts.map(d => d.name || d.type).join(", ")
     : "Discount";
   const discountValue = discountAmountVal > 0 ? `-${formatCurrency(discountAmountVal)}` : "0 VND";
 
@@ -1398,8 +1494,9 @@ export function normalizeStaffBooking(booking) {
     ...booking,
     id: booking?.bookingId,
     uiId: formatBookingCode(booking?.bookingId),
+    customerId: booking?.customerId || booking?.userId,
     customerName: booking?.customerName || "Unknown customer",
-    customerPhone: "--",
+    customerPhone: booking?.customerPhone || "--",
     branch: booking?.salonName,
     uiBranch: booking?.salonName,
     staffName: booking?.artistName,

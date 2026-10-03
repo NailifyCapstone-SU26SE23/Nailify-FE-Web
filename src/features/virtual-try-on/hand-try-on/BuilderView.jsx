@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { ZoomIn, ZoomOut, Sliders } from "lucide-react";
 import womanHandImg from "@/shared/assets/images/womanHand.png";
 import manHandImg from "@/shared/assets/images/manHand.png";
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 
 const HAND_VIEW_NAIL_SCALE = 1;
 
@@ -63,7 +64,14 @@ export function BuilderView({
   onReturnToForm,
   onSaveDraft,
 }) {
-  const previewLabels = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
+  const { t } = useLanguage();
+  const previewLabels = [
+    t("handTryOn.fingers.thumb"),
+    t("handTryOn.fingers.index"),
+    t("handTryOn.fingers.middle"),
+    t("handTryOn.fingers.ring"),
+    t("handTryOn.fingers.pinky"),
+  ];
   const [viewMode, setViewMode] = useState("grid"); // "grid" | "hand"
   const [handGender, setHandGender] = useState("woman"); // "woman" | "man"
   const [isZoomed, setIsZoomed] = useState(false);
@@ -197,7 +205,7 @@ export function BuilderView({
               type="button"
               className="zoom-toggle-btn"
               onClick={() => setIsZoomed(!isZoomed)}
-              title="Toggle zoom"
+              title={t("handTryOn.builderView.toggleZoom")}
             >
               {isZoomed ? <ZoomOut size={18} /> : <ZoomIn size={18} />}
             </button>
@@ -250,10 +258,10 @@ export function BuilderView({
                 type="button"
                 className="calibrate-toggle-btn"
                 onClick={() => setIsCalibrating(!isCalibrating)}
-                title="Open live position calibrator"
+                title={t("handTryOn.builderView.openCalibrator")}
               >
                 <Sliders size={14} />
-                <span>Calibrate Nails</span>
+                <span>{t("handTryOn.builderView.calibrateNails")}</span>
               </button>
 
               {/* Live Calibrator Panel */}
@@ -329,7 +337,7 @@ export function BuilderView({
                   }`}
                   onClick={handleShowAllFingers}
                 >
-                  🖐️ All Hand
+                  {t("handTryOn.builderView.allHand")}
                 </button>
                 {previewLabels.map((label, index) => (
                   <button

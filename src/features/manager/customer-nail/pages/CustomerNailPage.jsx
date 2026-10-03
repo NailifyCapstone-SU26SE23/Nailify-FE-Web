@@ -56,13 +56,6 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     config = {};
   }
 
-  // 🐛 DEBUG: Log surface config
-  console.log("🎨 Surface Debug:", {
-    name,
-    effectsConfigJson,
-    parsedConfig: config
-  });
-
   // 🪞 CHROME / MIRROR - Ultra metallic
   if (name.includes("chrome") || name.includes("mirror") || name.includes("tráng gương")) {
     // Backend format: {"reflectivity":0.9, "metallic":1.0}
@@ -213,7 +206,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  //GLOSSY (Default) - Natural shine
   const shine = config.shine || 0.45;
   const blur = config.blur || 0;
   const effectiveBlur = Math.max(4, blur * 20);
@@ -431,7 +424,7 @@ function CustomerNailCard({ nail, language }) {
             </div>
           </div>
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl font-serif text-white shadow-inner">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#d4af37] to-[#c5a059] text-4xl  text-white shadow-inner">
             {initials}
           </div>
         )}
@@ -450,7 +443,7 @@ function CustomerNailCard({ nail, language }) {
       <div className="flex flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h4 className="line-clamp-1 text-lg font-serif font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
+            <h4 className="line-clamp-1 text-lg  font-bold text-[#3f2240] transition-colors duration-300 group-hover:text-[#ea4f93]">
               {nail.name || "Untitled Design"}
             </h4>
           </div>
@@ -495,7 +488,7 @@ export function CustomerNailPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [metaData, setMetaData] = useState(null);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   const seenPendingReviewIdsRef = useRef(new Set());
   const hasInitializedPendingReviewRef = useRef(false);
@@ -611,6 +604,15 @@ export function CustomerNailPage() {
     loadStats();
   }, [loadStats]);
 
+  // Auto refetch every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadCustomerNails({ silent: true, suppressNewRequestToast: true });
+      loadStats();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [loadCustomerNails, loadStats]);
+
   // Lắng nghe SignalR cho yêu cầu custom nail mới
   useEffect(() => {
     const unsubscribe = notificationSignalRService.registerListener((type, payload) => {
@@ -634,14 +636,14 @@ export function CustomerNailPage() {
             recentKeys.delete(key);
           }
         });
-        
+
         // Use toast to notify the user and refresh the list silently
         toast.success(language === "vi" ? `Có yêu cầu duyệt mẫu móng custom mới từ ${customerName}!` : `New custom nail request from ${customerName}!`, {
           id: `custom-nail-request-${notificationKey}`,
           icon: '💅',
           style: { borderRadius: '12px', background: '#3f2240', color: '#fff' }
         });
-        
+
         loadCustomerNails({ silent: true, suppressNewRequestToast: true });
         loadStats(); // Update the stats as well
       }
@@ -714,7 +716,7 @@ export function CustomerNailPage() {
         color: "#4755b8",
       },
       {
-        label: language === "vi" ? "Đã duyệt" : "Approved",
+        label: language === "vi" ? "Đã xác nhận" : "Approved",
         value: approvedCount,
         note: language === "vi" ? "Xác nhận bởi quản lý" : "confirmed by manager",
         icon: CheckCircle2,
@@ -791,7 +793,7 @@ export function CustomerNailPage() {
                   { value: "Assigned", label: language === "vi" ? "Đã phân thợ" : "Assigned" },
                   { value: "Reviewed", label: language === "vi" ? "Đã đánh giá" : "Reviewed" },
                   { value: "Quoted", label: language === "vi" ? "Đã báo giá" : "Quoted" },
-                  { value: "Approved", label: language === "vi" ? "Đã duyệt" : "Approved" },
+                  { value: "Approved", label: language === "vi" ? "Đã xác nhận" : "Approved" },
                   { value: "Rejected", label: language === "vi" ? "Đã từ chối" : "Rejected" },
                 ]}
               />

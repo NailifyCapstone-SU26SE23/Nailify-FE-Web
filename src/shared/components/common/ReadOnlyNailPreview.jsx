@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { PropTypes } from "../../utils/propTypes";
-
+import { useLanguage } from "../../../shared/hooks/useLanguage";
 const NAIL_LABELS = ["Thumb", "Index", "Middle", "Ring", "Pinky"];
 const DEFAULT_SHAPE_RATIO = 0.42;
 
@@ -38,22 +38,22 @@ function normalizeGradientStops(gradientStops, primaryColor, secondaryColor) {
   ];
 }
 
-function normalizeFingerIndex(value) {
+function normalizeColorFingerIndex(value) {
   const normalized = Number(value);
-
-  if (normalized === -1) {
-    return -1;
-  }
 
   if (!Number.isInteger(normalized)) {
     return 0;
   }
 
-  if (normalized >= 1 && normalized <= 5) {
-    return normalized - 1;
-  }
-
+  // Color data is 0-based: 0=Thumb, 1=Index, 2=Middle, 3=Ring, 4=Pinky
   return clamp(normalized, 0, 4);
+}
+
+function normalizeFingerIndex(value) {
+  const normalized = Number(value);
+  if (normalized === -1) return -1;
+  if (!Number.isInteger(normalized)) return 0;
+  return clamp(normalized - 1, 0, 4);
 }
 
 function parsePlacementConfig(configJson) {
@@ -74,18 +74,62 @@ function parsePlacementConfig(configJson) {
   }
 }
 
-function parseVariantColorJson(value) {
-  const raw = String(value || "").trim();
-
-  if (!raw) {
-    return null;
-  }
-
+function parseVariantColorConfig(colorJson) {
+  const rawValue = String(colorJson || "").trim();
+  if (!rawValue) return null;
   try {
-    return JSON.parse(raw);
+    return JSON.parse(rawValue);
   } catch {
-    return null;
+    return rawValue;
   }
+}
+
+function getColorGradientStops(colorConfig) {
+  if (!colorConfig) return [];
+  if (Array.isArray(colorConfig)) return colorConfig;
+  if (Array.isArray(colorConfig.gradient)) return colorConfig.gradient;
+  if (Array.isArray(colorConfig.gradient?.stops)) return colorConfig.gradient.stops;
+  if (Array.isArray(colorConfig.gradientStops)) return colorConfig.gradientStops;
+  return [];
+}
+
+function buildFingerColorStyle(colorConfig, fingerIndex) {
+  if (!colorConfig) return { backgroundColor: "#f9c2d8" };
+  if (typeof colorConfig === "string") return { backgroundColor: colorConfig };
+
+  if (Array.isArray(colorConfig)) {
+    const color = String(colorConfig[fingerIndex - 1] || colorConfig[fingerIndex] || colorConfig[0] || "#f9c2d8").trim();
+    return { backgroundColor: color || "#f9c2d8" };
+  }
+
+  const gradientStops = getColorGradientStops(colorConfig);
+  if (gradientStops.length > 1) {
+    return { background: `linear-gradient(to bottom, ${gradientStops.join(", ")})` };
+  }
+
+  if (colorConfig.mode === "perFinger" && Array.isArray(colorConfig.fingers)) {
+    const finger = colorConfig.fingers.find((item) => Number(item?.fingerIndex) === Number(fingerIndex));
+    if (finger) {
+      const fingerStops = getColorGradientStops(finger);
+      if (fingerStops.length > 1) {
+        return { background: `linear-gradient(to bottom, ${fingerStops.join(", ")})` };
+      }
+      if (finger.mode === "gradient" && finger.primaryColor && finger.secondaryColor) {
+        return { background: `linear-gradient(to bottom, ${finger.primaryColor}, ${finger.secondaryColor})` };
+      }
+      if (finger.color || finger.primaryColor) {
+        return { backgroundColor: finger.color || finger.primaryColor };
+      }
+    }
+  }
+
+  if (colorConfig.mode === "gradient" && colorConfig.primaryColor && colorConfig.secondaryColor) {
+    return { background: `linear-gradient(to bottom, ${colorConfig.primaryColor}, ${colorConfig.secondaryColor})` };
+  }
+  if (colorConfig.color) return { backgroundColor: colorConfig.color };
+  if (colorConfig.primaryColor) return { backgroundColor: colorConfig.primaryColor };
+
+  return { backgroundColor: "#f9c2d8" };
 }
 
 function useShapeAspectRatio(shapeImageUrl) {
@@ -122,74 +166,7 @@ function useShapeAspectRatio(shapeImageUrl) {
   return shapeImageUrl ? aspectRatio : DEFAULT_SHAPE_RATIO;
 }
 
-function buildFingerColorConfigs(colorJson) {
-  const fallbackPrimary = "#f7bdd7";
-  const fallbackSecondary = "#fce7f3";
-  const parsed = parseVariantColorJson(colorJson);
-  const defaults = Array.from({ length: NAIL_LABELS.length }, () => ({
-    mode: "solid",
-    primaryColor: fallbackPrimary,
-    secondaryColor: fallbackSecondary,
-    gradientStops: [fallbackPrimary, fallbackSecondary],
-  }));
 
-  if (!parsed) {
-    return defaults;
-  }
-
-  const gradientStops = Array.isArray(parsed?.gradient?.stops)
-    ? parsed.gradient.stops.filter(Boolean)
-    : [];
-  const sharedColor = {
-    mode: parsed?.mode === "gradient" && gradientStops.length >= 2 ? "gradient" : "solid",
-    primaryColor: normalizeColorValue(parsed?.primaryColor || parsed?.color || gradientStops[0], fallbackPrimary),
-    secondaryColor: normalizeColorValue(
-      parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
-      fallbackSecondary,
-    ),
-    gradientStops: normalizeGradientStops(
-      gradientStops,
-      parsed?.primaryColor || parsed?.color || gradientStops[0],
-      parsed?.secondaryColor || gradientStops[1] || gradientStops[0] || parsed?.primaryColor,
-    ),
-  };
-
-  if (parsed?.mode !== "perFinger" || !Array.isArray(parsed?.fingers)) {
-    return defaults.map(() => ({ ...sharedColor }));
-  }
-
-  const nextConfigs = defaults.map(() => ({ ...sharedColor }));
-
-  parsed.fingers.forEach((finger) => {
-    const fingerIndex = normalizeFingerIndex(finger?.fingerIndex);
-
-    if (fingerIndex < 0) {
-      return;
-    }
-
-    const fingerStops = Array.isArray(finger?.gradient?.stops)
-      ? finger.gradient.stops.filter(Boolean)
-      : [];
-    nextConfigs[fingerIndex] = {
-      mode: finger?.mode === "gradient" && fingerStops.length >= 2 ? "gradient" : "solid",
-      primaryColor: normalizeColorValue(
-        finger?.primaryColor || finger?.color || fingerStops[0],
-        sharedColor.primaryColor,
-      ),
-      secondaryColor: normalizeColorValue(
-        finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
-        sharedColor.secondaryColor,
-      ),
-      gradientStops: normalizeGradientStops(
-        fingerStops,
-        finger?.primaryColor || finger?.color || fingerStops[0],
-        finger?.secondaryColor || fingerStops[1] || fingerStops[0] || finger?.primaryColor,
-      ),
-    };
-  });
-
-  return nextConfigs;
-}
 
 function buildComponentPlacements(nailComponents = []) {
   const placements = [];
@@ -231,30 +208,12 @@ function buildComponentPlacements(nailComponents = []) {
   return placements;
 }
 
-function getColorStyle(colorConfig) {
-  if (colorConfig?.mode === "gradient") {
-    const gradientFormula = normalizeGradientStops(
-      colorConfig?.gradientStops,
-      colorConfig?.primaryColor,
-      colorConfig?.secondaryColor,
-    )
-      .map((color, index, stops) => `${color} ${((index / Math.max(stops.length - 1, 1)) * 100).toFixed(2)}%`)
-      .join(", ");
-
-    return {
-      backgroundImage: `linear-gradient(135deg, ${gradientFormula})`,
-    };
-  }
-
-  return {
-    backgroundColor: colorConfig?.primaryColor || "#f7bdd7",
-  };
-}
 
 
 
 
-function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compact = false }) {
+
+function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compact = false, fingerLabel }) {
   const label = NAIL_LABELS[index];
 
   const shapeMaskStyle = shapeImageUrl
@@ -388,7 +347,7 @@ function ReadOnlyNailCard({ components, index, colorStyle, shapeImageUrl, compac
       </div>
       <span className={`rounded-full border border-[#fce6f3] bg-white/90 font-bold uppercase tracking-[0.14em] text-[#ea4f93] shadow-[0_6px_16px_rgba(236,72,153,0.06)] ${compact ? "text-[8px] px-2 py-0.5" : "text-[10px] px-3 py-1"
         }`}>
-        {label}
+        {fingerLabel ?? label}
       </span>
     </div>
   );
@@ -410,6 +369,8 @@ ReadOnlyNailCard.propTypes = {
   ).isRequired,
   index: PropTypes.number.isRequired,
   shapeImageUrl: PropTypes.string,
+  fingerLabel: PropTypes.string,
+
 };
 
 export function ReadOnlyNailPreview({
@@ -422,11 +383,21 @@ export function ReadOnlyNailPreview({
   variantDetail,
   compact = false,
 }) {
-  const fingerColorConfigs = buildFingerColorConfigs(variantDetail?.colorJson);
+  const colorConfig = useMemo(() => parseVariantColorConfig(variantDetail?.colorJson), [variantDetail?.colorJson]);
   const componentPlacements = buildComponentPlacements(variantDetail?.nailComponents);
   const shapeImageUrl = String(variantDetail?.nailShape?.imageUrl || "").trim();
   const finishLabel = String(variantDetail?.nailSurface?.name).trim();
-
+  const { t, language } = useLanguage();
+  const fingerLabels = useMemo(
+    () => [
+      t("nailFingerThumb"),
+      t("nailFingerIndex"),
+      t("nailFingerMiddle"),
+      t("nailFingerRing"),
+      t("nailFingerPinky"),
+    ],
+    [t, language],
+  );
   return (
     <article className={`flex w-full max-w-full flex-col rounded-lg border border-[#f6dbe8] bg-[#fff7fb] shadow-[0_14px_30px_rgba(236,72,153,0.05)] ${className}`}>
       {showHeader ? (
@@ -437,17 +408,17 @@ export function ReadOnlyNailPreview({
       ) : null}
 
       <div className={`${showHeader ? "mt-4" : ""} rounded-[18px] bg-[linear-gradient(180deg,#fff3f9_0%,#ffeef7_100%)] p-4`}>
-        {showSurfaceMode ? (
+        {/* {showSurfaceMode ? (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-[14px] bg-white/65 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
             <span>Surface Mode</span>
             <span className="rounded-full bg-[#fff1f7] px-2.5 py-1 text-[#ea4f93]">
               {finishLabel}
             </span>
           </div>
-        ) : null}
+        ) : null} */}
 
         {showInstruction ? (
-          <div className="rounded-[14px] border border-dashed border-[#f2bfd4] bg-white/75 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
+          <div className="rounded-lg border border-dashed border-[#f2bfd4] bg-white/75 px-3 py-2 text-[10px] font-bold text-[#b07d97]">
             {instruction}
           </div>
         ) : null}
@@ -456,8 +427,8 @@ export function ReadOnlyNailPreview({
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={NAIL_LABELS[index]} className="flex min-w-0 justify-center overflow-visible">
               <ReadOnlyNailCard
-                index={index}
-                colorStyle={getColorStyle(fingerColorConfigs[index])}
+                index={index} fingerLabel={fingerLabels[index]}
+                colorStyle={buildFingerColorStyle(colorConfig, index + 1)}
                 components={componentPlacements.filter((item) => item.fingerIndex === index)}
                 shapeImageUrl={shapeImageUrl}
                 compact={compact}

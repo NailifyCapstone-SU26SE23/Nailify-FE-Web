@@ -79,27 +79,6 @@ function getAvatar(name) {
     .toUpperCase();
 }
 
-function getJoinedAtLabel() {
-  return "Loaded from API";
-}
-
-function getLastActiveLabel(status) {
-  const normalizedStatus = String(status || "").trim().toLowerCase();
-
-  switch (normalizedStatus) {
-    case "active":
-      return "Active";
-    case "pending":
-      return "Pending";
-    case "suspended":
-      return "Suspended";
-    case "inactive":
-      return "Inactive";
-    default:
-      return "Recently updated";
-  }
-}
-
 export function normalizeAdminUser(user) {
   const role = normalizeRole(user?.role);
   const firstName = String(user?.firstName || "").trim();
@@ -127,7 +106,7 @@ export function normalizeAdminUser(user) {
     status: statusLabel,
     statusLabel,
     // lastActive: getLastActiveLabel(statusLabel),
-    joinedAt: getJoinedAtLabel(),
+    joinedAt: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown",
     notes: "",
   };
 }
@@ -269,9 +248,6 @@ export async function updateAdminUser(userId, formValues) {
   } else {
     payload.salonId = null;
   }
-
-  console.log("updateAdminUser - userId:", normalizedUserId);
-  console.log("updateAdminUser - payload:", payload);
 
   try {
     const response = await axiosClient.put(

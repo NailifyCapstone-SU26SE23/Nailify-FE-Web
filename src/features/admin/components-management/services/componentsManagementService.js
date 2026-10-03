@@ -122,6 +122,7 @@ function buildComponentFormData(formValues) {
   formData.append("ComponentType", String(formValues?.componentType || "").trim());
   formData.append("Price", String(Number(formValues?.price || 0)));
   formData.append("Duration", String(Number(formValues?.duration || 0)));
+  formData.append("Status", String(formValues?.status || "Active").trim());
 
   if (formValues?.image instanceof File) {
     formData.append("image", formValues.image);

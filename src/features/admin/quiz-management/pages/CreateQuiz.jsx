@@ -272,7 +272,7 @@ export function CreateQuiz() {
     );
 
     return (
-        <div className="min-h-full bg-[#fffbfc] text-[#4b3c46] pb-16 pt-4">
+        <div className="min-h-full text-[#4b3c46] mb-16">
             {/* Header */}
             <div className="flex flex-col gap-4 border-b border-[#f5e3ed] pb-6 md:flex-row md:items-end md:justify-between">
                 <div>
@@ -588,7 +588,7 @@ export function CreateQuiz() {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="inline-flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-8 text-sm font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_32px_rgba(234,79,147,0.4)] active:scale-95 disabled:opacity-50"
+                        className="gap-2 inline-flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-8 text-sm font-bold text-white shadow-[0_12px_24px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_16px_32px_rgba(234,79,147,0.4)] active:scale-95 disabled:opacity-50"
                     >
                         <Save size={15} />
                         {isSaving
@@ -607,9 +607,9 @@ export function CreateQuiz() {
                         </h3>
                     </div>
 
-                    <div className="relative mx-auto w-full max-w-[300px] rounded-[2.75rem] border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
+                    <div className="relative mx-auto w-full max-w-[300px] rounded-4xl border-[8px] border-[#321c29] bg-[#321c29] p-1.5 shadow-[0_28px_56px_-18px_rgba(50,28,41,0.4)]">
                         <div className="absolute left-1/2 top-2.5 z-10 h-3.5 w-24 -translate-x-1/2 rounded-full bg-[#321c29]" />
-                        <div className="flex min-h-[480px] flex-col justify-between rounded-lg bg-white p-5 pt-8">
+                        <div className="flex min-h-[480px] flex-col justify-between rounded-2xl bg-white p-5 pt-8">
                             <div className="space-y-5">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-widest text-[#a6869a]">

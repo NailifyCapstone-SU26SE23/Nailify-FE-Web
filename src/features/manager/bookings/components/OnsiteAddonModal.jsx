@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Modal, Input, InputNumber } from "antd";
 import { Sparkles, Clock, CheckCircle2, Check, X, Layers, Banknote, Plus, Minus, Palette, SlidersHorizontal } from "lucide-react";
 import toast from "react-hot-toast";
-import { confirmOnsiteAddon } from "../services/bookingProceduresService";
+import { confirmOnsiteAddon, simulateOnsiteAddon } from "../services/bookingProceduresService";
 import { axiosClient } from "../../../../lib/axiosClient";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 
-export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess }) {
+export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess, onConflict }) {
   const [activeTab, setActiveTab] = useState("services"); // 'services' | 'variants' | 'custom'
   const [extraDuration, setExtraDuration] = useState(30);
   const [extraPrice, setExtraPrice] = useState(100000);
@@ -150,16 +150,30 @@ export function OnsiteAddonModal({ open, onClose, bookingId, booking, onSuccess 
 
     try {
       setConfirming(true);
-      await confirmOnsiteAddon({
+      const simulationRes = await simulateOnsiteAddon({
         bookingId,
         addonItems,
       });
-      toast.success(isVi ? "Xác nhận & Cập nhật Lịch thành công!" : "Confirm & Update Schedule Success!", { icon: "✨" });
-      if (onSuccess) onSuccess();
-      handleClose();
+
+      if (simulationRes?.hasConflict) {
+        // Có xung đột lịch, gọi onConflict để bật modal chọn thợ phụ
+        if (onConflict) {
+          onConflict(simulationRes, addonItems);
+        }
+        handleClose();
+      } else {
+        // Nếu không có xung đột, tiếp tục confirm luôn
+        await confirmOnsiteAddon({
+          bookingId,
+          addonItems,
+        });
+        toast.success(isVi ? "Xác nhận & Cập nhật Lịch thành công!" : "Confirm & Update Schedule Success!");
+        if (onSuccess) onSuccess();
+        handleClose();
+      }
     } catch (err) {
-      console.error("Confirm addon failed:", err);
-      toast.error(err.message || (isVi ? "Không thể xác nhận dịch vụ phát sinh." : "Failed to confirm addon."));
+      console.error("Addon process failed:", err);
+      toast.error(err.message || (isVi ? "Không thể xử lý dịch vụ phát sinh." : "Failed to process addon."));
     } finally {
       setConfirming(false);
     }

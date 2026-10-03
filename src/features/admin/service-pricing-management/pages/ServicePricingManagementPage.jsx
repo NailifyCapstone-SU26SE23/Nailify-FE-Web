@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Table, Tooltip } from "antd";
 import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 import toast from "react-hot-toast";
 
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
@@ -36,6 +37,7 @@ import { fetchAdminServices, createAdminService, updateAdminService, deleteAdmin
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { getErrorMessage } from "../../../../shared/utils/getErrorMessage";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 
 
@@ -211,8 +213,8 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
           <FormField label={language === "vi" ? "Giá cơ bản" : "Base Price"}>
             <input
               type="number"
-              min="0"
-              step="0.01"
+              min="1000"
+              step="1000"
               value={draft.price}
               onChange={(event) => onChange("price", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
@@ -221,8 +223,8 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
           <FormField label={language === "vi" ? "Thời lượng (phút)" : "Duration (Min)"}>
             <input
               type="number"
-              min="5"
-              step="5"
+              min="1"
+              step="1"
               value={draft.duration}
               onChange={(event) => onChange("duration", event.target.value)}
               className="h-11 w-full rounded-2xl border border-[#f4d7e5] px-4 text-sm text-[#5b4658] outline-none focus:border-[#ea4f93]"
@@ -236,7 +238,7 @@ function ServiceFormModal({ draft, mode, onChange, onClose, onSubmit, errorMessa
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {language === "vi" ? (status === "Active" ? "Hoạt động" : "Ngừng hoạt động") : status}
+                  {BASIC_STATUS[status]?.[language] || status}
                 </option>
               ))}
             </select>
@@ -323,12 +325,9 @@ function ServiceDetailModal({ service, onClose }) {
               {language === "vi" ? "Trạng thái" : "Status"}
             </p>
             <span
-              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${service.status === "Active" ? "bg-[#e7fbf4] text-[#23b68b]" : "bg-[#fff0f5] text-[#eb5a99]"
-                }`}
+              className={`mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${BASIC_STATUS[service.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
             >
-              {language === "vi" 
-                ? (service.status === "Active" ? "Hoạt động" : "Ngừng hoạt động") 
-                : service.status}
+              {BASIC_STATUS[service.status]?.[language] || service.status}
             </span>
           </div>
         </div>
@@ -509,11 +508,15 @@ export function ServicePricingManagementPage() {
           label = t("servicePricing.metric.mostBooked");
         } else if (label === "Highest Revenue Service") {
           label = t("servicePricing.metric.highestRevenue");
+        } else if (label === "Total Services") {
+          label = language === "vi" ? "Tổng số dịch vụ" : "Total Services";
+        } else if (label === "Avg Service Price") {
+          label = language === "vi" ? "Giá dịch vụ trung bình" : "Avg Service Price";
         }
         return { ...item, label };
       });
     },
-    [services, t],
+    [services, t, language],
   );
 
   const categoryBreakdown = useMemo(() => buildCategoryBreakdown(services), [services]);
@@ -573,39 +576,7 @@ export function ServicePricingManagementPage() {
     setServiceModal({ open: true, mode: "edit", recordId: service.id });
   }, []);
 
-  const getServiceActionItems = useCallback((service) => {
-    const actions = [
-      {
-        key: "view-service",
-        label: language === "vi" ? "Xem chi tiết" : "View Details",
-        icon: Eye,
-        onSelect: () => setDetailService(service),
-      },
-      {
-        key: "edit-service",
-        label: language === "vi" ? "Chỉnh sửa dịch vụ" : "Edit Service",
-        icon: Pencil,
-        onSelect: () => openEditService(service),
-      },
-    ];
-
-    if (service?.status === "Active") {
-      actions.push({
-        key: "delete-service",
-        label: language === "vi" ? "Xóa dịch vụ" : "Delete Service",
-        icon: Trash2,
-        className: "text-[#d14c84]",
-        onSelect: () =>
-          setDeleteState({
-            type: "service",
-            recordId: service.id,
-            label: service.name,
-          }),
-      });
-    }
-
-    return actions;
-  }, [openEditService, t, language]);
+  // Removed getServiceActionItems
 
   const submitServiceForm = async () => {
     setServiceError("");
@@ -678,25 +649,21 @@ export function ServicePricingManagementPage() {
       title: t("userManagement.table.actions"),
       key: "actions",
       render: (_, service) => (
-        <div className="flex items-center gap-2">
-          {getServiceActionItems(service).map((item) => {
-            const Icon = item.icon;
-            return (
-              <Tooltip key={item.key} title={item.label}>
-                <button
-                  type="button"
-                  onClick={item.onSelect}
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#a17a91] hover:bg-[#fff0f5] hover:text-[#e84d92] transition-colors shadow-sm border border-[#f4d5e3] ${item.className || ""}`}
-                >
-                  <Icon size={14} />
-                </button>
-              </Tooltip>
-            );
-          })}
-        </div>
+        <ActionButtons
+          onView={() => setDetailService(service)}
+          onEdit={() => openEditService(service)}
+          onDelete={() =>
+            setDeleteState({
+              type: "service",
+              recordId: service.id,
+              label: service.name,
+            })
+          }
+          showDelete={service?.status === "Active"}
+        />
       ),
     },
-  ]), [getServiceActionItems, t]);
+  ]), [t, language]);
 
   return (
     <>

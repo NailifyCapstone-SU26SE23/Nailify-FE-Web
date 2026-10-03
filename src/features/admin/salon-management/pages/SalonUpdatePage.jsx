@@ -8,6 +8,11 @@ import {
   UserRound,
   X,
   Upload,
+  Star,
+  Store,
+  Lock,
+  DoorOpen,
+  DoorClosed,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -18,22 +23,22 @@ import { SalonSaveResultModal } from "../components/SalonSaveResultModal";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import HolidayClosureModal from "../components/HolidayClosureModal";
 import { ROUTES, getAdminSalonDetailRoute } from "../../../../shared/constants/routes";
-import { updateSalon, updateSalonOperatingHours } from "../services/salonsService";
+import { updateSalon, updateSalonOperatingHours, fetchSalonRatings } from "../services/salonsService";
 import { fetchAdminSalonDetail, mapSalonOperatingHours } from "../services/salonManagementService";
 
 const SALON_DAYS_OF_WEEK = [
-  { key: "monday", label: "Monday" },
-  { key: "tuesday", label: "Tuesday" },
-  { key: "wednesday", label: "Wednesday" },
-  { key: "thursday", label: "Thursday" },
-  { key: "friday", label: "Friday" },
-  { key: "saturday", label: "Saturday" },
-  { key: "sunday", label: "Sunday" },
+  { key: "monday", label: "Monday", labelVi: "Thứ 2" },
+  { key: "tuesday", label: "Tuesday", labelVi: "Thứ 3" },
+  { key: "wednesday", label: "Wednesday", labelVi: "Thứ 4" },
+  { key: "thursday", label: "Thursday", labelVi: "Thứ 5" },
+  { key: "friday", label: "Friday", labelVi: "Thứ 6" },
+  { key: "saturday", label: "Saturday", labelVi: "Thứ 7" },
+  { key: "sunday", label: "Sunday", labelVi: "Chủ nhật" },
 ];
 
 const SALON_STATUS_OPTIONS = [
-  { value: "Open", label: "Open", color: "bg-emerald-100 text-emerald-600" },
-  { value: "Closed", label: "Closed", color: "bg-rose-100 text-rose-600" },
+  { value: "Open", label: "Open", color: "bg-emerald-100 text-emerald-600", icon: DoorOpen },
+  { value: "Closed", label: "Closed", color: "bg-rose-100 text-rose-600", icon: DoorClosed },
 ];
 
 const DEFAULT_OPERATING_HOURS = {
@@ -131,7 +136,7 @@ function PremiumCard({ className = "", children, noHover = false, padded = true 
       initial="hidden"
       animate="visible"
       variants={fadeInUp}
-      className={`relative overflow-hidden rounded-[28px] border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${padded ? "p-6" : ""} ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)]" : ""} ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-[#f1e7ed] bg-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.04)] transition-all duration-500 ease-out ${padded ? "p-6" : ""} ${!noHover ? "hover:-translate-y-1 hover:shadow-[0_30px_50px_-15px_rgba(0,0,0,0.06)]" : ""} ${className}`}
     >
       {children}
     </motion.article>
@@ -173,6 +178,7 @@ export function SalonUpdatePage() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [showHolidayClosureModal, setShowHolidayClosureModal] = useState(false);
+  const [salonRatings, setSalonRatings] = useState({ average: 0, count: 0 });
 
   useEffect(() => {
     let isMounted = true;
@@ -181,11 +187,23 @@ export function SalonUpdatePage() {
       setIsLoading(true);
       setIsNotFound(false);
       try {
-        const salon = await fetchAdminSalonDetail(salonId);
+        const [salon, ratingsData] = await Promise.all([
+          fetchAdminSalonDetail(salonId),
+          fetchSalonRatings(salonId)
+        ]);
 
         if (!isMounted) {
           return;
         }
+
+        let avgRating = 0;
+        let ratingCount = 0;
+        if (ratingsData && ratingsData.length > 0) {
+          ratingCount = ratingsData.length;
+          const sum = ratingsData.reduce((acc, curr) => acc + (curr.overallScore || 0), 0);
+          avgRating = (sum / ratingCount).toFixed(1);
+        }
+        setSalonRatings({ average: avgRating, count: ratingCount });
 
         setFormData({
           ...createEmptySalonForm(),
@@ -531,7 +549,7 @@ export function SalonUpdatePage() {
 
                   <div className="space-y-2 md:col-span-2">
                     <span className="text-[13px] font-semibold text-[#2d1b35]">
-                      {t("adminSalonManagement.status")} <span className="text-[#ea4f93]">*</span>
+                      {language === "vi" ? "Trạng thái hoạt động" : "Salon Open Status"} <span className="text-[#ea4f93]">*</span>
                     </span>
                     <div className="grid grid-cols-2 gap-2.5">
                       {SALON_STATUS_OPTIONS.map((option) => {
@@ -547,7 +565,7 @@ export function SalonUpdatePage() {
                               : "bg-[#fff8fb] text-[#a88a9f] hover:text-[#2d1b35] hover:bg-[#fff5fb] border border-[#f1e7ed]"
                               }`}
                           >
-                            {getSalonStatusLabel(option.value, language)}
+                            {option.icon && <option.icon strokeWidth={3} size={20} className="inline-block mr-2" />} {getSalonStatusLabel(option.value, language)}
                           </motion.button>
                         );
                       })}
@@ -566,43 +584,67 @@ export function SalonUpdatePage() {
 
                 <div className="space-y-3">
                   {SALON_DAYS_OF_WEEK.map((day) => {
-                    const daysMap = { Monday: "Thứ hai", Tuesday: "Thứ ba", Wednesday: "Thứ tư", Thursday: "Thứ năm", Friday: "Thứ sáu", Saturday: "Thứ bảy", Sunday: "Chủ nhật" };
+                    const daysMap = { Monday: "T2", Tuesday: "T3", Wednesday: "T4", Thursday: "T5", Friday: "T6", Saturday: "T7", Sunday: "CN" };
+                    const isClosed = formData.operatingHours[day.key]?.closed || false;
+
                     return (
                       <motion.div
                         key={day.key}
                         variants={fadeInUp}
-                        className="flex flex-col gap-3 rounded-[16px] border border-[#f1e7ed] bg-[#fff8fb] px-5 py-4 sm:flex-row sm:items-center transition-all duration-300 hover:border-[#f0b7cf] hover:shadow-[0_4px_16px_rgba(234,79,147,0.08)]"
+                        className={`flex flex-col gap-4 rounded-2xl border ${isClosed ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-[#f1e7ed] bg-[#fff8fb]'} px-6 py-5 sm:flex-row sm:items-center sm:justify-between transition-all duration-300 hover:shadow-md hover:border-[#f0b7cf]`}
                       >
-                        <div className="w-full sm:w-28">
-                          <span className="text-[13px] font-bold text-[#2d1b35]">{language === "vi" ? daysMap[day.key] || day.label : day.label}</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer mr-2">
-                            <input
-                              type="checkbox"
-                              checked={formData.operatingHours[day.key]?.closed || false}
-                              onChange={(e) => handleHoursChange(day.key, "closed", e.target.checked)}
-                              className="h-4 w-4 rounded border-[#f1e7ed] text-[#ea4f93] focus:ring-[#ea4f93]"
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleHoursChange(day.key, "closed", !isClosed)}
+                            className={`relative inline-flex h-[32px] w-[76px] shrink-0 cursor-pointer items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none ${!isClosed ? 'bg-gradient-to-r from-[#ea4f93] to-[#cf3d74] shadow-[0_2px_8px_rgba(234,79,147,0.4)]' : 'bg-slate-300 hover:bg-slate-400'}`}
+                          >
+                            <span className={`absolute left-[10px] text-[10px] font-bold uppercase tracking-wider text-white transition-opacity duration-300 ${!isClosed ? 'opacity-100' : 'opacity-0'}`}>
+                              {language === "vi" ? "Mở" : "Open"}
+                            </span>
+                            <span className={`absolute right-[8px] text-[10px] font-bold uppercase tracking-wider text-white transition-opacity duration-300 ${!isClosed ? 'opacity-0' : 'opacity-100'}`}>
+                              {language === "vi" ? "Đóng" : "Off"}
+                            </span>
+                            <span
+                              aria-hidden="true"
+                              className={`pointer-events-none absolute left-[3px] top-[3px] inline-block h-[26px] w-[26px] transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${!isClosed ? 'translate-x-[44px]' : 'translate-x-0'}`}
                             />
-                            <span className="text-[13px] font-medium text-[#a88a9f]">{language === "vi" ? "Đóng cửa" : "Closed"}</span>
-                          </label>
+                          </button>
+                          <div className="w-24">
+                            <span className={`text-[15px] font-bold ${isClosed ? 'text-slate-400 line-through' : 'text-[#2d1b35]'}`}>
+                              {language === "vi" ? day.labelVi : day.label}
+                            </span>
+                          </div>
+                        </div>
 
-                          {!formData.operatingHours[day.key]?.closed && (
+                        <div className="flex flex-wrap items-center gap-3">
+                          {isClosed ? (
+                            <span className="text-[14px] font-medium text-slate-400 italic">
+                              {language === "vi" ? "Đóng cửa (Nghỉ)" : "Closed (Off)"}
+                            </span>
+                          ) : (
                             <>
-                              <Clock3 size={14} className="shrink-0 text-[#ea4f93]" />
-                              <TimePicker
-                                value={formData.operatingHours[day.key].open}
-                                onChange={(value) => handleHoursChange(day.key, "open", value)}
-                                placeholder={t("adminSalonManagement.openTime")}
-                                className="w-full min-w-[7rem] sm:w-28"
-                              />
-                              <span className="text-sm text-[#a88a9f] font-semibold">{t("adminSalonManagement.to")}</span>
-                              <TimePicker
-                                value={formData.operatingHours[day.key].close}
-                                onChange={(value) => handleHoursChange(day.key, "close", value)}
-                                placeholder={t("adminSalonManagement.closeTime")}
-                                className="w-full min-w-[7rem] sm:w-28"
-                              />
+                              <div className="flex items-center gap-2">
+                                <Clock3 size={15} className="text-[#ea4f93]" />
+                                <TimePicker
+                                  value={formData.operatingHours[day.key].open}
+                                  onChange={(value) => handleHoursChange(day.key, "open", value)}
+                                  placeholder={t("adminSalonManagement.openTime")}
+                                  className="w-[110px] border-[#ea4f93]/20 hover:border-[#ea4f93] focus:border-[#ea4f93] text-[14px]"
+                                />
+                              </div>
+                              <span className="text-[12px] text-[#a88a9f] font-semibold uppercase tracking-wider mx-2">
+                                {t("adminSalonManagement.to")}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <Clock3 size={15} className="text-[#ea4f93]" />
+                                <TimePicker
+                                  value={formData.operatingHours[day.key].close}
+                                  onChange={(value) => handleHoursChange(day.key, "close", value)}
+                                  placeholder={t("adminSalonManagement.closeTime")}
+                                  className="w-[110px] border-[#ea4f93]/20 hover:border-[#ea4f93] focus:border-[#ea4f93] text-[14px]"
+                                />
+                              </div>
                             </>
                           )}
                         </div>
@@ -685,6 +727,19 @@ export function SalonUpdatePage() {
                       <div className="flex justify-between gap-3">
                         <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Phần trăm cọc" : "Deposit Config"}</span>
                         <span className="text-right font-medium text-[#2d1b35]">{formData.depositConfig ? `${formData.depositConfig}%` : (t("adminSalonManagement.notSet"))}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="font-semibold text-[#2d1b35]">{language === "vi" ? "Đánh giá" : "Rating"}</span>
+                        <span className="text-right font-medium text-[#2d1b35]">
+                          {salonRatings.count > 0 ? (
+                            <span className="flex items-center gap-1 justify-end">
+                              <Star size={14} className="text-[#f59e0b] fill-[#f59e0b]" />
+                              {salonRatings.average} <span className="text-[#a88a9f] font-normal">({salonRatings.count})</span>
+                            </span>
+                          ) : (
+                            <span className="text-[#a88a9f] italic">{language === "vi" ? "Chưa có đánh giá" : "No ratings yet"}</span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>

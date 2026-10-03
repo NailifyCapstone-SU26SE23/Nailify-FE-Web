@@ -113,6 +113,10 @@ function buildNailShapeFormData(formValues) {
     formData.append("Duration", String(Number(formValues.duration)));
   }
 
+  if (formValues?.status) {
+    formData.append("Status", String(formValues.status).trim());
+  }
+
   if (formValues?.image instanceof File) {
     formData.append("image", formValues.image);
   }

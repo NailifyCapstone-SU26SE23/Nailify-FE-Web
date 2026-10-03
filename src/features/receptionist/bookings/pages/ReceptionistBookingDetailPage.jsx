@@ -1,4 +1,4 @@
-import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin } from "antd";
+import { Button, Modal, Table, Descriptions, Image, Divider, Timeline, Card, Tag, Badge, List, Avatar, Popover, Spin, Checkbox } from "antd";
 import {
   AlarmClock,
   Armchair,
@@ -33,7 +33,7 @@ import {
   UserRound,
   X,
   XCircle,
-  Zap, Hourglass
+  Zap, Hourglass, Trash2, Edit2
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -41,13 +41,14 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { ROUTES, getReceptionistBookingCheckoutRoute } from "../../../../shared/constants/routes";
 import { ActionDropdown } from "../../../../shared/components/ui/ActionDropdown";
+import { ActionConfirmModal } from "../../../../shared/components/ui/ActionConfirmModal";
 import { formatDurationMinutes } from "../../../../shared/utils/formatDuration";
 import { AssignReceptionistArtistModal } from "../components/AssignReceptionistArtistModal";
 import { OnsiteAddonModal } from "../../../manager/bookings/components/OnsiteAddonModal";
+import { OnsiteAddonConflictModal } from "../components/OnsiteAddonConflictModal";
 import { ProposeRescheduleModal } from "../../../manager/bookings/components/ProposeRescheduleModal";
 import { AssignChairModal } from "../components/AssignChairModal";
 import {
-
   checkoutReceptionistBooking,
   fetchReceptionistBookingDetail,
   fetchReceptionistBookingProcedures,
@@ -57,38 +58,59 @@ import {
   getBookingHistories,
   getUserById,
   fetchBookingRating,
+  updateReceptionistBooking,
 } from "../services/receptionistBookingService";
 import { fetchReceptionistCustomerDetail, fetchLoyaltyTiers } from "../../customers/services/receptionistCustomerService";
 import { createPayment } from "../../payments/services/receptionistPaymentService";
-import { fetchTransactionsByBookingId, fetchTransactionById } from "../../../manager/transaction-management/services/transactionService";
+import { fetchTransactionsByBookingId, fetchTransactionById, fetchWalletTransactionById } from "../../../manager/transaction-management/services/transactionService";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const toVN = (date) => dayjs.utc(date).tz("Asia/Ho_Chi_Minh");
+const formatVNDate = (date) => {
+  const d = toVN(date);
+  if (!d.isValid()) return "N/A";
+  return d.format("DD/MM/YYYY HH:mm");
+};
 import { useQuery } from "@tanstack/react-query";
+import { TransactionBadge } from "../../../../shared/utils/transactions";
+import { PropTypes } from "../../../../shared/utils/propTypes";
+import { BOOKING_STATUS, getStatusLabel } from "../../../../shared/utils/statusFormatters";
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Pending':
-      return '!border-slate-200 !bg-slate-50 !text-slate-600';
-    case 'Approved':
-      return '!border-emerald-200 !bg-emerald-50 !text-emerald-600';
-    case 'Rejected':
-    case 'Cancelled':
-      return '!border-red-200 !bg-red-50 !text-red-600';
-    case 'CheckedIn':
-      return '!border-purple-200 !bg-purple-50 !text-purple-600';
-    case 'InProgress':
-      return '!border-blue-200 !bg-blue-50 !text-blue-600';
-    case 'ServiceCompleted':
-      return '!border-yellow-200 !bg-yellow-50 !text-yellow-700';
-    case 'Completed':
-      return '!border-green-200 !bg-green-50 !text-green-700';
-    case 'Repaired':
-      return '!border-orange-200 !bg-orange-50 !text-orange-600';
-    case 'ReschedulePending':
-    case 'RescheduleSuggested':
-      return '!border-indigo-200 !bg-indigo-50 !text-indigo-600';
-    default:
-      return '!border-[#f3ddab] !bg-[#fff8df] !text-[#d39a1d]';
-  }
+  return BOOKING_STATUS[status]?.tone || 'bg-[#fff8df] border-[#f3ddab] text-[#d39a1d]';
+};
+
+function formatDuration(totalMinutes, language = "en") {
+  return formatDurationMinutes(totalMinutes, language);
+}
+
+function SectionTitle({ children, subtitle, icon: Icon, actionButton }) {
+  return (
+    <div className="mb-6 flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFF0F5] to-[#FFE4EE] text-[#E84F93] shadow-xs">
+            <Icon size={18} />
+          </div>
+        )}
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-[#2B182B]">{children}</h2>
+          {subtitle ? <p className="mt-0.5 text-xs text-[#9E8497] font-medium leading-relaxed">{subtitle}</p> : null}
+        </div>
+      </div>
+      {actionButton}
+    </div>
+  );
+}
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  actionButton: PropTypes.node,
 };
 
 function formatCurrency(value) {
@@ -103,32 +125,32 @@ function formatCurrency(value) {
   }).format(amount)} VND`;
 }
 
-function formatDate(value) {
-  if (!value) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  const d = toVN(dateString);
+  return d.isValid() ? d.format("DD/MM/YYYY") : "N/A";
 }
 
-function formatTime(value) {
-  if (!value) {
-    return "--";
+function formatTime(startTime, fallbackDateTime) {
+  // Nếu startTime là ISO string đầy đủ (có chứa T và Z hoặc offset)
+  const str = String(startTime || "").trim();
+  if (str.includes("T")) {
+    const d = toVN(str);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
   }
 
-  if (typeof value === "string" && /^\d{2}:\d{2}/.test(value) && !value.includes("T")) {
-    return value.slice(0, 5);
+  // Nếu startTime chỉ là chuỗi time HH:mm:ss, giả định là UTC rồi convert
+  if (fallbackDateTime) {
+    const d = toVN(fallbackDateTime);
+    return d.isValid() ? d.format("HH:mm") : "N/A";
   }
 
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(value));
+  // Fallback: parse raw time string (không convert timezone)
+  const rawTime = str || "";
+  if (!rawTime) return "N/A";
+  const [hours, minutes = 0] = rawTime.split(":").map(Number);
+  if (Number.isNaN(hours)) return "N/A";
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function getCustomerDisplayName(customerProfile, booking) {
@@ -149,66 +171,7 @@ function getCustomerInitials(customerProfile, booking) {
 }
 
 function getStatusTone(status) {
-  switch (status) {
-    case "Completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "In Progress":
-    case "CheckedIn":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Confirmed":
-      return "bg-[#e9f2ff] text-[#4772da]";
-    case "Pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "Cancelled":
-      return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getActionTone(label) {
-  switch (label) {
-    case "View":
-      return "bg-[#fff1f6] text-[#eb5b92]";
-    case "Manage":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "Edit":
-      return "bg-[#f2f2f2] text-[#656565]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureStatusTone(status) {
-  switch (String(status || "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-[#e7f8ee] text-[#309e63]";
-    case "inprogress":
-    case "in progress":
-      return "bg-[#efeafd] text-[#7c63d8]";
-    case "pending":
-      return "bg-[#fff4e3] text-[#e09a27]";
-    case "cancelled":
-      return "bg-[#ffe7ef] text-[#e04d86]";
-    default:
-      return "bg-[#fff1f6] text-[#eb5b92]";
-  }
-}
-
-function getProcedureArtistTone(isFree, isQualified) {
-  if (isFree && isQualified) {
-    return "border-[#cfead9] bg-[#f3fcf6] text-[#249a5c]";
-  }
-
-  if (isQualified) {
-    return "border-[#e3dbff] bg-[#f7f4ff] text-[#7c63d8]";
-  }
-
-  if (isFree) {
-    return "border-[#ffe2b5] bg-[#fff8ea] text-[#d59218]";
-  }
-
-  return "border-[#f3d7e2] bg-[#fff7fb] text-[#8f7b88]";
+  return BOOKING_STATUS[status]?.tone || "bg-[#fff1f6] text-[#eb5b92] border border-[#ffc2d5]";
 }
 
 function getServiceStatus(index, bookingStatus) {
@@ -287,8 +250,9 @@ function getServiceAction(status, isVi) {
   return isVi ? "Xem" : "View";
 }
 
-function getServiceActionItems(row, handleViewService, handleViewProcedures, isVi) {
-  return [
+function getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi, bookingStatus) {
+  console.log("row", row);
+  const items = [
     {
       key: `view-${row.id}`,
       label: isVi ? "Xem" : "View",
@@ -303,6 +267,26 @@ function getServiceActionItems(row, handleViewService, handleViewProcedures, isV
       onSelect: () => handleViewProcedures(row),
     },
   ];
+
+  if (bookingStatus === "CheckedIn" || bookingStatus === "InProgress") {
+    items.push(
+      {
+        key: `edit-quantity-${row.id}`,
+        label: isVi ? "Cập nhật số lượng" : "Update Quantity",
+        icon: Edit2,
+        onSelect: () => handleEnableEditQuantity(row),
+      },
+      {
+        key: `delete-${row.id}`,
+        label: isVi ? "Xóa dịch vụ" : "Delete Service",
+        icon: Trash2,
+        className: "text-red-500",
+        onSelect: () => handleDeleteService(row),
+      }
+    );
+  }
+
+  return items;
 }
 
 function getProgressPercent(booking) {
@@ -438,7 +422,8 @@ function getReceptionistActionAvailability(status) {
   };
 }
 
-function DetailCard({ title, subtitle, badge, children, className = "" }) {
+function DetailCard({ title, subtitle, badge, children, className = "", headerAction }) {
+  const { language } = useLanguage();
   return (
     <section
       className={`rounded-[26px] border border-[#F3E2EC] bg-white/95 backdrop-blur-md p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.07)] transition-all ${className}`}
@@ -450,12 +435,17 @@ function DetailCard({ title, subtitle, badge, children, className = "" }) {
         </div>
         {badge ? (
           <div className="flex items-center gap-2">
-            <Tag className={`m-0 ${getStatusColor(badge)}`} style={{ padding: "4px 12px", borderRadius: "20px", fontWeight: "700", fontSize: "11px" }}>
-              <Clock size={11} className="mr-1 inline-block" />
-              {badge}
-            </Tag>
+            <span className={`inline-flex items-center m-0 px-3 py-1 rounded-full font-bold text-[11px] ${getStatusColor(badge)}`}>
+              <Clock size={11} className="mr-1" />
+              {getStatusLabel(badge, BOOKING_STATUS, language)}
+            </span>
           </div>
         ) : null}
+        {headerAction && (
+          <div className="flex items-center">
+            {headerAction}
+          </div>
+        )}
       </div>
       <div className="mt-5">{children}</div>
     </section>
@@ -481,6 +471,9 @@ export function ReceptionistBookingDetailPage() {
   const [isMoveScheduleOpen, setIsMoveScheduleOpen] = useState(false);
   const [isAssignChairModalOpen, setIsAssignChairModalOpen] = useState(false);
   const [isOnsiteAddonModalOpen, setIsOnsiteAddonModalOpen] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
+  const [addonItemsForConflict, setAddonItemsForConflict] = useState(null);
+  const [isOnsiteConflictModalOpen, setIsOnsiteConflictModalOpen] = useState(false);
   const [selectedServiceRow, setSelectedServiceRow] = useState(null);
   const [selectedProcedureRow, setSelectedProcedureRow] = useState(null);
   const [bookingProcedures, setBookingProcedures] = useState([]);
@@ -493,11 +486,14 @@ export function ReceptionistBookingDetailPage() {
   const [assigningProcedureArtistId, setAssigningProcedureArtistId] = useState("");
   const [isManualCheckInSubmitting, setIsManualCheckInSubmitting] = useState(false);
   const [isCheckoutSubmitting, setIsCheckoutSubmitting] = useState(false);
-  const [notes, setNotes] = useState(
-    "Customer notes not available from API yet. Use this area for receptionist-only reminders.",
-  );
   const [bookingHistories, setBookingHistories] = useState([]);
   const [isBookingHistoriesLoading, setIsBookingHistoriesLoading] = useState(true);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [isDeletingService, setIsDeletingService] = useState(false);
+  const [bookingItemDurations, setBookingItemDurations] = useState({});
+  const [itemsToDelete, setItemsToDelete] = useState(null);
+  const [editingQuantityId, setEditingQuantityId] = useState(null);
+  const [tempQuantity, setTempQuantity] = useState(1);
 
   const [transactions, setTransactions] = useState([]);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -509,6 +505,14 @@ export function ReceptionistBookingDetailPage() {
     queryFn: () => fetchBookingRating(bookingId),
     enabled: !!bookingId,
   });
+
+  function formatVND(amount) {
+    if (amount === null || amount === undefined) return "N/A";
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount);
+  }
 
   const isVi = language === "vi";
 
@@ -554,11 +558,7 @@ export function ReceptionistBookingDetailPage() {
         try {
           const data = await fetchReceptionistBookingDetail(bookingId);
           setBooking(data);
-
-          console.log("Booking Detail Fetched:", data);
-
-          const custId = data?.customerId || data?.customer?.id || data?.customer?.userId || data?.customerUserId;
-          console.log("Extracted Customer ID:", custId);
+          const custId = data?.customerId;
 
           if (custId) {
             try {
@@ -579,7 +579,20 @@ export function ReceptionistBookingDetailPage() {
           // Fetch transactions
           try {
             const txs = await fetchTransactionsByBookingId(bookingId);
-            setTransactions(txs);
+            const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+              if (tx.paymentMethod === 'Ví' && tx.id) {
+                try {
+                  const walletData = await fetchWalletTransactionById(tx.id);
+                  if (walletData?.type) {
+                    return { ...tx, walletType: walletData.type };
+                  }
+                } catch (e) {
+                  console.warn("Failed to fetch wallet transaction detail:", e);
+                }
+              }
+              return tx;
+            }));
+            setTransactions(enhancedTxs);
           } catch (err) {
             console.warn("Failed to load transactions:", err);
           }
@@ -638,11 +651,28 @@ export function ReceptionistBookingDetailPage() {
     return { customerTier: tier, customerPoints: points };
   }, [customerProfile, loyaltyTiers]);
 
-  console.log("customer", customerTier);
-  console.log("point", customerPoints);
-
   const customerInitials = getCustomerInitials(customerProfile, booking);
   const isSelectedRowNail = isNailBookingItem(selectedServiceRow?.sourceItem);
+
+  useEffect(() => {
+    const fetchDurations = async () => {
+      if (!booking || !booking.bookingItems) return;
+      const newDurations = { ...bookingItemDurations };
+      let changed = false;
+      for (const item of booking.bookingItems) {
+        if (!item.bookingItemId || newDurations[item.bookingItemId]) continue;
+        try {
+          const procs = await fetchReceptionistBookingProcedures(item.bookingItemId);
+          if (Array.isArray(procs)) {
+            newDurations[item.bookingItemId] = procs.reduce((acc, p) => acc + (p.duration || 0), 0);
+            changed = true;
+          }
+        } catch (e) { }
+      }
+      if (changed) setBookingItemDurations(newDurations);
+    };
+    fetchDurations();
+  }, [booking]);
 
   const serviceRows = useMemo(() => {
     const rawItems = booking?.bookingItems ?? [];
@@ -652,11 +682,13 @@ export function ReceptionistBookingDetailPage() {
     const itemMap = new Map();
 
     rawItems.forEach((item, index) => {
-      const sName = item.serviceName || (item.nailVariantName ? (language === "vi" ? "Dịch vụ làm móng: " : "Nail service: ") + item.nailVariantName : language === "vi" ? "Dịch vụ làm móng" : "Nail Service");
+      const sName = item.serviceName || item.nailVariantName;
       const vName = item.nailVariantName || item.customerNailName || "";
       const uPrice = Number(item.price) || 0;
-      const uDur = Number(item.duration) || 0;
+      const uDur = (item.bookingItemId && bookingItemDurations[item.bookingItemId]) ? bookingItemDurations[item.bookingItemId] : (Number(item.duration) || 0);
       const key = `${sName}_${vName}_${uPrice}_${uDur}`;
+
+      const itemQty = item.quantity || 1;
 
       if (!itemMap.has(key)) {
         const groupObj = {
@@ -664,11 +696,11 @@ export function ReceptionistBookingDetailPage() {
           key,
           serviceName: sName,
           nailVariantName: vName,
-          count: 1,
+          count: itemQty,
           unitDuration: uDur,
-          totalDuration: uDur,
+          totalDuration: uDur * itemQty,
           unitPrice: uPrice,
-          totalPrice: uPrice,
+          totalPrice: uPrice * itemQty,
           artist: booking?.artistName,
           sourceItem: item,
         };
@@ -676,9 +708,9 @@ export function ReceptionistBookingDetailPage() {
         grouped.push(groupObj);
       } else {
         const existing = itemMap.get(key);
-        existing.count += 1;
-        existing.totalDuration += uDur;
-        existing.totalPrice += uPrice;
+        existing.count += itemQty;
+        existing.totalDuration += (uDur * itemQty);
+        existing.totalPrice += (uPrice * itemQty);
       }
     });
 
@@ -697,6 +729,8 @@ export function ReceptionistBookingDetailPage() {
         serviceType: group.nailVariantName,
         artist: group.artist,
         duration: group.totalDuration ? formatDurationMinutes(group.totalDuration, language) : "--",
+        unitPrice: group.unitPrice ? formatCurrency(group.unitPrice) : "--",
+        totalPrice: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         price: group.totalPrice ? formatCurrency(group.totalPrice) : "--",
         status,
         actionLabel: getServiceAction(status, language === "vi"),
@@ -706,14 +740,14 @@ export function ReceptionistBookingDetailPage() {
     });
 
   }, [language, booking]);
-
-  const totalAmount = formatCurrency(booking?.totalPrice);
+  const isWarrantyBooking = Boolean(booking?.warrantyForBookingId);
+  const CAN_EDIT_SERVICE_STATUSES = ["Pending", "Approved", "CheckedIn"];
+  const canEditServices = CAN_EDIT_SERVICE_STATUSES.includes(booking?.status);
   const price = formatCurrency(booking?.price);
   const discount = formatCurrency(booking?.discount);
   const depositPaid = formatCurrency(booking?.amountPaid);
   const remainingBalance = formatCurrency(booking?.amountDue);
-  // const depositPaid = formatCurrency(booking?.amountDue);
-  // const remainingBalance = formatCurrency(booking?.amountPaid);
+  const amountDue = booking?.amountDue ?? 0;
   const progressPercent = getProgressPercent(booking);
   const isManualCheckInAllowed = canManualCheckIn(booking?.status);
   const actionAvailability = useMemo(
@@ -726,12 +760,14 @@ export function ReceptionistBookingDetailPage() {
       ? isCheckoutSubmitting
       : !isManualCheckInAllowed || isManualCheckInSubmitting;
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (showToast = true) => {
     if (!bookingId) {
       return;
     }
 
-    setIsLoading(true);
+    if (!booking) {
+      setIsLoading(true);
+    }
     setError("");
 
     try {
@@ -756,12 +792,27 @@ export function ReceptionistBookingDetailPage() {
       // Fetch transactions
       try {
         const txs = await fetchTransactionsByBookingId(bookingId);
-        setTransactions(txs);
+        const enhancedTxs = await Promise.all(txs.map(async (tx) => {
+          if (tx.paymentMethod === 'Ví' && tx.id) {
+            try {
+              const walletData = await fetchWalletTransactionById(tx.id);
+              if (walletData?.type) {
+                return { ...tx, walletType: walletData.type };
+              }
+            } catch (e) {
+              console.warn("Failed to fetch wallet transaction detail:", e);
+            }
+          }
+          return tx;
+        }));
+        setTransactions(enhancedTxs);
       } catch (err) {
         console.warn("Failed to load transactions:", err);
       }
 
-      toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
+      if (showToast) {
+        toast.success(isVi ? "Làm mới chi tiết đơn hàng thành công" : "Booking detail refreshed.");
+      }
       await loadBookingHistories();
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Failed to refresh booking detail.";
@@ -868,78 +919,220 @@ export function ReceptionistBookingDetailPage() {
     }
   }, [loadBookingHistories]);
 
+  const doDeleteServices = async (itemsToDelete) => {
+    if (!booking) return;
+
+    setIsDeletingService(true);
+    try {
+      const remainingItems = booking.bookingItems.filter(
+        item => !itemsToDelete.some(delItem => {
+          const s1 = String(delItem.sourceItem?.serviceId || "");
+          const s2 = String(item.serviceId || "");
+          const n1 = String(delItem.sourceItem?.nailVariantId || "");
+          const n2 = String(item.nailVariantId || "");
+          return s1 === s2 && n1 === n2;
+        })
+      ).map(item => ({
+        nailVariantId: item.nailVariantId,
+        serviceId: item.serviceId,
+        quantity: item.quantity || 1,
+      }));
+
+      // Assuming booking has selectedPromotionIds and other fields needed for PUT
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: remainingItems,
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã xóa dịch vụ thành công." : "Services deleted successfully.");
+      setSelectedServiceIds([]);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete services");
+    } finally {
+      setIsDeletingService(false);
+    }
+  };
+
+  const doUpdateServiceQuantity = async (row, newQuantity) => {
+    if (!booking || newQuantity < 1) return;
+
+    setIsDeletingService(true);
+    try {
+      const groupedItems = new Map();
+
+      booking.bookingItems.forEach(item => {
+        const sId = String(item.serviceId || "");
+        const nId = String(item.nailVariantId || "");
+        const key = `${sId}_${nId}`;
+
+        const isMatch = sId === String(row.sourceItem?.serviceId || "") && nId === String(row.sourceItem?.nailVariantId || "");
+
+        if (!groupedItems.has(key)) {
+          groupedItems.set(key, {
+            nailVariantId: item.nailVariantId,
+            serviceId: item.serviceId,
+            quantity: isMatch ? newQuantity : (item.quantity || 1)
+          });
+        } else if (!isMatch) {
+          groupedItems.get(key).quantity += (item.quantity || 1);
+        }
+      });
+
+      const payload = {
+        bookingDate: booking.bookingDate || booking.createdAt,
+        startTime: booking.startTime,
+        nailArtistId: booking.nailArtistId,
+        selectedPromotionIds: booking.selectedPromotionIds || [],
+        bookingItems: Array.from(groupedItems.values()),
+      };
+
+      await updateReceptionistBooking(bookingId, payload);
+      toast.success(isVi ? "Đã cập nhật số lượng thành công." : "Quantity updated successfully.");
+      setEditingQuantityId(null);
+      await handleRefresh(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update quantity");
+    } finally {
+      setIsDeletingService(false);
+    }
+  };
+
+  const handleEnableEditQuantity = useCallback((row) => {
+    setEditingQuantityId(row.id);
+    setTempQuantity(row.count);
+  }, []);
+
+  const handleDeleteService = useCallback((row) => {
+    setItemsToDelete([row]);
+  }, []);
+
+  const handleMultiDeleteServices = () => {
+    if (selectedServiceIds.length === 0) return;
+    const items = serviceRows.filter(row => selectedServiceIds.includes(row.id));
+    setItemsToDelete(items);
+  };
+
   const serviceColumns = useMemo(() => ([
+    ...(canEditServices ? [{
+      title: (
+        <div className="flex items-center justify-center gap-2">
+          <Checkbox
+            checked={selectedServiceIds.length > 0 && selectedServiceIds.length === serviceRows.length}
+            indeterminate={selectedServiceIds.length > 0 && selectedServiceIds.length < serviceRows.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedServiceIds(serviceRows.map(r => r.id));
+              } else {
+                setSelectedServiceIds([]);
+              }
+            }}
+          />
+          {selectedServiceIds.length > 0 && (
+            <button
+              onClick={handleMultiDeleteServices}
+              className="flex h-5 w-5 items-center justify-center rounded bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all border border-[#F3D6E5]"
+              title={isVi ? "Xóa dịch vụ đã chọn" : "Delete selected services"}
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      ),
+      key: "selection",
+      width: 60,
+      align: "center",
+      render: (_, row) => (
+        <Checkbox
+          checked={selectedServiceIds.includes(row.id)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedServiceIds(prev => [...prev, row.id]);
+            } else {
+              setSelectedServiceIds(prev => prev.filter(id => id !== row.id));
+            }
+          }}
+        />
+      ),
+    }] : []),
     {
       title: isVi ? "Thời gian" : "Time",
-      dataIndex: "time",
       key: "time",
-      render: (value) => <span className="text-xs font-bold text-[#E84F93]">{value}</span>,
+      render: (_, row) => <span className="text-xs font-bold text-[#E84F93]">{row.sourceItem?.timeRangeDisplay || row.time}</span>,
     },
     {
       title: isVi ? "Tên dịch vụ" : "Service Name & Design",
       key: "service",
       render: (_, row) => (
         <div className="flex items-center gap-2">
-          {row.count > 1 && (
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-[#FFF0F6] border border-[#F3D7E4] text-[#E84F93] text-[11px] font-bold shrink-0 shadow-2xs">
-              x{row.count}
-            </span>
-          )}
           <p className="text-xs font-bold text-[#2B182B]">
-            {row.service ? row.service.replace(/^x\d+\s*/, "") : `Nail service: Christmas Snow Sparkle - Đỏ Nhung Kiều Kỳ`}
+            {row.service ? row.service : row.sourceItem.customerNailName}
           </p>
         </div>
       ),
     },
     {
-      title: isVi ? "Thợ làm móng" : "Assigned Artist",
-      key: "artist",
-      render: (_, row) => (
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-[9px] font-bold text-white shadow-2xs">
-            {(row.artist)
-              .split(" ")
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0])
-              .join("")
-              .toUpperCase()}
-          </div>
-          <span className="text-xs font-bold text-[#2B182B]">{row.artist || "Aria Nguyen"}</span>
-        </div>
-      ),
-    },
-    {
-      title: isVi ? "Thời gian" : "Duration",
+      title: isVi ? "Thời lượng" : "Duration",
       dataIndex: "duration",
       key: "duration",
       render: (value) => <span className="text-xs font-semibold text-[#6B5B68]">{value}</span>,
     },
     {
-      title: isVi ? "Giá tiền" : "Price",
-      dataIndex: "price",
-      key: "price",
+      title: isVi ? "Đơn giá" : "Unit Price",
+      dataIndex: "unitPrice",
+      key: "unitPrice",
+      render: (value) => <span className="text-xs font-semibold text-[#047857]">{value}</span>,
+    },
+    {
+      title: isVi ? "Số lượng" : "Quantity",
+      key: "quantity",
+      align: "center",
+      width: 100,
+      render: (_, row) => (
+        <span className="text-xs font-bold text-[#2B182B]">{row.count}</span>
+      ),
+    },
+    {
+      title: isVi ? "Thành tiền" : "Total Price",
+      dataIndex: "totalPrice",
+      key: "totalPrice",
       render: (value) => <span className="text-xs font-bold text-[#047857]">{value}</span>,
     },
     {
       title: isVi ? "Thao tác" : "Action",
       key: "action",
       render: (_, row) => (
-        <ActionDropdown
-          items={getServiceActionItems(row, handleViewService, handleViewProcedures, isVi)}
-          buttonClassName="bg-[#FFF0F6] text-[#E84F93] hover:bg-pink-400 hover:text-white transition-all font-bold rounded-full px-3 py-1 text-xs border border-[#F3D6E5] cursor-pointer shadow-2xs"
-          label={isVi ? "Thao tác" : "Actions"}
-        />
+        <div className="flex items-center gap-2">
+          <ActionDropdown
+            items={getServiceActionItems(row, handleViewService, handleViewProcedures, handleDeleteService, handleEnableEditQuantity, isVi, booking?.status)}
+            buttonClassName="..."
+            label={isVi ? "Thao tác" : "Actions"}
+          />
+        </div>
       ),
     },
-  ]), [isVi, handleViewProcedures, handleViewService]);
+  ]), [isVi, handleViewProcedures, handleViewService, handleDeleteService, handleEnableEditQuantity, handleMultiDeleteServices, selectedServiceIds, serviceRows, canEditServices, booking?.status]);
+
+  const totalItemsDuration = booking?.bookingItems?.reduce((acc, item) => acc + (Number(item.duration) || 0) * (item.quantity || 1), 0) || booking?.totalDuration;
+  const isUUID = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str));
 
   const handleTransactionClick = async (txId) => {
     setIsTransactionModalOpen(true);
     setIsFetchingTransaction(true);
     setSelectedTransactionDetail(null);
     try {
-      const details = await fetchTransactionById(txId);
+      let details;
+      if (isUUID(txId)) {
+        details = await fetchWalletTransactionById(txId);
+        details.isWallet = true;
+      } else {
+        details = await fetchTransactionById(txId);
+        details.isWallet = false;
+      }
       setSelectedTransactionDetail(details);
     } catch (err) {
       toast.error(isVi ? "Lỗi tải chi tiết giao dịch" : "Failed to load transaction details");
@@ -970,13 +1163,37 @@ export function ReceptionistBookingDetailPage() {
     }
   }, [bookingId, isManualCheckInAllowed, isManualCheckInSubmitting, loadBookingHistories]);
 
-  const handleCheckout = useCallback(() => {
-    if (!bookingId || !actionAvailability.canCheckout) {
+  const handleCheckout = useCallback(async () => {
+    if (!bookingId || !actionAvailability.canCheckout || isCheckoutSubmitting) {
       return;
     }
 
-    navigate(getReceptionistBookingCheckoutRoute(bookingId));
-  }, [actionAvailability.canCheckout, bookingId, navigate]);
+    const amountDue = booking?.amountDue ?? 0;
+
+    if (amountDue > 0) {
+      navigate(getReceptionistBookingCheckoutRoute(bookingId));
+      return;
+    }
+
+    setIsCheckoutSubmitting(true);
+    try {
+      await checkoutReceptionistBooking(bookingId);
+      toast.success(isVi ? "Đã checkout thành công." : "Checked out successfully.");
+      await handleRefresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : (isVi ? "Thanh toán thất bại." : "Checkout failed."));
+    } finally {
+      setIsCheckoutSubmitting(false);
+    }
+  }, [
+    actionAvailability.canCheckout,
+    bookingId,
+    booking?.amountDue,
+    navigate,
+    isCheckoutSubmitting,
+    isVi,
+    handleRefresh,
+  ]);
 
   const handlePrimaryHeaderAction = useCallback(async () => {
     if (actionAvailability.canCheckout) {
@@ -988,6 +1205,19 @@ export function ReceptionistBookingDetailPage() {
   }, [actionAvailability.canCheckout, handleCheckout, handleManualCheckIn]);
 
   const receptionistActionCenterItems = useMemo(
+    //     return {
+    //   canCheckIn: normalizedStatus === "approved",
+    //   canStartService: normalizedStatus === "checkedin",
+    //   canReassignArtist: ["pending", "confirmed", "approved", "checkedin"].includes(normalizedStatus),
+    //   canMoveSchedule: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    //   canAddService: ["checkedin", "in progress", "inprogress"].includes(normalizedStatus),
+    //   canCompleteBooking: ["in progress", "inprogress"].includes(normalizedStatus),
+    //   canCancelBooking: ["pending", "confirmed", "approved"].includes(normalizedStatus),
+    //   canSendInvoice: ["servicecompleted", "completed"].includes(normalizedStatus),
+    //   canCheckout: normalizedStatus === "servicecompleted",
+    //   canAddPayment: normalizedStatus === "servicecompleted",
+    //   canPrintReceipt: ["servicecompleted", "completed"].includes(normalizedStatus),
+    // };
     () => [
       {
         label: actionAvailability.canCheckout ? (t("receptionist.dashboard.checkoutBtn") || "Checkout") : (t("receptionist.dashboard.checkinBtn") || "Check In"),
@@ -1036,33 +1266,7 @@ export function ReceptionistBookingDetailPage() {
         disabled: !actionAvailability.canAddService,
         onClick: () => setIsOnsiteAddonModalOpen(true),
       },
-      // {
-      //   label: t("receptionist.bookings.completeBooking") || "Complete Booking",
-      //   subtitle: t("receptionist.bookings.finalizeSession") || "Finalize session",
-      //   icon: CheckCircle2,
-      //   cardTone: "bg-[linear-gradient(180deg,#f2edff_0%,#ebe3ff_100%)]",
-      //   iconTone: "bg-[#ddd2ff] text-[#8260df]",
-      //   disabled: !actionAvailability.canCompleteBooking,
-      //   onClick: () => handleMockAction("Complete Booking"),
-      // },
-      // {
-      //   label: t("receptionist.bookings.cancelBooking") || "Cancel Booking",
-      //   subtitle: t("receptionist.bookings.voidAppointment") || "Void appointment",
-      //   icon: XCircle,
-      //   cardTone: "bg-[linear-gradient(180deg,#fff1f1_0%,#ffe9e9_100%)]",
-      //   iconTone: "bg-[#ffd8d8] text-[#ef6b6b]",
-      //   disabled: !actionAvailability.canCancelBooking,
-      //   onClick: () => handleMockAction("Cancel Booking"),
-      // },
-      // {
-      //   label: t("receptionist.bookings.sendInvoice") || "Send Invoice",
-      //   subtitle: t("receptionist.bookings.emailToClient") || "Email to client",
-      //   icon: ReceiptText,
-      //   cardTone: "bg-[linear-gradient(180deg,#fff9eb_0%,#fff2cd_100%)]",
-      //   iconTone: "bg-[#ffe7ae] text-[#d19a15]",
-      //   disabled: !actionAvailability.canSendInvoice,
-      //   onClick: () => handleMockAction("Send Invoice"),
-      // },
+
     ],
     [
       actionAvailability,
@@ -1109,7 +1313,7 @@ export function ReceptionistBookingDetailPage() {
   }
 
   return (
-    <section className="flex min-h-full flex-col gap-5 bg-[linear-gradient(180deg,#FFF9FC_0%,#FFF4F8_100%)] p-2">
+    <section className="flex min-h-full flex-col gap-5">
       {/* 1. TOP HEADER BAR */}
       <div className="rounded-[26px] border border-[#F3E2EC] bg-white/90 backdrop-blur-md px-6 py-4 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1121,29 +1325,32 @@ export function ReceptionistBookingDetailPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsQrOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
-            >
-              <QrCode size={14} />
-              {t("receptionist.dashboard.scanQr") || "QR Code"}
-            </button>
+            {(booking.status == "Approved" &&
+              <button
+                type="button"
+                onClick={() => setIsQrOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#F3E2EC] bg-[#FFF9FB] hover:bg-[#FFF0F6] px-3.5 py-1.5 text-xs font-bold text-[#E84F93] transition shadow-2xs cursor-pointer"
+              >
+                <QrCode size={14} />
+                {t("receptionist.dashboard.scanQr") || "QR Code"}
+              </button>
+            )}
 
-            {/* Primary Gradient Quick Check-In Button */}
-            <button
-              type="button"
-              onClick={() => void handlePrimaryHeaderAction()}
-              disabled={isPrimaryHeaderActionDisabled}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isManualCheckInSubmitting || isCheckoutSubmitting ? (
-                <LoaderCircle size={14} className="animate-spin" />
-              ) : (
-                <SquareCheckBig size={14} />
-              )}
-              {primaryHeaderAction}
-            </button>
+            {(booking.status == "Approved" || booking.status == "ServiceCompleted" &&
+              <button
+                type="button"
+                onClick={() => void handlePrimaryHeaderAction()}
+                disabled={isPrimaryHeaderActionDisabled}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-2 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.28)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isManualCheckInSubmitting || isCheckoutSubmitting ? (
+                  <LoaderCircle size={14} className="animate-spin" />
+                ) : (
+                  <SquareCheckBig size={14} />
+                )}
+                {primaryHeaderAction}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1153,7 +1360,7 @@ export function ReceptionistBookingDetailPage() {
           {/* 2. CUSTOMER OVERVIEW CARD (TOP-LEFT) */}
           <DetailCard
             title={t("receptionist.payments.customerInfo") || "Customer Overview"}
-            badge={booking.status || null}
+            badge={booking.status}
           >
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="flex flex-1 items-start gap-4">
@@ -1197,37 +1404,6 @@ export function ReceptionistBookingDetailPage() {
                         </span>
                       )}
                     </div>
-
-                    {/* Quick Actions rounded icon buttons */}
-                    <div className="flex items-center gap-2 lg:items-end shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("Call Customer")}
-                        title="Call Customer"
-                        className="p-3 rounded-2xl bg-[#FFF0F6] border border-[#F3D6E5] text-[#E84F93] hover:bg-[#E84F93] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <Phone size={16} />
-                        <span className="hidden sm:inline lg:hidden">Call</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("Send SMS / Chat")}
-                        title="Send SMS / Chat"
-                        className="p-3 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <MessageCircleMore size={16} />
-                        <span className="hidden sm:inline lg:hidden">SMS</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMockAction("View VTO History")}
-                        title="View VTO Try-On History"
-                        className="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] hover:bg-[#F59E0B] hover:text-white transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold"
-                      >
-                        <Sparkles size={16} />
-                        <span className="hidden sm:inline lg:hidden">VTO</span>
-                      </button>
-                    </div>
                   </div>
 
                   {/* Clean 2-column key-value grid */}
@@ -1268,11 +1444,51 @@ export function ReceptionistBookingDetailPage() {
                         <p className="mt-0.5 font-medium text-[#2B182B] truncate">{customerProfile?.email || booking.customerEmail}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{t("receptionist.bookings.artist")}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497]">{language === "vi" ? "Thợ chính" : "Main Staff"}</p>
                         <p className="mt-0.5 font-bold text-[#8B5CF6]">{booking.artistName || customerProfile?.preferredArtist}</p>
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </DetailCard>
+
+          <DetailCard
+            title={language === "vi" ? "Thông tin lịch hẹn" : "Booking Info"}
+            icon={Sparkles}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+              {/* Booking Date */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Ngày đặt lịch" : "Booking Date"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Calendar size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDate(booking?.bookingDate || booking?.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời gian" : "Time"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatTime(booking?.startTime)}</span>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFFDFE] p-4 shadow-2xs">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9E8497] mb-1">
+                  {language === "vi" ? "Thời gian dự kiến" : "Expected duration"}
+                </p>
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#2B182B]">
+                  <Clock3 size={15} className="text-[#E84F93] shrink-0" />
+                  <span>{formatDuration(totalItemsDuration, language)}</span>
                 </div>
               </div>
             </div>
@@ -1294,67 +1510,68 @@ export function ReceptionistBookingDetailPage() {
             />
           </DetailCard>
 
-          {/* 5. FINANCIAL & PAYMENT SUMMARY (BOTTOM BLOCK) */}
-          <DetailCard
-            title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
-            subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
-          // badge="API Validated"
-          >
-            <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
-              <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
-                    <span className="font-bold text-[#2B182B]">{price}</span>
+          {!(isWarrantyBooking && price === "0 VND") && (
+            <DetailCard
+              title={t("receptionist.payments.summaryTitle") || "Financial & Payment Summary"}
+              subtitle={t("receptionist.payments.checkoutDesc") || "Itemized price breakdown, deposit, and total balance"}
+            >
+              <div className="grid gap-5">
+                <div className="bg-[#FFF9FB] p-4 rounded-2xl border border-[#F3E2EC] space-y-3">
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.subtotal") || "Itemized Service Price"}:</span>
+                      <span className="font-bold text-[#2B182B]">{price}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
+                      <span className="font-bold text-[#EF4444]">{discount}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
+                      <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
+                      <span className="font-bold text-[#2B182B]">{depositPaid}</span>
+                    </div>
+                    {amountDue > 0 && booking.status != "Cancelled" && booking.status != "Rejected" && (
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
+                        <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.promotion") || "Promotional Discount"}:</span>
-                    <span className="font-bold text-[#EF4444]">{discount}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-[#F3E2EC] pt-2">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.deposit") || "Deposit Paid"}:</span>
-                    <span className="font-bold text-[#2B182B]">{depositPaid}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-[#9E8497]">{t("receptionist.payments.totalAmount") || "Remaining Balance"}:</span>
-                    <span className="font-bold text-[#8B5CF6]">{remainingBalance}</span>
-                  </div>
+
+                  {amountDue > 0 && booking.status != "Cancelled" && booking.status != "Rejected" && (
+                    <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">
+                          {t("receptionist.payments.totalAmount") || "Total Amount Payable"}
+                        </p>
+                        <p className="text-3xl font-bold text-[#047857] leading-none mt-1">
+                          {remainingBalance}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Fresh Emerald Green Highlighted Total */}
-                <div className="border-2 border-emerald-300 pt-3.5 pb-3 px-4 flex items-center justify-between bg-gradient-to-r from-[#ECFDF5] to-[#D1FAE5] rounded-2xl shadow-xs">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#047857]">{t("receptionist.payments.totalAmount") || "Total Amount Payable"}</p>
-                    <p className="text-3xl font-bold text-[#047857] leading-none mt-1">{remainingBalance}</p>
-                  </div>
-                  {/* <span className="rounded-full bg-[#10B981] text-white px-3.5 py-1 text-xs font-bold shadow-xs flex items-center gap-1">
-                    <ShieldCheck size={14} /> {language === "vi" ? "ĐÃ THANH TOÁN" : "PAID"}
-                  </span> */}
-                </div>
+                {booking.status != "Completed" && booking.status != "Cancelled" && booking.status != "Rejected" && booking.status != "Repaired" && (
+                  <button
+                    type="button"
+                    onClick={handleCheckout}
+                    disabled={!actionAvailability.canCheckout || isCheckoutSubmitting}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCheckoutSubmitting ? (
+                      <LoaderCircle size={16} className="animate-spin" />
+                    ) : (
+                      <CreditCard size={16} />
+                    )}
+                    {isCheckoutSubmitting
+                      ? (isVi ? "Đang xử lý..." : "Processing...")
+                      : (t("receptionist.payments.checkoutTitle") || "Checkout")}
+                  </button>
+                )}
               </div>
-
-              <div className="flex flex-col justify-center gap-3.5">
-                <button
-                  type="button"
-                  onClick={handleCheckout}
-                  disabled={!actionAvailability.canCheckout}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-5 py-3.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(232,79,147,0.3)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CreditCard size={16} />
-                  {t("receptionist.payments.checkoutTitle") || "Add Payment"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMockAction("Print Receipt")}
-                  disabled={!actionAvailability.canPrintReceipt}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-5 py-3.5 text-xs font-bold text-[#E84F93] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs"
-                >
-                  <Printer size={16} />
-                  {language === "vi" ? "In Hóa đơn" : "Print Receipt"}
-                </button>
-              </div>
-            </div>
-          </DetailCard>
+            </DetailCard>
+          )}
 
           {/* 6. RECEPTIONIST QUICK ACTION CENTER (BOTTOM GRID) */}
           <DetailCard
@@ -1392,8 +1609,8 @@ export function ReceptionistBookingDetailPage() {
             <div className="flex flex-col items-center">
               <div className="self-stretch flex items-center justify-between pb-2 border-b border-[#F3E2EC]">
                 <span className="font-medium text-xs text-[#9E8497]">{t("receptionist.common.status") || "Live Status"}</span>
-                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status || ""))}`}>
-                  {booking.status || "Checked In"}
+                <span className={`rounded-full px-3 py-0.5 text-xs font-bold shadow-2xs ${getStatusTone(String(booking.status))}`}>
+                  {getStatusLabel(booking.status || "CheckedIn", BOOKING_STATUS, language)}
                 </span>
               </div>
 
@@ -1405,7 +1622,7 @@ export function ReceptionistBookingDetailPage() {
 
               <div className="self-stretch space-y-2.5 text-xs pt-1">
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
-                  <span className="font-medium text-[#9E8497]">{t("receptionist.bookings.artist") || "Assigned Artist"}</span>
+                  <span className="font-medium text-[#9E8497]">{language === "vi" ? "Thợ chính" : "Main Staff"}</span>
                   <span className="font-bold text-[#2B182B]">{booking.artistName}</span>
                 </div>
                 <div className="flex items-center justify-between bg-[#FFF9FB] p-2.5 rounded-xl border border-[#F3E2EC]">
@@ -1430,17 +1647,62 @@ export function ReceptionistBookingDetailPage() {
                   const isDeposit = idx === 0 || tx.amount === booking?.depositAmount;
                   return (
                     <div
-                      key={tx.transactionId}
-                      onClick={() => handleTransactionClick(tx.transactionId)}
+                      key={tx.id || tx.transactionId}
+                      onClick={() => handleTransactionClick(tx.id || tx.transactionId)}
                       className="rounded-xl border border-[#F3E2EC] bg-white p-3 shadow-2xs hover:border-[#E84F93] transition-colors cursor-pointer group flex flex-col gap-2"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-[#9E8497] mt-0.5 font-mono">#{tx.orderCode}</p>
+                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(Math.abs(tx.amount))}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-[#E84F93]">{formatCurrency(tx.amount)}</p>
 
+                          <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${(() => {
+                            const statusStr = String(tx.status).toLowerCase();
+                            if (tx.walletType === 'BookingRefund' && statusStr === 'completed') return 'bg-[#EFF6FF] text-[#2563EB]'; // Blue for refunds
+                            if (statusStr === 'paid' || statusStr === 'completed') return 'bg-[#ECFDF5] text-[#059669]';
+                            if (statusStr === 'pending') return 'bg-[#FFFBEB] text-[#D97706]';
+                            if (statusStr === 'failed') return 'bg-[#FEF2F2] text-[#DC2626]';
+                            return 'bg-[#F3F4F6] text-[#6B7280]';
+                          })()
+                            }`}>
+                            {(() => {
+                              const statusStr = String(tx.status).toLowerCase();
+                              if (tx.walletType === 'BookingRefund') {
+                                if (language === "vi") {
+                                  if (statusStr === 'completed') return 'Hoàn tiền thành công';
+                                  if (statusStr === 'failed') return 'Hoàn tiền thất bại';
+                                  return 'Đang hoàn tiền';
+                                } else {
+                                  if (statusStr === 'completed') return 'Refund Completed';
+                                  if (statusStr === 'failed') return 'Refund Failed';
+                                  return 'Refunding';
+                                }
+                              } else if (tx.walletType === 'BookingPayment') {
+                                if (language === "vi") {
+                                  if (statusStr === 'completed') return 'Thanh toán thành công';
+                                  if (statusStr === 'failed') return 'Thanh toán thất bại';
+                                  return 'Chờ thanh toán';
+                                } else {
+                                  if (statusStr === 'completed') return 'Payment Completed';
+                                  if (statusStr === 'failed') return 'Payment Failed';
+                                  return 'Pending Payment';
+                                }
+                              } else {
+                                if (language === "vi") {
+                                  if (statusStr === 'paid' || statusStr === 'completed') return 'Đã thanh toán';
+                                  if (statusStr === 'pending') return 'Chờ thanh toán';
+                                  if (statusStr === 'overdue') return 'Quá hạn';
+                                  if (statusStr === 'cancelled') return 'Đã hủy';
+                                  if (statusStr === 'refunded') return 'Đã hoàn tiền';
+                                  return tx.status;
+                                } else {
+                                  if (statusStr === 'completed') return 'Paid';
+                                  return tx.status;
+                                }
+                              }
+                            })()}
+                          </span>
                         </div>
                       </div>
 
@@ -1448,21 +1710,32 @@ export function ReceptionistBookingDetailPage() {
                         {tx.createdAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Tạo lúc" : "Created At"}</span>
-                            <span className="font-medium text-[#2B182B]">{formatDate(tx.createdAt)} {formatTime(tx.createdAt)}</span>
+                            <span className="font-medium text-[#2B182B]">{formatVNDate(tx.createdAt, language)}</span>
                           </div>
                         )}
                         {tx.paidAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thanh toán lúc" : "Paid At"}</span>
-                            <span className="font-medium text-[#059669]">{formatDate(tx.paidAt)} {formatTime(tx.paidAt)}</span>
+                            <span className="font-medium text-[#059669]">{formatVNDate(tx.paidAt, language)}</span>
                           </div>
                         )}
                         {!tx.paidAt && tx.expiresAt && (
                           <div className="flex justify-between items-center text-[10px]">
                             <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hết hạn lúc" : "Expires At"}</span>
-                            <span className="font-medium text-[#E11D48]">{formatDate(tx.expiresAt)} {formatTime(tx.expiresAt)}</span>
+                            <span className="font-medium text-[#E11D48]">{formatVNDate(tx.expiresAt, language)}</span>
                           </div>
                         )}
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-[#9E8497] font-medium">{language === "vi" ? "Hình thức thanh toán" : "Payment Method"}</span>
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold 
+                            ${tx.paymentMethod === 'Ví' || isUUID(tx.id || tx.transactionId)
+                              ? 'bg-[#F3E8FF] text-[#7E22CE]'
+                              : tx.paymentMethod === 'Tiền mặt'
+                                ? 'bg-[#FFF3F3] text-[#C2410C]'
+                                : 'bg-[#E0F2FE] text-[#0369A1]'}`}>
+                            {tx.paymentMethod || (isUUID(tx.id || tx.transactionId) ? (language === "vi" ? "Thanh toán bằng Ví" : "Wallet Payment") : (language === "vi" ? "Chuyển khoản" : "Bank Transfer"))}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1517,21 +1790,21 @@ export function ReceptionistBookingDetailPage() {
           <DetailCard
             title={language === "vi" ? "Dòng thời gian hoạt động đặt lịch" : "Booking Operations Timeline"}
             subtitle={language === "vi" ? "Nhật ký kiểm tra theo thời gian thực" : "Real-time timestamped audit log"}
-            badge={isBookingHistoriesLoading ? "Loading..." : `${bookingHistories.length} Events`}
+            badge={isBookingHistoriesLoading ? (language === "vi" ? "Đang tải..." : "Loading...") : `${bookingHistories.length} ${language === "vi" ? "Sự kiện" : "Events"}`}
           >
             {isBookingHistoriesLoading ? (
               <div className="flex justify-center p-8"><LoaderCircle className="animate-spin text-[#E84F93]" /></div>
             ) : bookingHistories.length > 0 ? (
               <div className="mt-4 flex flex-col max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {[...bookingHistories].reverse().map((history, idx) => (
-                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={dayjs(history.createdAt).format("DD/MM/YYYY HH:mm")}>
+                  <div key={history.bookingHistoryId || idx} className="flex gap-3" title={formatVNDate(history.createdAt, language)}>
                     <div className="w-[100px] shrink-0 pt-0.5 text-right">
                       <span className="text-[11px] font-bold text-[#F59E0B]">
-                        {dayjs(history.createdAt).format("DD/MM/YY")}
+                        {language === "vi" ? toVN(history.createdAt).format("DD/MM/YY") : toVN(history.createdAt).format("MMM D, YY")}
                       </span>
                       <span className="mx-1 text-[#C8B0BF]">|</span>
                       <span className="text-[11px] font-bold text-[#10B981]">
-                        {dayjs(history.createdAt).format("HH:mm")}
+                        {language === "vi" ? toVN(history.createdAt).format("HH:mm") : toVN(history.createdAt).format("h:mm A")}
                       </span>
                     </div>
 
@@ -1664,7 +1937,7 @@ export function ReceptionistBookingDetailPage() {
           );
 
           return (
-            <div className="bg-white p-6 md:p-7 relative font-sans">
+            <div className="bg-white relative font-sans">
               {/* Ambient Top Glow */}
               <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-[#E84F93]/10 blur-3xl" />
 
@@ -1675,8 +1948,14 @@ export function ReceptionistBookingDetailPage() {
                     <Sparkles size={20} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">{language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}</h3>
-                    <p className="text-xs text-[#9E8497] font-medium">{language === "vi" ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn" : "Actual service and nail art details selected by the customer"}</p>
+                    <h3 className="text-lg font-bold text-[#2B182B] tracking-tight">
+                      {language === "vi" ? "Chi Tiết Dịch Vụ & Mẫu Móng" : "Service & Nail Art Details"}
+                    </h3>
+                    <p className="text-xs text-[#9E8497] font-medium">
+                      {language === "vi"
+                        ? "Thông tin thực tế dịch vụ và mẫu móng khách chọn"
+                        : "Actual service and nail art details selected by the customer"}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1688,144 +1967,170 @@ export function ReceptionistBookingDetailPage() {
                 </button>
               </div>
 
-              {/* Service Hero Banner Card */}
-              <div className="mb-5 rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
-                    {isNail ? language === "vi" ? <span className="flex items-center gap-1"><Sparkles size={12} /> Dịch Vụ Móng Nail</span> : <span className="flex items-center gap-1"><Sparkles size={12} /> Nail Services</span> : language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}
-                  </span>
-                  <span className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#E84F93]">
-                    <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
-                  </span>
-                </div>
-                <h3 className="mt-2 text-base font-bold text-[#2B182B]">
-                  {item?.serviceName || selectedServiceRow.service || item?.nailVariantName || language === "vi" ? "Dịch Vụ Làm Móng" : "Nail Service"}
-                </h3>
-              </div>
-
-              {/* Metadata Details Unified Single Block Card */}
-              <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
-                  <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
-                </h4>
-
-                <div className="divide-y divide-[#F3E2EC]/70 text-xs">
-                  {/* Tên mẫu nail */}
-                  {Boolean(item?.nailVariantName) && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}</span>
-                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
+              {/* Two-Column Body: Left = Info, Right = Images */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* ─── LEFT COLUMN: Service Info ─── */}
+                <div className="space-y-5">
+                  {/* Service Hero Banner Card */}
+                  <div className="rounded-2xl border border-[#F3D6E5] bg-gradient-to-r from-[#FFF0F6] via-[#FDF2F8] to-[#F5F3FF] p-5 shadow-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="rounded-full bg-[#E84F93] px-3 py-0.5 text-[10px] font-bold uppercase text-white shadow-2xs">
+                        {isNail ? (
+                          <span className="flex items-center gap-1">
+                            <Sparkles size={12} /> {language === "vi" ? "Dịch Vụ Móng Nail" : "Nail Services"}
+                          </span>
+                        ) : (
+                          <span>{language === "vi" ? "💅 Dịch Vụ Salon" : "💅 Salon Services"}</span>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-[#E84F93]">
+                        <AlarmClock size={12} /> {language === "vi" ? "Tổng thời gian:" : "Total duration:"} {selectedServiceRow.duration}
+                      </span>
                     </div>
-                  )}
+                    <h3 className="mt-2 text-base font-bold text-[#2B182B]">
+                      {item?.serviceName || selectedServiceRow.service || item?.nailVariantName}
+                    </h3>
+                  </div>
 
-                  {/* Mẫu móng khách yêu cầu (Only shown if present) */}
-                  {Boolean(item?.customerNailName) && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}</span>
-                      <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
-                    </div>
-                  )}
+                  {/* Metadata Details Block */}
+                  <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#E84F93] border-b border-[#F3E2EC] pb-3 mb-3 flex items-center gap-1.5">
+                      <Sparkles size={14} /> {language === "vi" ? "Thông Tin Chi Tiết Dịch Vụ" : "Service Details"}
+                    </h4>
 
-                  {/* Tên dịch vụ (Only shown if no nailVariantName or if different) */}
-                  {Boolean(
-                    (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
-                    (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
-                  ) && (
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
-                        <span className="font-bold text-[#9E8497]">{language === "vi" ? "Tên Dịch Vụ" : "Service Name"}</span>
-                        <span className="font-bold text-[#2B182B] sm:text-right">
-                          {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
-                        </span>
-                      </div>
-                    )}
-
-                  {/* Thời gian làm dự kiến */}
-                  {Boolean(selectedServiceRow.duration) && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
-                    </div>
-                  )}
-
-                  {/* Số lượng */}
-                  {Boolean(item?.quantity && item.quantity > 1) && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Số Lượng Suất" : "Quantity"}</span>
-                      <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
-                    </div>
-                  )}
-
-                  {/* Giá dịch vụ */}
-                  {item?.price !== undefined && item?.price !== null && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Giá Dịch Vụ" : "Service Price"}</span>
-                      <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
-                    </div>
-                  )}
-
-                  {/* Thợ đảm nhận */}
-                  {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
-                    <div className="flex items-center justify-between py-2.5">
-                      <span className="font-bold text-[#9E8497]">{language === "vi" ? "Thợ Đảm Nhận" : "Artist"}</span>
-                      <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Attached Images Section */}
-              {hasImages && (
-                <div className="mt-5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-3 text-center flex items-center justify-center gap-1.5">
-                    <span><ImageIcon size={12} /></span> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
-                  </h4>
-                  <div className="flex flex-wrap items-center justify-center gap-6">
-                    {sanitizeImageUrl(item?.nailVariantImageUrl) && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
-                          {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
-                        </span>
-                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
-                          <Image
-                            src={sanitizeImageUrl(item?.nailVariantImageUrl)}
-                            alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
-                            height={220}
-                            className="object-cover rounded-xl"
-                            crossOrigin="anonymous"
-                          />
+                    <div className="divide-y divide-[#F3E2EC]/70 text-xs">
+                      {Boolean(item?.nailVariantName) && (
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Tên Mẫu Nail" : "Nail Variant Name"}
+                          </span>
+                          <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.nailVariantName}</span>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {sanitizeImageUrl(item?.customerNailImageUrl) && (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
-                          {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
-                        </span>
-                        <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
-                          <Image
-                            src={sanitizeImageUrl(item?.customerNailImageUrl)}
-                            alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
-                            height={220}
-                            className="object-cover rounded-xl"
-                            crossOrigin="anonymous"
-                          />
+                      {Boolean(item?.customerNailName) && (
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Mẫu Nail Khách Yêu Cầu" : "Customer's Nail Style Request"}
+                          </span>
+                          <span className="font-bold text-[#2B182B] text-sm sm:text-right">{item.customerNailName}</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                      {Boolean(
+                        (!item?.nailVariantName && (item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType)) ||
+                        (item?.serviceName && !item.serviceName.includes(item?.nailVariantName))
+                      ) && (
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2.5 gap-1">
+                            <span className="font-bold text-[#9E8497]">
+                              {language === "vi" ? "Tên Dịch Vụ" : "Service Name"}
+                            </span>
+                            <span className="font-bold text-[#2B182B] sm:text-right">
+                              {item?.serviceName || selectedServiceRow.service || selectedServiceRow.serviceType}
+                            </span>
+                          </div>
+                        )}
+
+                      {Boolean(selectedServiceRow.duration) && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Thời Gian Làm Dự Kiến" : "Estimated Duration"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">{selectedServiceRow.duration}</span>
+                        </div>
+                      )}
+
+                      {Boolean(item?.quantity && item.quantity > 1) && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Số Lượng Suất" : "Quantity"}
+                          </span>
+                          <span className="font-bold text-[#2B182B]">x{item.quantity}</span>
+                        </div>
+                      )}
+
+                      {item?.price !== undefined && item?.price !== null && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Giá Dịch Vụ" : "Service Price"}
+                          </span>
+                          <span className="font-bold text-[#047857] text-sm">{formatCurrency(item.price)}</span>
+                        </div>
+                      )}
+
+                      {Boolean(selectedServiceRow.artist && selectedServiceRow.artist !== "--") && (
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="font-bold text-[#9E8497]">
+                            {language === "vi" ? "Thợ Đảm Nhận" : "Artist"}
+                          </span>
+                          <span className="font-bold text-[#6D28D9]">{selectedServiceRow.artist}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Footer Close Button */}
-              <div className="mt-6 flex justify-end border-t border-[#F3E2EC] pt-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedServiceRow(null)}
-                  className="rounded-full border border-[#F3E2EC] bg-[#FFF5F8] hover:bg-[#FCE2EE] px-6 py-2.5 text-xs font-bold text-[#2B182B] transition cursor-pointer"
-                >
-                  {language === "vi" ? "Đóng" : "Close"}
-                </button>
+                {/* ─── RIGHT COLUMN: Nail Images ─── */}
+                <div className="h-full">
+                  {hasImages ? (
+                    <div className="rounded-2xl border border-[#F3E2EC] bg-[#FFF9FB] p-5 h-full flex flex-col">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#9E8497] mb-4 text-center flex items-center justify-center gap-1.5">
+                        <ImageIcon size={12} /> {language === "vi" ? "Hình Ảnh Mẫu Móng Thực Tế" : "Actual Nail Style Images"}
+                      </h4>
+
+                      <div className="flex flex-col items-center justify-center gap-5 flex-1">
+                        {sanitizeImageUrl(item?.nailVariantImageUrl) && (
+                          <div className="flex flex-col items-center gap-2 w-full">
+                            <span className="rounded-full bg-[#FFF0F6] px-3 py-1 text-[10px] font-bold text-[#E84F93] border border-[#F3D6E5]">
+                              {language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                            </span>
+                            <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                              <Image
+                                src={sanitizeImageUrl(item?.nailVariantImageUrl)}
+                                alt={language === "vi" ? "Mẫu Nail" : "Nail Variant"}
+                                height={220}
+                                className="object-cover rounded-xl"
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {sanitizeImageUrl(item?.customerNailImageUrl) && (
+                          <div className="flex flex-col items-center gap-2 w-full">
+                            <span className="rounded-full bg-[#F5F3FF] px-3 py-1 text-[10px] font-bold text-[#6D28D9] border border-[#DDD6FE]">
+                              {language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                            </span>
+                            <div className="overflow-hidden rounded-2xl border-4 border-white shadow-md hover:scale-105 transition-transform duration-300">
+                              <Image
+                                src={sanitizeImageUrl(item?.customerNailImageUrl)}
+                                alt={language === "vi" ? "Mẫu Nail Khách Gửi" : "Customer's Nail Style"}
+                                height={220}
+                                className="object-cover rounded-xl"
+                                crossOrigin="anonymous"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Empty-state placeholder so the two columns stay balanced */
+                    <div className="rounded-2xl border border-dashed border-[#F3E2EC] bg-[#FFFBFD] p-8 flex flex-col items-center justify-center text-center h-full min-h-[280px]">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF0F6] text-[#E84F93] mb-3">
+                        <ImageIcon size={22} />
+                      </div>
+                      <p className="text-xs font-bold text-[#2B182B]">
+                        {language === "vi" ? "Chưa có hình ảnh mẫu móng" : "No nail style images"}
+                      </p>
+                      <p className="text-[11px] text-[#9E8497] font-medium mt-1 max-w-[220px]">
+                        {language === "vi"
+                          ? "Khách hàng chưa tải lên hoặc chọn mẫu móng nào cho dịch vụ này."
+                          : "The customer hasn't uploaded or selected a nail design for this service."}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -2030,15 +2335,17 @@ export function ReceptionistBookingDetailPage() {
                               </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => void handleOpenProcedureArtistPicker(procedure)}
-                              className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
-                            >
-                              {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
-                              <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
-                              </span>
-                            </button>
+                            {["Approved", "CheckedIn", "InProgress"].includes(booking?.status) && (
+                              <button
+                                type="button"
+                                onClick={() => void handleOpenProcedureArtistPicker(procedure)}
+                                className="inline-flex items-center justify-center gap-1 rounded-full bg-gradient-to-r from-[#E84F93] via-[#D93B7D] to-[#8B5CF6] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:scale-105 active:scale-95 transition cursor-pointer shrink-0 ml-3"
+                              >
+                                {hasArtist ? <RefreshCcw size={12} /> : <UserPlus size={12} />}
+                                <span>{hasArtist ? (language === "vi" ? "Đổi Thợ" : "Change Artist") : (language === "vi" ? "Phân Công" : "Assign")}
+                                </span>
+                              </button>
+                            )}
                           </div>
 
                           {/* Right: Time Breakdown & Overlap Badges */}
@@ -2055,7 +2362,7 @@ export function ReceptionistBookingDetailPage() {
 
                             {(hasPassive || procedure.canOverlap) ? (
                               <span className="inline-flex items-center gap-1 rounded-full border border-[#A7F3D0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]">
-                                ✨ {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
+                                {language === "vi" ? "Chồng chéo" : "Overlap"} ({language === "vi" ? "Rảnh" : "Free"} {formatDurationMinutes(procedure.passiveDuration ?? 0, language)})
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-1.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-500">
@@ -2199,7 +2506,7 @@ export function ReceptionistBookingDetailPage() {
                         </h4>
 
                         {/* Status Badges */}
-                        <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+                        {/* <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${artist.isFree
                               ? "bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0]"
@@ -2208,7 +2515,7 @@ export function ReceptionistBookingDetailPage() {
                           >
                             {artist.isFree ? (language === "vi" ? "Rảnh" : "Free") : (language === "vi" ? "Đang bận" : "Busy")}
                           </span>
-                        </div>
+                        </div> */}
                       </div>
 
                       <button
@@ -2230,7 +2537,7 @@ export function ReceptionistBookingDetailPage() {
                             ? artistPickerProcedure.assignedArtistName
                               ? (language === "vi" ? "Chọn thợ này" : "Select this artist")
                               : (language === "vi" ? "Phân công" : "Assign")
-                            : (language === "vi" ? "Thợ đang bận" : "Artist is busy")}
+                            : (language === "vi" ? "Thợ không khả dụng" : "Artist unavailable")}
                         </span>
                       </button>
                     </div>
@@ -2295,6 +2602,28 @@ export function ReceptionistBookingDetailPage() {
           handleRefresh();
           setIsOnsiteAddonModalOpen(false);
         }}
+        onConflict={(data, items) => {
+          setConflictData(data);
+          setAddonItemsForConflict(items);
+          setIsOnsiteConflictModalOpen(true);
+        }}
+      />
+      <OnsiteAddonConflictModal
+        open={isOnsiteConflictModalOpen}
+        onClose={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+        }}
+        bookingId={booking?.bookingId || bookingId || ""}
+        conflictData={conflictData}
+        addonItems={addonItemsForConflict}
+        onSuccess={() => {
+          setIsOnsiteConflictModalOpen(false);
+          setConflictData(null);
+          setAddonItemsForConflict(null);
+          handleRefresh();
+        }}
       />
       <ProposeRescheduleModal
         open={isMoveScheduleOpen}
@@ -2335,51 +2664,57 @@ export function ReceptionistBookingDetailPage() {
               <div className="space-y-4">
                 <div className="text-center pb-4 border-b border-[#F3E2EC]">
                   <p className="text-[10px] uppercase font-bold text-[#9E8497] mb-1">{language === "vi" ? "Số tiền" : "Amount"}</p>
-                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(selectedTransactionDetail.amount)}</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' ? 'bg-[#ECFDF5] text-[#059669]' :
+                  <p className="text-3xl font-bold text-[#E84F93] mb-2">{formatCurrency(Math.abs(selectedTransactionDetail.amount))}</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold ${String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'bg-[#ECFDF5] text-[#059669]' :
                     String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'bg-[#FFFBEB] text-[#D97706]' :
                       'bg-[#F3F4F6] text-[#6B7280]'
                     }`}>
-                    {selectedTransactionDetail.status}
+                    {language === "vi"
+                      ? (String(selectedTransactionDetail.status).toLowerCase() === 'paid' || String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Đã thanh toán'
+                        : String(selectedTransactionDetail.status).toLowerCase() === 'pending' ? 'Chờ thanh toán'
+                          : String(selectedTransactionDetail.status).toLowerCase() === 'overdue' ? 'Quá hạn'
+                            : String(selectedTransactionDetail.status).toLowerCase() === 'cancelled' ? 'Đã hủy'
+                              : String(selectedTransactionDetail.status).toLowerCase() === 'refunded' ? 'Đã hoàn tiền' : selectedTransactionDetail.status)
+                      : (String(selectedTransactionDetail.status).toLowerCase() === 'completed' ? 'Paid' : selectedTransactionDetail.status)}
                   </span>
                 </div>
 
                 <div className="space-y-3 bg-white p-4 rounded-xl border border-[#F3E2EC] shadow-2xs">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Mã đơn hàng" : "Order Code"}</span>
-                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.orderCode}</span>
+                    <span className="font-mono font-bold text-[#2B182B]">#{selectedTransactionDetail.isWallet ? selectedTransactionDetail.referenceId : selectedTransactionDetail.orderCode}</span>
                   </div>
 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian tạo" : "Created At"}</span>
-                    <span className="font-medium text-[#2B182B]">{formatDate(selectedTransactionDetail.createdAt)} {formatTime(selectedTransactionDetail.createdAt)}</span>
+                    <span className="font-medium text-[#2B182B]">{formatVNDate(selectedTransactionDetail.createdAt, language)}</span>
                   </div>
 
                   {selectedTransactionDetail.paidAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian trả" : "Paid At"}</span>
-                      <span className="font-medium text-[#059669]">{formatDate(selectedTransactionDetail.paidAt)} {formatTime(selectedTransactionDetail.paidAt)}</span>
+                      <span className="font-medium text-[#059669]">{formatVNDate(selectedTransactionDetail.paidAt, language)}</span>
                     </div>
                   )}
 
-                  {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
+                  {/* {!selectedTransactionDetail.paidAt && selectedTransactionDetail.expiresAt && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Thời gian hết hạn" : "Expires At"}</span>
-                      <span className="font-medium text-[#E11D48]">{formatDate(selectedTransactionDetail.expiresAt)} {formatTime(selectedTransactionDetail.expiresAt)}</span>
+                      <span className="font-medium text-[#E11D48]">{toVN(selectedTransactionDetail.expiresAt).format('DD/MM/YYYY HH:mm')}</span>
                     </div>
-                  )}
+                  )} */}
 
-                  {selectedTransactionDetail.customerName && (
+                  {(selectedTransactionDetail.customerName || booking?.customerName) && (
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9E8497] font-medium">{language === "vi" ? "Khách hàng" : "Customer"}</span>
-                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName}</span>
+                      <span className="font-bold text-[#2B182B]">{selectedTransactionDetail.customerName || booking?.customerName}</span>
                     </div>
                   )}
 
-                  {selectedTransactionDetail.salonName && (
+                  {(selectedTransactionDetail.salonName || booking?.salonName) && (
                     <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-[#F3E2EC] border-dashed">
                       <span className="text-[#9E8497] font-medium">Salon</span>
-                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName}</span>
+                      <span className="font-medium text-[#E84F93]">{selectedTransactionDetail.salonName || booking?.salonName || "Salon Long Thành Mỹ"}</span>
                     </div>
                   )}
                 </div>
@@ -2393,6 +2728,73 @@ export function ReceptionistBookingDetailPage() {
         </div>
       </Modal>
 
-    </section>
+      <ActionConfirmModal
+        open={itemsToDelete !== null}
+        intent="danger"
+        title={isVi ? (itemsToDelete?.length > 1 ? "Xác nhận xóa nhiều" : "Xác nhận xóa") : (itemsToDelete?.length > 1 ? "Confirm multi-delete" : "Confirm delete")}
+        description={isVi
+          ? (itemsToDelete?.length > 1 ? `Bạn có chắc chắn muốn xóa ${itemsToDelete.length} dịch vụ đã chọn?` : `Bạn có chắc chắn muốn xóa dịch vụ "${itemsToDelete?.[0]?.service}" không?`)
+          : (itemsToDelete?.length > 1 ? `Are you sure you want to delete ${itemsToDelete.length} selected services?` : `Are you sure you want to delete "${itemsToDelete?.[0]?.service}"?`)
+        }
+        confirmText={isVi ? "Xóa" : "Delete"}
+        cancelText={isVi ? "Hủy" : "Cancel"}
+        onConfirm={async () => {
+          await doDeleteServices(itemsToDelete);
+          setItemsToDelete(null);
+        }}
+        onCancel={() => setItemsToDelete(null)}
+        loading={isDeletingService}
+      />
+
+      <Modal
+        title={isVi ? "Sửa Số lượng" : "Edit Quantity"}
+        open={!!editingQuantityId}
+        onCancel={() => setEditingQuantityId(null)}
+        footer={null}
+        width={320}
+        centered
+      >
+        <div className="py-4 flex flex-col gap-4">
+          <p className="text-sm font-semibold text-[#2B182B]">
+            {serviceRows.find(r => r.id === editingQuantityId)?.service || ""}
+          </p>
+          <div className="flex items-center gap-4 border border-[#F3D6E5] rounded-full p-1 bg-[#FFF5FA]">
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => Math.max(1, q - 1))}
+              disabled={tempQuantity <= 1 || isDeletingService}
+            >
+              -
+            </button>
+            <span className="flex-1 text-center font-bold text-lg text-[#2B182B]">{tempQuantity}</span>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-[#E84F93] hover:bg-[#F3D6E5] disabled:opacity-50 transition-all font-bold shadow-2xs"
+              onClick={() => setTempQuantity(q => q + 1)}
+              disabled={isDeletingService}
+            >
+              +
+            </button>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-all disabled:opacity-50"
+              onClick={() => setEditingQuantityId(null)}
+              disabled={isDeletingService}
+            >
+              {isVi ? "Hủy" : "Cancel"}
+            </button>
+            <button
+              className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#E84F93] to-[#F43F5E] hover:from-[#D83A7E] hover:to-[#E11D48] rounded-full shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              onClick={() => doUpdateServiceQuantity(serviceRows.find(r => r.id === editingQuantityId), tempQuantity)}
+              disabled={isDeletingService}
+            >
+              {isDeletingService && <LoaderCircle size={16} className="animate-spin" />}
+              {isVi ? "Lưu" : "Save"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+    </section >
   );
 }

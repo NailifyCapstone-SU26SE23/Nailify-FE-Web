@@ -125,12 +125,12 @@ export function ManagerSchedulesPage() {
         shiftEnd: `${formEndTimeStr}:00`,
         status: formStatus,
       });
-      toast.success("Shift schedule created successfully!");
+      toast.success(language === "vi" ? "Đã tạo ca làm việc" : "Shift schedule created successfully!");
       setIsAddModalOpen(false);
       loadData();
     } catch (err) {
       console.error("Failed to create schedule:", err);
-      toast.error(err.message || "Failed to create schedule");
+      toast.error(err.message || language === "vi" ? "Tạo ca làm việc thất bại" : "Failed to create schedule");
     } finally {
       setIsSubmitting(false);
     }
@@ -147,12 +147,12 @@ export function ManagerSchedulesPage() {
         shiftEnd: `${formEndTimeStr}:00`,
         status: formStatus,
       });
-      toast.success("Shift schedule updated!");
+      toast.success(language === "vi" ? "Đã cập nhật ca làm việc" : "Shift schedule updated!");
       setIsEditModalOpen(false);
       loadData();
     } catch (err) {
       console.error("Failed to update schedule:", err);
-      toast.error(err.message || "Failed to update schedule");
+      toast.error(err.message || language === "vi" ? "Cập nhật ca làm việc thất bại" : "Failed to update schedule");
     } finally {
       setIsSubmitting(false);
     }

@@ -34,6 +34,8 @@ import {
 } from "../services/quizManagement";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
+import { Tooltip } from "antd";
+import { BASIC_STATUS } from "../../../../shared/utils/statusFormatters";
 
 export function QuizManagement() {
     const navigate = useNavigate();
@@ -161,7 +163,7 @@ export function QuizManagement() {
 
             // Then delete the quiz question itself
             await deleteQuizQuestion(deleteTarget.id);
-            
+
             setQuestions(prev => prev.filter(q => q.id !== deleteTarget.id));
             showNotification(language === "vi" ? "Xóa quiz thành công" : "Quiz deleted successfully");
             if (activeQuestionId === deleteTarget.id) handleCancelForm();
@@ -404,7 +406,7 @@ export function QuizManagement() {
 
                 <Link
                     to={ROUTES.adminQuizCreate}
-                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-6 text-sm font-bold text-white shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_28px_rgba(234,79,147,0.4)] active:scale-95"
+                    className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#ff7eb3] px-6 text-md text-white shadow-[0_8px_20px_rgba(234,79,147,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_12px_28px_rgba(234,79,147,0.4)] active:scale-95"
                 >
                     <Plus size={15} className="mr-2" />
                     {t("adminQuizManagement.createQuestion")}
@@ -414,7 +416,7 @@ export function QuizManagement() {
             {/* Asymmetric Split Layout Section */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                 {/* LEFT HALF: Questions editor dashboard section (7 cols) */}
-                <div className="lg:col-span-7 flex flex-col gap-5">
+                <div className="col-span-12 flex flex-col gap-5">
                     <div className="flex items-center gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
                             Q
@@ -464,36 +466,39 @@ export function QuizManagement() {
 
                                                 {/* Controls */}
                                                 <div className="flex items-center gap-1.5 shrink-0">
-                                                    <button
-                                                        onClick={() => handleToggleStatus(q.id)}
-                                                        title={language === "vi" ? `Đổi trạng thái thành ${q.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${q.status === "Active" ? "Inactive" : "Active"}`}
-                                                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold transition-all active:scale-[0.98] ${q.status === "Active"
-                                                            ? "bg-[#e8fdf2] text-[#16975f] hover:bg-[#d0fbe4]"
-                                                            : "bg-[#fff0f3] text-[#d14c84] hover:bg-[#ffd9e1]"
-                                                            }`}
-                                                    >
-                                                        <Power size={8} />
-                                                        <span>
-                                                            {language === "vi"
-                                                                ? (q.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
-                                                                : q.status
-                                                            }
-                                                        </span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleStartEdit(q)}
-                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98]"
-                                                        title={t("adminQuizManagement.editStepDetails")}
-                                                    >
-                                                        <Edit3 size={11} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteQuestion(q.id)}
-                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98]"
-                                                        title={t("adminQuizManagement.removeStep")}
-                                                    >
-                                                        <Trash2 size={11} />
-                                                    </button>
+                                                    <Tooltip title={language === "vi" ? `Đổi trạng thái thành ${q.status === "Active" ? "Ngừng hoạt động" : "Hoạt động"}` : `Set status to ${q.status === "Active" ? "Inactive" : "Active"}`}>
+                                                        <button
+                                                            onClick={() => handleToggleStatus(q.id)}
+
+                                                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold transition-all active:scale-[0.98] ${BASIC_STATUS[q.status]?.tone || "bg-gray-100 text-gray-600 border border-gray-200"}`}
+                                                        >
+                                                            <Power size={8} />
+                                                            <span>
+                                                                {language === "vi"
+                                                                    ? (q.status === "Active" ? "Hoạt động" : "Ngừng hoạt động")
+                                                                    : q.status
+                                                                }
+                                                            </span>
+                                                        </button>
+                                                    </Tooltip>
+                                                    <Tooltip title={language === "vi" ? `Chỉnh sửa chi tiết bước ${q.sortOrder}` : `Edit step details ${q.sortOrder}`}>
+                                                        <button
+                                                            onClick={() => handleStartEdit(q)}
+                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#f3cade] bg-white text-[#c95b90] hover:bg-[#fff0f6] transition-colors active:scale-[0.98]"
+
+                                                        >
+                                                            <Edit3 size={11} />
+                                                        </button>
+                                                    </Tooltip>
+                                                    <Tooltip title={language === "vi" ? `Xóa bước ${q.sortOrder}` : `Remove step ${q.sortOrder}`}>
+                                                        <button
+                                                            onClick={() => handleDeleteQuestion(q.id)}
+                                                            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#ffe0e6] bg-white text-[#d14c84] hover:bg-[#fff0f3] transition-colors active:scale-[0.98]"
+
+                                                        >
+                                                            <Trash2 size={11} />
+                                                        </button>
+                                                    </Tooltip>
                                                 </div>
                                             </div>
 
@@ -563,164 +568,6 @@ export function QuizManagement() {
                             </motion.div>
                         )}
                     </div>
-                </div>
-
-                {/* RIGHT HALF: Shape recommendation rules & detail viewer (5 cols) */}
-                <div className="lg:col-span-5 flex flex-col gap-5">
-                    <div className="flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center rounded bg-[#fff0f6] text-xs font-bold text-[#ea4f93]">
-                            S
-                        </span>
-                        <h3 className="text-sm font-bold uppercase tracking-wider text-[#3f2034]">
-                            {t("adminQuizManagement.nailShapesRecommendationModel")}
-                        </h3>
-                    </div>
-
-                    {/* Shape List Panel */}
-                    <div className="flex flex-col gap-2">
-                        {shapes.map((shape) => (
-                            <button
-                                key={shape.id}
-                                onClick={() => handleSelectShape(shape)}
-                                className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-all duration-300 ${selectedShape?.id === shape.id
-                                    ? "border-[#ea4f93] bg-white/90 shadow-[0_8px_20px_rgba(234,79,147,0.15)] backdrop-blur-md translate-x-1"
-                                    : "border-white/60 bg-white/40 backdrop-blur-sm hover:border-[#eba2c6]/50 hover:bg-white/80 hover:shadow-md hover:translate-x-1"
-                                    }`}
-                            >
-                                <div>
-                                    <h4 className="text-xs font-bold text-[#3f2034]">{shape.name}</h4>
-                                    <p className="mt-1 text-[11px] text-[#8c7484] max-w-[280px] truncate">{shape.description}</p>
-                                </div>
-                                <ChevronRight size={13} className={selectedShape?.id === shape.id ? "text-[#ea4f93]" : "text-[#c9a7be]"} />
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Selected Shape Detail View */}
-                    {selectedShape && (
-                        <div className="rounded-lg border border-[#f5e3ed] bg-white p-6 shadow-sm">
-                            <div className="flex items-center justify-between border-b border-[#fcecf4] pb-3 mb-4">
-                                <div>
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                        {t("adminQuizManagement.targetDiagnosticStyle")}
-                                    </span>
-                                    <h4 className="text-base font-bold text-[#3f2034] mt-0.5">{selectedShape.name}</h4>
-                                </div>
-                                <button
-                                    onClick={() => setIsEditingShape(!isEditingShape)}
-                                    className="inline-flex h-8 px-3 items-center justify-center gap-1.5 rounded-full border border-[#f3cade] bg-white text-xs font-bold text-[#c95b90] hover:bg-[#fff0f6] transition-all active:scale-[0.98]"
-                                >
-                                    <Sliders size={11} />
-                                    <span>
-                                        {isEditingShape
-                                            ? (t("adminQuizManagement.cancel"))
-                                            : (t("adminQuizManagement.configureRules"))
-                                        }
-                                    </span>
-                                </button>
-                            </div>
-
-                            {isEditingShape ? (
-                                <form onSubmit={handleSaveShape} className="space-y-4">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {t("adminQuizManagement.shapeDescription")}
-                                        </label>
-                                        <textarea
-                                            value={shapeEditData.description}
-                                            onChange={(e) => setShapeEditData(prev => ({ ...prev, description: e.target.value }))}
-                                            rows="3"
-                                            className="w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] p-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4] resize-none"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {t("adminQuizManagement.upkeepDifficulty")}
-                                            </label>
-                                            <select
-                                                value={shapeEditData.difficulty}
-                                                onChange={(e) => setShapeEditData(prev => ({ ...prev, difficulty: e.target.value }))}
-                                                className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4]"
-                                            >
-                                                <option value="Low">{t("adminQuizManagement.lowMaintenance")}</option>
-                                                <option value="Medium">{t("adminQuizManagement.mediumMaintenance")}</option>
-                                                <option value="High">{t("adminQuizManagement.highUpkeep")}</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                                {t("adminQuizManagement.nailStrengthRequired")}
-                                            </label>
-                                            <select
-                                                value={shapeEditData.strengthLevel}
-                                                onChange={(e) => setShapeEditData(prev => ({ ...prev, strengthLevel: e.target.value }))}
-                                                className="h-10 w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] px-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4]"
-                                            >
-                                                <option value="Flexible">{t("adminQuizManagement.thinFlexible")}</option>
-                                                <option value="Moderate">{t("adminQuizManagement.moderateNormal")}</option>
-                                                <option value="Excellent">{t("adminQuizManagement.strongAcrylicsOnly")}</option>
-                                                <option value="High Required">{t("adminQuizManagement.highRequired")}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold uppercase tracking-wider text-[#7a6473]">
-                                            {t("adminQuizManagement.diagnosticRulesConditionsTrigg")}
-                                        </label>
-                                        <textarea
-                                            value={shapeEditData.rulesSummary}
-                                            onChange={(e) => setShapeEditData(prev => ({ ...prev, rulesSummary: e.target.value }))}
-                                            rows="2"
-                                            className="w-full rounded-xl border border-[#f5d7e4] bg-[#fffbfc] p-3 text-xs text-[#4b3345] outline-none focus:border-[#ef6bb4] resize-none"
-                                            required
-                                        />
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="w-full inline-flex h-10 items-center justify-center rounded-xl bg-[#ea4f93] text-xs font-bold text-white shadow-md hover:bg-[#d14c84] transition-colors active:scale-[0.98]"
-                                    >
-                                        {t("adminQuizManagement.saveRulesConfiguration")}
-                                    </button>
-                                </form>
-                            ) : (
-                                <div className="space-y-4 text-xs">
-                                    <p className="leading-relaxed text-[#7c566f]">{selectedShape.description}</p>
-
-                                    <div className="grid grid-cols-2 gap-4 border-t border-[#fcecf4] pt-4">
-                                        <div>
-                                            <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                                {t("adminQuizManagement.upkeepDifficulty")}
-                                            </span>
-                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold text-[#c95b90]">
-                                                {selectedShape.difficulty}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="text-[9px] font-bold uppercase tracking-widest text-[#a6869a] block">
-                                                {t("adminQuizManagement.nailStrength")}
-                                            </span>
-                                            <span className="inline-flex mt-1 rounded-md bg-[#fff0f6] px-2 py-0.5 text-[10px] font-bold text-[#c95b90]">
-                                                {selectedShape.strengthLevel}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="border-t border-[#fcecf4] pt-4 bg-[#fffafc] rounded-xl p-3 border border-[#fbebf2]">
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-[#ea4f93] flex items-center gap-1">
-                                            <Sparkles size={10} /> {t("adminQuizManagement.modelTargetingRules")}
-                                        </span>
-                                        <p className="mt-1.5 leading-relaxed text-[#6c485f] font-medium">{selectedShape.rulesSummary}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 

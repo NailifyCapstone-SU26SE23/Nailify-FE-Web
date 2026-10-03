@@ -123,7 +123,7 @@ export async function fetchNailArtists(salonId) {
 
     const response = await axiosClient.get(`/Users/salon/${id}/staff`, {
       headers: getAuthHeaders(),
-      params: { role: "Staff_Artist" },
+      params: { role: "Staff_Artist", status: "Active" },
     });
 
     const data = unwrapResponse(response, "Failed to load Staff Artists.");

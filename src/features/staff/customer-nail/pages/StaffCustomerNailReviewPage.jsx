@@ -24,7 +24,7 @@ function formatVND(amount) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
-  }).format(amount);
+  }).format(amount).replace("₫", "VND");
 }
 
 function formatDuration(duration, language = "en") {
@@ -46,7 +46,7 @@ function InfoTile({ label, value, valueClassName = "text-[#3f2240]" }) {
 function SectionHeading({ title, subtitle }) {
   return (
     <div>
-      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{title}</h3>
+      <h3 className="text-lg font-bold text-[#3f2240]">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-[#a988a0]">{subtitle}</p> : null}
     </div>
   );
@@ -292,7 +292,7 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
     );
   }
 
-  // ✨ GLOSSY (Default) - Natural shine
+  // GLOSSY (Default) - Natural shine
   const shine = config.shine || 0.45;
   const blur = config.blur || 0;
   const effectiveBlur = Math.max(4, blur * 20);
@@ -344,6 +344,13 @@ function renderSurfaceEffects(surfaceName, effectsConfigJson) {
 
 function NailBlueprint({ nail, componentsList }) {
   const [selectedComponentId, setSelectedComponentId] = useState(null);
+  const { language } = useLanguage();
+
+  const getFingerLabel = (fingerIndex) => {
+    return language === "vi"
+      ? ["Ngón cái", "Ngón trỏ", "Ngón giữa", "Ngón áp út", "Ngón út"][fingerIndex - 1]
+      : ["Thumb", "Index", "Middle", "Ring", "Pinky"][fingerIndex - 1];
+  };
 
   const renderNailPreview = (fingerIndex, fingerName) => {
     const colorStyle = getFingerColorStyle(nail?.customColor, fingerIndex);
@@ -515,7 +522,7 @@ function NailBlueprint({ nail, componentsList }) {
             : "border-[#fce6f3] bg-white/95 text-[#c08aa4] shadow-[0_8px_20px_rgba(236,72,153,0.08)] group-hover:scale-105 group-hover:border-[#ea4f93] group-hover:bg-[#ea4f93] group-hover:text-white"
             }`}
         >
-          {fingerName}
+          {getFingerLabel(fingerIndex)}
         </span>
       </div>
     );
@@ -646,7 +653,6 @@ export function StaffCustomerNailReviewPage() {
         setError("");
       }
 
-      console.log("Loading custom nail request detail for ID:", customerNailId);
       const data = await fetchCustomerNailRequestById(customerNailId);
       setRequest(data);
 
@@ -767,11 +773,11 @@ export function StaffCustomerNailReviewPage() {
         artistNotes,
         procedures
       );
-      toast.success("Estimation and procedures submitted to Manager successfully!");
+      toast.success(language === "vi" ? "Đã gửi ước tính báo giá và quy trình cho Quản lý thành công!" : "Estimation and procedures submitted to Manager successfully!");
       navigate("/staff/customer-nails");
     } catch (err) {
       console.error("Error submitting quote:", err);
-      toast.error(err.message || "Failed to submit quote.");
+      toast.error(err.message || (language === "vi" ? "Gửi báo giá thất bại." : "Failed to submit quote."));
     } finally {
       setIsSubmitting(false);
     }
@@ -869,7 +875,7 @@ export function StaffCustomerNailReviewPage() {
                     />
                   </div>
                   <p className="mt-2 text-sm text-[#9c6f87]">
-                    {language === "vi" ? "Đánh giá các lớp thiết kế, thành phần tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
+                    {language === "vi" ? "Đánh giá các lớp thiết kế, phụ kiện tùy chỉnh và gửi ước tính báo giá cho khách hàng này." : "Review design layers, custom components, and submit quote estimates for this client."}
                   </p>
                 </div>
               </div>
@@ -912,7 +918,7 @@ export function StaffCustomerNailReviewPage() {
                 onApplyToQuote={({ totalDuration, totalPrice }) => {
                   setQuotedDuration(totalDuration);
                   setQuotedPrice(totalPrice > 0 ? totalPrice : "");
-                  toast.success("Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!");
+                  toast.success(language === "vi" ? "Đã đồng bộ tổng thời gian & chi phí quy trình vào Báo Giá!" : "Successfully synced total duration & cost to Quote!");
                 }}
               />
 
@@ -959,7 +965,7 @@ export function StaffCustomerNailReviewPage() {
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-[#ea4f93] to-[#d43d81] text-white shadow-sm shrink-0">
                         <Sparkles size={14} />
                       </span>
-                      <h3 className="text-lg font-serif font-bold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
+                      <h3 className="text-lg  font-bold text-[#3f2240]">{language === "vi" ? "Định giá & Giá cả" : "Valuation & Price"}</h3>
                     </div>
                     <p className="mt-1 text-xs text-[#a988a0]">
                       {language === "vi" ? "Giá và thời gian được hệ thống tính toán cho yêu cầu này." : "System-calculated price and duration for this request."}

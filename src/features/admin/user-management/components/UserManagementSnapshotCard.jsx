@@ -40,8 +40,7 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
   const { t, language } = useLanguage();
   const displayName =
     [formValues.firstName, formValues.lastName].filter(Boolean).join(" ").trim() ||
-    formValues.name ||
-    "New internal account";
+    formValues.name || (language === "vi" ? "Tài khoản mới" : "New User");
   const [avatarPreview, setAvatarPreview] = useState("");
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -118,12 +117,12 @@ export function UserManagementSnapshotCard({ formValues, notice }) {
         </div>
       </div>
 
-      {/* <div className="mt-5 rounded-lg bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
+      <div className="mt-5 rounded-lg bg-[#fff0f5] p-5 text-sm leading-6 text-[#9b4b70]">
         <div className="flex items-start gap-3">
           <ShieldAlert size={18} className="mt-0.5 shrink-0" />
           <p>{notice}</p>
         </div>
-      </div> */}
+      </div>
     </article>
   );
 }

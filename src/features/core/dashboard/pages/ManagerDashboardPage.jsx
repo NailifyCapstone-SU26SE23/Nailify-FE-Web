@@ -16,7 +16,8 @@ import {
   Wallet,
   CalendarCheck2
 } from "lucide-react";
-import { Spin, Alert, DatePicker, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
+import { Spin, Alert, Segmented, Modal, Avatar, Rate, Dropdown, Button } from "antd";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
 import { UserOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
@@ -505,7 +506,7 @@ export function ManagerDashboardPage() {
                 <div key={i} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-700 shrink-0">
                   <AlertCircle size={20} className="shrink-0 mt-0.5" />
                   <div className='flex-1'>
-                    <div className='flex justify-between'>
+                    <div className='flex flex-col justify-between'>
                       <p className="font-bold text-sm">{alert.artistName}</p>
                       <div className="flex items-center gap-4 text-xs font-medium">
                         <span>{isVi ? "Ngày" : "Date"}: {dayjs(alert.breakDate).format("DD/MM/YYYY")}</span>
@@ -625,16 +626,15 @@ export function ManagerDashboardPage() {
             onChange={handleFilterModeChange}
             className="rounded-md bg-slate-100 p-1 font-semibold"
           />
-          <DatePicker.RangePicker
+          <DateRangePicker
             value={dateRange}
             onChange={handleDateRangeChange}
             className="rounded-md border-slate-200 hover:border-sky-500 focus:border-sky-500"
-            format="YYYY-MM-DD"
           />
         </div>
       </div>
 
-      <div className="mx-auto w-full space-y-6 p-8">
+      <div className="w-full space-y-6 py-8">
         {/* Top Metrics Row */}
         <TopMetricsRow metrics={topMetrics} />
 
@@ -718,6 +718,30 @@ const StaffAvatar = ({ staff, size = 56, className }) => {
       className={className}
     >
       {getInitials(staff.firstName, staff.lastName)}
+    </Avatar>
+  );
+};
+
+const FeedbackAvatar = ({ fb, getInitials }) => {
+  const customerId = fb.customerId || fb.userId || fb.id;
+  const { data: userDetail } = useUserDetail(customerId);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setError(false);
+  }, [userDetail?.avatarUrl]);
+
+  return (
+    <Avatar
+      style={{ backgroundColor: '#ffe3ef', color: '#ea4f93', borderColor: '#ffcce1' }}
+      className="font-bold shrink-0 mt-0.5 shadow-sm border"
+      src={!error ? userDetail?.avatarUrl : undefined}
+      onError={() => {
+        setError(true);
+        return false;
+      }}
+    >
+      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
     </Avatar>
   );
 };
@@ -867,9 +891,7 @@ function StaffDetailModal({ staff, startDate, endDate, onClose }) {
               <div className="flex flex-col gap-3">
                 {dashboard.recentFeedback.map((fb, idx) => (
                   <div key={idx} className="flex gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md hover:border-sky-100">
-                    <Avatar className="bg-gradient-to-br from-sky-400 to-indigo-500 text-white font-bold shrink-0 mt-0.5 shadow-sm">
-                      {getInitials(fb.customerName)?.slice(0, 2) || "U"}
-                    </Avatar>
+                    <FeedbackAvatar fb={fb} getInitials={getInitials} />
                     <div className="flex-1 w-full">
                       <div className="flex justify-between items-start">
                         <div>

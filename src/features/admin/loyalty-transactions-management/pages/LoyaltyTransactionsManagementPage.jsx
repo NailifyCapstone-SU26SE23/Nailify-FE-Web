@@ -6,6 +6,9 @@ import { useLanguage } from "../../../../shared/hooks/useLanguage";
 import { formatDate } from "../../../../shared/utils/formatDate";
 import { TopMetricsRow } from "../../../../shared/components/ui/TopMetricsRow";
 import { Gift, TrendingDown, TrendingUp } from "lucide-react";
+import dayjs from "dayjs";
+import { DateRangePicker } from "../../../../shared/components/ui/DateRangePicker";
+import { ActionButtons } from "../../../../shared/components/common/ActionButtons";
 
 const { Title, Text } = Typography;
 
@@ -29,6 +32,7 @@ export function LoyaltyTransactionsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
 
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -140,15 +144,9 @@ export function LoyaltyTransactionsManagementPage() {
       title: isVi ? "Thao tác" : "Actions",
       key: "actions",
       render: (_, record) => (
-        <Tooltip title={isVi ? "Xem chi tiết" : "View Details"}>
-          <Button
-            className="!rounded-full !border-[#c9799f] !text-[#c9799f] hover:!border-pink-500 hover:!text-pink-500 hover:!bg-pink-50"
-            type="primary"
-            ghost
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record.loyaltyTransactionId || record.id)}
-          />
-        </Tooltip>
+        <ActionButtons
+          onView={() => handleViewDetail(record.loyaltyTransactionId || record.id)}
+        />
       ),
     },
   ];
@@ -157,6 +155,16 @@ export function LoyaltyTransactionsManagementPage() {
     if (filterType && item.transactionType !== filterType) {
       if (filterType === "Earned" && item.transactionType !== "Earn") return false;
       if (filterType === "Redeemed" && item.transactionType !== "Redeem" && item.transactionType !== "Burn") return false;
+    }
+
+    if (dateRange && Array.isArray(dateRange) && dateRange.length === 2) {
+      const [start, end] = dateRange;
+      if (start && end) {
+        const d = dayjs(item.createdAt || item.createdDate);
+        if (d.isBefore(start.startOf('day')) || d.isAfter(end.endOf('day'))) {
+          return false;
+        }
+      }
     }
 
     if (searchTerm) {
@@ -203,26 +211,28 @@ export function LoyaltyTransactionsManagementPage() {
       <TopMetricsRow metrics={metrics} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" />
 
       <div className="rounded-lg border border-[#f5e3ed] bg-white p-5 shadow-sm">
-
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 grid gap-4 sm:grid-cols-3">
           <Input.Search
             placeholder={isVi ? "Tìm kiếm khách hàng..." : "Search customer..."}
             allowClear
-            className="w-full sm:max-w-xs"
+            className="w-full"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Space>
-            <Select
-              placeholder={isVi ? "Loại giao dịch" : "Transaction Type"}
-              allowClear
-              className="w-40"
-              options={[
-                { value: "Earned", label: isVi ? "Tích điểm" : "Earned" },
-                { value: "Redeemed", label: isVi ? "Đổi điểm" : "Redeemed" },
-              ]}
-              onChange={(value) => setFilterType(value)}
-            />
-          </Space>
+          <DateRangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates)}
+            className="w-full h-8"
+          />
+          <Select
+            placeholder={isVi ? "Loại giao dịch" : "Transaction Type"}
+            allowClear
+            className="w-full"
+            options={[
+              { value: "Earned", label: isVi ? "Tích điểm" : "Earned" },
+              { value: "Redeemed", label: isVi ? "Đổi điểm" : "Redeemed" },
+            ]}
+            onChange={(value) => setFilterType(value)}
+          />
         </div>
 
         <Table
@@ -248,8 +258,8 @@ export function LoyaltyTransactionsManagementPage() {
         }}
         footer={[
           <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            Close
-          </Button>
+            {language === "vi" ? "Đóng" : "Close"}
+          </Button>,
         ]}
         width={700}
       >
