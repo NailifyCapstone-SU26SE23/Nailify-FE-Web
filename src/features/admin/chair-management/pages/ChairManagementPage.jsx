@@ -395,9 +395,9 @@ export default function ChairManagementPage() {
                             }
                           </span>
 
-                          <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
+                          {/* <div className="absolute bottom-3 left-3 bg-[#2d1b35]/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1 shadow-sm">
                             ★ {salon.rating || "4.8"} ({salon.reviews || "120"} {language === 'vi' ? 'đánh giá' : 'reviews'})
-                          </div>
+                          </div> */}
                         </div>
 
                         <div className="space-y-2.5">
